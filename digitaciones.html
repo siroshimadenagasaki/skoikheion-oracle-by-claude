@@ -1,0 +1,1401 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+<title>Digitaciones de Guitarra</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+  :root {
+    --bg: #f6f1e9;
+    --surface: #fffdf9;
+    --surface-2: #efe4d1;
+    --border: #ddccae;
+    --text: #241a10;
+    --text-muted: #6f5f47;
+    --accent: #b5642b;
+    --accent-contrast: #fff9f1;
+    --accent-soft: #f0dbbd;
+    --bass: #7c2c3a;
+    --bass-soft: #f0d7dc;
+    --barre: #3d6b5c;
+    --barre-soft: #dbe9e3;
+    --thumb: #47548c;
+    --thumb-soft: #dee1f0;
+    --string-line: #b7a37f;
+    --fret-line: #d8c7a3;
+    --shadow: 0 1px 2px rgba(60, 40, 10, 0.06), 0 6px 20px rgba(60, 40, 10, 0.07);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #17120c;
+      --surface: #201810;
+      --surface-2: #271e14;
+      --border: #3d2f1d;
+      --text: #f2e8d8;
+      --text-muted: #b6a488;
+      --accent: #dd8f4c;
+      --accent-contrast: #1c1208;
+      --accent-soft: #3c2a15;
+      --bass: #e08b98;
+      --bass-soft: #3a2429;
+      --barre: #7fbaa4;
+      --barre-soft: #223229;
+      --thumb: #9aa8e0;
+      --thumb-soft: #262c47;
+      --string-line: #6e5c3e;
+      --fret-line: #4a3c26;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #17120c;
+    --surface: #201810;
+    --surface-2: #271e14;
+    --border: #3d2f1d;
+    --text: #f2e8d8;
+    --text-muted: #b6a488;
+    --accent: #dd8f4c;
+    --accent-contrast: #1c1208;
+    --accent-soft: #3c2a15;
+    --bass: #e08b98;
+    --bass-soft: #3a2429;
+    --barre: #7fbaa4;
+    --barre-soft: #223229;
+    --thumb: #9aa8e0;
+    --thumb-soft: #262c47;
+    --string-line: #6e5c3e;
+    --fret-line: #4a3c26;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.35);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "IBM Plex Sans", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .bg-fretboard {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1500 / 550;
+  }
+  .fretboard-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px 26px 16px;
+    box-shadow: var(--shadow);
+    margin-top: 34px;
+  }
+  .fretboard-panel h2 {
+    font-family: "Fraunces", serif;
+    font-size: 19px;
+    font-weight: 600;
+    margin: 0;
+  }
+  .fretboard-panel .hint {
+    font-size: 12.5px;
+    color: var(--text-muted);
+    margin: 0 0 14px;
+  }
+  .fretboards-section-divider {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    font-weight: 600;
+    margin: 44px 0 -14px;
+    padding-top: 22px;
+    border-top: 1px solid var(--border);
+  }
+  .fretboard-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 4px;
+  }
+  .play-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    background: var(--accent-soft);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    padding: 6px 13px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s;
+  }
+  .play-btn:hover { background: var(--accent); color: var(--accent-contrast); }
+  .play-btn:disabled { opacity: 0.5; cursor: default; background: var(--accent-soft); color: var(--accent); }
+
+  .wrap {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 32px 24px 80px;
+  }
+  header {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 28px;
+  }
+  header .eyebrow {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  h1 {
+    font-family: "Fraunces", serif;
+    font-weight: 600;
+    font-size: clamp(28px, 4vw, 40px);
+    margin: 0;
+    text-wrap: balance;
+  }
+  header p {
+    margin: 2px 0 0;
+    max-width: 62ch;
+    color: var(--text-muted);
+    font-size: 15px;
+    line-height: 1.55;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+  @media (max-width: 860px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    box-shadow: var(--shadow);
+  }
+  .panel + .panel { margin-top: 16px; }
+
+  .panel h2 {
+    font-family: "Fraunces", serif;
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 4px;
+  }
+  .panel .hint {
+    font-size: 12.5px;
+    color: var(--text-muted);
+    margin: 0 0 14px;
+    line-height: 1.5;
+  }
+
+  .notes-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+  .note-btn {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 9px 4px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text);
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
+  }
+  .note-btn:hover { border-color: var(--accent); }
+  .note-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-contrast);
+  }
+  .note-btn .pc { display: block; font-size: 9px; opacity: 0.65; margin-top: 1px; }
+
+  .field { margin-bottom: 14px; }
+  .field label {
+    display: block;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+  select, input[type="number"] {
+    width: 100%;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 13.5px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text);
+  }
+
+  .btn {
+    width: 100%;
+    padding: 11px;
+    border-radius: 9px;
+    border: none;
+    background: var(--accent);
+    color: var(--accent-contrast);
+    font-family: "IBM Plex Sans", sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: filter 0.12s;
+  }
+  .btn:hover { filter: brightness(1.07); }
+  .btn:focus-visible, .note-btn:focus-visible, summary:focus-visible, .more-btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  details.params { font-size: 13px; }
+  details.params summary {
+    cursor: pointer;
+    font-family: "Fraunces", serif;
+    font-weight: 600;
+    font-size: 15px;
+    margin-bottom: 4px;
+  }
+  .params-grid {
+    display: grid;
+    grid-template-columns: 1fr 72px;
+    gap: 8px 10px;
+    align-items: center;
+    margin-top: 12px;
+  }
+  .params-grid span { color: var(--text-muted); font-size: 12.5px; }
+  .checkline {
+    display: flex; align-items: center; gap: 8px;
+    margin-top: 10px; font-size: 12.5px; color: var(--text-muted);
+  }
+  .reset-link {
+    background: none; border: none; color: var(--accent);
+    font-size: 12.5px; cursor: pointer; padding: 0; margin-top: 12px;
+    text-decoration: underline;
+  }
+
+  .status {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+  }
+
+  section.results { margin-bottom: 30px; }
+  .results-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .results-head h2 {
+    font-family: "Fraunces", serif;
+    font-size: 19px;
+    font-weight: 600;
+    margin: 0;
+  }
+  .results-head .count {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .results-head p.desc {
+    grid-column: 1 / -1;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 14px 12px;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+  .card .notes {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 13px;
+    text-align: center;
+    line-height: 1.4;
+  }
+  .card .notes b { color: var(--bass); }
+  .card .strings {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: "IBM Plex Mono", monospace;
+  }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+  .chip {
+    font-size: 10.5px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-family: "IBM Plex Mono", monospace;
+    letter-spacing: 0.02em;
+  }
+  .chip.barre { background: var(--barre-soft); color: var(--barre); }
+  .chip.thumb { background: var(--thumb-soft); color: var(--thumb); }
+
+  .more-wrap { text-align: center; margin-top: 14px; }
+  .more-btn {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12.5px;
+    padding: 8px 16px;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+  .more-btn:hover { border-color: var(--accent); }
+
+  .empty {
+    color: var(--text-muted);
+    font-size: 13.5px;
+    padding: 18px;
+    border: 1px dashed var(--border);
+    border-radius: 12px;
+    text-align: center;
+  }
+
+  .legend {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 4px;
+    margin-bottom: 22px;
+    font-family: "IBM Plex Mono", monospace;
+  }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .legend i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .legend i.ring { background: none; border: 2px solid; box-sizing: border-box; }
+  .note-legend { margin-top: -6px; margin-bottom: 22px; row-gap: 6px; }
+
+  .input-toggle {
+    display: flex; justify-content: center; gap: 6px; margin-bottom: 16px;
+  }
+  .toggle-btn {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
+    background: transparent; border: 1px solid var(--border); color: var(--text-muted);
+    padding: 6px 16px; border-radius: 100px; cursor: pointer; transition: 0.15s;
+  }
+  .toggle-btn:hover { color: var(--text); border-color: var(--accent); }
+  .toggle-btn.active { background: var(--accent); color: var(--accent-contrast); border-color: var(--accent); font-weight: 700; }
+
+  .clock-wrap {
+    position: relative; width: 100%; aspect-ratio: 1/1; max-width: 260px; margin: 0 auto 14px;
+  }
+  svg.dial { width: 100%; height: 100%; overflow: visible; }
+  .dial-ring { fill: none; stroke: var(--border); stroke-width: 1.2; }
+  .clock-note { cursor: pointer; transition: transform 0.15s ease; }
+  .clock-note circle.node {
+    fill: var(--surface-2); stroke: var(--border); stroke-width: 1.4;
+    transition: fill 0.18s ease, stroke 0.18s ease;
+  }
+  .clock-note:hover circle.node { stroke: var(--accent); }
+  .clock-note.selected circle.node { fill: var(--accent); stroke: var(--accent); }
+  .clock-note text.pc {
+    font-family: "IBM Plex Mono", monospace; font-size: 12px; fill: var(--text-muted);
+    text-anchor: middle; dominant-baseline: middle; pointer-events: none;
+  }
+  .clock-note.selected text.pc { fill: var(--accent-contrast); font-weight: 700; }
+  .clock-note text.name {
+    font-family: "Fraunces", serif; font-size: 10.5px; fill: var(--text-muted);
+    text-anchor: middle; pointer-events: none;
+  }
+  .clock-note.selected text.name { fill: var(--accent-contrast); }
+
+  .piano-wrap { width: 100%; max-width: 260px; margin: 0 auto 14px; }
+  svg.piano { width: 100%; height: auto; overflow: visible; }
+  .key { cursor: pointer; }
+  .key rect { stroke: var(--border); stroke-width: 1.5; transition: fill 0.15s ease; }
+  .key.white rect { fill: var(--surface); }
+  .key.white:hover rect { fill: var(--surface-2); }
+  .key.white.selected rect { fill: var(--accent); }
+  .key.black rect { fill: var(--text); }
+  .key.black:hover rect { fill: var(--accent); }
+  .key.black.selected rect { fill: var(--accent); }
+  .key text {
+    font-family: "IBM Plex Mono", monospace; font-size: 9px;
+    text-anchor: middle; pointer-events: none;
+  }
+  .key.white text { fill: var(--text-muted); }
+  .key.white.selected text { fill: var(--accent-contrast); font-weight: 700; }
+  .key.black text { fill: var(--bg); }
+  .key.black.selected text { fill: var(--accent-contrast); font-weight: 700; }
+
+  .group-head {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    border-top: 1px solid var(--border);
+    padding-top: 10px;
+    margin: 18px 0 10px;
+  }
+  .group-head:first-child { border-top: none; margin-top: 0; padding-top: 0; }
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 14px;
+  }
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">Stoikheion · módulo de digitaciones (beta)</span>
+    <h1>Digitaciones de Guitarra</h1>
+    <p>Elegí las notas de un acorde (3 a 6) y un bajo opcional. Calcula qué digitaciones son físicamente tocables en una ventana de 6 trastes, separadas en acordes de cuerdas contiguas y acordes abiertos.</p>
+  </header>
+
+  <div class="layout">
+    <div>
+      <div class="panel">
+        <h2>Notas del acorde</h2>
+        <p class="hint">Tocá entre 3 y 6 notas en el reloj o el piano. El número debajo de cada una es su pitch class (0–11).</p>
+        <div class="input-toggle">
+          <button class="toggle-btn active" id="tabClock" type="button">Reloj</button>
+          <button class="toggle-btn" id="tabPiano" type="button">Piano</button>
+        </div>
+        <div class="clock-wrap" id="clockWrap">
+          <svg class="dial" viewBox="0 0 300 300">
+            <circle class="dial-ring" cx="150" cy="150" r="128"/>
+            <g id="notesDial"></g>
+          </svg>
+        </div>
+        <div class="piano-wrap" id="pianoWrap" hidden>
+          <svg class="piano" viewBox="0 0 280 150" preserveAspectRatio="xMidYMid meet">
+            <g id="pianoKeys"></g>
+          </svg>
+        </div>
+        <button class="reset-link" id="clearNotesBtn" type="button">limpiar selección</button>
+
+        <div class="field">
+          <label for="bassSelect">Bajo (opcional)</label>
+          <select id="bassSelect"></select>
+        </div>
+
+        <button class="btn" id="calcBtn">Calcular digitaciones</button>
+      </div>
+
+      <div class="panel">
+        <details class="params">
+          <summary>Parámetros físicos</summary>
+          <div class="params-grid">
+            <span>Estiramiento máx. (trastes)</span><input type="number" id="p_spanMax" min="1" max="11" step="1">
+            <span>Salto dedo 1→2</span><input type="number" id="p_gap12" min="0" max="6" step="1">
+            <span>Salto dedo 2→3</span><input type="number" id="p_gap23" min="0" max="6" step="1">
+            <span>Salto dedo 3→4</span><input type="number" id="p_gap34" min="0" max="6" step="1">
+            <span>Traste máx. del pulgar</span><input type="number" id="p_thumbMax" min="0" max="11" step="1">
+            <span>Margen del pulgar</span><input type="number" id="p_thumbMargin" min="0" max="6" step="1">
+          </div>
+          <label class="checkline"><input type="checkbox" id="p_thumbEnabled"> Permitir pulgar (6ª y 5ª cuerda)</label>
+          <label class="checkline"><input type="checkbox" id="p_allowBarre"> Permitir cejilla (índice)</label>
+          <button class="reset-link" id="resetParams">restablecer valores por defecto</button>
+        </details>
+      </div>
+    </div>
+
+    <div>
+      <div class="legend">
+        <span><i class="ring" style="border-color:var(--bass)"></i> anillo = nota más grave</span>
+        <span><i class="ring" style="border-color:var(--thumb)"></i> anillo = pulgar</span>
+        <span><i style="background:var(--barre)"></i> barra = cejilla</span>
+      </div>
+      <div class="legend note-legend" id="noteLegend"></div>
+      <div class="status" id="statusLine"></div>
+      <section class="results">
+        <div class="results-head">
+          <h2>Cuerdas contiguas</h2>
+          <span class="count" id="countContiguas"></span>
+        </div>
+        <div id="cardsContiguas"></div>
+        <div class="more-wrap" id="moreContiguasWrap" hidden><button class="more-btn" id="moreContiguas"></button></div>
+      </section>
+      <section class="results">
+        <div class="results-head">
+          <h2>Cuerdas abiertas</h2>
+          <span class="count" id="countAbiertas"></span>
+        </div>
+        <div id="cardsAbiertas"></div>
+        <div class="more-wrap" id="moreAbiertasWrap" hidden><button class="more-btn" id="moreAbiertas"></button></div>
+      </section>
+    </div>
+  </div>
+
+  <div class="fretboard-panel">
+    <div class="fretboard-head">
+      <h2>Diapasón completo (cuerdas contiguas)</h2>
+      <button class="play-btn" id="playCompleto" type="button">▶ reproducir</button>
+    </div>
+    <p class="hint">Las mismas digitaciones de cuerdas contiguas calculadas arriba, acorde completo (todas sus notas) por zona del mástil — la siguiente arranca donde termina la anterior. El centro hueco marca una cuerda al aire de esa digitación. Cada una tiene su color; un anillo indica que dos coinciden en la misma posición.</p>
+    <svg id="bgFretboard" class="bg-fretboard" viewBox="0 0 1500 550" aria-hidden="true"></svg>
+  </div>
+
+  <div id="extraFretboards"></div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ==========================================================================
+  // Núcleo de digitaciones (mismo motor de guitar_fingering.js)
+  // ==========================================================================
+  var NOTE_NAMES = ["Do", "Do#", "Re", "Re#", "Mi", "Fa", "Fa#", "Sol", "Sol#", "La", "La#", "Si"];
+  var NOTE_LETTERS = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+  var STRING_NUMS = [6, 5, 4, 3, 2, 1];
+  var STRING_OPEN_PC = { 6: 4, 5: 9, 4: 2, 3: 7, 2: 11, 1: 4 };
+  var STRING_OPEN_MIDI = { 6: 40, 5: 45, 4: 50, 3: 55, 2: 59, 1: 64 };
+  var STRING_LABEL = { 6: "E", 5: "A", 4: "D", 3: "G", 2: "B", 1: "e" };
+
+  // Un color por pitch class (rueda cromática, 30° por semitono), fijo y
+  // repetido en todas las digitaciones y en el diapasón de fondo.
+  function noteColor(pc) { return "hsl(" + (pc * 30) + ", 62%, 46%)"; }
+  var NOTE_LABEL_INK = "#fffaf1";
+  // Un color distinto por digitación (no por nota), separación por ángulo
+  // áureo para que se distingan bien aunque haya muchas.
+  function chordColor(i) { return "hsl(" + ((i * 137.508) % 360) + ", 65%, 48%)"; }
+
+  var DEFAULT_PARAMS = {
+    spanMax: 5,
+    gapThresholds: { "1-2": 2, "2-3": 1, "3-4": 1 },
+    maxFingerSlots: 4,
+    thumbEnabled: true,
+    thumbStrings: [6, 5],
+    thumbMaxFretAbs: 5,
+    thumbMargin: 2,
+    allowBarre: true,
+    barreFingers: [1]
+  };
+
+  function fretFor(stringNum, pc) {
+    var open = STRING_OPEN_PC[stringNum];
+    return ((pc - open) % 12 + 12) % 12;
+  }
+  function midiFor(stringNum, fret) { return STRING_OPEN_MIDI[stringNum] + fret; }
+
+  function combinations(arr, k) {
+    var out = [];
+    (function rec(start, combo) {
+      if (combo.length === k) { out.push(combo.slice()); return; }
+      for (var i = start; i < arr.length; i++) { combo.push(arr[i]); rec(i + 1, combo); combo.pop(); }
+    })(0, []);
+    return out;
+  }
+  function permutations(arr) {
+    if (arr.length <= 1) return [arr.slice()];
+    var out = [];
+    for (var i = 0; i < arr.length; i++) {
+      var rest = arr.slice(0, i).concat(arr.slice(i + 1));
+      permutations(rest).forEach(function (p) { out.push([arr[i]].concat(p)); });
+    }
+    return out;
+  }
+  function powerSet(arr) {
+    var out = [[]];
+    for (var i = 0; i < arr.length; i++) {
+      var len = out.length;
+      for (var j = 0; j < len; j++) out.push(out[j].concat([arr[i]]));
+    }
+    return out;
+  }
+
+  function generarConjuntosDeCuerdas(n) {
+    if (n < 1 || n > 6) return { contiguas: [], abiertas: [] };
+    var todos = combinations(STRING_NUMS, n);
+    var contiguas = [], abiertas = [];
+    todos.forEach(function (subset) {
+      var esContiguo = true;
+      for (var i = 0; i < subset.length - 1; i++) if (subset[i] - subset[i + 1] !== 1) { esContiguo = false; break; }
+      (esContiguo ? contiguas : abiertas).push(subset);
+    });
+    return { contiguas: contiguas, abiertas: abiertas };
+  }
+
+  function asignarDedos(grid, params) {
+    var pressed = grid.filter(function (g) { return g.fret > 0; });
+    if (pressed.length === 0) return { ok: true, thumb: null, slots: [] };
+
+    var frets = pressed.map(function (g) { return g.fret; });
+    var span = Math.max.apply(null, frets) - Math.min.apply(null, frets);
+    if (span > params.spanMax) return { ok: false, motivo: "span" };
+
+    var bass = grid.reduce(function (a, b) { return midiFor(a.string, a.fret) <= midiFor(b.string, b.fret) ? a : b; });
+    var bassEsPisada = bass.fret > 0;
+    var bassEsElegiblePulgar = params.thumbEnabled && bassEsPisada && params.thumbStrings.indexOf(bass.string) !== -1;
+    var opcionesPulgar = bassEsElegiblePulgar ? [false, true] : [false];
+    var mejor = null;
+
+    for (var oi = 0; oi < opcionesPulgar.length; oi++) {
+      var usarPulgar = opcionesPulgar[oi];
+      var remaining = pressed, thumbInfo = null;
+      if (usarPulgar) {
+        thumbInfo = pressed.filter(function (g) { return g.string === bass.string; })[0];
+        remaining = pressed.filter(function (g) { return g !== thumbInfo; });
+        if (thumbInfo.fret > params.thumbMaxFretAbs) continue;
+      }
+      var byFret = {};
+      remaining.forEach(function (g) { (byFret[g.fret] = byFret[g.fret] || []).push(g); });
+      var fretValues = Object.keys(byFret).map(Number).sort(function (a, b) { return a - b; });
+
+      if (thumbInfo) {
+        var minOther = fretValues.length ? fretValues[0] : thumbInfo.fret;
+        if (thumbInfo.fret > minOther) continue;
+        if (minOther - thumbInfo.fret > params.thumbMargin) continue;
+      }
+
+      var barreables = fretValues.filter(function (f) { return byFret[f].length > 1; });
+      var combos = params.allowBarre ? powerSet(barreables) : [[]];
+
+      for (var ci = 0; ci < combos.length; ci++) {
+        var barradas = combos[ci], slots = [];
+        fretValues.forEach(function (f) {
+          if (barradas.indexOf(f) !== -1) slots.push({ fret: f, strings: byFret[f].map(function (g) { return g.string; }), cejilla: true });
+          else byFret[f].forEach(function (g) { slots.push({ fret: f, strings: [g.string], cejilla: false }); });
+        });
+        if (slots.length > params.maxFingerSlots) continue;
+        slots.sort(function (a, b) { return a.fret - b.fret; });
+
+        var ok = true;
+        for (var i = 0; i < slots.length - 1; i++) {
+          if (slots[i].fret === slots[i + 1].fret) continue;
+          var key = (i + 1) + "-" + (i + 2);
+          var thresh = params.gapThresholds[key];
+          if (thresh != null && (slots[i + 1].fret - slots[i].fret) > thresh) { ok = false; break; }
+        }
+        if (!ok) continue;
+
+        var costo = (usarPulgar ? 1 : 0) + barradas.length;
+        var solucion = { ok: true, thumb: thumbInfo ? { string: thumbInfo.string, fret: thumbInfo.fret } : null, slots: slots, costo: costo };
+        if (!mejor || solucion.costo < mejor.costo) mejor = solucion;
+      }
+      if (mejor && !usarPulgar) break;
+    }
+    return mejor || { ok: false, motivo: "no-fit" };
+  }
+
+  function vistaPorCuerda(grid, solucion) {
+    var vista = {};
+    grid.forEach(function (g) { vista[g.string] = { fret: g.fret, pc: g.pc, dedo: null, cejilla: false, pulgar: false }; });
+    if (solucion.thumb) vista[solucion.thumb.string].pulgar = true;
+    (solucion.slots || []).forEach(function (slot, idx) {
+      slot.strings.forEach(function (s) { vista[s].dedo = idx + 1; vista[s].cejilla = slot.cejilla; });
+    });
+    return vista;
+  }
+
+  function calcularDigitaciones(pcs, opciones) {
+    opciones = opciones || {};
+    var params = opciones.params || DEFAULT_PARAMS;
+    var n = pcs.length;
+    var conjuntos = generarConjuntosDeCuerdas(n);
+    var perms = permutations(pcs);
+
+    function procesarLista(lista) {
+      var resultados = [], vistos = {};
+      lista.forEach(function (subset) {
+        perms.forEach(function (perm) {
+          var grid = subset.map(function (stringNum, i) { return { string: stringNum, pc: perm[i], fret: fretFor(stringNum, perm[i]) }; });
+          if (opciones.bajo != null) {
+            var bass = grid.reduce(function (a, b) { return midiFor(a.string, a.fret) <= midiFor(b.string, b.fret) ? a : b; });
+            if (bass.pc !== opciones.bajo) return;
+          }
+          var firma = grid.slice().sort(function (a, b) { return b.string - a.string; }).map(function (g) { return g.string + ":" + g.fret; }).join(",");
+          if (vistos[firma]) return;
+          var solucion = asignarDedos(grid, params);
+          if (!solucion.ok) return;
+          vistos[firma] = true;
+          resultados.push({ cuerdas: subset.slice(), grid: grid, solucion: solucion, vista: vistaPorCuerda(grid, solucion) });
+        });
+      });
+      return resultados;
+    }
+    return { contiguas: procesarLista(conjuntos.contiguas), abiertas: procesarLista(conjuntos.abiertas) };
+  }
+
+  // ==========================================================================
+  // Render: diagrama SVG de diapasón por resultado
+  // ==========================================================================
+  var svgNS = "http://www.w3.org/2000/svg";
+
+  function diagramSVG(result) {
+    var vista = result.vista;
+    var colGap = 22, marginX = 18, topStrip = 26, rowH = 26;
+    var width = marginX * 2 + colGap * 5;
+
+    var pressed = STRING_NUMS.map(function (s) { return vista[s]; }).filter(function (v) { return v && v.fret > 0; });
+    var bodyRows = 0, bodyStart = 1;
+    if (pressed.length) {
+      var frets = pressed.map(function (v) { return v.fret; });
+      bodyStart = Math.min.apply(null, frets);
+      bodyRows = Math.max.apply(null, frets) - bodyStart + 1;
+    }
+    var gridH = Math.max(bodyRows, 1) * rowH;
+    var height = topStrip + gridH + 14;
+
+    var svg = ['<svg xmlns="' + svgNS + '" viewBox="0 0 ' + width + ' ' + height + '" width="' + width + '" height="' + height + '">'];
+
+    // nombres de cuerda arriba + marcas 0 / x
+    STRING_NUMS.forEach(function (s, i) {
+      var x = marginX + i * colGap;
+      svg.push('<text x="' + x + '" y="9" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="8" fill="var(--text-muted)">' + STRING_LABEL[s] + '</text>');
+      var v = vista[s];
+      if (!v) {
+        svg.push('<text x="' + x + '" y="' + (topStrip - 6) + '" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--text-muted)">&#215;</text>');
+      } else if (v.fret === 0) {
+        var esBajoAbierto = bassEntry(result).string === s;
+        svg.push('<circle cx="' + x + '" cy="' + (topStrip - 9.5) + '" r="7.5" fill="' + noteColor(v.pc) + '" stroke="' + (esBajoAbierto ? "var(--bass)" : "none") + '" stroke-width="2"/>');
+        svg.push('<text x="' + x + '" y="' + (topStrip - 6.7) + '" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="7" font-weight="600" fill="' + NOTE_LABEL_INK + '">' + NOTE_LETTERS[v.pc] + '</text>');
+      }
+    });
+
+    // línea de trastes
+    var gridTop = topStrip;
+    for (var r = 0; r <= Math.max(bodyRows, 1); r++) {
+      var y = gridTop + r * rowH;
+      var isNut = (bodyStart === 1 && r === 0);
+      svg.push('<line x1="' + marginX + '" y1="' + y + '" x2="' + (width - marginX) + '" y2="' + y + '" stroke="var(--fret-line)" stroke-width="' + (isNut ? 3 : 1) + '"/>');
+    }
+    // líneas de cuerda
+    STRING_NUMS.forEach(function (s, i) {
+      var x = marginX + i * colGap;
+      svg.push('<line x1="' + x + '" y1="' + gridTop + '" x2="' + x + '" y2="' + (gridTop + Math.max(bodyRows, 1) * rowH) + '" stroke="var(--string-line)" stroke-width="1"/>');
+    });
+
+    if (bodyStart > 1) {
+      svg.push('<text x="' + (marginX - 6) + '" y="' + (gridTop + rowH / 2 + 3) + '" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="9" fill="var(--text-muted)">' + bodyStart + '</text>');
+    }
+
+    var bass = bassEntry(result);
+
+    // barras de cejilla (detrás de los puntos)
+    (result.solucion.slots || []).forEach(function (slot) {
+      if (!slot.cejilla || slot.strings.length < 2) return;
+      var idxs = slot.strings.map(function (s) { return STRING_NUMS.indexOf(s); });
+      var x1 = marginX + Math.min.apply(null, idxs) * colGap;
+      var x2 = marginX + Math.max.apply(null, idxs) * colGap;
+      var y = gridTop + (slot.fret - bodyStart) * rowH + rowH / 2;
+      svg.push('<line x1="' + x1 + '" y1="' + y + '" x2="' + x2 + '" y2="' + y + '" stroke="var(--barre)" stroke-width="14" stroke-linecap="round" opacity="0.32"/>');
+    });
+
+    // puntos de dedos + pulgar
+    STRING_NUMS.forEach(function (s, i) {
+      var v = vista[s];
+      if (!v || v.fret === 0) return;
+      var x = marginX + i * colGap;
+      var y = gridTop + (v.fret - bodyStart) * rowH + rowH / 2;
+      var isBass = bass && bass.string === s;
+      var fill = noteColor(v.pc);
+      var ring = v.pulgar ? "var(--thumb)" : (isBass ? "var(--bass)" : "none");
+      var label = NOTE_LETTERS[v.pc];
+      svg.push('<circle cx="' + x + '" cy="' + y + '" r="9.5" fill="' + fill + '" stroke="' + ring + '" stroke-width="2.5"/>');
+      svg.push('<text x="' + x + '" y="' + (y + 2.9) + '" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="8" font-weight="600" fill="' + NOTE_LABEL_INK + '">' + label + '</text>');
+    });
+
+    svg.push('</svg>');
+    return svg.join("");
+  }
+
+  function bassEntry(result) {
+    return result.grid.reduce(function (a, b) { return midiFor(a.string, a.fret) <= midiFor(b.string, b.fret) ? a : b; });
+  }
+
+  function cardHTML(result) {
+    var bass = bassEntry(result);
+    var notas = result.cuerdas.slice().sort(function (a, b) { return b - a; }).map(function (s) {
+      var v = result.vista[s];
+      var name = NOTE_NAMES[v.pc];
+      return v.pc === bass.pc && s === bass.string ? "<b>" + name + "</b>" : name;
+    }).join(" · ");
+    var chips = "";
+    if (result.solucion.thumb) chips += '<span class="chip thumb">pulgar</span>';
+    if ((result.solucion.slots || []).some(function (s) { return s.cejilla; })) chips += '<span class="chip barre">cejilla</span>';
+    return '<div class="card">' + diagramSVG(result) +
+      '<div class="notes">' + notas + '</div>' +
+      (chips ? '<div class="chips">' + chips + '</div>' : '') +
+      '</div>';
+  }
+
+  function positionOf(result) {
+    var pressed = result.grid.filter(function (g) { return g.fret > 0; });
+    if (!pressed.length) return 0;
+    return Math.min.apply(null, pressed.map(function (g) { return g.fret; }));
+  }
+
+  // Agrupa por área (mismo subconjunto de cuerdas) y ordena cada grupo de
+  // forma ascendente por traste, del primer traste hacia el diapasón arriba.
+  function agruparPorCuerdas(resultados) {
+    var orderKeys = [], grupos = {};
+    resultados.forEach(function (r) {
+      var key = r.cuerdas.join("-");
+      if (!grupos[key]) { grupos[key] = []; orderKeys.push(key); }
+      grupos[key].push(r);
+    });
+    orderKeys.forEach(function (key) {
+      grupos[key].sort(function (a, b) { return positionOf(a) - positionOf(b); });
+    });
+    return orderKeys.map(function (key) { return { cuerdas: key, items: grupos[key] }; });
+  }
+
+  // ==========================================================================
+  // Diapasón de fondo: solo posiciones pisadas (sin cuerdas al aire),
+  // mapeadas en una octava (trastes 1 a 12 — nuestro motor nunca pisa más
+  // arriba del traste 11, así que una octava alcanza siempre). En vez de
+  // amontonar TODAS las digitaciones, elige una sola por zona del mástil:
+  // agarra la de traste más bajo disponible, y para la siguiente busca la
+  // próxima que empiece donde terminó la anterior (o más arriba) — así se
+  // arma una cadena de posiciones que cubre el diapasón sin pisarse. Cada
+  // digitación elegida tiene su propio color; solo si dos coinciden
+  // exactamente en el mismo traste se agrega un anillo con el color de la
+  // otra digitación. Solo trabaja con digitaciones de CUERDAS CONTIGUAS
+  // (nunca abiertas), para que coincida exactamente con lo calculado en esa
+  // sección de arriba.
+  // ==========================================================================
+  var FRET_RANGE = 12;
+
+  function elegirPorZona(resultados) {
+    var candidatos = resultados.map(function (r) {
+      var pressed = r.grid.filter(function (g) { return g.fret > 0; });
+      if (!pressed.length) return null;
+      var frets = pressed.map(function (g) { return g.fret; });
+      return { result: r, minFret: Math.min.apply(null, frets), maxFret: Math.max.apply(null, frets) };
+    }).filter(Boolean);
+
+    var elegidos = [], usados = {}, cursor = 1;
+    while (cursor <= FRET_RANGE) {
+      var mejorIdx = -1, mejor = null;
+      for (var i = 0; i < candidatos.length; i++) {
+        if (usados[i]) continue;
+        var c = candidatos[i];
+        if (c.minFret < cursor) continue;
+        if (!mejor || c.minFret < mejor.minFret || (c.minFret === mejor.minFret && c.maxFret < mejor.maxFret)) {
+          mejor = c; mejorIdx = i;
+        }
+      }
+      if (!mejor) break;
+      elegidos.push(mejor.result);
+      usados[mejorIdx] = true;
+      cursor = mejor.maxFret + 1;
+    }
+    return elegidos;
+  }
+
+  // ==========================================================================
+  // Audio: reproduce cada acorde de un diapasón, arpegiado del grave al
+  // agudo (guitarra "rasgueada" nota por nota), con una pausa más larga
+  // entre un acorde y el siguiente.
+  // ==========================================================================
+  var audioCtx = null;
+  function getAudioCtx() {
+    if (!audioCtx) {
+      var Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return null;
+      audioCtx = new Ctx();
+    }
+    if (audioCtx.state === "suspended") audioCtx.resume();
+    return audioCtx;
+  }
+  function midiToFreq(midi) { return 440 * Math.pow(2, (midi - 69) / 12); }
+
+  function playNote(ctx, freq, startTime, duration) {
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(freq, startTime);
+    gain.gain.setValueAtTime(0, startTime);
+    gain.gain.linearRampToValueAtTime(0.22, startTime + 0.015);
+    gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(startTime);
+    osc.stop(startTime + duration + 0.03);
+  }
+
+  function playChords(resultados, btn) {
+    if (!resultados || !resultados.length) return;
+    var ctx = getAudioCtx();
+    if (!ctx) return;
+    var noteGap = 0.16, noteDur = 0.55, chordGap = 0.32;
+    var t = ctx.currentTime + 0.05;
+    resultados.forEach(function (r) {
+      var notas = r.grid.slice().sort(function (a, b) {
+        return midiFor(a.string, a.fret) - midiFor(b.string, b.fret);
+      });
+      notas.forEach(function (g) {
+        playNote(ctx, midiToFreq(midiFor(g.string, g.fret)), t, noteDur);
+        t += noteGap;
+      });
+      t += chordGap;
+    });
+    if (btn) {
+      var totalMs = (t - ctx.currentTime) * 1000;
+      btn.disabled = true;
+      var original = btn.textContent;
+      btn.textContent = "▶ sonando…";
+      setTimeout(function () { btn.disabled = false; btn.textContent = original; }, totalMs);
+    }
+  }
+
+  var lastCompletoResultados = [];
+  function renderBackgroundFretboard(resultadosCompletos) {
+    var resultados = elegirPorZona(resultadosCompletos);
+    lastCompletoResultados = resultados;
+    drawFretboard(document.getElementById("bgFretboard"), resultados);
+  }
+  document.getElementById("playCompleto").addEventListener("click", function () {
+    playChords(lastCompletoResultados, this);
+  });
+
+  // Paneles adicionales: uno por cada grupo de cuerdas — primero contiguas
+  // (6-5-4-3, luego 5-4-3-2, 4-3-2-1, etc. — el orden natural en que se
+  // generan) y, debajo, uno por cada grupo de cuerdas abiertas (las
+  // combinaciones NO contiguas, p.ej. 6-4-2), separadas por un divisor de
+  // sección. Acá se copian TODAS las digitaciones calculadas arriba para
+  // ese grupo de cuerdas, tal cual (misma cantidad, un color por
+  // digitación) — sin elegir una sola por zona: eso solo aplica al
+  // diapasón completo de más arriba, que combina varios grupos a la vez.
+  function renderFretboardPanel(container, grupo, etiqueta) {
+    var panel = document.createElement("div");
+    panel.className = "fretboard-panel";
+    var head = document.createElement("div");
+    head.className = "fretboard-head";
+    var titulo = document.createElement("h2");
+    titulo.textContent = "Diapasón — cuerdas " + grupo.cuerdas + (etiqueta ? " (" + etiqueta + ")" : "");
+    var playBtn = document.createElement("button");
+    playBtn.className = "play-btn";
+    playBtn.type = "button";
+    playBtn.textContent = "▶ reproducir";
+    playBtn.addEventListener("click", function () { playChords(grupo.items, playBtn); });
+    head.appendChild(titulo);
+    head.appendChild(playBtn);
+    var hint = document.createElement("p");
+    hint.className = "hint";
+    hint.textContent = "Todas las digitaciones calculadas arriba para estas cuerdas (" + grupo.items.length + "), cada una con su color. El centro hueco marca una cuerda al aire; un anillo indica que dos coinciden en la misma posición.";
+    var svg = document.createElementNS(svgNS, "svg");
+    svg.setAttribute("class", "bg-fretboard");
+    svg.setAttribute("viewBox", "0 0 1500 550");
+    svg.setAttribute("aria-hidden", "true");
+    panel.appendChild(head);
+    panel.appendChild(hint);
+    panel.appendChild(svg);
+    container.appendChild(panel);
+    drawFretboard(svg, grupo.items);
+  }
+
+  function renderGroupFretboards(contiguas, abiertas) {
+    var container = document.getElementById("extraFretboards");
+    container.innerHTML = "";
+    agruparPorCuerdas(contiguas || []).forEach(function (grupo) {
+      renderFretboardPanel(container, grupo, null);
+    });
+    var gruposAbiertas = agruparPorCuerdas(abiertas || []);
+    if (gruposAbiertas.length) {
+      var divisor = document.createElement("h2");
+      divisor.className = "fretboards-section-divider";
+      divisor.textContent = "Diapasones — cuerdas abiertas";
+      container.appendChild(divisor);
+      gruposAbiertas.forEach(function (grupo) {
+        renderFretboardPanel(container, grupo, "abiertas");
+      });
+    }
+  }
+
+  // Orden de filas del diapasón: 1ª cuerda (mi agudo) arriba, 6ª (mi grave)
+  // abajo — al revés de STRING_NUMS, que se usa tal cual en el resto del
+  // motor y en las tarjetas chicas de arriba.
+  var ROW_STRINGS = STRING_NUMS.slice().reverse();
+
+  function drawFretboard(svg, resultados) {
+    var marginX = 70, marginY = 66, w = 1500, h = 550;
+    var neckW = w - marginX * 2, neckH = h - marginY * 2;
+    var colGap = neckW / FRET_RANGE, rowGap = neckH / 5;
+    var parts = [];
+    svg.setAttribute("viewBox", "0 0 " + w + " " + h);
+
+    for (var f = 1; f <= FRET_RANGE; f++) {
+      var x = marginX + f * colGap;
+      parts.push('<line x1="' + x + '" y1="' + marginY + '" x2="' + x + '" y2="' + (marginY + neckH) + '" stroke="var(--fret-line)" stroke-width="1.3"/>');
+      parts.push('<text x="' + (x - colGap / 2) + '" y="' + (marginY + neckH + 32) + '" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="16" fill="var(--text-muted)">' + f + '</text>');
+    }
+    parts.push('<line x1="' + marginX + '" y1="' + marginY + '" x2="' + marginX + '" y2="' + (marginY + neckH) + '" stroke="var(--fret-line)" stroke-width="4"/>');
+
+    var midY = marginY + neckH / 2;
+    [3, 5, 7, 9].forEach(function (f) {
+      var xi = marginX + (f - 0.5) * colGap;
+      parts.push('<circle cx="' + xi + '" cy="' + midY + '" r="9" fill="var(--fret-line)" opacity="0.6"/>');
+    });
+    var x12 = marginX + 11.5 * colGap;
+    parts.push('<circle cx="' + x12 + '" cy="' + (midY - rowGap * 0.9) + '" r="9" fill="var(--fret-line)" opacity="0.6"/>');
+    parts.push('<circle cx="' + x12 + '" cy="' + (midY + rowGap * 0.9) + '" r="9" fill="var(--fret-line)" opacity="0.6"/>');
+
+    ROW_STRINGS.forEach(function (s, i) {
+      var y = marginY + i * rowGap;
+      parts.push('<line x1="' + marginX + '" y1="' + y + '" x2="' + (marginX + neckW) + '" y2="' + y + '" stroke="var(--string-line)" stroke-width="' + (i === 0 || i === 5 ? 2 : 1.4) + '"/>');
+      parts.push('<text x="' + (marginX - 26) + '" y="' + (y + 5) + '" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="16" fill="var(--text-muted)">' + STRING_LABEL[s] + '</text>');
+    });
+
+    // Cada digitación elegida es el acorde COMPLETO calculado arriba (todas
+    // sus notas, no solo las pisadas): agrupa por posición exacta
+    // (cuerda+columna). Las notas pisadas van en su traste real; las
+    // cuerdas al aire de ESA MISMA digitación se dibujan pegadas a su
+    // propio grupo, una columna antes de su traste más bajo (nunca en el
+    // traste 0 real si el grupo está lejos del clavijero) — así el dibujo
+    // no sugiere que el acorde se estira por todo el diapasón. Un centro
+    // hueco marca "al aire"; cada digitación aporta su color.
+    var posMap = {}, orderKeys = [];
+    resultados.forEach(function (r, ri) {
+      var color = chordColor(ri);
+      var pressedFrets = r.grid.filter(function (g) { return g.fret > 0; }).map(function (g) { return g.fret; });
+      var localMin = pressedFrets.length ? Math.min.apply(null, pressedFrets) : 1;
+      var openCol = Math.max(1, localMin - 1);
+      r.grid.forEach(function (g) {
+        var col = g.fret === 0 ? openCol : g.fret;
+        if (col > FRET_RANGE) return;
+        var key = g.string + ":" + col;
+        if (!posMap[key]) { posMap[key] = []; orderKeys.push(key); }
+        posMap[key].push({ color: color, open: g.fret === 0 });
+      });
+    });
+
+    var R0 = 13, ringGap = 9;
+    orderKeys.forEach(function (key) {
+      var bits = key.split(":");
+      var stringNum = Number(bits[0]), col = Number(bits[1]);
+      var entries = posMap[key];
+      var rowIdx = ROW_STRINGS.indexOf(stringNum);
+      var y = marginY + rowIdx * rowGap;
+      var x = marginX + (col - 0.5) * colGap;
+      parts.push('<circle cx="' + x + '" cy="' + y + '" r="' + R0 + '" fill="' + entries[0].color + '" opacity="0.9"/>');
+      if (entries[0].open) {
+        parts.push('<circle cx="' + x + '" cy="' + y + '" r="' + (R0 - 5) + '" fill="var(--surface)" opacity="0.9"/>');
+      }
+      // varias digitaciones cayeron en la misma posición: un anillo
+      // concéntrico por cada una extra, con su propio color
+      for (var k = 1; k < entries.length; k++) {
+        parts.push('<circle cx="' + x + '" cy="' + y + '" r="' + (R0 + ringGap * k) + '" fill="none" stroke="' + entries[k].color + '" stroke-width="6" opacity="0.9"/>');
+      }
+    });
+
+    svg.innerHTML = parts.join("");
+  }
+
+  // ==========================================================================
+  // UI
+  // ==========================================================================
+  var selected = new Set([0, 4, 7]); // ejemplo inicial: Do mayor
+  var bassPc = null; // bajo sin especificar por defecto
+  var params = JSON.parse(JSON.stringify(DEFAULT_PARAMS));
+  var revealed = { contiguas: 12, abiertas: 12 };
+
+  // ---- Entrada de notas: reloj cromático + piano (mismo widget que la
+  // primera sección de la página principal), sobre el mismo Set `selected`.
+  var pcElements = {};
+  for (var pcI = 0; pcI < 12; pcI++) pcElements[pcI] = [];
+
+  function toggleNote(pc) {
+    if (selected.has(pc)) selected.delete(pc);
+    else {
+      if (selected.size >= 6) return;
+      selected.add(pc);
+    }
+    var isSelected = selected.has(pc);
+    pcElements[pc].forEach(function (el) { el.classList.toggle("selected", isSelected); });
+    syncBassOptions();
+  }
+
+  function syncNoteButtons() {
+    for (var pc = 0; pc < 12; pc++) {
+      var isSelected = selected.has(pc);
+      pcElements[pc].forEach(function (el) { el.classList.toggle("selected", isSelected); });
+    }
+  }
+
+  // ---- Reloj cromático ----
+  var notesDial = document.getElementById("notesDial");
+  var CLOCK_R = 128, CLOCK_CX = 150, CLOCK_CY = 150;
+  for (var pcClock = 0; pcClock < 12; pcClock++) {
+    (function (pc) {
+      var angle = (pc / 12) * 2 * Math.PI - Math.PI / 2;
+      var x = CLOCK_CX + CLOCK_R * Math.cos(angle);
+      var y = CLOCK_CY + CLOCK_R * Math.sin(angle);
+      var g = document.createElementNS(svgNS, "g");
+      g.setAttribute("class", "clock-note");
+
+      var circle = document.createElementNS(svgNS, "circle");
+      circle.setAttribute("class", "node");
+      circle.setAttribute("cx", x);
+      circle.setAttribute("cy", y);
+      circle.setAttribute("r", 22);
+      g.appendChild(circle);
+
+      var pcText = document.createElementNS(svgNS, "text");
+      pcText.setAttribute("class", "pc");
+      pcText.setAttribute("x", x);
+      pcText.setAttribute("y", y - 3);
+      pcText.textContent = pc;
+      g.appendChild(pcText);
+
+      var nameText = document.createElementNS(svgNS, "text");
+      nameText.setAttribute("class", "name");
+      nameText.setAttribute("x", x);
+      nameText.setAttribute("y", y + 12);
+      nameText.textContent = NOTE_NAMES[pc];
+      g.appendChild(nameText);
+
+      g.addEventListener("click", function () { toggleNote(pc); });
+      notesDial.appendChild(g);
+      pcElements[pc].push(g);
+    })(pcClock);
+  }
+
+  // ---- Piano (una octava, Do a Si) ----
+  var pianoKeysG = document.getElementById("pianoKeys");
+  var WHITE_PCS = [0, 2, 4, 5, 7, 9, 11];
+  var WHITE_W = 40, WHITE_H = 140;
+  var BLACK_PCS_X = { 1: 28, 3: 68, 6: 148, 8: 188, 10: 228 };
+  var BLACK_W = 24, BLACK_H = 85;
+
+  WHITE_PCS.forEach(function (pc, i) {
+    var x = i * WHITE_W;
+    var key = document.createElementNS(svgNS, "g");
+    key.setAttribute("class", "key white");
+
+    var rect = document.createElementNS(svgNS, "rect");
+    rect.setAttribute("x", x);
+    rect.setAttribute("y", 0);
+    rect.setAttribute("width", WHITE_W);
+    rect.setAttribute("height", WHITE_H);
+    rect.setAttribute("rx", 4);
+    key.appendChild(rect);
+
+    var label = document.createElementNS(svgNS, "text");
+    label.setAttribute("x", x + WHITE_W / 2);
+    label.setAttribute("y", WHITE_H - 12);
+    label.textContent = NOTE_NAMES[pc];
+    key.appendChild(label);
+
+    key.addEventListener("click", function () { toggleNote(pc); });
+    pianoKeysG.appendChild(key);
+    pcElements[pc].push(key);
+  });
+
+  Object.keys(BLACK_PCS_X).forEach(function (pcStr) {
+    var pc = Number(pcStr);
+    var x = BLACK_PCS_X[pcStr];
+    var key = document.createElementNS(svgNS, "g");
+    key.setAttribute("class", "key black");
+
+    var rect = document.createElementNS(svgNS, "rect");
+    rect.setAttribute("x", x);
+    rect.setAttribute("y", 0);
+    rect.setAttribute("width", BLACK_W);
+    rect.setAttribute("height", BLACK_H);
+    rect.setAttribute("rx", 3);
+    key.appendChild(rect);
+
+    var label = document.createElementNS(svgNS, "text");
+    label.setAttribute("x", x + BLACK_W / 2);
+    label.setAttribute("y", BLACK_H - 10);
+    label.textContent = NOTE_NAMES[pc];
+    key.appendChild(label);
+
+    key.addEventListener("click", function () { toggleNote(pc); });
+    pianoKeysG.appendChild(key);
+    pcElements[pc].push(key);
+  });
+
+  // ---- Toggle reloj / piano ----
+  var clockWrapEl = document.getElementById("clockWrap");
+  var pianoWrapEl = document.getElementById("pianoWrap");
+  var tabClock = document.getElementById("tabClock");
+  var tabPiano = document.getElementById("tabPiano");
+  tabClock.addEventListener("click", function () {
+    tabClock.classList.add("active"); tabPiano.classList.remove("active");
+    clockWrapEl.hidden = false; pianoWrapEl.hidden = true;
+  });
+  tabPiano.addEventListener("click", function () {
+    tabPiano.classList.add("active"); tabClock.classList.remove("active");
+    pianoWrapEl.hidden = false; clockWrapEl.hidden = true;
+  });
+
+  document.getElementById("clearNotesBtn").addEventListener("click", function () {
+    selected.clear();
+    syncNoteButtons();
+    syncBassOptions();
+  });
+
+  var bassSelect = document.getElementById("bassSelect");
+  function syncBassOptions() {
+    var prev = bassPc;
+    bassSelect.innerHTML = "";
+    var optAny = document.createElement("option");
+    optAny.value = ""; optAny.textContent = "(sin especificar)";
+    bassSelect.appendChild(optAny);
+    Array.from(selected).sort(function (a, b) { return a - b; }).forEach(function (pc) {
+      var opt = document.createElement("option");
+      opt.value = pc; opt.textContent = NOTE_NAMES[pc];
+      bassSelect.appendChild(opt);
+    });
+    bassPc = selected.has(prev) ? prev : null;
+    bassSelect.value = bassPc == null ? "" : String(bassPc);
+  }
+  bassSelect.addEventListener("change", function () {
+    bassPc = bassSelect.value === "" ? null : Number(bassSelect.value);
+  });
+
+  // ---- Sincronización desde el reloj/piano de la página principal ----
+  // Este módulo vive embebido en un iframe (documento aparte), así que
+  // recibe la selección de notas del reloj de arriba por postMessage en
+  // vez de compartir el mismo Set en memoria. Solo actualiza qué notas
+  // están elegidas (sin el límite de 6 que tiene el click local, para
+  // reflejar fielmente lo que hay en el reloj) — no dispara el cálculo
+  // solo, hay que apretar "Calcular digitaciones" como con cualquier
+  // otro cambio de selección.
+  window.addEventListener("message", function (ev) {
+    var data = ev && ev.data;
+    if (!data || data.type !== "stoikheion-notes" || !Array.isArray(data.pcs)) return;
+    selected.clear();
+    data.pcs.forEach(function (pc) {
+      selected.add(((Number(pc) % 12) + 12) % 12);
+    });
+    syncNoteButtons();
+    syncBassOptions();
+  });
+
+  function bindParamInputs() {
+    document.getElementById("p_spanMax").value = params.spanMax;
+    document.getElementById("p_gap12").value = params.gapThresholds["1-2"];
+    document.getElementById("p_gap23").value = params.gapThresholds["2-3"];
+    document.getElementById("p_gap34").value = params.gapThresholds["3-4"];
+    document.getElementById("p_thumbMax").value = params.thumbMaxFretAbs;
+    document.getElementById("p_thumbMargin").value = params.thumbMargin;
+    document.getElementById("p_thumbEnabled").checked = params.thumbEnabled;
+    document.getElementById("p_allowBarre").checked = params.allowBarre;
+  }
+  function readParamInputs() {
+    params.spanMax = Number(document.getElementById("p_spanMax").value) || DEFAULT_PARAMS.spanMax;
+    params.gapThresholds = {
+      "1-2": Number(document.getElementById("p_gap12").value),
+      "2-3": Number(document.getElementById("p_gap23").value),
+      "3-4": Number(document.getElementById("p_gap34").value)
+    };
+    params.thumbMaxFretAbs = Number(document.getElementById("p_thumbMax").value);
+    params.thumbMargin = Number(document.getElementById("p_thumbMargin").value);
+    params.thumbEnabled = document.getElementById("p_thumbEnabled").checked;
+    params.thumbStrings = [6, 5];
+    params.allowBarre = document.getElementById("p_allowBarre").checked;
+    params.maxFingerSlots = 4;
+    params.barreFingers = [1];
+  }
+  bindParamInputs();
+  document.getElementById("resetParams").addEventListener("click", function () {
+    params = JSON.parse(JSON.stringify(DEFAULT_PARAMS));
+    bindParamInputs();
+  });
+
+  function renderSection(key, results, cardsElId, countElId, moreWrapId, moreBtnId) {
+    var cardsEl = document.getElementById(cardsElId);
+    var countEl = document.getElementById(countElId);
+    countEl.textContent = results.length + (results.length === 1 ? " digitación" : " digitaciones");
+    if (!results.length) {
+      cardsEl.innerHTML = '<div class="empty">Ninguna digitación tocable con los parámetros actuales.</div>';
+      document.getElementById(moreWrapId).hidden = true;
+      return;
+    }
+    var limit = revealed[key];
+    var grupos = agruparPorCuerdas(results);
+    var html = "", shown = 0;
+    for (var gi = 0; gi < grupos.length && shown < limit; gi++) {
+      var grupo = grupos[gi];
+      var tomar = grupo.items.slice(0, limit - shown);
+      html += '<div class="group-head">cuerdas ' + grupo.cuerdas + '</div><div class="cards">' + tomar.map(cardHTML).join("") + '</div>';
+      shown += tomar.length;
+    }
+    cardsEl.innerHTML = html;
+    var moreWrap = document.getElementById(moreWrapId);
+    var moreBtn = document.getElementById(moreBtnId);
+    if (results.length > shown) {
+      moreWrap.hidden = false;
+      moreBtn.textContent = "mostrar más (" + (results.length - shown) + " restantes)";
+      moreBtn.onclick = function () { revealed[key] += 24; renderAll(); };
+    } else {
+      moreWrap.hidden = true;
+    }
+  }
+
+  var lastResults = null;
+  function renderAll() {
+    if (!lastResults) return;
+    renderSection("contiguas", lastResults.contiguas, "cardsContiguas", "countContiguas", "moreContiguasWrap", "moreContiguas");
+    renderSection("abiertas", lastResults.abiertas, "cardsAbiertas", "countAbiertas", "moreAbiertasWrap", "moreAbiertas");
+  }
+
+  function calcular() {
+    var pcs = Array.from(selected).sort(function (a, b) { return a - b; });
+    var statusLine = document.getElementById("statusLine");
+    if (pcs.length < 3 || pcs.length > 6) {
+      statusLine.textContent = "Elegí entre 3 y 6 notas (llevás " + pcs.length + ").";
+      lastResults = { contiguas: [], abiertas: [] };
+      renderAll();
+      renderBackgroundFretboard([]);
+      renderGroupFretboards([], []);
+      return;
+    }
+    readParamInputs();
+    revealed = { contiguas: 12, abiertas: 12 };
+    var nombres = pcs.map(function (pc) { return NOTE_NAMES[pc]; }).join(" · ");
+    statusLine.textContent = "Acorde: " + nombres + (bassPc != null ? "  ·  bajo " + NOTE_NAMES[bassPc] : "  ·  bajo sin especificar");
+    lastResults = calcularDigitaciones(pcs, { bajo: bassPc, params: params });
+    renderAll();
+    renderBackgroundFretboard(lastResults.contiguas);
+    renderGroupFretboards(lastResults.contiguas, lastResults.abiertas);
+  }
+
+  document.getElementById("calcBtn").addEventListener("click", calcular);
+
+  var noteLegend = document.getElementById("noteLegend");
+  NOTE_NAMES.forEach(function (name, pc) {
+    var span = document.createElement("span");
+    span.innerHTML = '<i style="background:' + noteColor(pc) + '"></i>' + name;
+    noteLegend.appendChild(span);
+  });
+
+  syncNoteButtons();
+  syncBassOptions();
+  calcular();
+})();
+</script>
+
+</body>
+</html>
