@@ -291,6 +291,15 @@
     text-align:center;color:var(--ink-muted);font-style:italic;font-size:14px;padding:20px 0;
   }
 
+  /* ---- Subconjuntos / superconjuntos ---- */
+  .subsup-block{margin-top:14px;}
+  .subsup-block:first-child{margin-top:0;}
+  .subsup-block h3{
+    font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--gold-dim);margin:0 0 8px;font-weight:500;
+  }
+  .subsup-card-empty{border-top:none;}
+
   /* ---- Selector de sintetizador ---- */
   .synth-card{
     background:var(--surface);border:1px solid var(--line);border-radius:18px;
@@ -464,6 +473,14 @@
       <div class="overlay-empty" id="overlayEmpty">Elegí un conjunto (2+ notas) arriba para generar la tabla de superposición.</div>
     </div>
     <div class="overlay-groups" id="overlayGroups"></div>
+  </div>
+
+  <div class="overlay-card" id="subsupCard">
+    <h2>Subconjuntos y Superconjuntos</h2>
+    <p class="overlay-sub" id="subsupSub">Todo conjunto que cabe adentro del elegido (subconjuntos, quitando notas) y todo conjunto que lo contiene (superconjuntos, agregando notas del resto del universo cromático), agrupados por cantidad de notas — con su nombre Forte/Solomon tomado de la misma tabla de 344 clases.</p>
+    <div id="subsupBody">
+      <div class="overlay-empty" id="subsupEmpty">Elegí un conjunto (2+ notas) arriba para generar esta lista.</div>
+    </div>
   </div>
 
   <div class="status" id="status">Listo · 344 clases Forte-Solomon cargadas · elegí notas en el reloj</div>
@@ -1606,6 +1623,114 @@ function renderSuperposicion(baseAnalysis) {
 }
 
 /* ============================================================
+   SUBCONJUNTOS Y SUPERCONJUNTOS
+   Para el conjunto elegido (cardinalidad n), calcula:
+   - Subconjuntos: quitando notas del propio conjunto elegido, para
+     cada cardinalidad de 4 hasta n-1 (por debajo de 4 son intervalos
+     triviales — dupla/tricordio — que caben en prácticamente
+     cualquier cosa, así que no aportan información distintiva).
+   - Superconjuntos: agregando notas del resto del universo cromático
+     (las que NO están en el conjunto elegido), para cada cardinalidad
+     de n+1 hasta 11 (12 es siempre la escala cromática completa —
+     todo es superconjunto de eso — así que tampoco es distintivo).
+   Como esto se calcula sobre las notas REALES elegidas (no sobre una
+   clase abstracta), el resultado es exactamente el mismo sin importar
+   qué transposición/inversión del conjunto se haya elegido: quitar o
+   agregar notas y reclasificar (analyze) da siempre las mismas clases
+   de Forte/Solomon, así que cada cardinalidad lista las clases
+   realmente alcanzables, tomando nombre y código de la misma tabla de
+   344 clases ya usada en el resto de la página.
+   ============================================================ */
+function combinations(arr, k) {
+  const result = [];
+  const combo = [];
+  function helper(start) {
+    if (combo.length === k) { result.push(combo.slice()); return; }
+    for (let i = start; i < arr.length; i++) {
+      combo.push(arr[i]);
+      helper(i + 1);
+      combo.pop();
+    }
+  }
+  helper(0);
+  return result;
+}
+
+function classLabel(r) {
+  if (r.solomon_code) return r.solomon_code + (r.solomon_name ? ` · ${r.solomon_name}` : "");
+  if (r.forte_code) return r.forte_code + (r.forte_name ? ` · ${r.forte_name}` : "");
+  return "—";
+}
+
+function classSortKey(r) {
+  return r.solomon_code || r.forte_code || "";
+}
+
+function computeSubSuper(pcs) {
+  const n = pcs.length;
+  const sub = {};
+  for (let m = 4; m <= n - 1; m++) {
+    const seen = new Map();
+    combinations(pcs, m).forEach(combo => {
+      const r = analyze(CHORDS_DATA, combo);
+      const key = classSortKey(r) || JSON.stringify(r.prime_form);
+      if (!seen.has(key)) seen.set(key, r);
+    });
+    const list = Array.from(seen.values()).sort((a, b) => classSortKey(a).localeCompare(classSortKey(b)));
+    if (list.length) sub[m] = list;
+  }
+  const complement = [];
+  for (let pc = 0; pc < 12; pc++) if (!pcs.includes(pc)) complement.push(pc);
+  const sup = {};
+  for (let m = n + 1; m <= 11; m++) {
+    const need = m - n;
+    if (need > complement.length) continue;
+    const seen = new Map();
+    combinations(complement, need).forEach(extra => {
+      const r = analyze(CHORDS_DATA, pcs.concat(extra));
+      const key = classSortKey(r) || JSON.stringify(r.prime_form);
+      if (!seen.has(key)) seen.set(key, r);
+    });
+    const list = Array.from(seen.values()).sort((a, b) => classSortKey(a).localeCompare(classSortKey(b)));
+    if (list.length) sup[m] = list;
+  }
+  return { sub, sup, n };
+}
+
+function renderSubSuperBlock(title, buckets) {
+  const cards = Object.keys(buckets)
+    .map(Number)
+    .sort((a, b) => a - b)
+    .map(m => `
+      <div class="subsup-block">
+        <h3>${title} · ${m} notas</h3>
+        <div class="overlay-groups" style="margin-top:0;padding-top:0;border-top:none;">
+          ${buckets[m].map(r => `<span class="chip-group"><b>${classLabel(r).split(" · ")[0]}</b>${classLabel(r).includes(" · ") ? " — " + classLabel(r).split(" · ").slice(1).join(" · ") : ""}</span>`).join("")}
+        </div>
+      </div>
+    `).join("");
+  return cards;
+}
+
+function renderSubSuper(baseAnalysis) {
+  const body = document.getElementById("subsupBody");
+  if (!body) return;
+  if (!baseAnalysis || baseAnalysis.input.length < 2) {
+    body.innerHTML = '<div class="overlay-empty" id="subsupEmpty">Elegí un conjunto (2+ notas) arriba para generar esta lista.</div>';
+    return;
+  }
+  const { sub, sup, n } = computeSubSuper(baseAnalysis.input);
+  const subHtml = renderSubSuperBlock("Subconjunto", sub);
+  const supHtml = renderSubSuperBlock("Superconjunto", sup);
+  if (!subHtml && !supHtml) {
+    body.innerHTML = `<div class="overlay-empty">El conjunto de ${n} notas elegido no tiene subconjuntos ni superconjuntos no triviales (entre 4 y 11 notas) para mostrar.</div>`;
+    return;
+  }
+  body.innerHTML = (subHtml || '<div class="subsup-block"><h3>Subconjuntos</h3><div class="overlay-empty subsup-card-empty">Ninguno no trivial (el conjunto tiene menos de 5 notas).</div></div>') +
+    (supHtml || '<div class="subsup-block"><h3>Superconjuntos</h3><div class="overlay-empty subsup-card-empty">Ninguno no trivial (el conjunto tiene más de 10 notas).</div></div>');
+}
+
+/* ============================================================
    AUDIO: synth suave (Web Audio API) para las notas de entrada
    y para reproducir el acorde seleccionado.
    ============================================================ */
@@ -2104,6 +2229,7 @@ function runAnalysis() {
   if (pcs.length < 2) {
     results.innerHTML = '<div class="empty-state">Elegí al menos 2 notas para calcular un conjunto.</div>';
     renderSuperposicion(null);
+    renderSubSuper(null);
     return;
   }
   try {
@@ -2153,12 +2279,14 @@ function runAnalysis() {
     statusEl.classList.remove("err");
     statusEl.textContent = `Listo · ${CHORDS_DATA.length} clases Forte-Solomon cargadas · elegí notas en el reloj`;
     renderSuperposicion(r);
+    renderSubSuper(r);
   } catch (err) {
     console.error(err);
     results.innerHTML = '<div class="empty-state">Ocurrió un error al calcular. Mirá la consola (F12) para más detalle.</div>';
     statusEl.classList.add("err");
     statusEl.textContent = "Error: " + (err && err.message ? err.message : err);
     renderSuperposicion(null);
+    renderSubSuper(null);
   }
 }
 </script>
