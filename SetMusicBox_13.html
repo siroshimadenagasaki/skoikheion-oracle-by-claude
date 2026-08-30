@@ -475,14 +475,6 @@
     <div class="overlay-groups" id="overlayGroups"></div>
   </div>
 
-  <div class="overlay-card" id="subsupCard">
-    <h2>Subconjuntos y Superconjuntos</h2>
-    <p class="overlay-sub" id="subsupSub">Todo conjunto que cabe adentro del elegido (subconjuntos, quitando notas) y todo conjunto que lo contiene (superconjuntos, agregando notas del resto del universo cromático), agrupados por cantidad de notas — con su nombre Forte/Solomon tomado de la misma tabla de 344 clases.</p>
-    <div id="subsupBody">
-      <div class="overlay-empty" id="subsupEmpty">Elegí un conjunto (2+ notas) arriba para generar esta lista.</div>
-    </div>
-  </div>
-
   <div class="status" id="status">Listo · 344 clases Forte-Solomon cargadas · elegí notas en el reloj</div>
 
   <footer>Lógica traducida a JavaScript desde el código fuente público de Stoikheion Oracle · tabla completa de 344 clases Forte-Solomon embebida (sin conexión a internet necesaria)</footer>
@@ -962,6 +954,34 @@
       emptyEl.hidden = visible !== 0;
     });
   })();
+  </script>
+
+  <div class="overlay-card" id="subsupCard">
+    <div style="display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;">
+      <h2 style="margin:0;">Subconjuntos y Superconjuntos</h2>
+      <button type="button" class="chip" id="subsupToggleBtn" aria-expanded="false" aria-controls="subsupCollapse">+ Expandir</button>
+    </div>
+    <div id="subsupCollapse" hidden>
+      <p class="overlay-sub" id="subsupSub">Todo conjunto que cabe adentro del elegido (subconjuntos, quitando notas) y todo conjunto que lo contiene (superconjuntos, agregando notas del resto del universo cromático), agrupados por cantidad de notas — con su nombre Forte/Solomon tomado de la misma tabla de 344 clases.</p>
+      <div id="subsupBody">
+        <div class="overlay-empty" id="subsupEmpty">Elegí un conjunto (2+ notas) arriba para generar esta lista.</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      var toggleBtn = document.getElementById("subsupToggleBtn");
+      var collapse = document.getElementById("subsupCollapse");
+      if(toggleBtn && collapse){
+        toggleBtn.addEventListener("click", function(){
+          var willExpand = collapse.hidden;
+          collapse.hidden = !willExpand;
+          toggleBtn.textContent = willExpand ? "− Contraer" : "+ Expandir";
+          toggleBtn.setAttribute("aria-expanded", String(willExpand));
+        });
+      }
+    })();
   </script>
 </div>
 
