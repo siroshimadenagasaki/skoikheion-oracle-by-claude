@@ -521,6 +521,7 @@
           <span class="consola-inst-toggle"><input type="checkbox" id="consolaBassChk" checked><label for="consolaBassChk">Bajo</label></span>
           <span class="consola-inst-toggle"><input type="checkbox" id="consolaMelodyChk" checked><label for="consolaMelodyChk">Melodía</label></span>
           <span class="consola-inst-toggle"><input type="checkbox" id="consolaDrumChk" checked><label for="consolaDrumChk">&#129345; Batería</label></span>
+          <span class="consola-inst-toggle" title="Aplica ritmos de comping/walking bass, voicings tipo drop-2 y swing (adaptados de una base de datos de jazz), sin salir nunca del set de notas elegido."><input type="checkbox" id="consolaJazzChk"><label for="consolaJazzChk">&#127927; Jazz</label></span>
         </div>
       </div>
       <div class="consola-field">
@@ -2423,6 +2424,161 @@ function runAnalysis() {
     { val:[0.5,1.5,2],   w:1 }
   ];
 
+  /* ================================================================
+     MÓDULO JAZZ — separado a propósito del motor de arriba/abajo.
+     Se activa solo con el checkbox #consolaJazzChk (apagado por
+     defecto). Apagado, el motor se comporta EXACTAMENTE igual que
+     antes (nada de acá se ejecuta). Prendido, reemplaza:
+       - los pools de ritmo de armonía/bajo (comping y walking bass,
+         adaptados de grillas de una base de datos de jazz),
+       - el fill de melodía (corcheas swingueadas en vez de parejas),
+       - el ORDEN en que se arpegian las notas del acorde vigente
+         (formas tipo bebop/tríada quebrada, como índices),
+       - el REGISTRO/octava del bajo (línea caminante: cada nota
+         busca la octava más cercana a la anterior) y de algunos
+         voicings de acorde (técnica "drop 2"),
+       - el patrón de batería (ride "spang-a-lang").
+     En NINGÚN caso se agrega una clase de altura nueva: todo lo de
+     acá opera sobre notas que la lógica original de arriba YA
+     calculó como válidas (dentro del set de Forte/Solomon elegido) —
+     jazz decide ritmo, orden de recorrido y octava, nunca qué nota.
+     ================================================================ */
+  var JAZZ = (function(){
+    function enabled(){
+      var chk = document.getElementById("consolaJazzChk");
+      return !!(chk && chk.checked);
+    }
+
+    // Convierte una grilla de 16 pasos (semicorcheas, 1=ataque) de la
+    // base de datos de jazz en una célula de duraciones (en tiempos)
+    // como las que ya usa el motor original — solo se toma el PATRÓN
+    // de reataques, nunca una nota. Si el primer ataque no cae en el
+    // paso 0, se rota la grilla (es cíclica) para que el compás
+    // siempre empiece con un ataque, como requiere el motor.
+    function gridToCells(grid16){
+      var n = grid16.length;
+      var onsets = [];
+      for (var i=0;i<n;i++) if (grid16[i]) onsets.push(i);
+      if (!onsets.length) return null;
+      var f = onsets[0];
+      var rel = onsets.map(function(idx){ return ((idx-f)+n)%n; }).sort(function(a,b){return a-b;});
+      var unit = BEATS_PER_BAR/n;
+      var cells = [];
+      for (var k=0;k<rel.length;k++){
+        var cur = rel[k], next = k+1<rel.length ? rel[k+1] : n;
+        cells.push((next-cur)*unit);
+      }
+      return cells;
+    }
+
+    // Grillas tal cual figuran en la base de datos de jazz (rhythms.json).
+    var GRIDS = {
+      charleston:            [1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0],
+      charlestonAnticipated: [1,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0],
+      freddieGreen:          [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],
+      bebopSparse:           [0,0,1,0,0,0,0,0,1,0,0,1,0,0,0,0],
+      bossaComping:          [1,0,0,1,0,0,1,0,1,0,0,1,0,0,1,0],
+      walking:               [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],
+      twoFeel:               [1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
+      sambaPartido:          [1,0,0,0,0,1,0,0,1,0,0,0,0,1,0,0]
+    };
+
+    // Ritmo armónico "comping": reemplaza a CHORD_RHYTHM_POOL.
+    var CHORD_RHYTHM_POOL = [
+      { val: gridToCells(GRIDS.charleston),            w:4 },
+      { val: gridToCells(GRIDS.charlestonAnticipated), w:3 },
+      { val: gridToCells(GRIDS.freddieGreen),          w:2 },
+      { val: gridToCells(GRIDS.bebopSparse),           w:3 },
+      { val: gridToCells(GRIDS.bossaComping),          w:1 }
+    ];
+    // Ritmo de bajo "walking bass": reemplaza a BASS_RHYTHM_POOL.
+    var BASS_RHYTHM_POOL = [
+      { val: gridToCells(GRIDS.walking),      w:5 },
+      { val: gridToCells(GRIDS.twoFeel),      w:2 },
+      { val: gridToCells(GRIDS.sambaPartido), w:1 }
+    ];
+
+    // Fill de melodía swingueado (corcheas largo-corto ≈2:1) en vez
+    // de las 10 notas parejas del fill original.
+    var L = 2/3, S = 1/3;
+    var SWUNG_FILL_CELL = [L,S,L,S,L,S,L,S];
+
+    // Formas de arpegio adaptadas de melodic_patterns.json (saltos de
+    // terceras 1-3-5-7, tríada quebrada 1-5-3, patrón bebop 1-2-3-5,
+    // zigzag tipo enclosure) como ÍNDICES relativos dentro del acorde
+    // vigente (mod cantidad de notas) — cambia el ORDEN en que se
+    // recorren las notas del acorde, nunca agrega una nota ajena.
+    var ARP_SHAPES = [
+      [0,2,4,6],
+      [0,4,2],
+      [0,1,2,4],
+      [0,2,1,3]
+    ];
+    function arpIndex(shape, k, n){
+      var pos = shape[k % shape.length] + Math.floor(k/shape.length)*n;
+      return { idxInChord: pos % n, octLap: Math.floor(pos/n) };
+    }
+
+    // Voicing "drop 2": técnica real de jazz — se toma un voicing YA
+    // armado (mismas notas, ninguna nueva) y se baja la 2da voz desde
+    // arriba una octava, para un color más abierto.
+    function drop2(chordMidi){
+      var arr = chordMidi.slice().sort(function(a,b){return a-b;});
+      if (arr.length < 3) return arr;
+      arr[arr.length-2] -= 12;
+      return arr.sort(function(a,b){return a-b;});
+    }
+
+    // Bajo caminante: en vez de fijar siempre la misma octava (-24),
+    // busca la octava del tono YA elegido (por la lógica original de
+    // arriba, siempre dentro del set) más cercana a la nota anterior
+    // del bajo — línea que se mueve por grados conjuntos.
+    var BASS_FLOOR = 28, BASS_CEIL = 55; // E1..G3
+    function clampBass(m){
+      while (m > BASS_CEIL) m -= 12;
+      while (m < BASS_FLOOR) m += 12;
+      return m;
+    }
+    function nearestOctave(pc, refMidi){
+      var best = pc, bestDist = Infinity;
+      for (var k=-4;k<=4;k++){
+        var m = pc + 12*k;
+        var d = Math.abs(m-refMidi);
+        if (d < bestDist){ bestDist = d; best = m; }
+      }
+      return best;
+    }
+
+    // Batería: ride "spang-a-lang" (negra + corchea swingueada tras
+    // cada tiempo). La batería no tiene altura definida, así que acá
+    // no hay ninguna restricción de set que respetar.
+    var RIDE_HITS = [
+      {b:0,   open:false}, {b:L,     open:true},
+      {b:1,   open:false}, {b:1+L,   open:true},
+      {b:2,   open:false}, {b:2+L,   open:true},
+      {b:3,   open:false}, {b:3+L,   open:true}
+    ];
+    var DRUM_STYLE_POOL = [
+      { val:{ tier:"ride",      kick:[0],         snare:[],                    hihatHits: RIDE_HITS }, w:5 },
+      { val:{ tier:"rideBomb",  kick:[0,2.75],    snare:[1.75],                hihatHits: RIDE_HITS }, w:2 },
+      { val:{ tier:"rideComp",  kick:[],          snare:[2],                   hihatHits: RIDE_HITS }, w:2 },
+      { val:{ tier:"rideFours", kick:[0,1,2,3],   snare:[0.75,1.5,2.75,3.5],   hihatHits: RIDE_HITS }, w:1 }
+    ];
+
+    return {
+      enabled: enabled,
+      CHORD_RHYTHM_POOL: CHORD_RHYTHM_POOL,
+      BASS_RHYTHM_POOL: BASS_RHYTHM_POOL,
+      SWUNG_FILL_CELL: SWUNG_FILL_CELL,
+      ARP_SHAPES: ARP_SHAPES,
+      arpIndex: arpIndex,
+      drop2: drop2,
+      clampBass: clampBass,
+      nearestOctave: nearestOctave,
+      DRUM_STYLE_POOL: DRUM_STYLE_POOL
+    };
+  })();
+
   var voices = [];
   var playing = false;
   var rafId = null;
@@ -2728,8 +2884,9 @@ function runAnalysis() {
   // reataque (sea cual sea su duración) se sortea de nuevo, por
   // separado, el subset + transposición + inversión.
   function buildChordEventsRandom(rootChord, numBars){
+    var chordPool = JAZZ.enabled() ? JAZZ.CHORD_RHYTHM_POOL : CHORD_RHYTHM_POOL;
     var cellsByBar = avoidAdjacentDuplicates(
-      distributeWeighted(CHORD_RHYTHM_POOL, numBars, function(cell){ return cell.length; })
+      distributeWeighted(chordPool, numBars, function(cell){ return cell.length; })
     );
     var events = [];
     var slotChords = [];
@@ -2746,6 +2903,11 @@ function runAnalysis() {
           combo = picked.chord.join(",") + ":" + t + ":" + inv;
         } while(combo === prevCombo);
         var voiced = invertChord(transposeChord(picked.chord, t), inv);
+        // JAZZ: voicing "drop 2" ocasional — solo reacomoda registro
+        // de notas que ya eran válidas, nunca agrega una nota nueva.
+        if (JAZZ.enabled() && voiced.length >= 3 && Math.random() < 0.5){
+          voiced = JAZZ.drop2(voiced);
+        }
         voiced.forEach(function(note){
           events.push({midi:note, startBeat:bar*BEATS_PER_BAR+offset, durBeats:dur, bar:bar});
         });
@@ -2798,8 +2960,9 @@ function runAnalysis() {
   // quietos se intercalen en vez de juntarse por azar, manteniendo el
   // mismo promedio general de siempre.
   function buildBassRhythmRandom(numBars){
+    var bassPool = JAZZ.enabled() ? JAZZ.BASS_RHYTHM_POOL : BASS_RHYTHM_POOL;
     return avoidAdjacentDuplicates(
-      distributeWeighted(BASS_RHYTHM_POOL, numBars, function(cell){ return cell.length; })
+      distributeWeighted(bassPool, numBars, function(cell){ return cell.length; })
     );
   }
   // Melodía: célula rítmica distinta por compás, arpegiando el acorde +8va.
@@ -2848,7 +3011,9 @@ function runAnalysis() {
     var halfPtr = 0;
     for(var bar=0; bar<numBars; bar++){
       if(barOrder[bar].flourish){
-        cells.push(MELODY_FLOURISH_CELL.slice());
+        // JAZZ: fill swingueado (corcheas largo-corto) en vez de las
+        // 10 notas parejas del fill original.
+        cells.push((JAZZ.enabled() ? JAZZ.SWUNG_FILL_CELL : MELODY_FLOURISH_CELL).slice());
         continue;
       }
       var half0 = halfOrder[halfPtr++];
@@ -2884,13 +3049,24 @@ function runAnalysis() {
     var bassCells = buildBassRhythmRandom(numBars);
     var melodyCells = buildMelodyRhythmRandom(numBars);
     var bassEvents = [], melodyEvents = [];
+    var jazzPrevBass = null; // JAZZ: nota anterior del bajo, para caminar por grados conjuntos
     progression.forEach(function(chord, bar){
       var queue = meta[bar].complement.slice(); // notas del set que el bajo de este compás debe recuperar
 
       var bOffset = 0;
       bassCells[bar].forEach(function(dur){
         var pick = queue.length ? queue.shift() : chord[randomInt(0, chord.length-1)];
-        bassEvents.push({midi: pick-24, startBeat:bar*BEATS_PER_BAR+bOffset, durBeats:dur, bar:bar});
+        var bassMidi;
+        // JAZZ: en vez de la octava fija (-24), elige la octava del
+        // mismo tono YA permitido (pick) más cercana a la nota
+        // anterior del bajo — línea caminante, nunca una nota nueva.
+        if (JAZZ.enabled()){
+          bassMidi = jazzPrevBass === null ? JAZZ.clampBass(pick-24) : JAZZ.clampBass(JAZZ.nearestOctave(pick, jazzPrevBass));
+          jazzPrevBass = bassMidi;
+        } else {
+          bassMidi = pick-24;
+        }
+        bassEvents.push({midi: bassMidi, startBeat:bar*BEATS_PER_BAR+bOffset, durBeats:dur, bar:bar});
         bOffset += dur;
       });
 
@@ -2933,9 +3109,23 @@ function runAnalysis() {
         var base, octAdd, midi;
         if(isDense){
           var n = currentSlotChord.length;
-          var pos = arpUp ? k : (cellLen-1-k);
-          var idxInChord = pos % n;
-          var octLap = Math.floor(pos/n);
+          var idxInChord, octLap;
+          // JAZZ: en vez de recorrer el acorde en línea recta
+          // (ascendente/descendente), usa una forma de arpegio tipo
+          // jazz (saltos de terceras, tríada quebrada, patrón bebop)
+          // como ÍNDICES dentro del MISMO acorde vigente — solo
+          // cambia el orden en que se visitan sus notas.
+          if (JAZZ.enabled()){
+            var jShape = JAZZ.ARP_SHAPES[bar % JAZZ.ARP_SHAPES.length];
+            var jK = arpUp ? k : (cellLen-1-k);
+            var jAi = JAZZ.arpIndex(jShape, jK, n);
+            idxInChord = jAi.idxInChord;
+            octLap = jAi.octLap;
+          } else {
+            var pos = arpUp ? k : (cellLen-1-k);
+            idxInChord = pos % n;
+            octLap = Math.floor(pos/n);
+          }
           base = currentSlotChord[idxInChord];
           octAdd = 12 + Math.min(octLap, 1)*12;
           // El registro puede venir alto o bajo según la transposición/
@@ -3434,8 +3624,12 @@ function runAnalysis() {
   // lo largo del segmento en vez de agruparse por casualidad, con el
   // mismo promedio de siempre.
   function buildDrumEvents(numBars){
+    // JAZZ: patrón de ride "spang-a-lang" en vez del hi-hat parejo —
+    // la batería no tiene altura definida, así que acá no hay ninguna
+    // restricción de set que respetar, es variedad rítmica pura.
+    var pool = JAZZ.enabled() ? JAZZ.DRUM_STYLE_POOL : DRUM_STYLE_POOL;
     var styleByBar = avoidAdjacentDuplicates(
-      distributeWeighted(DRUM_STYLE_POOL, numBars, function(style){ return style.tier; })
+      distributeWeighted(pool, numBars, function(style){ return style.tier; })
     );
     var events = [];
     for(var bar=0; bar<numBars; bar++){
@@ -3443,12 +3637,16 @@ function runAnalysis() {
       var style = styleByBar[bar];
       style.kick.forEach(function(b){ events.push({type:"kick", startBeat: base+b}); });
       style.snare.forEach(function(b){ events.push({type:"snare", startBeat: base+b}); });
-      var step = style.hihat.step;
-      var openSet = {};
-      style.hihat.open.forEach(function(idx){ openSet[idx] = true; });
-      var n = Math.round(BEATS_PER_BAR/step);
-      for(var e=0; e<n; e++){
-        events.push({type:"hihat", startBeat: base+e*step, open: !!openSet[e]});
+      if (style.hihatHits){
+        style.hihatHits.forEach(function(h){ events.push({type:"hihat", startBeat: base+h.b, open: !!h.open}); });
+      } else {
+        var step = style.hihat.step;
+        var openSet = {};
+        style.hihat.open.forEach(function(idx){ openSet[idx] = true; });
+        var n = Math.round(BEATS_PER_BAR/step);
+        for(var e=0; e<n; e++){
+          events.push({type:"hihat", startBeat: base+e*step, open: !!openSet[e]});
+        }
       }
     }
     return events;
@@ -3596,6 +3794,9 @@ function runAnalysis() {
     setNotes([0,4,7,11]); // C E G B — dispara runAnalysis() -> regenerateConsola()
   });
   document.getElementById("consolaNormalBtn").addEventListener("click", normalizeConsola);
+  document.getElementById("consolaJazzChk").addEventListener("change", function(){
+    if(state.rootChord.length) regenerateConsola();
+  });
   document.getElementById("consolaVolume").addEventListener("input", function(){
     currentVolume = this.value/100;
     document.getElementById("consolaVolumeVal").textContent = this.value + "%";
