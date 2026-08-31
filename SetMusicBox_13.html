@@ -505,6 +505,42 @@
     color:var(--ink-muted);font-family:'JetBrains Mono',monospace;font-size:10.5px;
     line-height:1.7;border-top:1px solid var(--line);padding-top:14px;margin-top:18px;
   }
+
+  /* ---- Mini mixer (volúmenes independientes + presets de timbre) ---- */
+  .mini-mixer{
+    padding:16px 14px;background:var(--surface-2);border:1px solid var(--line);border-radius:14px;
+    margin-bottom:18px;
+  }
+  .mini-mixer h3{
+    font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--gold);margin:0 0 12px;text-align:center;font-weight:500;
+  }
+  .mix-grid{
+    display:flex;flex-wrap:wrap;gap:18px 30px;justify-content:center;margin-bottom:16px;
+  }
+  .mix-channel{display:flex;flex-direction:column;gap:6px;align-items:center;}
+  .mix-channel label{
+    font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--ink-muted);
+  }
+  .mix-channel input[type=range]{width:110px;accent-color:var(--gold);}
+  .mix-val{font-family:'JetBrains Mono',monospace;color:var(--ink-muted);font-size:11px;}
+  .mix-presets{
+    display:flex;flex-wrap:wrap;gap:20px 32px;justify-content:center;
+    padding-top:14px;border-top:1px solid var(--line);
+  }
+  .mix-preset-group{display:flex;align-items:center;gap:8px;}
+  .mix-preset-label{
+    font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--ink-muted);margin-right:2px;
+  }
+  .mix-preset-opt{
+    font-family:'JetBrains Mono',monospace;font-size:11px;
+    background:var(--surface);border:1px solid var(--line);color:var(--ink-muted);
+    padding:6px 12px;border-radius:8px;cursor:pointer;transition:.15s;
+  }
+  .mix-preset-opt:hover{color:var(--ink);border-color:var(--gold-dim);}
+  .mix-preset-opt.active{background:var(--gold);color:#1a1622;border-color:var(--gold);font-weight:700;}
 </style>
 </head>
 <body>
@@ -709,6 +745,7 @@
           <span class="consola-inst-toggle"><input type="checkbox" id="consolaMelodyChk" checked><label for="consolaMelodyChk">Melodía</label></span>
           <span class="consola-inst-toggle"><input type="checkbox" id="consolaDrumChk" checked><label for="consolaDrumChk">&#129345; Batería</label></span>
           <span class="consola-inst-toggle" title="Aplica ritmos de comping/walking bass, voicings tipo drop-2 y swing (adaptados de una base de datos de jazz), sin salir nunca del set de notas elegido."><input type="checkbox" id="consolaJazzChk"><label for="consolaJazzChk">&#127927; Jazz</label></span>
+          <span class="consola-inst-toggle" title="Cada compás de armonía, bajo, melodía y batería tiene un 40% extra de probabilidad de repetir exactamente el patrón del compás anterior; además, bajo y melodía tienen un 40% de probabilidad por compás de acoplar sus ataques a los de la armonía en vez de llevar su propio ritmo."><input type="checkbox" id="consolaMoreRepChk"><label for="consolaMoreRepChk">&#128257; More repetition</label></span>
         </div>
       </div>
       <div class="consola-field">
@@ -719,6 +756,44 @@
       <div class="consola-field" style="flex-direction:row;gap:8px;">
         <button type="button" class="chip primary" id="consolaPlayBtn">&#9658; Reproducir</button>
         <button type="button" class="chip" id="consolaStopBtn" disabled>&#9632; Detener</button>
+      </div>
+    </div>
+
+    <div class="mini-mixer" id="miniMixer">
+      <h3>Mini mixer</h3>
+      <div class="mix-grid">
+        <div class="mix-channel">
+          <label for="mixDrumVol">&#129345; Batería</label>
+          <input type="range" id="mixDrumVol" min="0" max="150" value="100" step="1">
+          <span class="mix-val" id="mixDrumVolVal">100%</span>
+        </div>
+        <div class="mix-channel">
+          <label for="mixBassVol">Bajo</label>
+          <input type="range" id="mixBassVol" min="0" max="150" value="100" step="1">
+          <span class="mix-val" id="mixBassVolVal">100%</span>
+        </div>
+        <div class="mix-channel">
+          <label for="mixChordVol">Armonía</label>
+          <input type="range" id="mixChordVol" min="0" max="150" value="100" step="1">
+          <span class="mix-val" id="mixChordVolVal">100%</span>
+        </div>
+        <div class="mix-channel">
+          <label for="mixMelodyVol">Melodía</label>
+          <input type="range" id="mixMelodyVol" min="0" max="150" value="100" step="1">
+          <span class="mix-val" id="mixMelodyVolVal">100%</span>
+        </div>
+      </div>
+      <div class="mix-presets">
+        <div class="mix-preset-group" id="harmonyPresetGroup" data-mix-group="harmony">
+          <span class="mix-preset-label">Armonía</span>
+          <button type="button" class="mix-preset-opt active" data-preset="pad">Pad</button>
+          <button type="button" class="mix-preset-opt" data-preset="piano">Piano</button>
+        </div>
+        <div class="mix-preset-group" id="melodyPresetGroup" data-mix-group="melody">
+          <span class="mix-preset-label">Melodía</span>
+          <button type="button" class="mix-preset-opt active" data-preset="flute">Flauta</button>
+          <button type="button" class="mix-preset-opt" data-preset="sax">Saxo</button>
+        </div>
       </div>
     </div>
 
@@ -3045,6 +3120,51 @@ function runAnalysis() {
     };
   })();
 
+  /* ================================================================
+     MÓDULO MÁS REPETICIÓN — separado tanto del motor original como del
+     módulo Jazz. Se activa con el checkbox #consolaMoreRepChk (apagado
+     por defecto) y combina con Jazz sin problema (actúa DESPUÉS de que
+     armonía/bajo/melodía/batería ya eligieron su ritmo, sea con los
+     pools normales o con los de Jazz). Prendido:
+       - REPEAT_PROB (40%): cada compás, en cada pista por separado
+         (armonía, bajo, melodía, batería), tiene esa probabilidad
+         EXTRA de repetir exactamente el patrón rítmico del compás
+         anterior de esa misma pista, en vez del que le tocó variar.
+       - COUPLE_PROB (40%): además, cada compás de BAJO y de MELODÍA
+         tiene esa probabilidad de "acoplarse" — en vez de su propio
+         ritmo, usa los mismos instantes de ataque que tuvo la armonía
+         en ESE compás (batería no se acopla; el pedido fue solo
+         bajo/melodía).
+     En ningún caso cambia qué nota suena — solo CUÁNDO se reataca cada
+     pista (el ritmo es un array de duraciones, o de estilos de
+     batería; acá solo se decide si un compás copia al anterior o a la
+     armonía, nunca se inventa una nota nueva).
+     ================================================================ */
+  var MOREREP = (function(){
+    function enabled(){
+      var chk = document.getElementById("consolaMoreRepChk");
+      return !!(chk && chk.checked);
+    }
+    var REPEAT_PROB = 0.4;
+    var COUPLE_PROB = 0.4;
+    // Sesgo de repetición: de compás 1 en adelante, con REPEAT_PROB de
+    // probabilidad copia el patrón del compás anterior (arreglo de
+    // duraciones de armonía/bajo/melodía, u objeto de estilo de
+    // batería — funciona igual para ambos) en vez del que le tocó.
+    function applyRepetitionBias(arr){
+      for (var i=1;i<arr.length;i++){
+        if (Math.random() < REPEAT_PROB) arr[i] = arr[i-1];
+      }
+      return arr;
+    }
+    return {
+      enabled: enabled,
+      REPEAT_PROB: REPEAT_PROB,
+      COUPLE_PROB: COUPLE_PROB,
+      applyRepetitionBias: applyRepetitionBias
+    };
+  })();
+
   var voices = [];
   var playing = false;
   var rafId = null;
@@ -3354,6 +3474,9 @@ function runAnalysis() {
     var cellsByBar = avoidAdjacentDuplicates(
       distributeWeighted(chordPool, numBars, function(cell){ return cell.length; })
     );
+    // MÁS REPETICIÓN: 40% extra de probabilidad, compás a compás, de
+    // repetir el patrón rítmico del compás anterior de armonía.
+    if (MOREREP.enabled()) cellsByBar = MOREREP.applyRepetitionBias(cellsByBar);
     var events = [];
     var slotChords = [];
     var prevCombo = null;
@@ -3525,6 +3648,23 @@ function runAnalysis() {
     var numBars = progression.length;
     var bassCells = buildBassRhythmRandom(numBars);
     var melodyCells = buildMelodyRhythmRandom(numBars);
+    if (MOREREP.enabled()){
+      // MÁS REPETICIÓN: 40% extra de probabilidad, compás a compás, de
+      // repetir el patrón rítmico del compás anterior — para bajo y
+      // melodía, cada uno por separado.
+      bassCells = MOREREP.applyRepetitionBias(bassCells);
+      melodyCells = MOREREP.applyRepetitionBias(melodyCells);
+      // ACOPLE A LA ARMONÍA: 40% de probabilidad, compás a compás, de
+      // que el bajo y/o la melodía dejen de lado su propio ritmo y
+      // reataquen en los mismos instantes que la armonía tuvo en ESE
+      // compás (slotChords ya trae, por compás, los reataques exactos
+      // de armonía con su duración — se reusa esa misma forma).
+      for (var crBar=0; crBar<numBars; crBar++){
+        var chordCellForBar = slotChords[crBar].map(function(s){ return s.durBeats; });
+        if (Math.random() < MOREREP.COUPLE_PROB) bassCells[crBar] = chordCellForBar.slice();
+        if (Math.random() < MOREREP.COUPLE_PROB) melodyCells[crBar] = chordCellForBar.slice();
+      }
+    }
     var bassEvents = [], melodyEvents = [];
     var jazzPrevBass = null; // JAZZ: nota anterior del bajo, para caminar por grados conjuntos
     progression.forEach(function(chord, bar){
@@ -3820,6 +3960,51 @@ function runAnalysis() {
     return masterGain;
   }
 
+  // ---------- mini mixer: volúmenes independientes + presets de timbre ----------
+  // Un canal de ganancia por instrumento, cada uno conectado al bus
+  // general (masterGain) — así el volumen general sigue escalando todo
+  // junto, y cada pista además tiene su propio nivel relativo. Los
+  // presets solo deciden QUÉ función de síntesis usar para armonía y
+  // melodía (Pad/Piano, Flauta/Saxo) — bajo y batería no tienen preset.
+  var mixGains = { drum: 1, bass: 1, chord: 1, melody: 1 };
+  var mixPresets = { harmony: "pad", melody: "flute" };
+  var chordGainNode = null, bassGainNode = null, melodyGainNode = null, drumGainNode = null;
+  function ensureInstrumentGains(ctx){
+    var master = ensureMasterGain(ctx);
+    if(!chordGainNode){
+      chordGainNode = ctx.createGain();
+      chordGainNode.gain.value = mixGains.chord;
+      chordGainNode.connect(master);
+    }
+    if(!bassGainNode){
+      bassGainNode = ctx.createGain();
+      bassGainNode.gain.value = mixGains.bass;
+      bassGainNode.connect(master);
+    }
+    if(!melodyGainNode){
+      melodyGainNode = ctx.createGain();
+      melodyGainNode.gain.value = mixGains.melody;
+      melodyGainNode.connect(master);
+    }
+    if(!drumGainNode){
+      drumGainNode = ctx.createGain();
+      drumGainNode.gain.value = mixGains.drum;
+      drumGainNode.connect(master);
+    }
+    return { chord: chordGainNode, bass: bassGainNode, melody: melodyGainNode, drum: drumGainNode };
+  }
+  // Cambia el nivel de un canal en caliente (mientras suena o no) — usa
+  // setTargetAtTime, igual que el volumen general, para que no haga clic.
+  function setMixGain(track, value){
+    mixGains[track] = value;
+    var node = track === "chord" ? chordGainNode : track === "bass" ? bassGainNode :
+               track === "melody" ? melodyGainNode : track === "drum" ? drumGainNode : null;
+    if(node){
+      var ctx = getAudioCtx();
+      node.gain.setTargetAtTime(value, ctx ? ctx.currentTime : 0, 0.01);
+    }
+  }
+
   function playPadVoice(ctx, dest, midi, startTime, duration, opts){
     opts = opts || {};
     var attack = opts.attack != null ? opts.attack : 0.4;
@@ -3863,6 +4048,70 @@ function runAnalysis() {
     sub.start(startTime);
     sub.stop(sustainEnd + release + 0.1);
     voices.push(sub);
+  }
+
+  // ---------- audio: sintetizador PIANO (armonía, alternativa a Pad) ----------
+  function playPianoVoice(ctx, dest, midi, startTime, duration, opts){
+    opts = opts || {};
+    var attack = opts.attack != null ? opts.attack : 0.008;
+    var release = opts.release != null ? opts.release : 0.35;
+    var peakGain = opts.peakGain != null ? opts.peakGain : 0.22;
+    var cutoff = opts.cutoff != null ? opts.cutoff : 4200;
+    var freq = freqFromMidi(midi);
+
+    // El filtro se va cerrando con el tiempo (brillante en el golpe,
+    // más apagado mientras suena) — el rasgo más característico del
+    // timbre percutido de un piano.
+    var filter = ctx.createBiquadFilter();
+    filter.type = "lowpass";
+    filter.frequency.setValueAtTime(cutoff, startTime);
+    filter.frequency.exponentialRampToValueAtTime(Math.max(400, cutoff*0.18), startTime + 0.6);
+    filter.Q.value = 0.6;
+
+    var voiceGain = ctx.createGain();
+    var decayLevel = Math.max(0.0008, peakGain*0.32);
+    voiceGain.gain.setValueAtTime(0, startTime);
+    voiceGain.gain.linearRampToValueAtTime(peakGain, startTime + attack);
+    voiceGain.gain.exponentialRampToValueAtTime(decayLevel, startTime + attack + 0.55);
+    var sustainEnd = Math.max(startTime + attack + 0.56, startTime + duration);
+    voiceGain.gain.setValueAtTime(decayLevel, sustainEnd);
+    voiceGain.gain.linearRampToValueAtTime(0, sustainEnd + release);
+
+    filter.connect(voiceGain);
+    voiceGain.connect(dest);
+
+    // Cuerpo: fundamental + una octava y una quinta arriba, débiles y
+    // con leve desafinado (como las cuerdas duplicadas de un piano real).
+    [0, 12, 19].forEach(function(semis, idx){
+      var osc = ctx.createOscillator();
+      osc.type = idx === 0 ? "triangle" : "sine";
+      osc.frequency.value = freq*Math.pow(2, semis/12);
+      osc.detune.value = idx === 1 ? 4 : (idx === 2 ? -3 : 0);
+      var partialGain = ctx.createGain();
+      partialGain.gain.value = idx === 0 ? 1 : (idx === 1 ? 0.16 : 0.08);
+      osc.connect(partialGain);
+      partialGain.connect(filter);
+      osc.start(startTime);
+      osc.stop(sustainEnd + release + 0.1);
+      voices.push(osc);
+    });
+
+    // Percusión del martillo: un click corto de ruido filtrado al golpe.
+    var hammer = ctx.createBufferSource();
+    hammer.buffer = getNoiseBuffer(ctx);
+    var hammerFilter = ctx.createBiquadFilter();
+    hammerFilter.type = "bandpass";
+    hammerFilter.frequency.value = Math.min(6000, freq*2.2);
+    hammerFilter.Q.value = 0.9;
+    var hammerGain = ctx.createGain();
+    hammerGain.gain.setValueAtTime(peakGain*0.5, startTime);
+    hammerGain.gain.exponentialRampToValueAtTime(0.0005, startTime+0.045);
+    hammer.connect(hammerFilter);
+    hammerFilter.connect(hammerGain);
+    hammerGain.connect(dest);
+    hammer.start(startTime);
+    hammer.stop(startTime+0.05);
+    voices.push(hammer);
   }
 
   // ---------- audio: sintetizador FLAUTA (melodía) ----------
@@ -3933,6 +4182,91 @@ function runAnalysis() {
 
     osc.connect(filter);
     [osc, overtone, vibrato].forEach(function(o){
+      o.start(startTime);
+      o.stop(sustainEnd + release + 0.1);
+      voices.push(o);
+    });
+    noiseSrc.start(startTime);
+    noiseSrc.stop(sustainEnd + release + 0.1);
+    voices.push(noiseSrc);
+  }
+
+  // ---------- audio: sintetizador SAXO (melodía, alternativa a Flauta) ----------
+  function playSaxVoice(ctx, dest, midi, startTime, duration, opts){
+    opts = opts || {};
+    var attack = opts.attack != null ? opts.attack : 0.035;
+    var release = opts.release != null ? opts.release : 0.14;
+    var peakGain = opts.peakGain != null ? opts.peakGain : 0.14;
+    var freq = freqFromMidi(midi);
+
+    // Filtro resonante fijo tipo formante — el color "de lengüeta" del
+    // saxo — antes de un pasabajos que redondea el borde de la sierra.
+    var formant = ctx.createBiquadFilter();
+    formant.type = "bandpass";
+    formant.frequency.value = Math.min(3200, freq*2.4 + 300);
+    formant.Q.value = 3.2;
+
+    var bodyFilter = ctx.createBiquadFilter();
+    bodyFilter.type = "lowpass";
+    bodyFilter.frequency.value = Math.min(7000, freq*6 + 1200);
+    bodyFilter.Q.value = 0.6;
+
+    var voiceGain = ctx.createGain();
+    voiceGain.gain.setValueAtTime(0, startTime);
+    voiceGain.gain.linearRampToValueAtTime(peakGain, startTime + attack);
+    var sustainEnd = startTime + duration;
+    voiceGain.gain.setValueAtTime(peakGain, sustainEnd);
+    voiceGain.gain.linearRampToValueAtTime(0, sustainEnd + release);
+
+    bodyFilter.connect(formant);
+    formant.connect(voiceGain);
+    voiceGain.connect(dest);
+
+    // Diente de sierra (rica en armónicos, base del timbre de lengüeta)
+    // más un armónico reforzado para dar cuerpo.
+    var osc = ctx.createOscillator();
+    osc.type = "sawtooth";
+    osc.frequency.value = freq;
+    osc.connect(bodyFilter);
+
+    var third = ctx.createOscillator();
+    third.type = "sine";
+    third.frequency.value = freq*3;
+    var thirdGain = ctx.createGain();
+    thirdGain.gain.value = 0.10;
+    third.connect(thirdGain);
+    thirdGain.connect(bodyFilter);
+
+    // Vibrato, entra después del ataque como en un saxo tocado con
+    // expresión (más marcado que el de la flauta).
+    var vibrato = ctx.createOscillator();
+    vibrato.type = "sine";
+    vibrato.frequency.value = 5.6;
+    var vibratoGain = ctx.createGain();
+    vibratoGain.gain.setValueAtTime(0, startTime);
+    vibratoGain.gain.linearRampToValueAtTime(freq*0.008, startTime + attack + 0.1);
+    vibrato.connect(vibratoGain);
+    vibratoGain.connect(osc.frequency);
+
+    // Aire/lengüeta: ruido filtrado más presente que en la flauta, típico
+    // del ataque "breathy" de un saxo.
+    var noiseSrc = ctx.createBufferSource();
+    noiseSrc.buffer = getNoiseBuffer(ctx);
+    noiseSrc.loop = true;
+    var noiseFilter = ctx.createBiquadFilter();
+    noiseFilter.type = "bandpass";
+    noiseFilter.frequency.value = Math.min(5000, freq*2);
+    noiseFilter.Q.value = 0.6;
+    var noiseGain = ctx.createGain();
+    noiseGain.gain.setValueAtTime(peakGain*0.4, startTime);
+    noiseGain.gain.linearRampToValueAtTime(peakGain*0.1, startTime + attack + 0.08);
+    noiseGain.gain.setValueAtTime(peakGain*0.1, sustainEnd);
+    noiseGain.gain.linearRampToValueAtTime(0, sustainEnd + release);
+    noiseSrc.connect(noiseFilter);
+    noiseFilter.connect(noiseGain);
+    noiseGain.connect(dest);
+
+    [osc, third, vibrato].forEach(function(o){
       o.start(startTime);
       o.stop(sustainEnd + release + 0.1);
       voices.push(o);
@@ -4108,6 +4442,9 @@ function runAnalysis() {
     var styleByBar = avoidAdjacentDuplicates(
       distributeWeighted(pool, numBars, function(style){ return style.tier; })
     );
+    // MÁS REPETICIÓN: 40% extra de probabilidad, compás a compás, de
+    // repetir el patrón de batería del compás anterior.
+    if (MOREREP.enabled()) styleByBar = MOREREP.applyRepetitionBias(styleByBar);
     var events = [];
     for(var bar=0; bar<numBars; bar++){
       var base = bar*BEATS_PER_BAR;
@@ -4138,13 +4475,20 @@ function runAnalysis() {
     return !chk || chk.checked;
   }
   function scheduleLoopAt(ctx, dest, loopStartTime, spb){
+    // Mini mixer: un canal de ganancia por instrumento (independiente
+    // del volumen general) y, para armonía/melodía, qué función de
+    // síntesis usar según el preset elegido (Pad/Piano, Flauta/Saxo).
+    var gains = ensureInstrumentGains(ctx);
     if(instEnabled("consolaChordChk")){
+      var harmonyIsPiano = mixPresets.harmony === "piano";
+      var chordVoiceFn = harmonyIsPiano ? playPianoVoice : playPadVoice;
       state.chordEvents.forEach(function(ev){
         var t = loopStartTime + ev.startBeat*spb;
         var dur = ev.durBeats*spb;
-        var attack = Math.min(0.4, dur*0.3);
-        var release = Math.min(0.9, dur*0.45);
-        playPadVoice(ctx, dest, ev.midi, t, dur*0.93, {attack:attack, release:release, peakGain:0.14, cutoff:1600});
+        var opts = harmonyIsPiano
+          ? { attack: Math.min(0.012, dur*0.06), release: Math.min(0.5, dur*0.5), peakGain:0.22, cutoff:4200 }
+          : { attack: Math.min(0.4, dur*0.3), release: Math.min(0.9, dur*0.45), peakGain:0.14, cutoff:1600 };
+        chordVoiceFn(ctx, gains.chord, ev.midi, t, dur*0.93, opts);
       });
     }
     if(instEnabled("consolaBassChk")){
@@ -4153,24 +4497,27 @@ function runAnalysis() {
         var dur = ev.durBeats*spb;
         var attack = Math.min(0.12, dur*0.25);
         var release = Math.min(0.3, dur*0.4);
-        playBassVoice(ctx, dest, ev.midi, t, dur*0.9, {attack:attack, release:release, peakGain:0.22, cutoff:650});
+        playBassVoice(ctx, gains.bass, ev.midi, t, dur*0.9, {attack:attack, release:release, peakGain:0.22, cutoff:650});
       });
     }
     if(instEnabled("consolaMelodyChk")){
+      var melodyIsSax = mixPresets.melody === "sax";
+      var melodyVoiceFn = melodyIsSax ? playSaxVoice : playFluteVoice;
       state.melodyEvents.forEach(function(ev){
         var t = loopStartTime + ev.startBeat*spb;
         var dur = ev.durBeats*spb;
-        var attack = Math.min(0.06, dur*0.25);
-        var release = Math.min(0.22, dur*0.5);
-        playFluteVoice(ctx, dest, ev.midi, t, dur*0.85, {attack:attack, release:release, peakGain:0.15});
+        var opts = melodyIsSax
+          ? { attack: Math.min(0.08, dur*0.25), release: Math.min(0.28, dur*0.5), peakGain:0.14 }
+          : { attack: Math.min(0.06, dur*0.25), release: Math.min(0.22, dur*0.5), peakGain:0.15 };
+        melodyVoiceFn(ctx, gains.melody, ev.midi, t, dur*0.85, opts);
       });
     }
     if(instEnabled("consolaDrumChk")){
       drumEvents.forEach(function(ev){
         var t = loopStartTime + ev.startBeat*spb;
-        if(ev.type === "kick") playKickDrum(ctx, dest, t);
-        else if(ev.type === "snare") playSnareDrum(ctx, dest, t);
-        else if(ev.type === "hihat") playHihat(ctx, dest, t, ev.open);
+        if(ev.type === "kick") playKickDrum(ctx, gains.drum, t);
+        else if(ev.type === "snare") playSnareDrum(ctx, gains.drum, t);
+        else if(ev.type === "hihat") playHihat(ctx, gains.drum, t, ev.open);
       });
     }
   }
@@ -4274,6 +4621,9 @@ function runAnalysis() {
   document.getElementById("consolaJazzChk").addEventListener("change", function(){
     if(state.rootChord.length) regenerateConsola();
   });
+  document.getElementById("consolaMoreRepChk").addEventListener("change", function(){
+    if(state.rootChord.length) regenerateConsola();
+  });
   document.getElementById("consolaVolume").addEventListener("input", function(){
     currentVolume = this.value/100;
     document.getElementById("consolaVolumeVal").textContent = this.value + "%";
@@ -4282,6 +4632,44 @@ function runAnalysis() {
       masterGain.gain.setTargetAtTime(currentVolume, ctx ? ctx.currentTime : 0, 0.01);
     }
   });
+
+  // ---- Mini mixer: volúmenes independientes por pista ----
+  (function(){
+    var MIX_SLIDERS = [
+      { id: "mixDrumVol",   valId: "mixDrumVolVal",   track: "drum"   },
+      { id: "mixBassVol",   valId: "mixBassVolVal",   track: "bass"   },
+      { id: "mixChordVol",  valId: "mixChordVolVal",  track: "chord"  },
+      { id: "mixMelodyVol", valId: "mixMelodyVolVal", track: "melody" }
+    ];
+    MIX_SLIDERS.forEach(function(cfg){
+      var el = document.getElementById(cfg.id);
+      if(!el) return;
+      el.addEventListener("input", function(){
+        document.getElementById(cfg.valId).textContent = this.value + "%";
+        setMixGain(cfg.track, this.value/100);
+      });
+    });
+  })();
+
+  // ---- Mini mixer: conmutadores de preset (Armonía: Pad/Piano — Melodía: Flauta/Saxo) ----
+  (function(){
+    var GROUPS = [
+      { id: "harmonyPresetGroup", key: "harmony" },
+      { id: "melodyPresetGroup",  key: "melody"  }
+    ];
+    GROUPS.forEach(function(g){
+      var host = document.getElementById(g.id);
+      if(!host) return;
+      var btns = host.querySelectorAll(".mix-preset-opt");
+      btns.forEach(function(btn){
+        btn.addEventListener("click", function(){
+          btns.forEach(function(b){ b.classList.remove("active"); });
+          this.classList.add("active");
+          mixPresets[g.key] = this.dataset.preset;
+        });
+      });
+    });
+  })();
 
   regenerateConsola();
 })();
