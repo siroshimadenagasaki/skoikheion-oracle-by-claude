@@ -4600,13 +4600,47 @@ function runAnalysis() {
     if(window._consolaStopTimer){ clearTimeout(window._consolaStopTimer); window._consolaStopTimer = null; }
     var ctx = getAudioCtx();
     var now = ctx ? ctx.currentTime : 0;
-    voices.forEach(function(o){ try{ o.stop(now + 0.05); }catch(e){} });
+
+    // "MIDI all notes off": silencia de golpe los buses de instrumento
+    // (y el general) con una rampa cortísima — corta cualquier cola que
+    // estuviera sonando (release de un pad, del saxo, etc.) en vez de
+    // esperar a que cada nota termine su propia envolvente.
+    var FADE = 0.015;
+    [chordGainNode, bassGainNode, melodyGainNode, drumGainNode, masterGain].forEach(function(g){
+      if(!g) return;
+      g.gain.cancelScheduledValues(now);
+      g.gain.setValueAtTime(g.gain.value, now);
+      g.gain.linearRampToValueAtTime(0, now + FADE);
+    });
+
+    // Reset completo: detiene y libera todo lo que estuviera sonando o
+    // agendado a futuro — no queda nada pendiente para cuando se
+    // vuelva a pulsar Reproducir.
+    voices.forEach(function(o){ try{ o.stop(now + FADE); }catch(e){} });
     voices = [];
+
+    // Los buses quedaron en 0 tras el fade — se restauran a los niveles
+    // del mixer / volumen general para que la próxima reproducción
+    // suene igual que antes de detener.
+    var restoreAt = now + FADE + 0.005;
+    if(masterGain) masterGain.gain.setValueAtTime(currentVolume, restoreAt);
+    if(chordGainNode) chordGainNode.gain.setValueAtTime(mixGains.chord, restoreAt);
+    if(bassGainNode) bassGainNode.gain.setValueAtTime(mixGains.bass, restoreAt);
+    if(melodyGainNode) melodyGainNode.gain.setValueAtTime(mixGains.melody, restoreAt);
+    if(drumGainNode) drumGainNode.gain.setValueAtTime(mixGains.drum, restoreAt);
+
     document.getElementById("consolaPlayBtn").disabled = state.chordEvents.length===0;
     document.getElementById("consolaStopBtn").disabled = true;
     document.getElementById("consolaTempo").disabled = false;
     var ph = document.getElementById("consolaPlayhead");
-    if(ph) ph.setAttribute("visibility","hidden");
+    if(ph){
+      ph.setAttribute("visibility","hidden");
+      // Reset visual del playhead al inicio del rollo.
+      ph.setAttribute("x1", MARGIN_L);
+      ph.setAttribute("x2", MARGIN_L);
+    }
+    var rollHost = document.getElementById("consolaRollHost");
+    if(rollHost) rollHost.scrollLeft = 0;
   }
 
   document.getElementById("consolaPlayBtn").addEventListener("click", startPlayback);
