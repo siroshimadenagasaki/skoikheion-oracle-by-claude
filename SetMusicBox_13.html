@@ -746,6 +746,7 @@
           <span class="consola-inst-toggle"><input type="checkbox" id="consolaDrumChk" checked><label for="consolaDrumChk">&#129345; Batería</label></span>
           <span class="consola-inst-toggle" title="Aplica ritmos de comping/walking bass, voicings tipo drop-2 y swing (adaptados de una base de datos de jazz), sin salir nunca del set de notas elegido."><input type="checkbox" id="consolaJazzChk"><label for="consolaJazzChk">&#127927; Jazz</label></span>
           <span class="consola-inst-toggle" title="Cada compás de armonía, bajo, melodía y batería tiene un 40% extra de probabilidad de repetir exactamente el patrón del compás anterior; además, bajo y melodía tienen un 40% de probabilidad por compás de acoplar sus ataques a los de la armonía en vez de llevar su propio ritmo."><input type="checkbox" id="consolaMoreRepChk"><label for="consolaMoreRepChk">&#128257; More repetition</label></span>
+          <span class="consola-inst-toggle" title="En cada reataque de armonía se sortean varias combinaciones válidas de subconjunto/transposición/inversión dentro del MISMO acorde/grado elegido (nunca de otro) y se elige la que comparte más notas con el acorde anterior — el doble de notas comunes en promedio que al azar puro, con la misma restricción de conjunto de siempre."><input type="checkbox" id="consolaCommonNotesChk"><label for="consolaCommonNotesChk">&#128279; Notas comunes</label></span>
         </div>
       </div>
       <div class="consola-field">
@@ -2836,14 +2837,20 @@ function runAnalysis() {
   // buildChordEventsRandom), así que un compás "largo" es un solo
   // acorde sostenido y uno "corto" cambia varias veces.
   var CHORD_RHYTHM_POOL = [
-    { val:[4],           w:3 },  // redonda: un solo acorde, todo el compás
-    { val:[2,2],         w:3 },  // dos blancas
-    { val:[3,1],         w:2 },
-    { val:[1,3],         w:2 },
-    { val:[2,1,1],       w:2 },
-    { val:[1,1,2],       w:2 },
-    { val:[1,1,1,1],     w:3 },  // negra a negra (el ritmo de antes)
-    { val:[1.5,1.5,1],   w:1 }   // síncopa ocasional
+    { val:[4],             w:3 },  // redonda: un solo acorde, todo el compás
+    { val:[2,2],           w:3 },  // dos blancas
+    { val:[3,1],           w:2 },
+    { val:[1,3],           w:2 },
+    { val:[2,1,1],         w:2 },
+    { val:[1,1,2],         w:2 },
+    { val:[1,1,1,1],       w:2 },  // negra a negra (bajado de peso — ya no domina, sonaba monótono)
+    { val:[1.5,1.5,1],     w:2 },  // síncopa: negra con puntillo + negra con puntillo + negra
+    { val:[1,1.5,1.5],     w:2 },  // síncopa: negra + negra con puntillo + negra con puntillo
+    { val:[1.5,0.5,2],     w:2 },  // negra con puntillo + corchea + blanca
+    { val:[2,1.5,0.5],     w:2 },  // blanca + negra con puntillo + corchea
+    { val:[1,0.5,0.5,1,1], w:1 },  // negra + dos corcheas + dos negras
+    { val:[0.5,0.5,1,1,1], w:1 },  // dos corcheas + tres negras
+    { val:[1.5,2,0.5],     w:1 }   // negra con puntillo + blanca + corchea
   ];
   // Ritmo de bajo: mayormente blancas, con negras y algún par de
   // corcheas sincopadas metidas al azar por compás — más variedad que
@@ -3030,7 +3037,7 @@ function runAnalysis() {
     // mueve respecto del voicing anterior (línea de guide-tones suave),
     // sin dejar de variar de vez en cuando — nunca elige una nota fuera
     // de rootChord, solo decide CUÁL combinación válida y en qué forma.
-    function pickChordVoicing(rootChord, prevCombo, prevVoiced){
+    function pickChordVoicing(rootChord, prevCombo, prevVoiced, forceCommonBias){
       var N_CAND = 4, GUARD = 40;
       var candidates = [], guard = 0;
       while (candidates.length < N_CAND && guard < GUARD){
@@ -3050,8 +3057,13 @@ function runAnalysis() {
         var v2 = applyVoicingStyle(invertChord(transposeChord(p2.chord, t2), inv2));
         return { picked:p2, t:t2, inv:inv2, combo:p2.chord.join(",")+":"+t2+":"+inv2, voiced:v2, strum:false };
       }
+      // Notas comunes: si el checkbox está activo, sube al 100% la
+      // probabilidad de quedarse con el candidato de menor costo de
+      // conducción de voces (en vez del 65% de siempre) — el mismo
+      // pool de candidatos, solo se vuelve determinística la elección
+      // del más cercano/con más notas en común al acorde anterior.
       var chosen;
-      if (prevVoiced && Math.random() < 0.65){
+      if (prevVoiced && (forceCommonBias || Math.random() < 0.65)){
         candidates.sort(function(x,y){ return voicingCost(prevVoiced,x.voiced) - voicingCost(prevVoiced,y.voiced); });
         chosen = candidates[0];
       } else {
@@ -3162,6 +3174,69 @@ function runAnalysis() {
       REPEAT_PROB: REPEAT_PROB,
       COUPLE_PROB: COUPLE_PROB,
       applyRepetitionBias: applyRepetitionBias
+    };
+  })();
+
+  // ---------- NOTAS COMUNES: más continuidad armónica entre reataques ----------
+  // No introduce ninguna nota fuera del acorde/grado ya elegido — solo
+  // decide, entre varias combinaciones válidas de subconjunto +
+  // transposición + inversión del MISMO rootChord, cuál se usa: la que
+  // comparte más notas (mismo pitch-class, sin importar octava) con el
+  // reataque anterior. En el motor base esto se hace sorteando N_CAND
+  // candidatos y quedándose siempre con el de mayor coincidencia (en vez
+  // de 1 solo candidato al azar como sin el checkbox) — en la práctica,
+  // más del doble de notas en común en promedio. Con Jazz activo, en vez
+  // de generar su propio pool, sube al 100% la probabilidad con la que
+  // JAZZ.pickChordVoicing ya elige el candidato de menor costo de
+  // conducción de voces (normalmente 65% de las veces).
+  var COMMONNOTES = (function(){
+    function enabled(){
+      var chk = document.getElementById("consolaCommonNotesChk");
+      return !!(chk && chk.checked);
+    }
+    function commonTones(prevVoiced, cand){
+      if (!prevVoiced || !prevVoiced.length || !cand || !cand.length) return 0;
+      var setA = {};
+      prevVoiced.forEach(function(n){ setA[((n%12)+12)%12] = true; });
+      var seen = {}, count = 0;
+      cand.forEach(function(n){
+        var pc = ((n%12)+12)%12;
+        if (setA[pc] && !seen[pc]){ count++; seen[pc] = true; }
+      });
+      return count;
+    }
+    var N_CAND = 4, GUARD = 40;
+    function pickBestCandidate(rootChord, prevCombo, prevVoiced){
+      var candidates = [], guard = 0;
+      while (candidates.length < N_CAND && guard < GUARD){
+        guard++;
+        var picked = randomSubsetChord(rootChord);
+        var t = randomInt(0, 11);
+        var inv = picked.chord.length > 1 ? randomInt(0, picked.chord.length-1) : 0;
+        var combo = picked.chord.join(",") + ":" + t + ":" + inv;
+        if (combo === prevCombo) continue;
+        var voiced = invertChord(transposeChord(picked.chord, t), inv);
+        candidates.push({ picked:picked, t:t, inv:inv, combo:combo, voiced:voiced });
+      }
+      if (!candidates.length){
+        var p2 = randomSubsetChord(rootChord);
+        var t2 = randomInt(0, 11);
+        var inv2 = p2.chord.length > 1 ? randomInt(0, p2.chord.length-1) : 0;
+        var v2 = invertChord(transposeChord(p2.chord, t2), inv2);
+        return { picked:p2, t:t2, inv:inv2, combo:p2.chord.join(",")+":"+t2+":"+inv2, voiced:v2 };
+      }
+      if (!prevVoiced || !prevVoiced.length){
+        return candidates[randomInt(0, candidates.length-1)];
+      }
+      var scored = candidates.map(function(c){ return { c:c, score: commonTones(prevVoiced, c.voiced) }; });
+      var topScore = Math.max.apply(null, scored.map(function(s){ return s.score; }));
+      var top = scored.filter(function(s){ return s.score === topScore; }).map(function(s){ return s.c; });
+      return top[randomInt(0, top.length-1)];
+    }
+    return {
+      enabled: enabled,
+      commonTones: commonTones,
+      pickBestCandidate: pickBestCandidate
     };
   })();
 
@@ -3490,9 +3565,21 @@ function runAnalysis() {
           // JAZZ: variedad de voicing (cerrada/drop2/drop3/abierta con
           // doblado, como el Voicing Explorer) + conducción de voces
           // suave la mayoría de las veces — ver JAZZ.pickChordVoicing.
-          var cand = JAZZ.pickChordVoicing(rootChord, prevCombo, jazzPrevVoiced);
+          // NOTAS COMUNES: si está activo, fuerza esa elección al 100%
+          // de las veces en vez del 65% habitual.
+          var cand = JAZZ.pickChordVoicing(rootChord, prevCombo, jazzPrevVoiced, COMMONNOTES.enabled());
           picked = cand.picked; t = cand.t; inv = cand.inv; combo = cand.combo;
           voiced = cand.voiced; strum = cand.strum;
+          jazzPrevVoiced = voiced;
+        } else if (COMMONNOTES.enabled()) {
+          // NOTAS COMUNES (motor base): en vez de un solo candidato al
+          // azar, sortea varios dentro del mismo acorde/grado y se
+          // queda con el que comparte más notas con el reataque
+          // anterior — mismo set, más continuidad.
+          var cnCand = COMMONNOTES.pickBestCandidate(rootChord, prevCombo, jazzPrevVoiced);
+          picked = cnCand.picked; t = cnCand.t; inv = cnCand.inv; combo = cnCand.combo;
+          voiced = cnCand.voiced;
+          strum = false;
           jazzPrevVoiced = voiced;
         } else {
           do{
@@ -4656,6 +4743,9 @@ function runAnalysis() {
     if(state.rootChord.length) regenerateConsola();
   });
   document.getElementById("consolaMoreRepChk").addEventListener("change", function(){
+    if(state.rootChord.length) regenerateConsola();
+  });
+  document.getElementById("consolaCommonNotesChk").addEventListener("change", function(){
     if(state.rootChord.length) regenerateConsola();
   });
   document.getElementById("consolaVolume").addEventListener("input", function(){
