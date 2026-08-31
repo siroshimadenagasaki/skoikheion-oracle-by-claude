@@ -271,6 +271,9 @@
   table.overlay-table td.notas, table.overlay-table td.set, table.overlay-table td.forte{
     font-family:'JetBrains Mono',monospace;white-space:nowrap;
   }
+  table.overlay-table td.cifrado{
+    font-family:'JetBrains Mono',monospace;white-space:nowrap;color:var(--violet);
+  }
   table.overlay-table tr.tonica td{background:rgba(212,165,55,.08);}
   table.overlay-table tr.inversion td{background:rgba(139,126,200,.08);}
   table.overlay-table .estado{
@@ -290,6 +293,111 @@
   .overlay-empty{
     text-align:center;color:var(--ink-muted);font-style:italic;font-size:14px;padding:20px 0;
   }
+
+  /* ---- Generador de Cifrado de Acordes ---- */
+  .cifrado-card{
+    background:var(--surface);border:1px solid var(--line);border-radius:18px;
+    padding:24px 20px 22px;margin-top:22px;
+    position:relative;
+  }
+  .cifrado-card h2{
+    font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.24em;
+    text-transform:uppercase;color:var(--gold);text-align:center;margin:0 0 4px;font-weight:500;
+  }
+  .cifrado-sub{
+    text-align:center;color:var(--ink-muted);font-style:italic;font-size:14px;
+    margin:0;
+  }
+  .cifrado-body{margin-top:20px;}
+  .cifrado-toggle{
+    position:absolute;top:18px;right:18px;
+    width:30px;height:30px;
+    font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:700;line-height:1;
+    background:var(--surface-2);border:1px solid var(--line);color:var(--gold);
+    border-radius:8px;cursor:pointer;transition:.15s;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .cifrado-toggle:hover{border-color:var(--gold);background:var(--gold);color:#1a1622;}
+  .cifrado-grados-box{
+    margin-bottom:16px;padding:14px 16px;background:var(--surface-2);
+    border:1px solid var(--line);border-radius:14px;
+  }
+  .cifrado-grados-box label{
+    display:block;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--gold-dim);margin-bottom:8px;
+  }
+  .cifrado-grados-box input[type="text"]{
+    width:100%;font-family:'JetBrains Mono',monospace;font-size:12.5px;
+    background:var(--surface);border:1px solid var(--line);color:var(--ink);
+    border-radius:8px;padding:9px 12px;
+  }
+  .cifrado-grados-info{
+    margin-top:9px;font-family:'JetBrains Mono',monospace;font-size:11.5px;
+    color:var(--violet);min-height:1.3em;
+  }
+  .cifrado-grados-info.err{color:var(--red-warn);}
+  .cifrado-symtoolbar{
+    display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:18px;
+  }
+  .cifrado-symtoolbar span.lbl{
+    font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--ink-muted);margin-right:4px;
+  }
+  .cifrado-symtoolbar button{
+    font-family:'Cormorant Garamond',serif;font-size:16px;
+    width:34px;height:34px;border:1px solid var(--line);background:var(--surface-2);
+    color:var(--ink);border-radius:8px;cursor:pointer;transition:.15s;
+  }
+  .cifrado-symtoolbar button:hover{border-color:var(--gold-dim);color:var(--gold);}
+  .cifrado-grid{
+    display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;
+  }
+  .cifrado-grid label{
+    display:flex;flex-direction:column;gap:6px;
+    font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--ink-muted);
+  }
+  .cifrado-grid select, .cifrado-grid input[type="text"]{
+    font-family:'JetBrains Mono',monospace;font-size:12.5px;
+    background:var(--surface-2);border:1px solid var(--line);color:var(--ink);
+    border-radius:8px;padding:8px 10px;
+  }
+  .cifrado-check{
+    flex-direction:row !important;align-items:center;gap:8px !important;
+    text-transform:none !important;font-size:12px !important;
+  }
+  .cifrado-check input{width:auto;accent-color:var(--gold);cursor:pointer;}
+  .cifrado-preview-box{
+    background:var(--surface-2);border:1px solid var(--line);border-radius:14px;
+    padding:28px;text-align:center;margin-bottom:16px;
+  }
+  .cifrado-preview-label{
+    font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--ink-muted);margin-bottom:10px;
+  }
+  #cifPreview{font-size:2.6em;min-height:1.2em;color:var(--ink);}
+  .cifrado-info{
+    margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--ink-muted);
+  }
+  .cifrado-output-label{
+    display:block;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--ink-muted);margin-bottom:6px;
+  }
+  .cifrado-output textarea{
+    width:100%;height:58px;font-family:'JetBrains Mono',monospace;font-size:11px;
+    background:var(--surface-2);border:1px solid var(--line);color:var(--ink);
+    border-radius:8px;padding:9px 10px;resize:vertical;
+  }
+  .cifrado-btns{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;}
+  @media (max-width:600px){ .cifrado-grid{grid-template-columns:1fr;} }
+
+  /* Tipografía de cifrados reutilizable (generador + columna de la tabla) */
+  .cifrado-acorde{font-family:'Cormorant Garamond',serif;white-space:nowrap;}
+  .cifrado-acorde .raiz{font-weight:600;}
+  .cifrado-acorde .calidad{vertical-align:super;font-size:.62em;font-weight:600;margin-left:.03em;}
+  .cifrado-acorde .tension{vertical-align:super;font-size:.55em;margin-left:.05em;}
+  .cifrado-acorde .omitida{vertical-align:super;font-size:.5em;margin-left:.05em;opacity:.85;}
+  .cifrado-acorde.mono{font-family:'JetBrains Mono',monospace;}
 
   /* ---- Subconjuntos / superconjuntos ---- */
   .subsup-block{margin-top:14px;}
@@ -453,6 +561,84 @@
     </div>
   </div>
 
+  <div class="cifrado-card">
+    <button type="button" class="cifrado-toggle" id="cifToggle" aria-expanded="false" aria-controls="cifBody" title="Mostrar el generador">+</button>
+    <h2>Generador de Cifrado de Acordes</h2>
+    <p class="cifrado-sub">Notación anglosajona (cifrado americano) — analizá grados o armá el cifrado a mano, con los símbolos que no están en el teclado: Δ ø ° + ♭ ♯ ♮.</p>
+
+    <div class="cifrado-body" id="cifBody" hidden>
+
+    <div class="cifrado-grados-box">
+      <label for="cifGrados">Analizador de grados</label>
+      <input type="text" id="cifGrados" placeholder="ej: 1 3b 5b 7b   (1 2b/9b 2/9 2#/9#/3b 3 4/11 4#/11#/b5 5 5#/6b/13b 6/13 7b 7)">
+      <div id="cifGradosInfo" class="cifrado-grados-info"></div>
+    </div>
+
+    <div class="cifrado-symtoolbar">
+      <span class="lbl">Insertar símbolo:</span>
+      <button type="button" data-sym="♭" title="Bemol">♭</button>
+      <button type="button" data-sym="♯" title="Sostenido">♯</button>
+      <button type="button" data-sym="♮" title="Becuadro">♮</button>
+      <button type="button" data-sym="Δ" title="Delta (Maj7)">Δ</button>
+      <button type="button" data-sym="ø" title="Semidisminuido">ø</button>
+      <button type="button" data-sym="°" title="Disminuido">°</button>
+      <button type="button" data-sym="º" title="Ordinal (no3º, no5º)">º</button>
+    </div>
+
+    <div class="cifrado-grid">
+      <label>Nota fundamental
+        <select id="cifRoot"></select>
+      </label>
+      <label>Tipo de acorde
+        <select id="cifQuality"></select>
+      </label>
+    </div>
+
+    <div class="cifrado-grid">
+      <label class="cifrado-check">
+        <input type="checkbox" id="cifSymbolsToggle" checked>
+        Usar símbolos especiales (Δ ø ° +) en vez de texto (Maj7, m7(♭5), dim7, aug)
+      </label>
+    </div>
+
+    <div class="cifrado-grid">
+      <label>Notas agregadas (add)
+        <input type="text" id="cifAdd" placeholder="ej: 9b 13#">
+      </label>
+      <label>Notas omitidas (no)
+        <input type="text" id="cifOmit" placeholder="ej: 3 5">
+      </label>
+    </div>
+
+    <div class="cifrado-grid">
+      <label class="cifrado-check">
+        <input type="radio" name="cifAddStyle" value="paren" checked>
+        Agregadas entre paréntesis: C7(♭9)
+      </label>
+      <label class="cifrado-check">
+        <input type="radio" name="cifAddStyle" value="add">
+        Agregadas con "add": C7 add ♭9
+      </label>
+    </div>
+
+    <div class="cifrado-preview-box">
+      <div class="cifrado-preview-label">Vista previa</div>
+      <div id="cifPreview" class="cifrado-acorde"></div>
+      <div id="cifInfo" class="cifrado-info"></div>
+    </div>
+
+    <div class="cifrado-output">
+      <span class="cifrado-output-label">Código HTML para insertar</span>
+      <textarea id="cifHtmlOut" readonly></textarea>
+      <div class="cifrado-btns">
+        <button type="button" class="chip primary" id="cifCopyHtml">Copiar HTML</button>
+        <button type="button" class="chip" id="cifCopyText">Copiar texto plano</button>
+      </div>
+    </div>
+
+    </div>
+  </div>
+
   <div class="overlay-card">
     <h2>Superposición cromática sobre tónica inmóvil</h2>
     <p class="overlay-sub" id="overlaySub">Cada grado desplaza cromáticamente el conjunto elegido; las notas se recalculan siempre en relación a la tónica fija C.</p>
@@ -462,6 +648,7 @@
           <tr>
             <th>Grado</th>
             <th>Notas sobre C</th>
+            <th>Cifrado</th>
             <th>Conjunto</th>
             <th>Forte</th>
             <th>Solomon</th>
@@ -1564,6 +1751,142 @@ function ordinalChordTone(index) {
   return nombres[index] ?? `voz ${index + 1}`;
 }
 
+/* ============================================================
+   CIFRADO DE ACORDES (notación anglosajona / cifrado americano)
+   Motor compartido: lo usa tanto la columna "Cifrado" de la tabla
+   de Superposición cromática de acá abajo como el Generador de
+   Cifrado de Acordes manual (más abajo en la página). Basado en la
+   tabla "Cifrado Anglosajon" de Sergio Terebeiko (Elementos
+   musicales).
+   ============================================================ */
+function _cifIv(semitono, grado) { return { semitono, grado }; }
+
+const CIFRADO_QUALITIES = [
+  { id: "maj", categoria: "Mayor", simbolo: "", alias: "", formula: "1  3  5",
+    descripcion: "Tríada Mayor — Modo Jónica / Lidia",
+    intervalos: [_cifIv(0, "1"), _cifIv(4, "3"), _cifIv(7, "5")] },
+  { id: "maj6", categoria: "Mayor", simbolo: "6", alias: "6", formula: "1  3  6",
+    descripcion: "Acorde Mayor con sexta",
+    intervalos: [_cifIv(0, "1"), _cifIv(4, "3"), _cifIv(7, "5"), _cifIv(9, "6")] },
+  { id: "maj7", categoria: "Mayor", simbolo: "Δ", alias: "Maj7", formula: "1  3  5  7",
+    descripcion: "Séptima mayor — Modo Jónica / Lidia",
+    intervalos: [_cifIv(0, "1"), _cifIv(4, "3"), _cifIv(7, "5"), _cifIv(11, "7")] },
+  { id: "min", categoria: "Menor", simbolo: "m", alias: "-", formula: "1  3♭  5",
+    descripcion: "Tríada Menor — Modo Dórica / Eólica",
+    intervalos: [_cifIv(0, "1"), _cifIv(3, "3"), _cifIv(7, "5")] },
+  { id: "min7", categoria: "Menor", simbolo: "m7", alias: "m7", formula: "1  3♭  5  7♭",
+    descripcion: "Menor séptima — Modo Dórica / Eólica",
+    intervalos: [_cifIv(0, "1"), _cifIv(3, "3"), _cifIv(7, "5"), _cifIv(10, "7")] },
+  { id: "minMaj7", categoria: "Menor", simbolo: "mΔ7", alias: "mMaj7", formula: "1  3♭  5  7",
+    descripcion: "Menor séptima mayor — Modo Menor melódica / armónica",
+    intervalos: [_cifIv(0, "1"), _cifIv(3, "3"), _cifIv(7, "5"), _cifIv(11, "7")] },
+  { id: "dom7", categoria: "Séptima", simbolo: "7", alias: "7", formula: "1  3  5  7♭",
+    descripcion: "Dominante / Séptima — Modo Mixolidia",
+    intervalos: [_cifIv(0, "1"), _cifIv(4, "3"), _cifIv(7, "5"), _cifIv(10, "7")] },
+  { id: "dom9", categoria: "Séptima", simbolo: "9", alias: "9", formula: "1  3  5  7♭  9",
+    descripcion: "Novena — Modo Mixolidia",
+    intervalos: [_cifIv(0, "1"), _cifIv(4, "3"), _cifIv(7, "5"), _cifIv(10, "7"), _cifIv(2, "9")] },
+  { id: "dom11", categoria: "Séptima", simbolo: "11", alias: "11", formula: "1  3  5  7♭  9  11",
+    descripcion: "Oncena — Modo Mixolidia",
+    intervalos: [_cifIv(0, "1"), _cifIv(4, "3"), _cifIv(7, "5"), _cifIv(10, "7"), _cifIv(2, "9"), _cifIv(5, "11")] },
+  { id: "dom13", categoria: "Séptima", simbolo: "13", alias: "13", formula: "1  3  5  7♭  9  11  13",
+    descripcion: "Trecena — Modo Mixolidia",
+    intervalos: [_cifIv(0, "1"), _cifIv(4, "3"), _cifIv(7, "5"), _cifIv(10, "7"), _cifIv(2, "9"), _cifIv(5, "11"), _cifIv(9, "13")] },
+  { id: "sus4", categoria: "Séptima", simbolo: "Sus4", alias: "sus4", formula: "1  4  5",
+    descripcion: "Acorde suspendido — Modo Mixolidia",
+    intervalos: [_cifIv(0, "1"), _cifIv(5, "4"), _cifIv(7, "5")] },
+  { id: "sus2", categoria: "Séptima", simbolo: "Sus2", alias: "sus2", formula: "1  2  5",
+    descripcion: "Acorde suspendido — Modo Mixolidia",
+    intervalos: [_cifIv(0, "1"), _cifIv(2, "2"), _cifIv(7, "5")] },
+  { id: "sept7sus", categoria: "Séptima", simbolo: "7Sus", alias: "7sus", formula: "1  4  5  7♭",
+    descripcion: "Séptima suspendida",
+    intervalos: [_cifIv(0, "1"), _cifIv(5, "4"), _cifIv(7, "5"), _cifIv(10, "7")] },
+  { id: "halfdim", categoria: "Locria (semidisminuido)", simbolo: "ø", alias: "m7(♭5)", formula: "1  3♭  5♭  7♭",
+    descripcion: "Acorde Semidisminuido — Modo Locria",
+    intervalos: [_cifIv(0, "1"), _cifIv(3, "3"), _cifIv(6, "5"), _cifIv(10, "7")] },
+  { id: "alt", categoria: "Alterada", simbolo: "Alt", alias: "7Alt", formula: "1  3  5  7♭  (9♭ 9♯ 5♭ 5♯)",
+    descripcion: "Acorde Alterada — Modo Alterada",
+    intervalos: [_cifIv(0, "1"), _cifIv(4, "3"), _cifIv(7, "5"), _cifIv(10, "7")] },
+  { id: "dim7", categoria: "Disminuida", simbolo: "°7", alias: "dim7", formula: "1  3♭  5♭  7♭♭",
+    descripcion: "Acorde Disminuido",
+    intervalos: [_cifIv(0, "1"), _cifIv(3, "3"), _cifIv(6, "5"), _cifIv(9, "7")] },
+  { id: "aug", categoria: "Aumentada", simbolo: "+", alias: "aug", formula: "1  3  5♯",
+    descripcion: "Tríada aumentada (+ significa 5♯)",
+    intervalos: [_cifIv(0, "1"), _cifIv(4, "3"), _cifIv(8, "5")] },
+];
+
+// Nombre convencional de una nota que sobra respecto del acorde base
+// detectado: se nombra como tensión (9/11/13), no como grado bajo (2/4/6).
+const CIFRADO_ADD_LABELS = { 0:"1", 1:"9♭", 2:"9", 3:"9♯", 4:"3", 5:"11", 6:"11♯", 7:"5", 8:"13♭", 9:"13", 10:"7♭", 11:"7" };
+
+// Grados aceptados por el analizador (incluye los sinónimos 9/11/13 de 2/4/6).
+const CIFRADO_GRADO_NATURAL = { 1:0, 2:2, 9:2, 3:4, 4:5, 11:5, 5:7, 6:9, 13:9, 7:11 };
+
+// Elige el mejor acorde de CIFRADO_QUALITIES para un Set de semitonos dado
+// (0 = tónica). Si están a la vez la 3ra mayor (4) y el semitono 3, este
+// último se interpreta como 9na aumentada (acorde 7#9, "de Hendrix"), no
+// como 3ra menor, para no hacer ganar a un acorde de la familia menor.
+function cifradoPickBestChord(inputSet) {
+  let matchSet = inputSet;
+  if (inputSet.has(3) && inputSet.has(4)) {
+    matchSet = new Set(inputSet);
+    matchSet.delete(3);
+  }
+  const candidatos = CIFRADO_QUALITIES.filter(c => c.id !== "alt");
+  const subconjuntos = candidatos.filter(c => c.intervalos.every(iv => matchSet.has(iv.semitono)));
+  if (subconjuntos.length) {
+    subconjuntos.sort((a, b) => b.intervalos.length - a.intervalos.length);
+    return subconjuntos[0];
+  }
+  let mejor = candidatos[0], mejorPuntaje = -1;
+  candidatos.forEach(c => {
+    const comunes = c.intervalos.filter(iv => matchSet.has(iv.semitono)).length;
+    if (comunes > mejorPuntaje) { mejorPuntaje = comunes; mejor = c; }
+  });
+  return mejor;
+}
+
+function cifradoParseGrado(token) {
+  const m = String(token).trim().match(/^([bB#♭♯nN]?)(\d+)([bB#♭♯nN]?)$/);
+  if (!m) return null;
+  const deg = parseInt(m[2], 10);
+  if (CIFRADO_GRADO_NATURAL[deg] === undefined) return null;
+  const accRaw = (m[1] || m[3] || "").toLowerCase();
+  let offset = CIFRADO_GRADO_NATURAL[deg];
+  if (accRaw === "b" || accRaw === "♭") offset -= 1;
+  else if (accRaw === "#" || accRaw === "♯") offset += 1;
+  return mod12(offset);
+}
+
+// Cifrado automático (siempre con símbolos: Δ ø ° +) para un conjunto de
+// clases de altura ya calculado en relación a la tónica fija C (0).
+function cifradoParaConjunto(pcArray) {
+  const inputSet = new Set(pcArray.map(mod12));
+  inputSet.add(0);
+  const acorde = cifradoPickBestChord(inputSet);
+
+  const addOffsets = [];
+  inputSet.forEach(off => {
+    if (!acorde.intervalos.some(iv => iv.semitono === off)) addOffsets.push(off);
+  });
+  addOffsets.sort((a, b) => a - b);
+  const addStrs = addOffsets.map(off => CIFRADO_ADD_LABELS[off]);
+
+  const omitStrs = acorde.intervalos
+    .filter(iv => !inputSet.has(iv.semitono))
+    .map(iv => `no${iv.grado}º`);
+
+  const html = '<span class="raiz">C</span>' +
+    (acorde.simbolo ? `<span class="calidad">${acorde.simbolo}</span>` : "") +
+    (addStrs.length ? `<span class="tension">(${addStrs.join(" ")})</span>` : "") +
+    (omitStrs.length ? `<span class="omitida"> ${omitStrs.join(" ")}</span>` : "");
+  const plain = "C" + acorde.simbolo +
+    (addStrs.length ? `(${addStrs.join(" ")})` : "") +
+    (omitStrs.length ? ` ${omitStrs.join(" ")}` : "");
+
+  return { acorde, html, plain };
+}
+
 // Genera las 12 filas de superposición cromática para un conjunto base
 // ya orientado en posición fundamental (se usa el a_form de analyze()).
 function generarSuperposicionCromatica(chordsData, baseEstructural) {
@@ -1589,6 +1912,7 @@ function generarSuperposicionCromatica(chordsData, baseEstructural) {
       solomon_name: r.solomon_name,
       esInversion,
       bajoDe: esInversion ? ordinalChordTone(colisionIdx) : null,
+      cifrado: cifradoParaConjunto(conjunto),
     });
   }
   return filas;
@@ -1620,6 +1944,7 @@ function renderSuperposicion(baseAnalysis) {
     <tr class="${f.n === 0 ? "tonica" : ""} ${f.esInversion && f.n !== 0 ? "inversion" : ""}">
       <td class="grado">${f.grado}</td>
       <td class="notas">${f.notas}</td>
+      <td class="cifrado"><span class="cifrado-acorde mono">${f.cifrado.html}</span></td>
       <td class="set">[${f.conjunto.join(", ")}]</td>
       <td class="forte">${f.forte_code ?? "—"}</td>
       <td class="forte">${f.solomon_code ?? "—"}${f.solomon_name ? ` · ${f.solomon_name}` : ""}</td>
@@ -3807,6 +4132,211 @@ function runAnalysis() {
   });
 
   regenerateConsola();
+})();
+</script>
+
+<script>
+/* ============================================================
+   Generador de Cifrado de Acordes — interfaz manual.
+   Usa el motor compartido (CIFRADO_QUALITIES, cifradoPickBestChord,
+   cifradoParseGrado) definido más arriba, junto a la columna
+   "Cifrado" de la tabla de Superposición cromática.
+   ============================================================ */
+(function () {
+  const ROOTS = ["C", "C♯", "D♭", "D", "D♯", "E♭", "E", "F", "F♯", "G♭", "G", "G♯", "A♭", "A", "A♯", "B♭", "B"];
+
+  function $(id) { return document.getElementById(id); }
+
+  function buildRootSelect() {
+    const sel = $("cifRoot");
+    ROOTS.forEach(r => {
+      const opt = document.createElement("option");
+      opt.value = r; opt.textContent = r;
+      sel.appendChild(opt);
+    });
+  }
+
+  function buildQualitySelect() {
+    const sel = $("cifQuality");
+    const categorias = [];
+    CIFRADO_QUALITIES.forEach(c => { if (!categorias.includes(c.categoria)) categorias.push(c.categoria); });
+    categorias.forEach(cat => {
+      const group = document.createElement("optgroup");
+      group.label = cat;
+      CIFRADO_QUALITIES.filter(c => c.categoria === cat).forEach(c => {
+        const opt = document.createElement("option");
+        opt.value = c.id;
+        opt.textContent = `${c.simbolo || "(tríada)"}   —   ${c.descripcion}`;
+        group.appendChild(opt);
+      });
+      sel.appendChild(group);
+    });
+  }
+
+  function getQuality(id) {
+    const found = CIFRADO_QUALITIES.filter(c => c.id === id);
+    return found.length ? found[0] : CIFRADO_QUALITIES[0];
+  }
+
+  // Parser de los campos manuales "agregadas"/"omitidas" (ej. "9b 13#"):
+  // distinto del analizador de grados porque acá no hay que resolver a
+  // qué semitono corresponde cada número — solo separar número + accidental.
+  function parseTokens(text) {
+    if (!text) return [];
+    return text.trim().split(/\s+/).filter(Boolean).map(tok => {
+      const m = tok.match(/^(\d+)\s*([bBnN#♭♯♮]?)$/);
+      if (!m) return { num: tok, acc: "" };
+      const acc = m[2].toLowerCase();
+      let sym = "";
+      if (acc === "b" || acc === "♭") sym = "♭";
+      else if (acc === "#" || acc === "♯") sym = "♯";
+      else if (acc === "n" || acc === "♮") sym = "♮";
+      return { num: m[1], acc: sym };
+    });
+  }
+
+  let lastFocused = "cifAdd";
+
+  function renderPreview() {
+    const root = $("cifRoot").value;
+    const chord = getQuality($("cifQuality").value);
+    const useSymbols = $("cifSymbolsToggle").checked;
+    const addStyle = document.querySelector('input[name="cifAddStyle"]:checked').value;
+    const addTokens = parseTokens($("cifAdd").value);
+    const omitTokens = parseTokens($("cifOmit").value);
+
+    const qualityText = useSymbols ? chord.simbolo : chord.alias;
+
+    let addHtml = "", addPlain = "";
+    if (addTokens.length) {
+      const items = addTokens.map(t => t.num + t.acc);
+      if (addStyle === "paren") {
+        addHtml = `<span class="tension">(${items.join(" ")})</span>`;
+        addPlain = `(${items.join(" ")})`;
+      } else {
+        addHtml = `<span class="tension"> add ${items.join(" ")}</span>`;
+        addPlain = ` add ${items.join(" ")}`;
+      }
+    }
+
+    let omitHtml = "", omitPlain = "";
+    if (omitTokens.length) {
+      const items = omitTokens.map(t => `no${t.num}º`);
+      omitHtml = `<span class="omitida"> ${items.join(" ")}</span>`;
+      omitPlain = ` ${items.join(" ")}`;
+    }
+
+    const previewHtml =
+      `<span class="raiz">${root}</span>` +
+      (qualityText ? `<span class="calidad">${qualityText}</span>` : "") +
+      addHtml + omitHtml;
+
+    $("cifPreview").innerHTML = previewHtml;
+
+    let infoText = `Notas: ${chord.formula}`;
+    $("cifInfo").textContent = infoText;
+
+    $("cifHtmlOut").value = `<span class="cifrado-acorde">${previewHtml}</span>`;
+    $("cifHtmlOut").dataset.plain = root + qualityText + addPlain + omitPlain;
+  }
+
+  function insertSymbol(sym) {
+    const field = $(lastFocused);
+    const start = field.selectionStart != null ? field.selectionStart : field.value.length;
+    const end = field.selectionEnd != null ? field.selectionEnd : field.value.length;
+    field.value = field.value.slice(0, start) + sym + field.value.slice(end);
+    field.focus();
+    field.selectionStart = field.selectionEnd = start + sym.length;
+    renderPreview();
+  }
+
+  function flashCopied(btn) {
+    const original = btn.textContent;
+    btn.textContent = "¡Copiado!";
+    btn.classList.add("copied");
+    setTimeout(() => { btn.textContent = original; btn.classList.remove("copied"); }, 1200);
+  }
+
+  function copyToClipboard(text, btn) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => { if (btn) flashCopied(btn); }).catch(() => {});
+    }
+  }
+
+  function analyzeGrados() {
+    const raw = $("cifGrados").value;
+    const infoEl = $("cifGradosInfo");
+    const tokens = raw.split(/[\s,;]+/).filter(Boolean);
+
+    if (!tokens.length) {
+      infoEl.textContent = "";
+      infoEl.classList.remove("err");
+      return;
+    }
+
+    const inputSet = new Set([0]); // la fundamental siempre está presente
+    const invalidos = [];
+    tokens.forEach(tok => {
+      const offset = cifradoParseGrado(tok);
+      if (offset === null) invalidos.push(tok); else inputSet.add(offset);
+    });
+
+    const acorde = cifradoPickBestChord(inputSet);
+
+    const addOffsets = [];
+    inputSet.forEach(off => {
+      if (!acorde.intervalos.some(iv => iv.semitono === off)) addOffsets.push(off);
+    });
+    addOffsets.sort((a, b) => a - b);
+
+    const omitGrados = acorde.intervalos
+      .filter(iv => !inputSet.has(iv.semitono))
+      .map(iv => iv.grado);
+
+    const ADD_LABELS_ASCII = { 0:"1", 1:"9b", 2:"9", 3:"9#", 4:"3", 5:"11", 6:"11#", 7:"5", 8:"13b", 9:"13", 10:"7b", 11:"7" };
+
+    $("cifQuality").value = acorde.id;
+    $("cifAdd").value = addOffsets.map(off => ADD_LABELS_ASCII[off]).join(" ");
+    $("cifOmit").value = omitGrados.join(" ");
+
+    let msg = `Detectado: ${acorde.simbolo || "(tríada)"}  —  ${acorde.descripcion}`;
+    if (invalidos.length) {
+      msg += `   ·   No reconocido: ${invalidos.join(", ")}`;
+      infoEl.classList.add("err");
+    } else {
+      infoEl.classList.remove("err");
+    }
+    infoEl.textContent = msg;
+
+    renderPreview();
+  }
+
+  buildRootSelect();
+  buildQualitySelect();
+
+  ["cifRoot", "cifQuality", "cifSymbolsToggle", "cifAdd", "cifOmit"].forEach(id => {
+    $(id).addEventListener("input", renderPreview);
+    $(id).addEventListener("change", renderPreview);
+  });
+  document.querySelectorAll('input[name="cifAddStyle"]').forEach(r => r.addEventListener("change", renderPreview));
+  ["cifGrados", "cifAdd", "cifOmit"].forEach(id => $(id).addEventListener("focus", () => { lastFocused = id; }));
+  $("cifGrados").addEventListener("input", analyzeGrados);
+  document.querySelectorAll(".cifrado-symtoolbar button").forEach(b => {
+    b.addEventListener("click", () => insertSymbol(b.getAttribute("data-sym")));
+  });
+  $("cifCopyHtml").addEventListener("click", () => copyToClipboard($("cifHtmlOut").value, $("cifCopyHtml")));
+  $("cifCopyText").addEventListener("click", () => copyToClipboard($("cifHtmlOut").dataset.plain || "", $("cifCopyText")));
+
+  $("cifToggle").addEventListener("click", () => {
+    const body = $("cifBody");
+    const abrir = body.hidden;
+    body.hidden = !abrir;
+    $("cifToggle").textContent = abrir ? "−" : "+";
+    $("cifToggle").setAttribute("aria-expanded", String(abrir));
+    $("cifToggle").title = abrir ? "Ocultar el generador" : "Mostrar el generador";
+  });
+
+  renderPreview();
 })();
 </script>
 </body>
