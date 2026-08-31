@@ -161,6 +161,7 @@
   .fretboard-wrap{max-width:425px;margin:0 auto;overflow-x:visible;}
   svg.fretboard{width:100%;height:auto;overflow:visible;}
   .fret-line{stroke:var(--line);stroke-width:.8;}
+  .fret-nut{stroke:var(--ink-muted);stroke-width:2;}
   .fret-label{
     font-family:'JetBrains Mono',monospace;font-size:7.5px;fill:var(--ink-muted);
     text-anchor:end;dominant-baseline:middle;
@@ -180,6 +181,15 @@
   .fret-note:not(.selected):hover text{opacity:.85;}
   .fret-note.selected circle{opacity:1;}
   .fret-note.selected text{opacity:1;}
+  /* Cuerdas al aire: círculo siempre visible (hueco) fuera de la grilla,
+     como en un diagrama de guitarra — se rellena igual que cualquier
+     nota cuando queda seleccionada. */
+  .fret-note.fret-open circle{opacity:1;fill:none;stroke:var(--ink-muted);stroke-width:1;}
+  .fret-note.fret-open text{opacity:1;fill:var(--ink-muted);}
+  .fret-note.fret-open:not(.selected):hover circle{opacity:1;fill:none;stroke:var(--violet);}
+  .fret-note.fret-open:not(.selected):hover text{opacity:1;fill:var(--violet);}
+  .fret-note.fret-open.selected circle{opacity:1;fill:var(--gold);stroke:#1a1622;stroke-width:.8;}
+  .fret-note.fret-open.selected text{opacity:1;fill:#1a1622;}
 
   .clock-actions{display:flex;justify-content:center;gap:10px;margin-top:22px;flex-wrap:wrap;}
   button.chip{
@@ -585,7 +595,7 @@
     <div class="fretboard-card">
       <h2>Diapasón</h2>
       <div class="fretboard-wrap">
-        <svg class="fretboard" id="fretboardSvg" viewBox="0 0 180 690" preserveAspectRatio="xMidYMid meet">
+        <svg class="fretboard" id="fretboardSvg" viewBox="0 0 180 686" preserveAspectRatio="xMidYMid meet">
           <g id="fretGrid"></g>
           <g id="fretNotes"></g>
         </svg>
@@ -2560,9 +2570,14 @@ const fretNotesG = document.getElementById("fretNotes");
 const FB_STRINGS = [6, 5, 4, 3, 2, 1];
 const FB_OPEN_PC = { 6: 4, 5: 9, 4: 2, 3: 7, 2: 11, 1: 4 };
 const FB_MARKER_FRETS = [3, 5, 7, 9, 12, 15, 17, 19, 21, 24];
-const FB_ROWS = 25;
+// FB_ROWS = trastes reales (1..24) — la cuerda al aire NO es un traste,
+// se dibuja aparte (ver más abajo) como un círculo fuera de la grilla,
+// en línea con cada cuerda, justo como en un diagrama de guitarra.
+const FB_ROWS = 24;
 const FB_COL_W = 26, FB_ROW_H = 26;
-const FB_LEFT = 28, FB_TOP = 18;
+const FB_LEFT = 28, FB_TOP = 40;
+const FB_STRING_LABEL_Y = 8;
+const FB_OPEN_Y = 24;
 const fbGridW = (FB_STRINGS.length - 1) * FB_COL_W;
 const fbGridH = FB_ROWS * FB_ROW_H;
 
@@ -2577,21 +2592,24 @@ for (let i = 0; i < FB_STRINGS.length; i++) {
 for (let j = 0; j <= FB_ROWS; j++) {
   const y = FB_TOP + j * FB_ROW_H;
   const line = document.createElementNS(svgNS, "line");
-  line.setAttribute("class", "fret-line");
+  line.setAttribute("class", j === 0 ? "fret-line fret-nut" : "fret-line");
   line.setAttribute("x1", FB_LEFT); line.setAttribute("x2", FB_LEFT + fbGridW);
   line.setAttribute("y1", y); line.setAttribute("y2", y);
   fretGrid.appendChild(line);
 }
-for (let fret = 0; fret < FB_ROWS; fret++) {
-  const rowCenterY = FB_TOP + fret * FB_ROW_H + FB_ROW_H / 2;
+// fret va de 1 a FB_ROWS (traste real) — la fila 1 de la grilla es el
+// primer traste (p.ej. F en la sexta cuerda, un semitono arriba de la
+// E al aire), nunca la cuerda al aire.
+for (let fret = 1; fret <= FB_ROWS; fret++) {
+  const rowCenterY = FB_TOP + (fret - 1) * FB_ROW_H + FB_ROW_H / 2;
   const label = document.createElementNS(svgNS, "text");
   label.setAttribute("class", "fret-label");
   label.setAttribute("x", FB_LEFT - 8);
   label.setAttribute("y", rowCenterY);
-  label.textContent = fret + 1;
+  label.textContent = fret;
   fretGrid.appendChild(label);
 
-  if (fret > 0 && FB_MARKER_FRETS.includes(fret)) {
+  if (FB_MARKER_FRETS.includes(fret)) {
     const dot = document.createElementNS(svgNS, "circle");
     dot.setAttribute("class", "fret-marker");
     dot.setAttribute("cx", FB_LEFT - 15);
@@ -2605,16 +2623,46 @@ FB_STRINGS.forEach((s, i) => {
   const label = document.createElementNS(svgNS, "text");
   label.setAttribute("class", "string-label");
   label.setAttribute("x", FB_LEFT + i * FB_COL_W);
-  label.setAttribute("y", FB_TOP - 7);
+  label.setAttribute("y", FB_STRING_LABEL_Y);
   label.textContent = s;
   fretGrid.appendChild(label);
 });
 
+// Cuerdas al aire: no son un traste, van fuera de la grilla (arriba del
+// clavijero/cejuela) como un círculo en línea con cada cuerda — igual
+// que en cualquier diagrama de acordes de guitarra.
 FB_STRINGS.forEach((s, i) => {
-  for (let fret = 0; fret < FB_ROWS; fret++) {
+  const pc = FB_OPEN_PC[s];
+  const cx = FB_LEFT + i * FB_COL_W;
+  const cy = FB_OPEN_Y;
+
+  const g = document.createElementNS(svgNS, "g");
+  g.setAttribute("class", "fret-note fret-open");
+  g.dataset.pc = pc;
+
+  const circle = document.createElementNS(svgNS, "circle");
+  circle.setAttribute("cx", cx);
+  circle.setAttribute("cy", cy);
+  circle.setAttribute("r", 5.5);
+  g.appendChild(circle);
+
+  const text = document.createElementNS(svgNS, "text");
+  text.setAttribute("x", cx);
+  text.setAttribute("y", cy + 0.5);
+  text.textContent = NOTE_NAMES[pc];
+  g.appendChild(text);
+
+  g.addEventListener("click", () => toggleNote(pc));
+
+  fretNotesG.appendChild(g);
+  pcElements[pc].push(g);
+});
+
+FB_STRINGS.forEach((s, i) => {
+  for (let fret = 1; fret <= FB_ROWS; fret++) {
     const pc = mod12(FB_OPEN_PC[s] + fret);
     const cx = FB_LEFT + i * FB_COL_W;
-    const cy = FB_TOP + fret * FB_ROW_H + FB_ROW_H / 2;
+    const cy = FB_TOP + (fret - 1) * FB_ROW_H + FB_ROW_H / 2;
 
     const g = document.createElementNS(svgNS, "g");
     g.setAttribute("class", "fret-note");
