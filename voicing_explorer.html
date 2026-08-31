@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voicing Explorer</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap">
+<style>
+  :root{
+    color-scheme: light;
+    --bg: #eef1ee;
+    --surface: #ffffff;
+    --surface-2: #e6eae6;
+    --border: #d3d9d3;
+    --text-primary: #12181a;
+    --text-secondary: #4c5652;
+    --text-muted: #7c8985;
+    --accent: #2a78d6;
+    --accent-ink: #ffffff;
+    --cat-cerrada: #2a78d6;
+    --cat-abierta: #eb6834;
+    --cat-extendida: #1baf7a;
+    --focus-ring: #2a78d6;
+    --shadow: 0 1px 2px rgba(20,30,28,.06), 0 6px 20px -8px rgba(20,30,28,.12);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      color-scheme: dark;
+      --bg: #10151a;
+      --surface: #181f25;
+      --surface-2: #1f272e;
+      --border: #2c363d;
+      --text-primary: #edf1ee;
+      --text-secondary: #a7b2ad;
+      --text-muted: #78847f;
+      --accent: #5b9de8;
+      --accent-ink: #071019;
+      --cat-cerrada: #3987e5;
+      --cat-abierta: #e2703c;
+      --cat-extendida: #1fbd80;
+      --focus-ring: #5b9de8;
+      --shadow: 0 1px 2px rgba(0,0,0,.35), 0 10px 26px -10px rgba(0,0,0,.55);
+    }
+  }
+  :root[data-theme="dark"]{
+    color-scheme: dark;
+    --bg: #10151a;
+    --surface: #181f25;
+    --surface-2: #1f272e;
+    --border: #2c363d;
+    --text-primary: #edf1ee;
+    --text-secondary: #a7b2ad;
+    --text-muted: #78847f;
+    --accent: #5b9de8;
+    --accent-ink: #071019;
+    --cat-cerrada: #3987e5;
+    --cat-abierta: #e2703c;
+    --cat-extendida: #1fbd80;
+    --focus-ring: #5b9de8;
+    --shadow: 0 1px 2px rgba(0,0,0,.35), 0 10px 26px -10px rgba(0,0,0,.55);
+  }
+
+  *{ box-sizing: border-box; }
+  body{
+    margin:0; background: var(--bg); color: var(--text-primary);
+    font-family: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 14.5px; line-height: 1.5;
+  }
+  h1,h2,h3{ text-wrap: balance; font-family: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace; margin: 0; }
+  code, .mono, table, input, select, .num{ font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace; font-variant-numeric: tabular-nums; }
+  a{ color: var(--accent); }
+  button{ font: inherit; }
+  ::selection{ background: var(--accent); color: var(--accent-ink); }
+  :focus-visible{ outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+
+  .app{ max-width: 1180px; margin: 0 auto; padding: 22px 20px 64px; }
+
+  .topbar{ display:flex; align-items:center; gap:14px; padding: 6px 2px 22px; border-bottom: 1px solid var(--border); margin-bottom: 22px; }
+  .topbar svg{ flex: none; }
+  .topbar h1{ font-size: 1.15rem; letter-spacing: -.01em; }
+  .topbar .tagline{ margin: 4px 0 0; color: var(--text-secondary); font-size: .86rem; }
+
+  .layout{ display:grid; grid-template-columns: 280px 1fr; gap: 20px; align-items:start; }
+  @media (max-width: 860px){ .layout{ grid-template-columns: 1fr; } }
+
+  .sidebar{ position: sticky; top: 16px; display:flex; flex-direction:column; gap:16px; }
+  @media (max-width: 860px){ .sidebar{ position: static; } }
+
+  .panel{ background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; box-shadow: var(--shadow); }
+  .panel h2{ font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--text-secondary); margin-bottom: 12px; }
+  .panel label{ display:block; font-size: .78rem; color: var(--text-secondary); margin-bottom: 10px; }
+  .panel label > span.hint{ display:block; font-size: .72rem; color: var(--text-muted); margin-top: 2px; font-family: "IBM Plex Sans", sans-serif; }
+  .field{ width:100%; margin-top:5px; padding: 8px 10px; border-radius:7px; border:1px solid var(--border); background: var(--surface-2); color: var(--text-primary); font-size: .86rem; }
+  .rangerow{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+
+  .btn{ display:inline-flex; align-items:center; justify-content:center; gap:6px; width:100%; padding: 9px 12px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text-primary); cursor:pointer; font-size: .82rem; font-weight: 600; transition: transform .06s ease, background .15s ease; }
+  .btn:hover{ background: var(--border); }
+  .btn:active{ transform: translateY(1px); }
+  .btn.primary{ background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .btn.primary:hover{ filter: brightness(1.06); }
+  .btn.small{ width:auto; padding: 7px 11px; font-size: .76rem; }
+  .btn.ghost{ background: transparent; }
+
+  .legend-row{ display:flex; align-items:center; gap:8px; font-size:.8rem; color: var(--text-secondary); margin-bottom:6px; }
+  .dot{ width:9px; height:9px; border-radius:50%; flex:none; }
+  .dot.cerrada{ background: var(--cat-cerrada); }
+  .dot.abierta{ background: var(--cat-abierta); }
+  .dot.extendida{ background: var(--cat-extendida); }
+
+  .content{ display:flex; flex-direction:column; gap:18px; min-width:0; }
+  .card{ background: var(--surface); border:1px solid var(--border); border-radius: 12px; padding: 18px 18px 20px; box-shadow: var(--shadow); }
+  .card-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom: 12px; }
+  .card h2{ font-size: .95rem; display:flex; align-items:center; gap:9px; }
+  .card p.help{ margin: 4px 0 14px; color: var(--text-secondary); font-size: .82rem; max-width: 62ch; }
+  .count-pill{ font-family: "IBM Plex Sans", sans-serif; font-weight:600; font-size:.68rem; letter-spacing:.02em; background: var(--surface-2); color: var(--text-secondary); border-radius: 99px; padding: 3px 9px; }
+
+  .summary-grid{ display:grid; grid-template-columns: 128px 1fr; gap: 18px; align-items:center; }
+  @media (max-width: 560px){ .summary-grid{ grid-template-columns: 1fr; } }
+  .clock-svg{ width: 116px; height: 116px; }
+  .clock-ring{ fill:none; stroke: var(--border); stroke-width:1.5; }
+  .clock-poly{ fill: color-mix(in srgb, var(--accent) 14%, transparent); stroke: var(--accent); stroke-width: 1.4; stroke-linejoin: round; }
+  .clock-dot{ fill: var(--surface-2); stroke: var(--border); stroke-width:1; }
+  .clock-dot.active{ fill: var(--accent); stroke: var(--accent); }
+  .clock-dot.root{ fill: var(--text-primary); stroke: var(--text-primary); }
+  .clock-label{ font-family:"IBM Plex Mono",monospace; font-size:7.5px; fill: var(--text-muted); text-anchor:middle; dominant-baseline:middle; }
+  .clock-label.active{ fill: var(--text-primary); font-weight:600; }
+
+  .set-detail{ display:flex; flex-direction:column; gap:8px; }
+  .set-detail .big-set{ font-size: 1.35rem; font-weight:600; letter-spacing: -.01em; }
+  .set-detail .sub{ color: var(--text-secondary); font-size:.82rem; }
+  .chips{ display:flex; flex-wrap:wrap; gap:6px; margin-top:2px; }
+  .chip{ font-size:.72rem; background: var(--surface-2); border:1px solid var(--border); color: var(--text-secondary); border-radius:6px; padding:3px 8px; }
+
+  table{ border-collapse: collapse; width:100%; font-size: .82rem; }
+  thead th{ text-align:left; font-family:"IBM Plex Sans",sans-serif; text-transform:uppercase; letter-spacing:.06em; font-size:.66rem; color: var(--text-muted); font-weight:600; padding: 6px 10px; border-bottom: 1px solid var(--border); white-space:nowrap; }
+  tbody td{ padding: 7px 10px; border-bottom: 1px solid var(--border); white-space:nowrap; }
+  tbody tr:hover{ background: var(--surface-2); }
+  .table-scroll{ overflow-x:auto; border-radius: 8px; }
+  .table-scroll::-webkit-scrollbar{ height:8px; }
+
+  .shape-pill{ display:inline-flex; align-items:center; gap:6px; font-family:"IBM Plex Sans",sans-serif; font-size:.72rem; font-weight:600; padding:3px 9px; border-radius:99px; background: var(--surface-2); color: var(--text-secondary); }
+  .shape-pill .dot{ width:7px; height:7px; }
+
+  .play-btn{ border:1px solid var(--border); background: var(--surface-2); color: var(--text-primary); border-radius:6px; width:28px; height:28px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; font-size:.72rem; }
+  .play-btn:hover{ background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  tr.now-playing{ background: color-mix(in srgb, var(--accent) 16%, transparent); }
+
+  .drop-grid{ display:grid; grid-template-columns: repeat(3, 1fr); gap:12px; }
+  @media (max-width: 700px){ .drop-grid{ grid-template-columns: 1fr; } }
+  .drop-card{ border:1px solid var(--border); border-radius:9px; padding:12px; background: var(--surface-2); display:flex; flex-direction:column; gap:8px; }
+  .drop-card .drop-title{ font-size:.7rem; text-transform:uppercase; letter-spacing:.07em; color: var(--text-muted); font-family:"IBM Plex Sans",sans-serif; font-weight:600; display:flex; justify-content:space-between; align-items:center;}
+  .drop-card .drop-notes{ font-size: .95rem; font-weight:600; }
+
+  .profile-wrap{ display:flex; flex-direction:column; gap:6px; }
+  .profile-bars{ display:flex; align-items:flex-end; gap:8px; height:120px; padding-top: 18px; border-bottom:1px solid var(--border); }
+  .bar-col{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; position:relative; }
+  .bar-val{ font-size:.66rem; color: var(--text-secondary); margin-bottom:4px; }
+  .bar{ width: 100%; max-width:26px; border-radius: 3px 3px 0 0; background: color-mix(in srgb, var(--accent) 70%, var(--surface-2)); }
+  .bar.zero{ background: var(--surface-2); border:1px dashed var(--border); }
+  .bar-axis{ display:flex; gap:8px; margin-top:6px; }
+  .bar-axis span{ flex:1; text-align:center; font-size:.68rem; color: var(--text-muted); }
+
+  .chain-controls{ display:flex; gap:8px; }
+  .chain-controls .btn{ width:auto; }
+
+  footer.note{ margin-top: 18px; color: var(--text-muted); font-size: .76rem; text-align:center; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true">
+      <circle cx="17" cy="17" r="15.5" fill="none" stroke="var(--border)" stroke-width="1.6"></circle>
+      <circle cx="17" cy="4.2" r="2.4" fill="var(--text-primary)"></circle>
+      <circle cx="26.5" cy="9.7" r="1.9" fill="var(--accent)"></circle>
+      <circle cx="26.5" cy="24.3" r="1.9" fill="var(--accent)"></circle>
+      <circle cx="7.5" cy="24.3" r="1.9" fill="var(--surface-2)" stroke="var(--border)" stroke-width="1"></circle>
+      <circle cx="7.5" cy="9.7" r="1.9" fill="var(--surface-2)" stroke="var(--border)" stroke-width="1"></circle>
+      <polygon points="17,4.2 26.5,9.7 26.5,24.3" fill="none" stroke="var(--accent)" stroke-width="1.1" opacity=".55"></polygon>
+    </svg>
+    <div>
+      <h1>Voicing Explorer</h1>
+      <p class="tagline">Voicings de piano y progresiones a partir de conjuntos de clases de altura (mod 12) — sin armonía funcional.</p>
+    </div>
+  </div>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <section class="panel">
+        <h2>Conjunto de trabajo</h2>
+        <label>Fundamental (origen de la transposición)
+          <select class="field" id="rootSelect"></select>
+        </label>
+        <label>Conjunto de intervalos
+          <select class="field" id="setSelect"></select>
+        </label>
+        <label id="customWrap" hidden>Intervalos personalizados
+          <input class="field" id="customIntervals" placeholder="0,3,6,9">
+          <span class="hint">Semitonos desde la fundamental, separados por coma.</span>
+        </label>
+        <div class="rangerow">
+          <label>Nota MIDI baja
+            <input class="field" type="number" id="lowNote" value="48">
+          </label>
+          <label>Nota MIDI alta
+            <input class="field" type="number" id="highNote" value="84">
+          </label>
+        </div>
+        <button class="btn primary" id="generateBtn">Generar voicings</button>
+      </section>
+
+      <section class="panel">
+        <h2>Cadena de transposición</h2>
+        <label>Modo
+          <select class="field" id="chainMode">
+            <option value="max">Maximizar notas en común</option>
+            <option value="fixed">Paso fijo (planing)</option>
+          </select>
+        </label>
+        <label>Cantidad de pasos
+          <input class="field" type="number" id="chainSteps" value="6" min="2" max="12">
+        </label>
+        <label id="fixedStepWrap" hidden>Semitonos por paso
+          <input class="field" type="number" id="fixedStep" value="-1">
+        </label>
+        <label id="candidateStepsWrap">Pasos candidatos (semitonos)
+          <input class="field" id="candidateSteps" value="-2,-1,1,2">
+          <span class="hint">En cada paso se elige, entre estos, el que conserva más notas.</span>
+        </label>
+        <button class="btn primary" id="chainBtn">Generar cadena</button>
+      </section>
+
+      <section class="panel">
+        <h2>Disposición del voicing</h2>
+        <div class="legend-row"><span class="dot cerrada"></span>Cerrada — extensión ≤ 1 octava</div>
+        <div class="legend-row"><span class="dot abierta"></span>Abierta — hasta ~1.5 octava</div>
+        <div class="legend-row"><span class="dot extendida"></span>Extendida — más separado</div>
+      </section>
+    </aside>
+
+    <main class="content">
+      <section class="card" id="setSummaryCard">
+        <div class="summary-grid">
+          <div id="clockHolder"></div>
+          <div class="set-detail">
+            <div class="big-set" id="bigSetLabel">—</div>
+            <div class="sub" id="setSub">—</div>
+            <div class="chips" id="setChips"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h2>Voicings <span class="count-pill" id="voicingCount">0</span></h2>
+        </div>
+        <p class="help">Todas las combinaciones de octava por nota (con y sin doblados) dentro del rango elegido, filtradas por una extensión tocable. Tocá ▶ para escuchar cualquier fila.</p>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Notas</th><th>Extensión</th><th>Disposición</th><th></th></tr></thead>
+            <tbody id="voicingBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Drop voicings</h2>
+        <p class="help">Misma nota, otra octava: se toma la posición cerrada y se baja una octava la 2ª o 3ª voz desde el agudo.</p>
+        <div class="drop-grid" id="dropGrid"></div>
+      </section>
+
+      <section class="card">
+        <h2>Notas en común bajo T<sub>n</sub></h2>
+        <p class="help">Para cada transposición del conjunto (1 a 11 semitonos), cuántas clases de altura coinciden con el conjunto original. Es una propiedad del conjunto en sí, no del contexto.</p>
+        <div class="profile-wrap">
+          <div class="profile-bars" id="profileBars"></div>
+          <div class="bar-axis" id="profileAxis"></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h2>Progresión <span class="count-pill" id="chainMeta">—</span></h2>
+          <div class="chain-controls">
+            <button class="btn small primary" id="playAllBtn">▶ Reproducir todo</button>
+            <button class="btn small ghost" id="stopBtn">■ Detener</button>
+          </div>
+        </div>
+        <p class="help">En cada paso se elige el voicing que mejor conecta con el anterior (menor movimiento total de voces), variando la disposición para no repetir siempre la misma forma.</p>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Paso</th><th>Notas</th><th>Disposición</th><th>Movimiento</th><th>Comunes</th><th></th></tr></thead>
+            <tbody id="chainBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <footer class="note">Rango de trabajo en notación MIDI · 60 = Do central (C4). Sonido: ondas triangulares simples, solo para referencia auditiva.</footer>
+    </main>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- Núcleo teórico (idéntico en lógica al script en Python) ----------
+  const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+  const SETS = [
+    ['maj',  [0,4,7]],
+    ['min',  [0,3,7]],
+    ['dim',  [0,3,6]],
+    ['aug',  [0,4,8]],
+    ['sus2', [0,2,7]],
+    ['sus4', [0,5,7]],
+    ['maj7', [0,4,7,11]],
+    ['dom7', [0,4,7,10]],
+    ['min7', [0,3,7,10]],
+    ['m7b5', [0,3,6,10]],
+    ['dim7', [0,3,6,9]],
+    ['maj6', [0,4,7,9]],
+    ['min6', [0,3,7,9]],
+    ['maj9', [0,4,7,11,14]],
+    ['dom9', [0,4,7,10,14]],
+    ['min9', [0,3,7,10,14]],
+  ];
+  const SETS_MAP = Object.fromEntries(SETS);
+
+  function pc(name){ return NOTE_NAMES.indexOf(name); }
+  function midiToName(m){ const oct = Math.floor(m/12)-1; return NOTE_NAMES[((m%12)+12)%12] + oct; }
+  function setKeyStr(intervals){ return '{' + intervals.join(',') + '}'; }
+
+  function realize(root, intervals){
+    const s = new Set(intervals.map(iv => ((root+iv)%12+12)%12));
+    return [...s].sort((a,b)=>a-b);
+  }
+
+  function voicingsForSet(root, intervals, low, high, allowDoubling, maxSpan){
+    const pcs = realize(root, intervals);
+    const pitchesByPc = {};
+    for (const p of pcs){
+      const arr = [];
+      for (let n=low;n<=high;n++) if (n%12===p) arr.push(n);
+      pitchesByPc[p] = arr.length ? arr : [p+60];
+    }
+    const multisets = [pcs.slice()];
+    if (allowDoubling) for (const p of pcs) multisets.push([...pcs, p]);
+
+    const results = new Map();
+    for (const ms of multisets){
+      const choiceArrays = ms.map(p => pitchesByPc[p]);
+      let combos = [[]];
+      for (const arr of choiceArrays){
+        const next = [];
+        for (const c of combos) for (const v of arr) next.push([...c, v]);
+        combos = next;
+        if (combos.length > 20000) break; // salvaguarda de rendimiento
+      }
+      for (const combo of combos){
+        const uniq = new Set(combo);
+        if (uniq.size !== ms.length) continue;
+        const notes = [...combo].sort((a,b)=>a-b);
+        if (notes[notes.length-1]-notes[0] > maxSpan) continue;
+        results.set(notes.join(','), notes);
+      }
+    }
+    return [...results.values()].sort((a,b)=> a.length-b.length || a[0]-b[0] || (a.join(',')<b.join(',')?-1:1));
+  }
+
+  function classify(v){
+    const span = v[v.length-1]-v[0];
+    if (span<=12) return 'cerrada';
+    if (span<=19) return 'abierta';
+    return 'extendida';
+  }
+
+  function dropVoicing(closed, drop){
+    const notes = closed.slice();
+    const idx = notes.length-drop;
+    notes[idx] -= 12;
+    return notes.sort((a,b)=>a-b);
+  }
+
+  function transpositionProfile(intervals){
+    const s = new Set(intervals.map(i => ((i%12)+12)%12));
+    const profile = {};
+    for (let n=1;n<12;n++){
+      const t = new Set([...s].map(x => (x+n)%12));
+      let common = 0;
+      for (const x of s) if (t.has(x)) common++;
+      profile[n]=common;
+    }
+    return profile;
+  }
+
+  function permutations(arr){
+    if (arr.length<=1) return [arr];
+    const out=[];
+    for (let i=0;i<arr.length;i++){
+      const rest = arr.slice(0,i).concat(arr.slice(i+1));
+      for (const p of permutations(rest)) out.push([arr[i], ...p]);
+    }
+    return out;
+  }
+
+  function bestVoiceLeading(prev, candidate){
+    let bestCost=null, bestCommon=null;
+    for (const perm of permutations(candidate)){
+      let cost=0, common=0;
+      for (let i=0;i<prev.length;i++){
+        cost += Math.abs(prev[i]-perm[i]);
+        if (prev[i]===perm[i]) common++;
+      }
+      if (bestCost===null || cost<bestCost || (cost===bestCost && common>bestCommon)){
+        bestCost=cost; bestCommon=common;
+      }
+    }
+    return [bestCost, bestCommon];
+  }
+
+  function mulberry32(seed){
+    let a = seed >>> 0;
+    return function(){
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function buildProgression(steps, opts){
+    const { nNotes, low, high, topK=5, seed=0, varyShape=true } = opts;
+    const rng = mulberry32(seed);
+    let prev=null, prevShape=null;
+    const out=[];
+    for (const [root, intervals] of steps){
+      const candidatos = voicingsForSet(root, intervals, low, high, true, 28).filter(v => v.length===nNotes);
+      let elegido, costo, comunes;
+      if (!candidatos.length){ continue; }
+      if (prev===null){
+        elegido = candidatos.reduce((best, v) => {
+          const span = v[v.length-1]-v[0];
+          const mean = v.reduce((a,b)=>a+b,0)/v.length;
+          const score = span*100 + Math.abs(mean-66);
+          if (!best) return {v, score};
+          return score<best.score ? {v, score} : best;
+        }, null).v;
+        costo=0; comunes=elegido.length;
+      } else {
+        const evaluados = candidatos.map(c => {
+          const [cost, common] = bestVoiceLeading(prev, c);
+          return {cost, common, v:c};
+        });
+        evaluados.sort((a,b)=> a.cost-b.cost || b.common-a.common);
+        const mejores = evaluados.slice(0, topK);
+        let pool = mejores;
+        if (varyShape){
+          const alt = mejores.filter(m => classify(m.v)!==prevShape);
+          if (alt.length) pool = alt;
+        }
+        const pick = pool[Math.floor(rng()*pool.length)];
+        elegido = pick.v; costo = pick.cost; comunes = pick.common;
+      }
+      prev = elegido; prevShape = classify(elegido);
+      out.push({ root, intervals, voicing: elegido, forma: prevShape, movimiento: costo, comunes });
+    }
+    return out;
+  }
+
+  function chromaticChain(root, intervals, nSteps, step){
+    const chain=[];
+    for (let i=0;i<nSteps;i++) chain.push([((root+i*step)%12+12)%12, intervals]);
+    return chain;
+  }
+
+  function maxCommonToneChain(root, intervals, nSteps, candidateSteps, seed){
+    const rng = mulberry32(seed);
+    const profile = transpositionProfile(intervals);
+    const chain=[[((root%12)+12)%12, intervals]];
+    let cur = ((root%12)+12)%12;
+    for (let i=1;i<nSteps;i++){
+      const scoreOf = s => profile[((s%12)+12)%12] ?? 0;
+      const best = Math.max(...candidateSteps.map(scoreOf));
+      const options = candidateSteps.filter(s => scoreOf(s)===best);
+      const step = options[Math.floor(rng()*options.length)];
+      cur = ((cur+step)%12+12)%12;
+      chain.push([cur, intervals]);
+    }
+    return chain;
+  }
+
+  // ---------- Audio (Web Audio API, mínimo) ----------
+  let audioCtx = null;
+  let pendingTimeouts = [];
+  function ensureCtx(){
+    if (!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    if (audioCtx.state==='suspended') audioCtx.resume();
+    return audioCtx;
+  }
+  function midiToFreq(m){ return 440*Math.pow(2,(m-69)/12); }
+  function playChord(midiNotes, duration){
+    const ctx = ensureCtx();
+    const t0 = ctx.currentTime + 0.02;
+    const master = ctx.createGain();
+    master.gain.setValueAtTime(0.0001, t0);
+    master.gain.exponentialRampToValueAtTime(0.22, t0+0.02);
+    master.gain.exponentialRampToValueAtTime(0.0001, t0+duration);
+    master.connect(ctx.destination);
+    midiNotes.forEach(n=>{
+      const osc = ctx.createOscillator();
+      osc.type = 'triangle';
+      osc.frequency.value = midiToFreq(n);
+      osc.connect(master);
+      osc.start(t0);
+      osc.stop(t0+duration+0.05);
+    });
+  }
+  function stopAll(){
+    pendingTimeouts.forEach(id=>clearTimeout(id));
+    pendingTimeouts=[];
+    if (audioCtx){ audioCtx.close(); audioCtx=null; }
+    document.querySelectorAll('tr.now-playing').forEach(r=>r.classList.remove('now-playing'));
+  }
+  function playSequence(rows){
+    stopAll();
+    const step = 0.85;
+    rows.forEach((row,i)=>{
+      const id = setTimeout(()=>{
+        document.querySelectorAll('tr.now-playing').forEach(r=>r.classList.remove('now-playing'));
+        const tr = document.querySelector('tr[data-idx="'+i+'"]');
+        if (tr) tr.classList.add('now-playing');
+        playChord(row.voicing, step*0.9);
+      }, i*step*1000);
+      pendingTimeouts.push(id);
+    });
+  }
+
+  // ---------- UI ----------
+  const rootSelect = document.getElementById('rootSelect');
+  const setSelect = document.getElementById('setSelect');
+  const customWrap = document.getElementById('customWrap');
+  const customIntervals = document.getElementById('customIntervals');
+  const lowNote = document.getElementById('lowNote');
+  const highNote = document.getElementById('highNote');
+  const chainMode = document.getElementById('chainMode');
+  const chainSteps = document.getElementById('chainSteps');
+  const fixedStepWrap = document.getElementById('fixedStepWrap');
+  const fixedStep = document.getElementById('fixedStep');
+  const candidateStepsWrap = document.getElementById('candidateStepsWrap');
+  const candidateSteps = document.getElementById('candidateSteps');
+
+  NOTE_NAMES.forEach((n,i)=>{
+    const o = document.createElement('option'); o.value=i; o.textContent=n; rootSelect.appendChild(o);
+  });
+  rootSelect.value = pc('G');
+
+  SETS.forEach(([name, ivs])=>{
+    const o = document.createElement('option');
+    o.value = name;
+    o.textContent = setKeyStr(ivs) + '  ·  ' + name;
+    setSelect.appendChild(o);
+  });
+  const customOpt = document.createElement('option'); customOpt.value='__custom__'; customOpt.textContent='Personalizado…';
+  setSelect.appendChild(customOpt);
+  setSelect.value = 'dom7';
+
+  setSelect.addEventListener('change', ()=>{
+    customWrap.hidden = setSelect.value !== '__custom__';
+  });
+  chainMode.addEventListener('change', ()=>{
+    const fixed = chainMode.value === 'fixed';
+    fixedStepWrap.hidden = !fixed;
+    candidateStepsWrap.hidden = fixed;
+  });
+
+  function currentIntervals(){
+    if (setSelect.value === '__custom__'){
+      const parts = customIntervals.value.split(',').map(s=>parseInt(s.trim(),10)).filter(n=>!Number.isNaN(n));
+      return parts.length ? parts : [0,4,7];
+    }
+    return SETS_MAP[setSelect.value];
+  }
+
+  function renderClock(pcs, root){
+    const cx=58, cy=58, r=44;
+    let dots='', labels='';
+    for (let i=0;i<12;i++){
+      const angle = (i/12)*2*Math.PI - Math.PI/2;
+      const x = cx + r*Math.cos(angle), y = cy + r*Math.sin(angle);
+      const active = pcs.includes(i);
+      const isRoot = i===root;
+      const cls = isRoot ? 'clock-dot root' : (active ? 'clock-dot active' : 'clock-dot');
+      const rad = isRoot ? 6.5 : (active ? 5.5 : 2.6);
+      dots += `<circle class="${cls}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${rad}"></circle>`;
+      const lx = cx + (r+13)*Math.cos(angle), ly = cy + (r+13)*Math.sin(angle);
+      labels += `<text class="clock-label${active?' active':''}" x="${lx.toFixed(1)}" y="${ly.toFixed(1)}">${NOTE_NAMES[i]}</text>`;
+    }
+    let poly='';
+    const activeSorted = pcs.slice().sort((a,b)=>a-b);
+    if (activeSorted.length>1){
+      const pts = activeSorted.map(i=>{
+        const angle=(i/12)*2*Math.PI-Math.PI/2;
+        return (cx+r*Math.cos(angle)).toFixed(1)+','+(cy+r*Math.sin(angle)).toFixed(1);
+      }).join(' ');
+      poly = `<polygon class="clock-poly" points="${pts}"></polygon>`;
+    }
+    return `<svg class="clock-svg" viewBox="0 0 116 116" role="img" aria-label="Clases de altura del conjunto en un reloj de 12">
+      <circle class="clock-ring" cx="${cx}" cy="${cy}" r="${r}"></circle>
+      ${poly}${dots}${labels}
+    </svg>`;
+  }
+
+  function renderSummary(root, intervals){
+    const pcs = realize(root, intervals);
+    document.getElementById('clockHolder').innerHTML = renderClock(pcs, root);
+    document.getElementById('bigSetLabel').textContent = setKeyStr(intervals) + ' sobre ' + NOTE_NAMES[root];
+    const label = setSelect.value !== '__custom__' ? ` (rótulo convencional: “${setSelect.value}”)` : '';
+    document.getElementById('setSub').textContent = 'Clases de altura resultantes: ' + pcs.map(p=>NOTE_NAMES[p]).join(', ') + label;
+    document.getElementById('setChips').innerHTML = pcs.map(p=>`<span class="chip">${NOTE_NAMES[p]} · pc ${p}</span>`).join('');
+  }
+
+  function shapePill(shape){
+    return `<span class="shape-pill"><span class="dot ${shape}"></span>${shape}</span>`;
+  }
+
+  function generateVoicings(){
+    const root = parseInt(rootSelect.value,10);
+    const intervals = currentIntervals();
+    const low = parseInt(lowNote.value,10), high = parseInt(highNote.value,10);
+    renderSummary(root, intervals);
+
+    const vs = voicingsForSet(root, intervals, low, high, true, 28);
+    document.getElementById('voicingCount').textContent = vs.length + ' voicings';
+    const body = document.getElementById('voicingBody');
+    body.innerHTML = '';
+    vs.slice(0, 200).forEach(v=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${v.map(midiToName).join(' ')}</td><td>${v[v.length-1]-v[0]} st</td><td>${shapePill(classify(v))}</td>
+        <td><button class="play-btn" title="Reproducir" data-notes='${JSON.stringify(v)}'>▶</button></td>`;
+      body.appendChild(tr);
+    });
+
+    // drop voicings sobre la posición más cerrada
+    const closedRef = vs.filter(v=>v.length>=4).sort((a,b)=>(a[a.length-1]-a[0])-(b[b.length-1]-b[0]))[0]
+                      || vs[0];
+    const dropGrid = document.getElementById('dropGrid');
+    const items = [['Cerrada', closedRef]];
+    if (closedRef && closedRef.length>=4){
+      items.push(['Drop 2', dropVoicing(closedRef,2)]);
+      items.push(['Drop 3', dropVoicing(closedRef,3)]);
+    }
+    dropGrid.innerHTML = items.map(([label,v])=>`
+      <div class="drop-card">
+        <div class="drop-title">${label} <button class="play-btn" title="Reproducir" data-notes='${JSON.stringify(v)}'>▶</button></div>
+        <div class="drop-notes">${v.map(midiToName).join(' ')}</div>
+      </div>`).join('');
+
+    // perfil de transposición
+    const profile = transpositionProfile(intervals);
+    const maxVal = Math.max(1, ...Object.values(profile));
+    const bars = document.getElementById('profileBars');
+    const axis = document.getElementById('profileAxis');
+    bars.innerHTML = ''; axis.innerHTML = '';
+    for (let n=1;n<12;n++){
+      const val = profile[n];
+      const pctH = Math.max(4, (val/maxVal)*100);
+      const col = document.createElement('div');
+      col.className = 'bar-col';
+      col.innerHTML = `<span class="bar-val">${val}</span><div class="bar${val===0?' zero':''}" style="height:${pctH}%" title="T${n}: ${val} notas en común"></div>`;
+      bars.appendChild(col);
+      const lab = document.createElement('span'); lab.textContent = 'T'+n;
+      axis.appendChild(lab);
+    }
+  }
+
+  let lastChain = [];
+  function generateChain(){
+    const root = parseInt(rootSelect.value,10);
+    const intervals = currentIntervals();
+    const low = parseInt(lowNote.value,10), high = parseInt(highNote.value,10);
+    const nSteps = Math.max(2, Math.min(12, parseInt(chainSteps.value,10)||6));
+    const nNotes = intervals.length;
+
+    let steps;
+    if (chainMode.value === 'fixed'){
+      steps = chromaticChain(root, intervals, nSteps, parseInt(fixedStep.value,10)||-1);
+    } else {
+      const cand = candidateSteps.value.split(',').map(s=>parseInt(s.trim(),10)).filter(n=>!Number.isNaN(n)&&n!==0);
+      steps = maxCommonToneChain(root, intervals, nSteps, cand.length?cand:[-2,-1,1,2], 3);
+    }
+
+    const prog = buildProgression(steps, { nNotes, low, high, topK:5, seed:3, varyShape:true });
+    lastChain = prog;
+    document.getElementById('chainMeta').textContent = prog.length + ' pasos';
+    const body = document.getElementById('chainBody');
+    body.innerHTML = '';
+    prog.forEach((p,i)=>{
+      const tr = document.createElement('tr');
+      tr.setAttribute('data-idx', i);
+      tr.innerHTML = `<td>${NOTE_NAMES[p.root]} ${setKeyStr(p.intervals)}</td>
+        <td>${p.voicing.map(midiToName).join(' ')}</td>
+        <td>${shapePill(p.forma)}</td>
+        <td>${p.movimiento}</td>
+        <td>${p.comunes}</td>
+        <td><button class="play-btn" title="Reproducir" data-notes='${JSON.stringify(p.voicing)}'>▶</button></td>`;
+      body.appendChild(tr);
+    });
+  }
+
+  document.addEventListener('click', (e)=>{
+    const btn = e.target.closest('.play-btn');
+    if (btn){
+      const notes = JSON.parse(btn.getAttribute('data-notes'));
+      playChord(notes, 1.1);
+    }
+  });
+
+  document.getElementById('generateBtn').addEventListener('click', generateVoicings);
+  document.getElementById('chainBtn').addEventListener('click', generateChain);
+  document.getElementById('playAllBtn').addEventListener('click', ()=>playSequence(lastChain));
+  document.getElementById('stopBtn').addEventListener('click', stopAll);
+
+  generateVoicings();
+  generateChain();
+})();
+</script>
+</body>
+</html>

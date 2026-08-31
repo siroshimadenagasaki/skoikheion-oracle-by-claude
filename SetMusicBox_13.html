@@ -1171,6 +1171,41 @@
       }
     })();
   </script>
+
+  <div class="overlay-card" id="voicingExplorerCard">
+    <div style="display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;">
+      <h2 style="margin:0;">Voicing Explorer</h2>
+      <button type="button" class="chip" id="voicingExplorerToggleBtn" aria-expanded="false" aria-controls="voicingExplorerCollapse">+ Expandir</button>
+    </div>
+    <div id="voicingExplorerCollapse" hidden>
+      <p class="overlay-sub">Módulo aparte (su propia página, embebida acá) para explorar voicings de piano — todas las disposiciones de octava y doblados dentro de un rango, drop 2/3, y una cadena de transposición con conducción de voces — de cualquier conjunto de intervalos, sin depender de armonía funcional. Los mismos criterios (variedad de disposición + conducción de voces suave) alimentan al modo &#127927; Jazz del SetMusicBox de más arriba.</p>
+      <div id="voicingExplorerFrameWrap" style="border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#eef1ee;">
+        <iframe id="voicingExplorerFrame" title="Voicing Explorer" style="display:block;width:100%;height:900px;border:0;" loading="lazy"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      var toggleBtn = document.getElementById("voicingExplorerToggleBtn");
+      var collapse = document.getElementById("voicingExplorerCollapse");
+      var frame = document.getElementById("voicingExplorerFrame");
+      if(toggleBtn && collapse){
+        toggleBtn.addEventListener("click", function(){
+          var willExpand = collapse.hidden;
+          collapse.hidden = !willExpand;
+          toggleBtn.textContent = willExpand ? "− Contraer" : "+ Expandir";
+          toggleBtn.setAttribute("aria-expanded", String(willExpand));
+          // Carga el iframe recién al expandir por primera vez (no antes,
+          // para no crear un AudioContext ni pedir la fuente tipográfica
+          // de este módulo si nadie lo abre).
+          if(willExpand && frame && !frame.getAttribute("src")){
+            frame.setAttribute("src", "voicing_explorer.html");
+          }
+        });
+      }
+    })();
+  </script>
 </div>
 
 <script>
@@ -2844,14 +2879,114 @@ function runAnalysis() {
       return { idxInChord: pos % n, octLap: Math.floor(pos/n) };
     }
 
-    // Voicing "drop 2": técnica real de jazz — se toma un voicing YA
-    // armado (mismas notas, ninguna nueva) y se baja la 2da voz desde
-    // arriba una octava, para un color más abierto.
+    // Voicings "drop": técnica real de jazz — se toma un voicing YA
+    // armado (mismas notas, ninguna nueva) y se baja una voz interna una
+    // octava, para un color más abierto (inspirado en el Voicing
+    // Explorer: drop2 baja la 2da voz desde arriba, drop3 la 3ra).
     function drop2(chordMidi){
       var arr = chordMidi.slice().sort(function(a,b){return a-b;});
       if (arr.length < 3) return arr;
       arr[arr.length-2] -= 12;
       return arr.sort(function(a,b){return a-b;});
+    }
+    function drop3(chordMidi){
+      var arr = chordMidi.slice().sort(function(a,b){return a-b;});
+      if (arr.length < 4) return arr;
+      arr[arr.length-3] -= 12;
+      return arr.sort(function(a,b){return a-b;});
+    }
+    // Doblado (como el "allowDoubling" del Voicing Explorer): repite una
+    // nota YA presente en el voicing una octava más arriba/abajo, para
+    // un color más lleno — nunca agrega una clase de altura ajena, solo
+    // duplica una que ya era válida en otro registro.
+    function doubleTop(chordMidi){
+      var arr = chordMidi.slice().sort(function(a,b){return a-b;});
+      if (!arr.length) return arr;
+      arr.push(arr[arr.length-1] + 12);
+      return arr;
+    }
+    function doubleBottom(chordMidi){
+      var arr = chordMidi.slice().sort(function(a,b){return a-b;});
+      if (!arr.length) return arr;
+      arr.unshift(arr[0] - 12);
+      return arr.sort(function(a,b){return a-b;});
+    }
+    // Estilos de voicing (cerrada / drop2 / drop3 / abierta con doblado),
+    // sorteados con peso — variedad de disposición como la del Voicing
+    // Explorer, aplicada sobre un voicing que la lógica original de
+    // arriba ya calculó como válido (mismas notas, otro registro, o una
+    // nota repetida en otra octava).
+    var VOICING_STYLES = [
+      { id:"closed",   w:4, fn:function(v){ return v; } },
+      { id:"drop2",    w:3, fn:function(v){ return v.length >= 3 ? drop2(v) : v; } },
+      { id:"drop3",    w:2, fn:function(v){ return v.length >= 4 ? drop3(v) : v; } },
+      { id:"openTop",  w:2, fn:function(v){ return v.length >= 2 ? doubleTop(v) : v; } },
+      { id:"openBass", w:1, fn:function(v){ return v.length >= 2 ? doubleBottom(v) : v; } }
+    ];
+    function applyVoicingStyle(voiced){
+      var total = 0;
+      VOICING_STYLES.forEach(function(s){ total += s.w; });
+      var r = Math.random() * total;
+      for (var i=0;i<VOICING_STYLES.length;i++){
+        r -= VOICING_STYLES[i].w;
+        if (r <= 0) return VOICING_STYLES[i].fn(voiced).sort(function(a,b){return a-b;});
+      }
+      return voiced;
+    }
+
+    // Conducción de voces suave: costo aproximado de moverse de un
+    // voicing al siguiente (distancia total entre notas emparejadas de
+    // menor a mayor, con una pequeña penalización si cambia la cantidad
+    // de notas) — inspirado en bestVoiceLeading del Voicing Explorer,
+    // simplificado (sin permutaciones) porque acá las notas ya vienen
+    // ordenadas de grave a agudo.
+    function voicingCost(prev, cand){
+      if (!prev || !prev.length) return 0;
+      var a = prev, b = cand;
+      var n = Math.min(a.length, b.length);
+      var cost = Math.abs(a.length - b.length) * 6;
+      for (var i=0;i<n;i++) cost += Math.abs(a[i]-b[i]);
+      return cost;
+    }
+    // Arma un voicing para UN reataque de armonía: sortea unos pocos
+    // candidatos (subset + transposición + inversión al azar, como en el
+    // motor original, con un estilo de voicing ya aplicado a cada uno) y
+    // la mayoría de las veces se queda con el candidato que menos se
+    // mueve respecto del voicing anterior (línea de guide-tones suave),
+    // sin dejar de variar de vez en cuando — nunca elige una nota fuera
+    // de rootChord, solo decide CUÁL combinación válida y en qué forma.
+    function pickChordVoicing(rootChord, prevCombo, prevVoiced){
+      var N_CAND = 4, GUARD = 40;
+      var candidates = [], guard = 0;
+      while (candidates.length < N_CAND && guard < GUARD){
+        guard++;
+        var picked = randomSubsetChord(rootChord);
+        var t = randomInt(0, 11);
+        var inv = picked.chord.length > 1 ? randomInt(0, picked.chord.length-1) : 0;
+        var combo = picked.chord.join(",") + ":" + t + ":" + inv;
+        if (combo === prevCombo) continue;
+        var voiced = applyVoicingStyle(invertChord(transposeChord(picked.chord, t), inv));
+        candidates.push({ picked:picked, t:t, inv:inv, combo:combo, voiced:voiced });
+      }
+      if (!candidates.length){
+        var p2 = randomSubsetChord(rootChord);
+        var t2 = randomInt(0, 11);
+        var inv2 = p2.chord.length > 1 ? randomInt(0, p2.chord.length-1) : 0;
+        var v2 = applyVoicingStyle(invertChord(transposeChord(p2.chord, t2), inv2));
+        return { picked:p2, t:t2, inv:inv2, combo:p2.chord.join(",")+":"+t2+":"+inv2, voiced:v2, strum:false };
+      }
+      var chosen;
+      if (prevVoiced && Math.random() < 0.65){
+        candidates.sort(function(x,y){ return voicingCost(prevVoiced,x.voiced) - voicingCost(prevVoiced,y.voiced); });
+        chosen = candidates[0];
+      } else {
+        chosen = candidates[randomInt(0, candidates.length-1)];
+      }
+      // Textura rítmica: si el voicing quedó ancho (doblado), a veces se
+      // "rasguea" — las notas entran en una rápida sucesión en vez de
+      // todas juntas, variedad rítmica ligada directamente al voicing.
+      chosen.strum = chosen.voiced.length >= 5 && Math.random() < 0.4;
+      return chosen;
     }
 
     // Bajo caminante: en vez de fijar siempre la misma octava (-24),
@@ -2898,6 +3033,12 @@ function runAnalysis() {
       ARP_SHAPES: ARP_SHAPES,
       arpIndex: arpIndex,
       drop2: drop2,
+      drop3: drop3,
+      doubleTop: doubleTop,
+      doubleBottom: doubleBottom,
+      applyVoicingStyle: applyVoicingStyle,
+      voicingCost: voicingCost,
+      pickChordVoicing: pickChordVoicing,
       clampBass: clampBass,
       nearestOctave: nearestOctave,
       DRUM_STYLE_POOL: DRUM_STYLE_POOL
@@ -3216,25 +3357,36 @@ function runAnalysis() {
     var events = [];
     var slotChords = [];
     var prevCombo = null;
+    var jazzPrevVoiced = null; // JAZZ: voicing del reataque anterior, para conducción de voces suave
     for(var bar=0; bar<numBars; bar++){
       var offset = 0;
       var slots = [];
       cellsByBar[bar].forEach(function(dur){
-        var picked, t, inv, combo;
-        do{
-          picked = randomSubsetChord(rootChord);
-          t = randomInt(0, 11);
-          inv = picked.chord.length > 1 ? randomInt(0, picked.chord.length-1) : 0;
-          combo = picked.chord.join(",") + ":" + t + ":" + inv;
-        } while(combo === prevCombo);
-        var voiced = invertChord(transposeChord(picked.chord, t), inv);
-        // JAZZ: voicing "drop 2" ocasional — solo reacomoda registro
-        // de notas que ya eran válidas, nunca agrega una nota nueva.
-        if (JAZZ.enabled() && voiced.length >= 3 && Math.random() < 0.5){
-          voiced = JAZZ.drop2(voiced);
+        var picked, t, inv, combo, voiced, strum;
+        if (JAZZ.enabled()){
+          // JAZZ: variedad de voicing (cerrada/drop2/drop3/abierta con
+          // doblado, como el Voicing Explorer) + conducción de voces
+          // suave la mayoría de las veces — ver JAZZ.pickChordVoicing.
+          var cand = JAZZ.pickChordVoicing(rootChord, prevCombo, jazzPrevVoiced);
+          picked = cand.picked; t = cand.t; inv = cand.inv; combo = cand.combo;
+          voiced = cand.voiced; strum = cand.strum;
+          jazzPrevVoiced = voiced;
+        } else {
+          do{
+            picked = randomSubsetChord(rootChord);
+            t = randomInt(0, 11);
+            inv = picked.chord.length > 1 ? randomInt(0, picked.chord.length-1) : 0;
+            combo = picked.chord.join(",") + ":" + t + ":" + inv;
+          } while(combo === prevCombo);
+          voiced = invertChord(transposeChord(picked.chord, t), inv);
+          strum = false;
         }
-        voiced.forEach(function(note){
-          events.push({midi:note, startBeat:bar*BEATS_PER_BAR+offset, durBeats:dur, bar:bar});
+        voiced.forEach(function(note, vi){
+          // JAZZ: "rasgueo" ocasional en voicings anchos — las notas
+          // entran en rápida sucesión en vez de todas juntas (variedad
+          // rítmica ligada al voicing, nunca cambia qué nota suena).
+          var strumOff = strum ? vi*0.02 : 0;
+          events.push({midi:note, startBeat:bar*BEATS_PER_BAR+offset+strumOff, durBeats:Math.max(0.05,dur-strumOff), bar:bar});
         });
         slots.push({chord:voiced, startBeat:offset, durBeats:dur});
         prevCombo = combo;
