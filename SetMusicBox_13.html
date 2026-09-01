@@ -287,6 +287,9 @@
   table.overlay-table td.hibrido{
     font-family:'JetBrains Mono',monospace;white-space:nowrap;color:var(--gold);font-weight:600;
   }
+  table.overlay-table td.categoria{
+    font-size:10px;line-height:1.3;color:var(--ink-muted);max-width:150px;white-space:normal;
+  }
   table.overlay-table tr.tonica td{background:rgba(212,165,55,.08);}
   table.overlay-table tr.inversion td{background:rgba(139,126,200,.08);}
   table.overlay-table .estado{
@@ -698,6 +701,7 @@
             <th>Grado</th>
             <th>Notas sobre C</th>
             <th>Cifrado</th>
+            <th>Categoría</th>
             <th>Híbridos</th>
             <th>Conjunto</th>
             <th>Forte</th>
@@ -1301,6 +1305,58 @@
 <script>
 const NOTE_NAMES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
 const selected = new Set();
+
+/* ============================================================
+   ORTOGRAFÍA ENARMÓNICA (cuándo va #, cuándo b, y cuándo bb/##)
+   Investigado antes de implementar (ver fuentes citadas en el
+   resumen que acompaña este cambio). Dos mecanismos separados,
+   porque la pregunta "¿sostenido o bemol?" tiene una respuesta
+   distinta según haya o no un contexto armónico establecido:
+
+   1) spellPitchClass(pc) — deletreo por DEFECTO de una clase de
+   altura AISLADA (sin raíz de acorde ni tonalidad alrededor: los
+   botones del reloj/piano/diapasón, la lectura de "Notas" del
+   panel de análisis, el nombre de nota durante la reproducción
+   MIDI). Sin contexto tonal no existe una única respuesta
+   "correcta" — la ortografía real siempre depende de la función
+   armónica — así que acá se usa la convención práctica más
+   extendida en cifrados/tablaturas: para cada una de las 5 clases
+   de altura ambiguas se elige la alteración que exige MENOS
+   alteraciones de armadura respecto de Do en el círculo de
+   quintas (Reb=5b gana a Do#=7#; Mib=3b gana a Re#=9# teórico;
+   Lab=4b gana a Sol#=8# teórico; Sib=2b gana a La#=10# teórico;
+   Fa#/Solb empatan en 6 y 6 — se elige Fa#, el lado más frecuente
+   en cifrado de guitarra/jazz).
+
+   2) spellByDegree(rootLetter, targetPc, degreeNumber) — deletreo
+   POR GRADO, para cuando SÍ se conoce el rol funcional de la nota
+   (1ª/3ª/5ª/7ª/9ª/11ª/13ª...) respecto de una raíz cuya letra ya
+   está decidida. Fija primero la LETRA según el grado (apilado
+   convencional de terceras: una letra distinta por grado, nunca
+   se salta ni repite una letra) y recién después calcula la
+   alteración necesaria para llegar a la clase de altura real. Es
+   el único mecanismo que puede producir bb/## cuando corresponde
+   — p.ej. la 7ª de un acorde disminuido (dim7) tiene que seguir
+   siendo la 7ª letra contando desde la raíz aunque suene igual
+   que la 6ª, así que se escribe "7bb", nunca "6".
+   ============================================================ */
+const LETTER_SEQUENCE = ["C", "D", "E", "F", "G", "A", "B"];
+const LETTER_NATURAL_PC = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+const SPELLED_NAMES = ["C", "Db", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
+function spellPitchClass(pc) { return SPELLED_NAMES[((pc % 12) + 12) % 12]; }
+function accidentalSymbol(n) {
+  if (n === 0) return "";
+  return n > 0 ? "#".repeat(n) : "b".repeat(-n);
+}
+function spellByDegree(rootLetter, targetPc, degreeNumber) {
+  const rootIdx = LETTER_SEQUENCE.indexOf(rootLetter);
+  const steps = (degreeNumber - 1) % 7;
+  const letter = LETTER_SEQUENCE[(rootIdx + steps) % 7];
+  const naturalPc = LETTER_NATURAL_PC[letter];
+  let diff = (((targetPc - naturalPc) % 12) + 12) % 12;
+  if (diff > 6) diff -= 12;
+  return letter + accidentalSymbol(diff);
+}
 
 /* ============================================================
    LÓGICA DE TEORÍA DE CONJUNTOS (traducida fielmente del JS
@@ -2077,7 +2133,7 @@ const HIBRIDOS_UNIVERSO = (function () {
         // siempre antes que cuartal, y dentro de cada calidad, raíz más
         // grave primero.
         if (!mapa.has(key)) {
-          mapa.set(key, `${NOTE_NAMES[raiz]}${calidad.simbolo}/${NOTE_NAMES[bajo]}`);
+          mapa.set(key, `${spellPitchClass(raiz)}${calidad.simbolo}/${spellPitchClass(bajo)}`);
         }
       }
     }
@@ -2089,6 +2145,84 @@ function buscarHibridoEnUniverso(conjuntoNotas) {
   if (set.size !== 4) return null; // un híbrido son siempre 3 (tríada) + 1 (bajo) = 4 notas
   const key = [...set].sort((a, b) => a - b).join(",");
   return HIBRIDOS_UNIVERSO.get(key) || null;
+}
+
+/* ============================================================
+   CATEGORÍAS MODALES (Terebeiko, "Elementos musicales", p.51)
+   Columna auxiliar de texto chico junto a "Cifrado" en la tabla de
+   Superposición cromática. Transcripción del archivo que subió el
+   usuario ("tabla_superposicion_categorias.txt"), traducida de la
+   notación por grados (1, b2, 2, b3, 3, 4, #4, 5, #5, 6, b7, 7) a
+   semitonos 0-11 para poder comparar contra el conjunto real de
+   cada fila. AVISO: el archivo fuente está incompleto — no incluye
+   la categoría Aumentada, y la sección Disminuida corta a mitad
+   (dos variantes de "Disminuida modo 1" con distintas tensiones,
+   sin "modo 2" ni el resto). Se transcribe tal cual llegó; falta
+   contenido para completar el resto de las categorías.
+   Cada variante matchea si el conjunto de la fila: (a) contiene
+   TODOS los grados requeridos, (b) no contiene ninguno de los
+   grados explícitamente excluidos ("no4", "no6", etc.), y (c) no
+   tiene ninguna nota fuera de requeridos+opcionales (si no, sería
+   una estructura distinta). "requireAnyOf" son las condiciones
+   extra en AND que pide el texto original (p.ej. Mixolidia
+   Alterada exige a la vez una tensión diatónica Y una alterada;
+   Alterada exige al menos una tensión alterada presente, para no
+   matchear un 7 liso sin ninguna alteración).
+   Superposiciones esperadas (no son errores, las anticipa el texto
+   fuente): b9 (tensión alterada, semitono 1) es el mismo semitono
+   que b2 (grado requerido de Frigia) — por eso un dominante
+   alterado con b9 también matchea Frigia, y el texto original ya
+   pide mostrar ambas etiquetas juntas ("Frigio - Alterada"). Un
+   dim7 desnudo (sin ninguna tensión extra) matchea por igual las
+   dos variantes de "Disminuida modo 1" — el texto solo las
+   distingue por qué tensión adicional traen, así que sin tensión
+   son indistinguibles y se listan ambas.
+   ============================================================ */
+function _cat(categoria, nombre, cifrado, required, optional, excluded, requireAnyOf) {
+  return { categoria, nombre, cifrado, required, optional: optional || [], excluded: excluded || [], requireAnyOf: requireAnyOf || [] };
+}
+const TEREBEIKO_CATEGORIAS = [
+  _cat("Mayor", "Mayor (no4 no7)", "M no4no7", [0, 4], [7], [5, 11]),
+  _cat("Mayor", "Jónica (no4)", "Δ no4", [0, 4, 11], [7], [5]),
+  _cat("Mayor", "Jónica (4)", "Δ (4)", [0, 4, 5], [7, 11]),
+  _cat("Mayor", "Lidia (4#)", "Δ 4#", [0, 4, 6], [7, 11]),
+  _cat("Mayor", "Jónica / Lidia (5#)", "Δ 5#", [0, 4, 8], [11]),
+  _cat("Mayor", "Jónica / Lidia (2#)", "Δ 2#", [0, 3, 4, 7], [11]),
+  _cat("Mayor", "Mayor alt", "Mayor alt", [0, 3, 4, 6, 8], [11]),
+  _cat("Menor", "Menor (no6)", "m (no6)", [0, 3], [7, 10, 11], [8, 9]),
+  _cat("Menor", "Dórica (6)", "m 6 (natural)", [0, 3, 9], [7, 10, 11], [8]),
+  _cat("Menor", "Eólica (6b)", "m 6b", [0, 3, 8], [7, 10, 11], [9]),
+  _cat("Dominante", "Mixolidia (no4)", "7 no4", [0, 4, 10], [7], [5]),
+  _cat("Dominante", "Mixolidia (4) — sus4", "7 sus4", [0, 5, 10], [7], [4]),
+  _cat("Dominante", "Mixolidia (4#)", "7 4#", [0, 4, 6, 10], [7]),
+  _cat("Dominante", "Mixolidia Alterada", "7 (2 4 5 6) alt.", [0, 4, 10], [1, 2, 3, 5, 6, 7, 8, 9], [], [[2, 5, 7, 9], [1, 3, 6, 8]]),
+  _cat("Dominante", "Alterada", "7 Alt", [0, 4, 10], [1, 3, 6, 8], [2, 5, 7, 9], [[1, 3, 6, 8]]),
+  _cat("Frigia", "Frigia (3b/3)", "Sus4 2b", [0, 1], [3, 4, 5, 7, 10]),
+  _cat("Frigia", "Frigia (no3)", "Sus4 2b no3", [0, 1], [5, 7, 10], [3, 4]),
+  _cat("Locria", "Locria", "ø (3b 5b 7b)", [0, 3, 6, 10], []),
+  _cat("Disminuida", "Disminuida modo 1 (A)", "° (3b 5b 6)", [0, 3, 6, 9], [2, 5, 8, 11]),
+  _cat("Disminuida", "Disminuida modo 1 (B)", "° (3b 5b 6)", [0, 3, 6, 9], [1, 4, 7, 10]),
+];
+// Pares que el texto original marca como combinables bajo un mismo
+// rótulo (p.ej. "Frigia - Alterada") cuando matchean juntos.
+const TEREBEIKO_COMBINABLES = [["Frigia", "Dominante"], ["Locria", "Dominante"]];
+
+function categoriaMatchea(semitoneSet, variante) {
+  for (const r of variante.required) if (!semitoneSet.has(r)) return false;
+  for (const e of variante.excluded) if (semitoneSet.has(e)) return false;
+  const permitidos = new Set([...variante.required, ...variante.optional]);
+  for (const s of semitoneSet) if (!permitidos.has(s)) return false;
+  for (const grupo of variante.requireAnyOf) if (!grupo.some(s => semitoneSet.has(s))) return false;
+  return true;
+}
+function categoriasParaConjunto(pcArray) {
+  const set = new Set(pcArray.map(mod12));
+  const matches = TEREBEIKO_CATEGORIAS.filter(v => categoriaMatchea(set, v));
+  if (!matches.length) return null;
+  const combinable = matches.some(a => matches.some(b => a !== b &&
+    TEREBEIKO_COMBINABLES.some(([x, y]) => (a.categoria === x && b.categoria === y) || (a.categoria === y && b.categoria === x))));
+  const sep = combinable ? " - " : " / ";
+  return matches.map(m => m.nombre).join(sep);
 }
 
 // Genera las 12 filas de superposición cromática para un conjunto base
@@ -2106,6 +2240,7 @@ function generarSuperposicionCromatica(chordsData, baseEstructural) {
     const notasTexto = transportado.map(iv => spellDegree(iv, contexto)).join(" ");
     const r = analyze(chordsData, conjunto);
     const hibrido = buscarHibridoEnUniverso(r.input);
+    const categoria = categoriasParaConjunto(r.input);
     filas.push({
       n,
       grado: ROMAN_DEGREES[n],
@@ -2119,6 +2254,7 @@ function generarSuperposicionCromatica(chordsData, baseEstructural) {
       bajoDe: esInversion ? ordinalChordTone(colisionIdx) : null,
       cifrado: cifradoParaConjunto(conjunto),
       hibrido,
+      categoria,
     });
   }
   return filas;
@@ -2151,6 +2287,7 @@ function renderSuperposicion(baseAnalysis) {
       <td class="grado">${f.grado}</td>
       <td class="notas">${f.notas}</td>
       <td class="cifrado"><span class="cifrado-acorde mono">${f.cifrado.html}</span></td>
+      <td class="categoria">${f.categoria ?? "—"}</td>
       <td class="hibrido">${f.hibrido ?? "—"}</td>
       <td class="set">[${f.conjunto.join(", ")}]</td>
       <td class="forte">${f.forte_code ?? "—"}</td>
@@ -2584,7 +2721,7 @@ for (let pc = 0; pc < 12; pc++) {
   nameText.setAttribute("class", "name");
   nameText.setAttribute("x", x);
   nameText.setAttribute("y", y + 12);
-  nameText.textContent = NOTE_NAMES[pc];
+  nameText.textContent = spellPitchClass(pc);
   g.appendChild(nameText);
 
   g.addEventListener("click", () => toggleNote(pc));
@@ -2617,7 +2754,7 @@ WHITE_PCS.forEach((pc, i) => {
   const label = document.createElementNS(svgNS, "text");
   label.setAttribute("x", x + WHITE_W / 2);
   label.setAttribute("y", WHITE_H - 12);
-  label.textContent = NOTE_NAMES[pc];
+  label.textContent = spellPitchClass(pc);
   key.appendChild(label);
 
   key.addEventListener("click", () => toggleNote(pc));
@@ -2642,7 +2779,7 @@ Object.entries(BLACK_PCS_X).forEach(([pcStr, x]) => {
   const label = document.createElementNS(svgNS, "text");
   label.setAttribute("x", x + BLACK_W / 2);
   label.setAttribute("y", BLACK_H - 10);
-  label.textContent = NOTE_NAMES[pc];
+  label.textContent = spellPitchClass(pc);
   key.appendChild(label);
 
   key.addEventListener("click", () => toggleNote(pc));
@@ -2735,7 +2872,7 @@ FB_STRINGS.forEach((s, i) => {
   const text = document.createElementNS(svgNS, "text");
   text.setAttribute("x", cx);
   text.setAttribute("y", cy + 0.5);
-  text.textContent = NOTE_NAMES[pc];
+  text.textContent = spellPitchClass(pc);
   g.appendChild(text);
 
   g.addEventListener("click", () => toggleNote(pc));
@@ -2763,7 +2900,7 @@ FB_STRINGS.forEach((s, i) => {
     const text = document.createElementNS(svgNS, "text");
     text.setAttribute("x", cx);
     text.setAttribute("y", cy + 0.5);
-    text.textContent = NOTE_NAMES[pc];
+    text.textContent = spellPitchClass(pc);
     g.appendChild(text);
 
     g.addEventListener("click", () => toggleNote(pc));
@@ -2826,7 +2963,7 @@ function runAnalysis() {
   try {
     const r = analyze(CHORDS_DATA, pcs);
     const fmt = arr => `[${arr.join(", ")}]`;
-    const noteNames = arr => arr.map(pc => NOTE_NAMES[pc]).join(" ");
+    const noteNames = arr => arr.map(pc => spellPitchClass(pc)).join(" ");
 
     results.innerHTML = `
       <div class="row">
@@ -3382,7 +3519,7 @@ function runAnalysis() {
 
   // ---------- teoría musical ----------
   function noteName(midi){
-    var n = NOTE_NAMES[((midi % 12) + 12) % 12];
+    var n = spellPitchClass(midi);
     var oct = Math.floor(midi/12) - 1;
     return n + oct;
   }
@@ -4009,7 +4146,7 @@ function runAnalysis() {
     if(!playBtn) return; // sección todavía no está en el DOM
     var readout = document.getElementById("consolaNotesReadout");
     if(selected.size < 2){
-      readout.textContent = selected.size === 0 ? "—" : Array.from(selected).sort(function(a,b){return a-b;}).map(function(pc){return NOTE_NAMES[pc];}).join(" ");
+      readout.textContent = selected.size === 0 ? "—" : Array.from(selected).sort(function(a,b){return a-b;}).map(function(pc){return spellPitchClass(pc);}).join(" ");
       state.rootChord = []; state.progression = []; state.roles = []; state.chordEvents = []; state.bassEvents = []; state.melodyEvents = [];
       renderRoll();
       playBtn.disabled = true;

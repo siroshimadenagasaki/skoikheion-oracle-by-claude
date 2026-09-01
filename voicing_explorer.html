@@ -306,6 +306,11 @@
 
   // ---------- Núcleo teórico (idéntico en lógica al script en Python) ----------
   const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+  // Ortografía enarmónica por defecto para mostrar notas sin contexto de
+  // acorde establecido (misma convención que la página principal: la
+  // alteración que exige menos alteraciones de armadura desde Do).
+  const SPELLED_NAMES = ['C','Db','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
+  function spellPitchClass(pc){ return SPELLED_NAMES[((pc%12)+12)%12]; }
   const SETS = [
     ['maj',  [0,4,7]],
     ['min',  [0,3,7]],
@@ -327,7 +332,7 @@
   const SETS_MAP = Object.fromEntries(SETS);
 
   function pc(name){ return NOTE_NAMES.indexOf(name); }
-  function midiToName(m){ const oct = Math.floor(m/12)-1; return NOTE_NAMES[((m%12)+12)%12] + oct; }
+  function midiToName(m){ const oct = Math.floor(m/12)-1; return spellPitchClass(m) + oct; }
   function setKeyStr(intervals){ return '{' + intervals.join(',') + '}'; }
 
   function realize(root, intervals){
@@ -550,7 +555,7 @@
   const candidateSteps = document.getElementById('candidateSteps');
 
   NOTE_NAMES.forEach((n,i)=>{
-    const o = document.createElement('option'); o.value=i; o.textContent=n; rootSelect.appendChild(o);
+    const o = document.createElement('option'); o.value=i; o.textContent=spellPitchClass(i); rootSelect.appendChild(o);
   });
   rootSelect.value = pc('G');
 
@@ -593,7 +598,7 @@
       const rad = isRoot ? 6.5 : (active ? 5.5 : 2.6);
       dots += `<circle class="${cls}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${rad}"></circle>`;
       const lx = cx + (r+13)*Math.cos(angle), ly = cy + (r+13)*Math.sin(angle);
-      labels += `<text class="clock-label${active?' active':''}" x="${lx.toFixed(1)}" y="${ly.toFixed(1)}">${NOTE_NAMES[i]}</text>`;
+      labels += `<text class="clock-label${active?' active':''}" x="${lx.toFixed(1)}" y="${ly.toFixed(1)}">${spellPitchClass(i)}</text>`;
     }
     let poly='';
     const activeSorted = pcs.slice().sort((a,b)=>a-b);
@@ -613,10 +618,10 @@
   function renderSummary(root, intervals){
     const pcs = realize(root, intervals);
     document.getElementById('clockHolder').innerHTML = renderClock(pcs, root);
-    document.getElementById('bigSetLabel').textContent = setKeyStr(intervals) + ' sobre ' + NOTE_NAMES[root];
+    document.getElementById('bigSetLabel').textContent = setKeyStr(intervals) + ' sobre ' + spellPitchClass(root);
     const label = setSelect.value !== '__custom__' ? ` (rótulo convencional: “${setSelect.value}”)` : '';
-    document.getElementById('setSub').textContent = 'Clases de altura resultantes: ' + pcs.map(p=>NOTE_NAMES[p]).join(', ') + label;
-    document.getElementById('setChips').innerHTML = pcs.map(p=>`<span class="chip">${NOTE_NAMES[p]} · pc ${p}</span>`).join('');
+    document.getElementById('setSub').textContent = 'Clases de altura resultantes: ' + pcs.map(p=>spellPitchClass(p)).join(', ') + label;
+    document.getElementById('setChips').innerHTML = pcs.map(p=>`<span class="chip">${spellPitchClass(p)} · pc ${p}</span>`).join('');
   }
 
   function shapePill(shape){
@@ -697,7 +702,7 @@
     prog.forEach((p,i)=>{
       const tr = document.createElement('tr');
       tr.setAttribute('data-idx', i);
-      tr.innerHTML = `<td>${NOTE_NAMES[p.root]} ${setKeyStr(p.intervals)}</td>
+      tr.innerHTML = `<td>${spellPitchClass(p.root)} ${setKeyStr(p.intervals)}</td>
         <td>${p.voicing.map(midiToName).join(' ')}</td>
         <td>${shapePill(p.forma)}</td>
         <td>${p.movimiento}</td>
