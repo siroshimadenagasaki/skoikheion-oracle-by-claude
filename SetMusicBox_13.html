@@ -284,6 +284,9 @@
   table.overlay-table td.cifrado{
     font-family:'JetBrains Mono',monospace;white-space:nowrap;color:var(--violet);
   }
+  table.overlay-table td.hibrido{
+    font-family:'JetBrains Mono',monospace;white-space:nowrap;color:var(--gold);font-weight:600;
+  }
   table.overlay-table tr.tonica td{background:rgba(212,165,55,.08);}
   table.overlay-table tr.inversion td{background:rgba(139,126,200,.08);}
   table.overlay-table .estado{
@@ -695,6 +698,7 @@
             <th>Grado</th>
             <th>Notas sobre C</th>
             <th>Cifrado</th>
+            <th>Híbridos</th>
             <th>Conjunto</th>
             <th>Forte</th>
             <th>Solomon</th>
@@ -2008,10 +2012,43 @@ function cifradoParaConjunto(pcArray) {
   return { acorde, html, plain };
 }
 
+/* ============================================================
+   HÍBRIDOS (acordes con bajo ajeno / "slash chords" de triada)
+   Columna de la tabla de Superposición cromática: cuando el
+   conjunto base elegido es una TRIADA (3 notas) y, en una fila
+   dada, el bajo fijo C queda AJENO a esa triada transportada (no
+   es una nota propia, o sea no es una inversión), se nota como
+   "RaízCalidad/C" — p.ej. una triada mayor de G con C ajeno de
+   bajo se escribe "G/C", una menor "Dm/C", una disminuida "D°/C",
+   una aumentada "D+/C", una cuartal (1 4 7♭, p.ej. C F B♭) "C4/C".
+   Nunca es un híbrido: la tónica en posición fundamental (n=0,
+   el bajo ES la raíz) ni las filas marcadas "Inversión" en Estado
+   (el bajo ya es una nota propia de esa triada, aunque no sea la
+   raíz) — en ambos casos la columna queda en blanco.
+   ============================================================ */
+const CIFRADO_TRIAD_QUALITIES = [
+  { id: "maj",     simbolo: "",     semitonos: [0, 4, 7] },
+  { id: "min",     simbolo: "m",    semitonos: [0, 3, 7] },
+  { id: "dim",     simbolo: "°",    semitonos: [0, 3, 6] },
+  { id: "aug",     simbolo: "+",    semitonos: [0, 4, 8] },
+  { id: "quartal", simbolo: "4",    semitonos: [0, 5, 10] },
+  { id: "sus4",    simbolo: "Sus4", semitonos: [0, 5, 7] },
+  { id: "sus2",    simbolo: "Sus2", semitonos: [0, 2, 7] },
+];
+function matchTriadQuality(semitonos) {
+  const set = new Set(semitonos.map(mod12));
+  return CIFRADO_TRIAD_QUALITIES.find(q =>
+    q.semitonos.length === set.size && q.semitonos.every(s => set.has(s))
+  ) || null;
+}
+
 // Genera las 12 filas de superposición cromática para un conjunto base
 // ya orientado en posición fundamental (se usa el a_form de analyze()).
 function generarSuperposicionCromatica(chordsData, baseEstructural) {
   const filas = [];
+  // La calidad de la triada base es la misma en las 12 filas (transportar
+  // no cambia la calidad, solo la raíz) — se calcula una sola vez.
+  const triadQuality = baseEstructural.length === 3 ? matchTriadQuality(baseEstructural) : null;
   for (let n = 0; n < 12; n++) {
     const transportado = baseEstructural.map(iv => mod12(iv + n));
     const colisionIdx = transportado.indexOf(0);
@@ -2022,6 +2059,9 @@ function generarSuperposicionCromatica(chordsData, baseEstructural) {
     const contexto = new Set(conjunto);
     const notasTexto = transportado.map(iv => spellDegree(iv, contexto)).join(" ");
     const r = analyze(chordsData, conjunto);
+    const hibrido = (triadQuality && n !== 0 && !esInversion)
+      ? `${NOTE_NAMES[n]}${triadQuality.simbolo}/C`
+      : null;
     filas.push({
       n,
       grado: ROMAN_DEGREES[n],
@@ -2034,6 +2074,7 @@ function generarSuperposicionCromatica(chordsData, baseEstructural) {
       esInversion,
       bajoDe: esInversion ? ordinalChordTone(colisionIdx) : null,
       cifrado: cifradoParaConjunto(conjunto),
+      hibrido,
     });
   }
   return filas;
@@ -2066,6 +2107,7 @@ function renderSuperposicion(baseAnalysis) {
       <td class="grado">${f.grado}</td>
       <td class="notas">${f.notas}</td>
       <td class="cifrado"><span class="cifrado-acorde mono">${f.cifrado.html}</span></td>
+      <td class="hibrido">${f.hibrido ?? "—"}</td>
       <td class="set">[${f.conjunto.join(", ")}]</td>
       <td class="forte">${f.forte_code ?? "—"}</td>
       <td class="forte">${f.solomon_code ?? "—"}${f.solomon_name ? ` · ${f.solomon_name}` : ""}</td>
