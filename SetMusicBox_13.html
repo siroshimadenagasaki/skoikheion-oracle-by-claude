@@ -2039,14 +2039,17 @@ function cifradoParaConjunto(pcArray) {
    lectura tríada+bajo válida (p.ej. {C,D,F,A} es tanto "Dm/C" —
    Re menor con bajo en Do — como "F/D" — Fa mayor, su relativa,
    con bajo en Re; ambas reconstruyen exactamente las mismas 4
-   notas). Por eso la búsqueda va en DOS pasos: primero se prueba
-   la lectura ESTRUCTURAL de esa fila — la tríada que el propio
-   conjunto base elegido forma al transportarse a esa raíz, con
-   el bajo fijo C — y si ese es un híbrido válido (el bajo le es
-   ajeno a esa tríada), se usa esa; recién si no aplica (el
-   conjunto base no es una tríada, o el bajo no le es ajeno en
-   esa lectura) se cae al universo completo de las 540
-   combinaciones para buscar cualquier otra lectura posible.
+   notas). Un híbrido es el SET en sí, no la inversión ni la forma
+   en que se llegó a él — así que no puede depender de la fila ni
+   del conjunto base elegido: la MISMA etiqueta tiene que salir
+   siempre para el MISMO set de 4 notas, en cualquier fila donde
+   aparezca. Por eso la búsqueda es un único paso: se arma un mapa
+   canónico set→etiqueta (con una prioridad fija y determinística
+   para desempatar los casos ambiguos — mayor, luego menor, luego
+   disminuida, luego aumentada, luego cuartal; dentro de cada
+   calidad, raíz más grave primero) y cada fila se busca en ese
+   mismo mapa por su conjunto de 4 notas, sin ningún atajo
+   "estructural" que pueda romper la consistencia.
    ============================================================ */
 const CIFRADO_TRIAD_QUALITIES = [
   { id: "maj",     simbolo: "",  semitonos: [0, 4, 7] },
@@ -2055,12 +2058,6 @@ const CIFRADO_TRIAD_QUALITIES = [
   { id: "aug",     simbolo: "+", semitonos: [0, 4, 8] },
   { id: "quartal", simbolo: "4", semitonos: [0, 5, 10] },
 ];
-function matchTriadQuality(semitonos) {
-  const set = new Set(semitonos.map(mod12));
-  return CIFRADO_TRIAD_QUALITIES.find(q =>
-    q.semitonos.length === set.size && q.semitonos.every(s => set.has(s))
-  ) || null;
-}
 // Universo de híbridos: mapa "clave de 4 notas ordenadas" -> etiqueta,
 // construido una sola vez recorriendo las 5 calidades × 12 raíces × 9
 // bajos ajenos posibles (5×12×9 = 540 combinaciones — quedan menos
@@ -2093,18 +2090,6 @@ function buscarHibridoEnUniverso(conjuntoNotas) {
   const key = [...set].sort((a, b) => a - b).join(",");
   return HIBRIDOS_UNIVERSO.get(key) || null;
 }
-// Lectura estructural: la tríada que forma el conjunto BASE elegido al
-// transportarse a la raíz de esta fila (n), con el bajo fijo C — solo
-// aplica cuando el conjunto base es, él mismo, una tríada, y el bajo C
-// le queda ajeno (si no, devuelve null y se cae al universo completo).
-function hibridoEstructural(baseEstructural, n) {
-  if (baseEstructural.length !== 3) return null;
-  const q = matchTriadQuality(baseEstructural);
-  if (!q) return null;
-  const triadaPcsEnN = baseEstructural.map(iv => mod12(iv + n));
-  if (triadaPcsEnN.includes(0)) return null; // el bajo C es parte de esta tríada: no es ajeno
-  return `${NOTE_NAMES[n]}${q.simbolo}/C`;
-}
 
 // Genera las 12 filas de superposición cromática para un conjunto base
 // ya orientado en posición fundamental (se usa el a_form de analyze()).
@@ -2120,7 +2105,7 @@ function generarSuperposicionCromatica(chordsData, baseEstructural) {
     const contexto = new Set(conjunto);
     const notasTexto = transportado.map(iv => spellDegree(iv, contexto)).join(" ");
     const r = analyze(chordsData, conjunto);
-    const hibrido = hibridoEstructural(baseEstructural, n) ?? buscarHibridoEnUniverso(r.input);
+    const hibrido = buscarHibridoEnUniverso(r.input);
     filas.push({
       n,
       grado: ROMAN_DEGREES[n],
