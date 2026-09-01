@@ -2014,26 +2014,46 @@ function cifradoParaConjunto(pcArray) {
 
 /* ============================================================
    HÍBRIDOS (acordes con bajo ajeno / "slash chords" de triada)
-   Columna de la tabla de Superposición cromática: cuando el
-   conjunto base elegido es una TRIADA (3 notas) y, en una fila
-   dada, el bajo fijo C queda AJENO a esa triada transportada (no
-   es una nota propia, o sea no es una inversión), se nota como
-   "RaízCalidad/C" — p.ej. una triada mayor de G con C ajeno de
-   bajo se escribe "G/C", una menor "Dm/C", una disminuida "D°/C",
-   una aumentada "D+/C", una cuartal (1 4 7♭, p.ej. C F B♭) "C4/C".
-   Nunca es un híbrido: la tónica en posición fundamental (n=0,
-   el bajo ES la raíz) ni las filas marcadas "Inversión" en Estado
-   (el bajo ya es una nota propia de esa triada, aunque no sea la
-   raíz) — en ambos casos la columna queda en blanco.
+   Columna de la tabla de Superposición cromática. Se arma primero
+   el UNIVERSO completo de híbridos posibles: las 12 tríadas
+   mayores, 12 menores, 12 disminuidas, 12 aumentadas y 12
+   cuartales (1 4 7♭, p.ej. C F B♭), cada una combinada con los 9
+   bajos que le son ajenos (los 12 semitonos menos las 3 notas
+   propias de esa tríada) — 5 calidades × 12 raíces × 9 bajos.
+   Después, el conjunto de 4 notas de CADA grado de la tabla se
+   compara contra ese universo: si coincide con alguno de esos
+   sets (tríada + bajo), esa fila es un híbrido y se muestra como
+   "RaízCalidad/Bajo" — p.ej. tríada mayor de G con bajo ajeno en
+   C se escribe "G/C", menor "Dm/C", disminuida "D°/C", aumentada
+   "D+/C", cuartal "C4/F". El bajo fijo de esta tabla es siempre C,
+   pero la comparación se hace por CONJUNTO (no asumiendo de
+   antemano cuál nota es "el bajo"), así que también encuentra
+   híbridos que resultan de acordes de más de 3 notas cuando 3 de
+   sus notas caen en una tríada y la restante queda ajena a ella —
+   no solo cuando el conjunto base elegido es, él mismo, una tríada.
+   Nunca es un híbrido un set que no tenga exactamente 4 notas
+   distintas (3 de la tríada + 1 de bajo) — la columna queda en
+   blanco en cualquier otro caso.
+
+   AMBIGÜEDAD: un mismo set de 4 notas puede admitir más de una
+   lectura tríada+bajo válida (p.ej. {C,D,F,A} es tanto "Dm/C" —
+   Re menor con bajo en Do — como "F/D" — Fa mayor, su relativa,
+   con bajo en Re; ambas reconstruyen exactamente las mismas 4
+   notas). Por eso la búsqueda va en DOS pasos: primero se prueba
+   la lectura ESTRUCTURAL de esa fila — la tríada que el propio
+   conjunto base elegido forma al transportarse a esa raíz, con
+   el bajo fijo C — y si ese es un híbrido válido (el bajo le es
+   ajeno a esa tríada), se usa esa; recién si no aplica (el
+   conjunto base no es una tríada, o el bajo no le es ajeno en
+   esa lectura) se cae al universo completo de las 540
+   combinaciones para buscar cualquier otra lectura posible.
    ============================================================ */
 const CIFRADO_TRIAD_QUALITIES = [
-  { id: "maj",     simbolo: "",     semitonos: [0, 4, 7] },
-  { id: "min",     simbolo: "m",    semitonos: [0, 3, 7] },
-  { id: "dim",     simbolo: "°",    semitonos: [0, 3, 6] },
-  { id: "aug",     simbolo: "+",    semitonos: [0, 4, 8] },
-  { id: "quartal", simbolo: "4",    semitonos: [0, 5, 10] },
-  { id: "sus4",    simbolo: "Sus4", semitonos: [0, 5, 7] },
-  { id: "sus2",    simbolo: "Sus2", semitonos: [0, 2, 7] },
+  { id: "maj",     simbolo: "",  semitonos: [0, 4, 7] },
+  { id: "min",     simbolo: "m", semitonos: [0, 3, 7] },
+  { id: "dim",     simbolo: "°", semitonos: [0, 3, 6] },
+  { id: "aug",     simbolo: "+", semitonos: [0, 4, 8] },
+  { id: "quartal", simbolo: "4", semitonos: [0, 5, 10] },
 ];
 function matchTriadQuality(semitonos) {
   const set = new Set(semitonos.map(mod12));
@@ -2041,14 +2061,55 @@ function matchTriadQuality(semitonos) {
     q.semitonos.length === set.size && q.semitonos.every(s => set.has(s))
   ) || null;
 }
+// Universo de híbridos: mapa "clave de 4 notas ordenadas" -> etiqueta,
+// construido una sola vez recorriendo las 5 calidades × 12 raíces × 9
+// bajos ajenos posibles (5×12×9 = 540 combinaciones — quedan menos
+// claves únicas porque varias combinaciones colisionan en el mismo
+// set de 4 notas; ver nota de AMBIGÜEDAD arriba).
+const HIBRIDOS_UNIVERSO = (function () {
+  const mapa = new Map();
+  for (const calidad of CIFRADO_TRIAD_QUALITIES) {
+    for (let raiz = 0; raiz < 12; raiz++) {
+      const triadaPcs = calidad.semitonos.map(s => mod12(s + raiz));
+      const triadaSet = new Set(triadaPcs);
+      for (let bajo = 0; bajo < 12; bajo++) {
+        if (triadaSet.has(bajo)) continue; // el bajo tiene que ser ajeno a la tríada
+        const key = [...triadaPcs, bajo].sort((a, b) => a - b).join(",");
+        // Si el mismo set de 4 notas ya admite otra lectura, se conserva
+        // la primera encontrada — mayor/menor/disminuida/aumentada
+        // siempre antes que cuartal, y dentro de cada calidad, raíz más
+        // grave primero.
+        if (!mapa.has(key)) {
+          mapa.set(key, `${NOTE_NAMES[raiz]}${calidad.simbolo}/${NOTE_NAMES[bajo]}`);
+        }
+      }
+    }
+  }
+  return mapa;
+})();
+function buscarHibridoEnUniverso(conjuntoNotas) {
+  const set = new Set(conjuntoNotas.map(mod12));
+  if (set.size !== 4) return null; // un híbrido son siempre 3 (tríada) + 1 (bajo) = 4 notas
+  const key = [...set].sort((a, b) => a - b).join(",");
+  return HIBRIDOS_UNIVERSO.get(key) || null;
+}
+// Lectura estructural: la tríada que forma el conjunto BASE elegido al
+// transportarse a la raíz de esta fila (n), con el bajo fijo C — solo
+// aplica cuando el conjunto base es, él mismo, una tríada, y el bajo C
+// le queda ajeno (si no, devuelve null y se cae al universo completo).
+function hibridoEstructural(baseEstructural, n) {
+  if (baseEstructural.length !== 3) return null;
+  const q = matchTriadQuality(baseEstructural);
+  if (!q) return null;
+  const triadaPcsEnN = baseEstructural.map(iv => mod12(iv + n));
+  if (triadaPcsEnN.includes(0)) return null; // el bajo C es parte de esta tríada: no es ajeno
+  return `${NOTE_NAMES[n]}${q.simbolo}/C`;
+}
 
 // Genera las 12 filas de superposición cromática para un conjunto base
 // ya orientado en posición fundamental (se usa el a_form de analyze()).
 function generarSuperposicionCromatica(chordsData, baseEstructural) {
   const filas = [];
-  // La calidad de la triada base es la misma en las 12 filas (transportar
-  // no cambia la calidad, solo la raíz) — se calcula una sola vez.
-  const triadQuality = baseEstructural.length === 3 ? matchTriadQuality(baseEstructural) : null;
   for (let n = 0; n < 12; n++) {
     const transportado = baseEstructural.map(iv => mod12(iv + n));
     const colisionIdx = transportado.indexOf(0);
@@ -2059,9 +2120,7 @@ function generarSuperposicionCromatica(chordsData, baseEstructural) {
     const contexto = new Set(conjunto);
     const notasTexto = transportado.map(iv => spellDegree(iv, contexto)).join(" ");
     const r = analyze(chordsData, conjunto);
-    const hibrido = (triadQuality && n !== 0 && !esInversion)
-      ? `${NOTE_NAMES[n]}${triadQuality.simbolo}/C`
-      : null;
+    const hibrido = hibridoEstructural(baseEstructural, n) ?? buscarHibridoEnUniverso(r.input);
     filas.push({
       n,
       grado: ROMAN_DEGREES[n],
