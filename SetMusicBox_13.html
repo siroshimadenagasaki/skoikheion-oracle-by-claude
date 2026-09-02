@@ -905,6 +905,7 @@
         <button type="button" class="chip toggle" id="progresionCard5" data-card="5" aria-pressed="true">5</button>
         <button type="button" class="chip toggle" id="progresionCard6" data-card="6" aria-pressed="true">6</button>
       </div>
+      <button type="button" class="chip toggle" id="progresionDobleBtn" aria-pressed="false">2 chords with voice leading</button>
       <button type="button" class="chip" id="progresionRegenBtn">&#128256; Regenerar</button>
       <button type="button" class="chip primary" id="progresionPlayBtn">&#9658; Reproducir</button>
       <button type="button" class="chip" id="progresionStopBtn" disabled>&#9632; Detener</button>
@@ -3167,6 +3168,7 @@ function runAnalysis() {
   var progresionTimer = null;
   var STEP_DUR = 1.7;
   var progresionCardSizes = [3, 4, 5, 6]; // switch de tamaño de acorde, todas activas por defecto
+  var progresionDobleModo = false; // botón "2 chords with voice leading"
 
   /* --------------------------------------------------------------
      LAS CUATRO PROGRESIONES. Cada paso fija tres cosas que NO se
@@ -3357,6 +3359,49 @@ function runAnalysis() {
     return pool[Math.floor(Math.random() * pool.length)].v;
   }
 
+  // --- Modo "2 chords with voice leading" ---------------------------
+  // Para el primer acorde de la corrida: sortea al azar UNA disposición
+  // entre las que ese acorde puede alcanzar (cerrada/abierta/extendida),
+  // y dentro de esa disposición elige la más compacta y centrada. Esa
+  // disposición queda FIJA para el resto de la corrida entera.
+  function elegirPrimerVoicingConForma(pcArray, bajoPc) {
+    var candidatos = voicingsBajoFijo(pcArray, bajoPc);
+    var porForma = {};
+    candidatos.forEach(function (v) {
+      var s = classifyShape(v);
+      (porForma[s] = porForma[s] || []).push(v);
+    });
+    var formas = Object.keys(porForma);
+    var forma = formas[Math.floor(Math.random() * formas.length)];
+    var opciones = porForma[forma];
+    var mejor = null, mejorScore = Infinity;
+    opciones.forEach(function (v) {
+      var span = v[v.length - 1] - v[0];
+      var mean = v.reduce(function (a, b) { return a + b; }, 0) / v.length;
+      var score = span * 10 + Math.abs(mean - 62);
+      if (score < mejorScore) { mejorScore = score; mejor = v; }
+    });
+    return { voicing: mejor, forma: forma };
+  }
+
+  // Para el resto de los acordes de la corrida: SIEMPRE el candidato de
+  // menor costo de conducción de voces (nunca variedad al azar — acá
+  // se pide el mejor voice leading posible), restringido a la
+  // disposición fija de la corrida; si ningún candidato la alcanza
+  // (puede pasar con acordes muy chicos o muy grandes), se usa el pool
+  // completo antes que forzar una disposición imposible.
+  function elegirVoicingEstricto(pcArray, bajoPc, prevVoicing, formaFija) {
+    var candidatos = voicingsBajoFijo(pcArray, bajoPc);
+    var filtrados = formaFija ? candidatos.filter(function (v) { return classifyShape(v) === formaFija; }) : candidatos;
+    if (!filtrados.length) filtrados = candidatos;
+    var mejor = null, mejorCost = Infinity;
+    filtrados.forEach(function (v) {
+      var c = voiceLeadingCost(prevVoicing, v);
+      if (c < mejorCost) { mejorCost = c; mejor = v; }
+    });
+    return mejor;
+  }
+
   var DISP_LABEL = { cerrada: "Cerrada", abierta: "Abierta", extendida: "Extendida" };
   function dispPillHTML(shape) {
     return '<span class="disp-pill"><span class="disp-dot ' + shape + '"></span>' + (DISP_LABEL[shape] || shape) + '</span>';
@@ -3385,23 +3430,51 @@ function runAnalysis() {
     var tipo = document.getElementById("progresionTipo").value;
     var pasos = PROGRESIONES[tipo] || PROGRESIONES["V-I"];
     progresionState.tipo = tipo;
-    var chords = [], prevKey = null, prevVoicing = null, prevShape = null;
-    pasos.forEach(function (paso) {
-      var sorteo = sortearCandidato(paso, prevKey);
-      var cand = sorteo.pick;
-      prevKey = cand.entry["forte-code"] + "|" + cand.rel.join(",");
-      // El set se realiza con su fundamental sobre el bajo del grado.
+    progresionState.doble = progresionDobleModo;
+    var chords = [], prevKey = null, prevVoicing = null, prevShape = null, formaFija = null;
+
+    // Un mismo grado (mismo set, mismo bajo) puede sonar una o dos veces
+    // seguidas ("2 chords with voice leading"): se sortea el candidato
+    // UNA vez por grado, y cada ocurrencia elige su propio voicing
+    // encadenado al anterior — así las dos repeticiones comparten
+    // exactamente las mismas notas (conducción de voces ideal entre
+    // ellas) y lo único que varía es la disposición concreta.
+    function agregarOcurrencia(paso, cand, limitado, ocurrencia, totalOcurrencias) {
       var pcs = cand.rel.map(function (iv) { return mod12(iv + paso.bajo); });
       var r = analyze(CHORDS_DATA, pcs);
-      var voicing = elegirVoicing(pcs, paso.bajo, prevVoicing, prevShape);
+      var voicing;
+      if (progresionDobleModo) {
+        if (!prevVoicing) {
+          var primero = elegirPrimerVoicingConForma(pcs, paso.bajo);
+          voicing = primero.voicing;
+          formaFija = primero.forma;
+        } else {
+          voicing = elegirVoicingEstricto(pcs, paso.bajo, prevVoicing, formaFija);
+        }
+      } else {
+        voicing = elegirVoicing(pcs, paso.bajo, prevVoicing, prevShape);
+      }
       var shape = classifyShape(voicing);
       var movimiento = prevVoicing ? voiceLeadingCost(prevVoicing, voicing) : 0;
       chords.push({
         grado: paso.grado, bajo: paso.bajo, pcs: pcs, rel: cand.rel, r: r,
         categoria: cand.label, voicing: voicing, shape: shape,
-        movimiento: movimiento, limitado: sorteo.limitado
+        movimiento: movimiento, limitado: limitado,
+        ocurrencia: ocurrencia, totalOcurrencias: totalOcurrencias
       });
       prevVoicing = voicing; prevShape = shape;
+    }
+
+    pasos.forEach(function (paso) {
+      var sorteo = sortearCandidato(paso, prevKey);
+      var cand = sorteo.pick;
+      prevKey = cand.entry["forte-code"] + "|" + cand.rel.join(",");
+      if (progresionDobleModo) {
+        agregarOcurrencia(paso, cand, sorteo.limitado, 1, 2);
+        agregarOcurrencia(paso, cand, sorteo.limitado, 2, 2);
+      } else {
+        agregarOcurrencia(paso, cand, sorteo.limitado, 1, 1);
+      }
     });
     progresionState.chords = chords;
     renderProgresion();
@@ -3430,7 +3503,7 @@ function runAnalysis() {
           '<div class="pd-row"><span class="pd-label">Movimiento</span><span class="pd-value">' + (i === 0 ? "—" : c.movimiento + " st") + '</span></div>' +
         '</div>' +
         '<div class="progresion-chip">' +
-          '<div class="pc-grado"><b>' + c.grado + '</b> &middot; bajo ' + spellPitchClass(c.bajo) + (c.limitado ? ' &middot; sin set del tamaño elegido' : '') + '</div>' +
+          '<div class="pc-grado"><b>' + c.grado + '</b>' + (c.totalOcurrencias > 1 ? ' (' + c.ocurrencia + '/' + c.totalOcurrencias + ')' : '') + ' &middot; bajo ' + spellPitchClass(c.bajo) + (c.limitado ? ' &middot; sin set del tamaño elegido' : '') + '</div>' +
           '<div class="pc-notas">' + notas + '</div>' +
           '<div class="pc-set">[' + c.pcs.join(", ") + ']</div>' +
         '</div>' +
@@ -3531,6 +3604,17 @@ function runAnalysis() {
   document.getElementById("progresionPlayBtn").addEventListener("click", reproducirProgresion);
   document.getElementById("progresionStopBtn").addEventListener("click", detenerProgresion);
   document.getElementById("progresionTipo").addEventListener("change", function () {
+    detenerProgresion();
+    regenerarProgresion();
+  });
+
+  // "2 chords with voice leading": duplica cada grado de la progresión
+  // elegida (V-I → V V I I) y fija una sola disposición (cerrada /
+  // abierta / extendida) para toda la corrida, encadenando siempre el
+  // voicing de menor costo posible entre cada acorde y el anterior.
+  document.getElementById("progresionDobleBtn").addEventListener("click", function () {
+    progresionDobleModo = !progresionDobleModo;
+    this.setAttribute("aria-pressed", progresionDobleModo ? "true" : "false");
     detenerProgresion();
     regenerarProgresion();
   });
