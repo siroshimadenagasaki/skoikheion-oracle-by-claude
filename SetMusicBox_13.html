@@ -572,6 +572,15 @@
     font-family:'JetBrains Mono',monospace;font-size:12px;background:var(--surface);
     color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:4px 6px;
   }
+  .progresion-switch{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+  .progresion-switch-label{
+    font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-muted);
+  }
+  button.chip.toggle{padding:6px 12px;}
+  button.chip.toggle[aria-pressed="true"]{
+    background:var(--gold);border-color:var(--gold);color:#1a1622;
+  }
+  button.chip.toggle[aria-pressed="true"]:hover{background:var(--gold);color:#1a1622;}
   .progresion-grid{
     display:flex;flex-wrap:wrap;gap:14px;justify-content:center;
   }
@@ -589,12 +598,18 @@
   .progresion-detalle .pd-row{display:flex;justify-content:space-between;gap:8px;}
   .progresion-detalle .pd-label{opacity:.7;white-space:nowrap;}
   .progresion-detalle .pd-value{text-align:right;color:var(--ink);}
+  .disp-pill{display:inline-flex;align-items:center;gap:5px;}
+  .disp-dot{width:7px;height:7px;border-radius:50%;flex:none;display:inline-block;}
+  .disp-dot.cerrada{background:var(--gold);}
+  .disp-dot.abierta{background:var(--violet);}
+  .disp-dot.extendida{background:var(--red-warn);}
   .progresion-chip .pc-grado{
     font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;
     text-transform:uppercase;color:var(--gold);margin-bottom:4px;
   }
   .progresion-chip .pc-notas{
-    font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:var(--ink);
+    font-family:'Cormorant Garamond',serif;font-size:17px;line-height:1.35;font-weight:600;
+    color:var(--ink);word-break:break-word;
   }
   .progresion-chip .pc-set{
     font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-muted);margin-top:4px;
@@ -869,7 +884,7 @@
 
   <div class="overlay-card progresion-card" id="progresionCard">
     <h2>Generador de progresiones aleatorio</h2>
-    <p class="consola-status">Arma una progresión de acordes al azar: para cada paso sortea un set completo de la Tabla de Sets (Anexo 1 &middot; las 344 clases Forte/Solomon, no solo tríadas y tétradas comunes) y una transposición cromática al azar. Arriba de cada acorde se muestra el detalle completo del set elegido — igual que en el panel de análisis de más arriba. &#128256; Regenerar arma una progresión nueva; &#9658; Reproducir la toca en orden, un acorde por paso.</p>
+    <p class="consola-status">Arma una progresión de acordes al azar: para cada paso sortea un set de la Tabla de Sets (Anexo 1 &middot; las clases Forte/Solomon, filtradas por la cantidad de notas activa en el switch de abajo) y una transposición cromática al azar. Los acordes se realizan como voicings reales — mismo criterio que el Voicing Explorer y el modo &#127927; Jazz: registro dentro de un rango tocable, disposición cerrada / abierta / extendida (con inversión y "drop" de una voz interna) y, entre un acorde y el siguiente, la disposición que menos mueve las voces (conducción de voces suave), variando de forma cuando conviene. Arriba de cada acorde se muestra el detalle completo del set elegido — igual que en el panel de análisis de más arriba — más la disposición y el movimiento de voces respecto del acorde anterior. &#128256; Regenerar arma una progresión nueva; &#9658; Reproducir la toca en orden, un acorde por paso.</p>
     <div class="progresion-controls">
       <label for="progresionPasos">Acordes:
         <select id="progresionPasos">
@@ -880,6 +895,13 @@
           <option value="8">8</option>
         </select>
       </label>
+      <div class="progresion-switch" role="group" aria-label="Cantidad de notas por acorde">
+        <span class="progresion-switch-label">Notas por acorde:</span>
+        <button type="button" class="chip toggle" id="progresionCard3" data-card="3" aria-pressed="true">3</button>
+        <button type="button" class="chip toggle" id="progresionCard4" data-card="4" aria-pressed="true">4</button>
+        <button type="button" class="chip toggle" id="progresionCard5" data-card="5" aria-pressed="true">5</button>
+        <button type="button" class="chip toggle" id="progresionCard6" data-card="6" aria-pressed="true">6</button>
+      </div>
       <button type="button" class="chip" id="progresionRegenBtn">&#128256; Regenerar</button>
       <button type="button" class="chip primary" id="progresionPlayBtn">&#9658; Reproducir</button>
       <button type="button" class="chip" id="progresionStopBtn" disabled>&#9632; Detener</button>
@@ -3128,11 +3150,168 @@ function runAnalysis() {
   var progresionVoices = [];
   var progresionTimer = null;
   var STEP_DUR = 1.7;
+  var progresionCardSizes = [3, 4, 5, 6]; // switch de tamaño de acorde, todas activas por defecto
 
-  function pickRandomChordsEntry(avoidKey) {
+  /* --------------------------------------------------------------
+     Motor de voicings, adaptado del Voicing Explorer (ver módulo
+     embebido más arriba y el modo Jazz de la consola): a partir de
+     un set de clases de altura YA elegido (nunca agrega ni saca
+     ninguna), arma varias disposiciones reales (cerrada, abierta,
+     extendida vía "drop" de una voz interna, cada inversión posible
+     como bajo) dentro de un registro tocable, y — igual que la
+     cadena de transposición del Explorer — entre un paso y el
+     siguiente elige la disposición que menos mueve las voces
+     (búsqueda de la mejor permutación cuando ambos acordes tienen
+     la misma cantidad de notas), variando de forma cuando conviene
+     para no repetir siempre el mismo color.
+     -------------------------------------------------------------- */
+  var VOICING_LOW = 45, VOICING_HIGH = 81; // A2..A5, registro tocable
+
+  function midiToNoteName(midi) {
+    var oct = Math.floor(midi / 12) - 1;
+    var pcv = ((midi % 12) + 12) % 12;
+    return spellPitchClass(pcv) + oct;
+  }
+
+  // Apila las clases de altura, empezando por la que ocupa el bajo en
+  // esta rotación (= una inversión), subiendo de octava cada vez que
+  // hace falta para que quede en orden ascendente — la disposición
+  // "cerrada" de esa inversión.
+  function closedVoicingFromRotation(pcsSorted, rotationIdx) {
+    var n = pcsSorted.length;
+    var order = [];
+    var i;
+    for (i = 0; i < n; i++) order.push(pcsSorted[(rotationIdx + i) % n]);
+    var midiArr = [], prev = null, oct = 4;
+    for (i = 0; i < n; i++) {
+      var pcv = order[i];
+      var m = 12 * (oct + 1) + pcv;
+      if (prev !== null && m <= prev) { oct++; m = 12 * (oct + 1) + pcv; }
+      midiArr.push(m);
+      prev = m;
+    }
+    return midiArr;
+  }
+
+  // "Drop": técnica real de jazz (igual que drop2/drop3 del Voicing
+  // Explorer y del modo Jazz) — baja una voz interna una octava,
+  // ninguna nota nueva, solo otro registro.
+  function dropVoice(voicing, fromTop) {
+    var arr = voicing.slice();
+    var idx = arr.length - fromTop;
+    if (idx < 0 || idx >= arr.length) return null;
+    arr[idx] -= 12;
+    return arr.sort(function (a, b) { return a - b; });
+  }
+
+  function clampRange(voicing) {
+    var arr = voicing.slice(), guard = 0;
+    while (arr[0] < VOICING_LOW && guard < 8) { arr = arr.map(function (m) { return m + 12; }); guard++; }
+    guard = 0;
+    while (arr[arr.length - 1] > VOICING_HIGH && guard < 8) { arr = arr.map(function (m) { return m - 12; }); guard++; }
+    return arr.sort(function (a, b) { return a - b; });
+  }
+
+  function classifyShape(v) {
+    var span = v[v.length - 1] - v[0];
+    if (span <= 12) return "cerrada";
+    if (span <= 19) return "abierta";
+    return "extendida";
+  }
+
+  function permutations(arr) {
+    if (arr.length <= 1) return [arr];
+    var out = [];
+    for (var i = 0; i < arr.length; i++) {
+      var rest = arr.slice(0, i).concat(arr.slice(i + 1));
+      var restPerms = permutations(rest);
+      for (var j = 0; j < restPerms.length; j++) out.push([arr[i]].concat(restPerms[j]));
+    }
+    return out;
+  }
+
+  // Costo de conducción de voces entre dos voicings — búsqueda de la
+  // mejor permutación cuando tienen la misma cantidad de notas (como
+  // bestVoiceLeading del Voicing Explorer; hasta 6 notas = 720
+  // permutaciones, rápido), o comparación grave-a-agudo con
+  // penalización si difieren en cantidad (el switch de tamaño puede
+  // hacer que un paso tenga más o menos notas que el anterior).
+  function voiceLeadingCost(prev, cand) {
+    if (!prev || !prev.length) return 0;
+    var a = prev, b = cand;
+    if (a.length === b.length) {
+      var perms = permutations(b);
+      var best = Infinity;
+      for (var p = 0; p < perms.length; p++) {
+        var c = 0;
+        for (var i = 0; i < a.length; i++) c += Math.abs(a[i] - perms[p][i]);
+        if (c < best) best = c;
+      }
+      return best;
+    }
+    var n = Math.min(a.length, b.length);
+    var cost = Math.abs(a.length - b.length) * 5;
+    for (var k = 0; k < n; k++) cost += Math.abs(a[k] - b[k]);
+    return cost;
+  }
+
+  function candidatosVoicing(pcArray) {
+    var pcsSorted = pcArray.slice().sort(function (a, b) { return a - b; });
+    var n = pcsSorted.length;
+    var pool = [], seen = {};
+    function push(v) {
+      var vv = clampRange(v);
+      var key = vv.join(",");
+      if (seen[key]) return;
+      seen[key] = true;
+      pool.push(vv);
+    }
+    for (var rot = 0; rot < n; rot++) {
+      var closed = closedVoicingFromRotation(pcsSorted, rot);
+      push(closed);
+      if (n >= 3) { var d2 = dropVoice(closed, 2); if (d2) push(d2); }
+      if (n >= 4) { var d3 = dropVoice(closed, 3); if (d3) push(d3); }
+    }
+    return pool;
+  }
+
+  // Elige, para un paso, cuál de los voicings candidatos usar: sin
+  // acorde anterior, el más compacto y centrado en el registro (igual
+  // criterio que el voicing inicial del Voicing Explorer); con acorde
+  // anterior, entre los de menor costo de conducción de voces, uno que
+  // varíe de disposición si el mejor grupo lo permite (varyShape).
+  function elegirVoicing(pcArray, prevVoicing, prevShape) {
+    var candidatos = candidatosVoicing(pcArray);
+    if (!prevVoicing) {
+      var mejor = null, mejorScore = Infinity;
+      candidatos.forEach(function (v) {
+        var span = v[v.length - 1] - v[0];
+        var mean = v.reduce(function (a, b) { return a + b; }, 0) / v.length;
+        var score = span * 10 + Math.abs(mean - 62);
+        if (score < mejorScore) { mejorScore = score; mejor = v; }
+      });
+      return mejor;
+    }
+    var evaluados = candidatos.map(function (v) {
+      return { v: v, cost: voiceLeadingCost(prevVoicing, v) };
+    });
+    evaluados.sort(function (a, b) { return a.cost - b.cost; });
+    var topK = evaluados.slice(0, Math.min(4, evaluados.length));
+    var pool = topK;
+    var alt = topK.filter(function (e) { return classifyShape(e.v) !== prevShape; });
+    if (alt.length) pool = alt;
+    return pool[Math.floor(Math.random() * pool.length)].v;
+  }
+
+  var DISP_LABEL = { cerrada: "Cerrada", abierta: "Abierta", extendida: "Extendida" };
+  function dispPillHTML(shape) {
+    return '<span class="disp-pill"><span class="disp-dot ' + shape + '"></span>' + (DISP_LABEL[shape] || shape) + '</span>';
+  }
+
+  function pickRandomChordsEntry(avoidKey, pool) {
     var entry, key, guard = 0;
     do {
-      entry = CHORDS_DATA[Math.floor(Math.random() * CHORDS_DATA.length)];
+      entry = pool[Math.floor(Math.random() * pool.length)];
       key = entry["forte-code"];
       guard++;
     } while (key === avoidKey && guard < 20);
@@ -3142,15 +3321,23 @@ function runAnalysis() {
   function regenerarProgresion() {
     var sel = document.getElementById("progresionPasos");
     var n = parseInt(sel.value, 10) || 4;
-    var chords = [], prevKey = null;
+    var pool = CHORDS_DATA.filter(function (c) {
+      return progresionCardSizes.indexOf(c["pitch-classes"].length) !== -1;
+    });
+    if (!pool.length) pool = CHORDS_DATA;
+    var chords = [], prevKey = null, prevVoicing = null, prevShape = null;
     for (var i = 0; i < n; i++) {
-      var entry = pickRandomChordsEntry(prevKey);
+      var entry = pickRandomChordsEntry(prevKey, pool);
       prevKey = entry["forte-code"];
       var root = Math.floor(Math.random() * 12);
       var pcs = entry["pitch-classes"].map(function (iv) { return mod12(iv + root); });
       var r = analyze(CHORDS_DATA, pcs);
       var categoria = categoriasParaConjunto(r.input);
-      chords.push({ root: root, pcs: r.input, r: r, categoria: categoria });
+      var voicing = elegirVoicing(r.input, prevVoicing, prevShape);
+      var shape = classifyShape(voicing);
+      var movimiento = prevVoicing ? voiceLeadingCost(prevVoicing, voicing) : 0;
+      chords.push({ root: root, pcs: r.input, r: r, categoria: categoria, voicing: voicing, shape: shape, movimiento: movimiento });
+      prevVoicing = voicing; prevShape = shape;
     }
     progresionState.chords = chords;
     renderProgresion();
@@ -3163,7 +3350,7 @@ function runAnalysis() {
       return;
     }
     grid.innerHTML = progresionState.chords.map(function (c, i) {
-      var notas = c.pcs.map(function (pc) { return spellPitchClass(pc); }).join(" ");
+      var notas = c.voicing.map(function (m) { return midiToNoteName(m); }).join(" ");
       return '<div class="progresion-chord" data-idx="' + i + '">' +
         '<div class="progresion-detalle">' +
           '<div class="pd-row"><span class="pd-label">Solomon</span><span class="pd-value">' + (c.r.solomon_code ?? "—") + (c.r.solomon_name ? " · " + c.r.solomon_name : "") + '</span></div>' +
@@ -3173,6 +3360,8 @@ function runAnalysis() {
           '<div class="pd-row"><span class="pd-label">IC vector</span><span class="pd-value">&lt;' + c.r.ic_vector.join("") + '&gt;</span></div>' +
           '<div class="pd-row"><span class="pd-label">Categoría</span><span class="pd-value">' + (c.categoria ?? "—") + '</span></div>' +
           '<div class="pd-row"><span class="pd-label">Transposición</span><span class="pd-value">Tn=' + c.root + ' (' + spellPitchClass(c.root) + ')</span></div>' +
+          '<div class="pd-row"><span class="pd-label">Disposición</span><span class="pd-value">' + dispPillHTML(c.shape) + '</span></div>' +
+          '<div class="pd-row"><span class="pd-label">Movimiento</span><span class="pd-value">' + (i === 0 ? "—" : c.movimiento + " st") + '</span></div>' +
         '</div>' +
         '<div class="progresion-chip">' +
           '<div class="pc-grado">Paso ' + (i + 1) + '</div>' +
@@ -3186,11 +3375,14 @@ function runAnalysis() {
   // Synth propio (sine+triangle con filtro y envolvente, mismo diseño
   // que synthPad de más arriba) para no depender de currentSynth ni de
   // los buses de ganancia del SetMusicBox — así Detener corta solo lo
-  // que este módulo tocó.
-  function progresionPlayNote(pc, octave, startOffset, duration, gain) {
+  // que este módulo tocó. Toma directamente una nota MIDI (ya con
+  // octava resuelta por el motor de voicings de arriba) en vez de una
+  // clase de altura a octava fija, para que la progresión suene con
+  // registro y disposición reales en vez de un bloque plano.
+  function progresionPlayNote(midi, startOffset, duration, gain) {
     var ctx = getAudioCtx();
     if (!ctx) return;
-    var freq = pcToFreq(pc, octave);
+    var freq = 440 * Math.pow(2, (midi - 69) / 12);
     var t0 = ctx.currentTime + startOffset;
     var osc1 = ctx.createOscillator();
     osc1.type = "sine";
@@ -3247,8 +3439,8 @@ function runAnalysis() {
     var cards = document.querySelectorAll("#progresionGrid .progresion-chord");
     progresionState.chords.forEach(function (c, i) {
       var t = i * STEP_DUR;
-      var g = Math.max(0.05, 0.15 / Math.sqrt(c.pcs.length));
-      c.pcs.forEach(function (pc) { progresionPlayNote(pc, 4, t, STEP_DUR * 0.92, g); });
+      var g = Math.max(0.05, 0.15 / Math.sqrt(c.voicing.length));
+      c.voicing.forEach(function (midi) { progresionPlayNote(midi, t, STEP_DUR * 0.92, g); });
       var card = cards[i];
       if (card) {
         setTimeout(function () {
@@ -3275,6 +3467,28 @@ function runAnalysis() {
   document.getElementById("progresionPasos").addEventListener("change", function () {
     detenerProgresion();
     regenerarProgresion();
+  });
+
+  // Switch de tamaño de acorde (3/4/5/6 notas): cada botón alterna su
+  // propio tamaño dentro/fuera de progresionCardSizes; no se permite
+  // dejar el switch entero apagado (siempre queda al menos un tamaño
+  // activo para poder sortear un acorde).
+  [3, 4, 5, 6].forEach(function (size) {
+    var btn = document.getElementById("progresionCard" + size);
+    if (!btn) return;
+    btn.addEventListener("click", function () {
+      var idx = progresionCardSizes.indexOf(size);
+      if (idx !== -1) {
+        if (progresionCardSizes.length === 1) return; // no apagar el último activo
+        progresionCardSizes.splice(idx, 1);
+        btn.setAttribute("aria-pressed", "false");
+      } else {
+        progresionCardSizes.push(size);
+        btn.setAttribute("aria-pressed", "true");
+      }
+      detenerProgresion();
+      regenerarProgresion();
+    });
   });
 
   regenerarProgresion();
