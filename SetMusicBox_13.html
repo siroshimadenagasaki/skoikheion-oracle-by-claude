@@ -557,6 +557,48 @@
   }
   .mix-preset-opt:hover{color:var(--ink);border-color:var(--gold-dim);}
   .mix-preset-opt.active{background:var(--gold);color:#1a1622;border-color:var(--gold);font-weight:700;}
+
+  /* ---- Generador de progresiones aleatorio (al final del SetMusicBox) ---- */
+  .progresion-card{margin-top:22px;}
+  .progresion-controls{
+    display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;
+    margin:0 0 18px;
+  }
+  .progresion-controls label{
+    font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-muted);
+    display:flex;align-items:center;gap:6px;
+  }
+  .progresion-controls select{
+    font-family:'JetBrains Mono',monospace;font-size:12px;background:var(--surface);
+    color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:4px 6px;
+  }
+  .progresion-grid{
+    display:flex;flex-wrap:wrap;gap:14px;justify-content:center;
+  }
+  .progresion-chord{
+    border:1px solid var(--line);border-radius:12px;padding:12px 14px;
+    background:var(--surface);width:210px;transition:border-color .15s,box-shadow .15s;
+  }
+  .progresion-chord.playing{
+    border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset;
+  }
+  .progresion-detalle{
+    font-family:'JetBrains Mono',monospace;font-size:10px;line-height:1.5;
+    color:var(--ink-muted);border-bottom:1px dashed var(--line);padding-bottom:8px;margin-bottom:8px;
+  }
+  .progresion-detalle .pd-row{display:flex;justify-content:space-between;gap:8px;}
+  .progresion-detalle .pd-label{opacity:.7;white-space:nowrap;}
+  .progresion-detalle .pd-value{text-align:right;color:var(--ink);}
+  .progresion-chip .pc-grado{
+    font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--gold);margin-bottom:4px;
+  }
+  .progresion-chip .pc-notas{
+    font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:var(--ink);
+  }
+  .progresion-chip .pc-set{
+    font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-muted);margin-top:4px;
+  }
 </style>
 </head>
 <body>
@@ -823,6 +865,28 @@
       Bajo: sintetizador de bajo dedicado (fundamental + sub-octava + un filo de armónico, paso-bajos) que recorre distintos grados del acorde EN CURSO de cada compás (nunca una nota ajena a ese acorde ni a su set) — cada reataque de su célula rítmica toma el siguiente grado del voicing actual (o, en modo libre, primero cubre las notas que el subset de referencia dejó afuera). En modo libre, el ritmo del bajo también varía por compás (mayormente blancas, con negras y algún par de corcheas sincopadas al azar), con los compases más movidos y más quietos intercalados a lo largo del segmento en vez de agrupados por azar — mismo promedio general de siempre. Melodía: timbre de flauta (tono casi puro con un poco de vibrato y aire filtrado), una octava (o dos) arriba, que en cada nota toca exclusivamente una nota del acorde que está sonando en ESE preciso instante (el voicing del reataque de armonía vigente en ese momento, no un acorde de referencia fijo del compás) — con predominio de notas largas (redondas, blancas y blanca/negra con puntillo); en el 30% de los compases, en cambio, un fill de 10 notas muy cortas parejas llena el compás entero — ahí ya no salta al azar entre las notas del acorde: arpegia, recorriéndolas en orden (ascendente o descendente según el compás) y subiendo de octava si el fill tiene más notas que grados el acorde — esos compases de fill también se reparten intercalados, no todos seguidos.
       El modo libre también le da al bajo pitch más suelto (grado al azar en cada reataque, dentro del set) y a la melodía pitch ligado en todo momento al acorde en curso; &#8634; Normalito los vuelve a su patrón predecible de siempre. Batería: pista genérica opcional (bombo, caja e hi-hat) que marca el pulso de cada compás — se prende y apaga con el botón &#129345; Batería, incluso con el loop sonando. Su patrón también varía por compás al azar (desde compases bien quietos hasta algún compás de relleno más lleno de golpes), intercalado a lo largo del segmento con el mismo criterio que armonía/bajo/melodía. El segmento se repite en loop hasta Detener &mdash; podés cambiar el set o tocar &#8634; Normalito mientras suena y el próximo loop lo toma.
     </p>
+  </div>
+
+  <div class="overlay-card progresion-card" id="progresionCard">
+    <h2>Generador de progresiones aleatorio</h2>
+    <p class="consola-status">Arma una progresión de acordes al azar: para cada paso sortea un set completo de la Tabla de Sets (Anexo 1 &middot; las 344 clases Forte/Solomon, no solo tríadas y tétradas comunes) y una transposición cromática al azar. Arriba de cada acorde se muestra el detalle completo del set elegido — igual que en el panel de análisis de más arriba. &#128256; Regenerar arma una progresión nueva; &#9658; Reproducir la toca en orden, un acorde por paso.</p>
+    <div class="progresion-controls">
+      <label for="progresionPasos">Acordes:
+        <select id="progresionPasos">
+          <option value="3">3</option>
+          <option value="4" selected>4</option>
+          <option value="5">5</option>
+          <option value="6">6</option>
+          <option value="8">8</option>
+        </select>
+      </label>
+      <button type="button" class="chip" id="progresionRegenBtn">&#128256; Regenerar</button>
+      <button type="button" class="chip primary" id="progresionPlayBtn">&#9658; Reproducir</button>
+      <button type="button" class="chip" id="progresionStopBtn" disabled>&#9632; Detener</button>
+    </div>
+    <div class="progresion-grid" id="progresionGrid">
+      <div class="empty-state">Tocá &#128256; Regenerar para armar una progresión.</div>
+    </div>
   </div>
 
   <div class="overlay-card" id="anexo1">
@@ -2148,64 +2212,77 @@ function buscarHibridoEnUniverso(conjuntoNotas) {
 }
 
 /* ============================================================
-   CATEGORÍAS MODALES (Terebeiko, "Elementos musicales", p.51)
+   CATEGORÍAS DE ACORDES (Terebeiko, "Elementos musicales", p.51)
    Columna auxiliar de texto chico junto a "Cifrado" en la tabla de
-   Superposición cromática. Transcripción del archivo que subió el
-   usuario ("tabla_superposicion_categorias.txt"), traducida de la
-   notación por grados (1, b2, 2, b3, 3, 4, #4, 5, #5, 6, b7, 7) a
-   semitonos 0-11 para poder comparar contra el conjunto real de
-   cada fila. AVISO: el archivo fuente está incompleto — no incluye
-   la categoría Aumentada, y la sección Disminuida corta a mitad
-   (dos variantes de "Disminuida modo 1" con distintas tensiones,
-   sin "modo 2" ni el resto). Se transcribe tal cual llegó; falta
-   contenido para completar el resto de las categorías.
+   Superposición cromática. Transcripción — actualizada dos veces
+   por el usuario — de la tabla de superposición por categorías,
+   traducida de grados (1, b2, 2, b3, 3, 4, #4, 5, #5, 6, b7, 7) a
+   semitonos 0-11 para comparar contra el conjunto real de cada
+   fila. La tónica fija de la tabla (C=0) es siempre el bajo, así
+   que "los análisis se hacen desde el bajo" ya es el comportamiento
+   por construcción — no hace falta lógica extra para eso.
+
    Cada variante matchea si el conjunto de la fila: (a) contiene
    TODOS los grados requeridos, (b) no contiene ninguno de los
    grados explícitamente excluidos ("no4", "no6", etc.), y (c) no
-   tiene ninguna nota fuera de requeridos+opcionales (si no, sería
-   una estructura distinta). "requireAnyOf" son las condiciones
-   extra en AND que pide el texto original (p.ej. Mixolidia
+   tiene ninguna nota fuera de requeridos+opcionales. "requireAnyOf"
+   son las condiciones extra en AND que pide el texto (Mixolidia
    Alterada exige a la vez una tensión diatónica Y una alterada;
-   Alterada exige al menos una tensión alterada presente, para no
-   matchear un 7 liso sin ninguna alteración).
-   Superposiciones esperadas (no son errores, las anticipa el texto
-   fuente): b9 (tensión alterada, semitono 1) es el mismo semitono
-   que b2 (grado requerido de Frigia) — por eso un dominante
-   alterado con b9 también matchea Frigia, y el texto original ya
-   pide mostrar ambas etiquetas juntas ("Frigio - Alterada"). Un
-   dim7 desnudo (sin ninguna tensión extra) matchea por igual las
-   dos variantes de "Disminuida modo 1" — el texto solo las
-   distingue por qué tensión adicional traen, así que sin tensión
-   son indistinguibles y se listan ambas.
+   Alterada exige al menos una tensión alterada, para no matchear
+   un 7 liso sin ninguna alteración). "aumentadoSiTiene8" marca las
+   dos variantes donde, si la tensión #5/6b (semitono 8) está
+   presente, el texto pide agregar "(Aumentado)" al final del rótulo.
+
+   DOS PUNTOS QUE QUEDARON SIN IMPLEMENTAR por ser ambiguos en el
+   texto fuente (se listan tal cual para que el usuario los aclare):
+   1) "Jónica/Lidia (no3)" — la lista de grados que la acompaña
+      ("1 (2/3bb) 2#/3b 3/4b 4 4#/5b 5/6bb 5#/6b (6/7bb) (7)") pide
+      6 grados no-raíz simultáneos, casi idéntica a la nota general
+      de "grados equivalentes" de más arriba — probablemente un
+      duplicado de transcripción, no una lista real de grados
+      requeridos. No se agregó ninguna variante con ese nombre.
+   2) Sección "Ambiguo": la regla de "si comparte dos grados con
+      dos categorías, juntar los dos nombres" (con el ejemplo 1 2 4#
+      → "Mixolidia 4#/Lidio") no alcanza a especificar CUÁNDO un
+      conjunto cuenta como "comparte dos grados" con una categoría
+      que no matchea de lleno. Se implementó solo la mitad clara:
+      "Ambiguo" como rótulo de reserva (en vez de dejar la celda en
+      blanco) para un conjunto que no matchea ninguna categoría
+      concreta pero sí entra en el molde amplio "1 (2) (4) (4#) (5)
+      (5#/6b) (6) (7b) (7)". La regla de combinar dos nombres
+      secundarios por coincidencia parcial NO está implementada.
    ============================================================ */
-function _cat(categoria, nombre, cifrado, required, optional, excluded, requireAnyOf) {
-  return { categoria, nombre, cifrado, required, optional: optional || [], excluded: excluded || [], requireAnyOf: requireAnyOf || [] };
+function _cat(categoria, nombre, cifrado, required, optional, excluded, requireAnyOf, aumentadoSiTiene8) {
+  return { categoria, nombre, cifrado, required, optional: optional || [], excluded: excluded || [], requireAnyOf: requireAnyOf || [], aumentadoSiTiene8: !!aumentadoSiTiene8 };
 }
-const TEREBEIKO_CATEGORIAS = [
-  _cat("Mayor", "Mayor (no4 no7)", "M no4no7", [0, 4], [7], [5, 11]),
-  _cat("Mayor", "Jónica (no4)", "Δ no4", [0, 4, 11], [7], [5]),
-  _cat("Mayor", "Jónica (4)", "Δ (4)", [0, 4, 5], [7, 11]),
-  _cat("Mayor", "Lidia (4#)", "Δ 4#", [0, 4, 6], [7, 11]),
-  _cat("Mayor", "Jónica / Lidia (5#)", "Δ 5#", [0, 4, 8], [11]),
-  _cat("Mayor", "Jónica / Lidia (2#)", "Δ 2#", [0, 3, 4, 7], [11]),
-  _cat("Mayor", "Mayor alt", "Mayor alt", [0, 3, 4, 6, 8], [11]),
+const CATEGORIAS_DE_ACORDES = [
+  _cat("Mayor", "Mayor (no4 no7)", "M no4no7", [0, 4], [2, 7, 9], [5, 11]),
+  _cat("Mayor", "Jónica (no4)", "Δ no4", [0, 4, 11], [2, 7, 9], [5]),
+  _cat("Mayor", "Jónica (4)", "Δ (4)", [0, 4, 5], [2, 7, 9, 11]),
+  _cat("Mayor", "Lidia (4#)", "Δ 4#", [0, 4, 6], [2, 7, 9, 11]),
+  _cat("Mayor", "Mayor aumentado (no4 5#)", "Δ+", [0, 4, 8], [2, 9, 11], [5]),
+  _cat("Mayor", "Jónica / Lidia (no4 2#)", "Δ 2#", [0, 3, 4, 7], [9, 11], [5]),
+  _cat("Mayor", "Mayor alt", "Mayor alt", [0, 4, 6, 8], [3, 11]),
   _cat("Menor", "Menor (no6)", "m (no6)", [0, 3], [7, 10, 11], [8, 9]),
   _cat("Menor", "Dórica (6)", "m 6 (natural)", [0, 3, 9], [7, 10, 11], [8]),
   _cat("Menor", "Eólica (6b)", "m 6b", [0, 3, 8], [7, 10, 11], [9]),
   _cat("Dominante", "Mixolidia (no4)", "7 no4", [0, 4, 10], [7], [5]),
   _cat("Dominante", "Mixolidia (4) — sus4", "7 sus4", [0, 5, 10], [7], [4]),
   _cat("Dominante", "Mixolidia (4#)", "7 4#", [0, 4, 6, 10], [7]),
-  _cat("Dominante", "Mixolidia Alterada", "7 (2 4 5 6) alt.", [0, 4, 10], [1, 2, 3, 5, 6, 7, 8, 9], [], [[2, 5, 7, 9], [1, 3, 6, 8]]),
-  _cat("Dominante", "Alterada", "7 Alt", [0, 4, 10], [1, 3, 6, 8], [2, 5, 7, 9], [[1, 3, 6, 8]]),
-  _cat("Frigia", "Frigia (3b/3)", "Sus4 2b", [0, 1], [3, 4, 5, 7, 10]),
-  _cat("Frigia", "Frigia (no3)", "Sus4 2b no3", [0, 1], [5, 7, 10], [3, 4]),
+  _cat("Dominante", "Dominante aumentado 7 (no4 5#)", "7+", [0, 4, 8, 10], [2, 9], [5]),
+  _cat("Dominante", "Mixolidia Alterada", "7 (2 4 5 6) alt.", [0, 4, 10], [1, 2, 3, 5, 6, 7, 8, 9], [], [[2, 5, 7, 9], [1, 3, 6, 8]], true),
+  _cat("Dominante", "Alterada", "7 Alt", [0, 4, 10], [1, 3, 6, 8], [2, 5, 7, 9], [[1, 3, 6, 8]], true),
+  _cat("Frigia", "Frigia (3)", "Sus4 2b (3)", [0, 1, 4], [5, 7, 8, 9, 10]),
+  _cat("Frigia", "Frigia (3b)", "Sus4 2b (3b)", [0, 1, 3], [5, 7, 8, 9, 10]),
+  _cat("Frigia", "Frigia (no3)", "Sus4 2b no3", [0, 1], [5, 7, 8, 9, 10], [3, 4]),
   _cat("Locria", "Locria", "ø (3b 5b 7b)", [0, 3, 6, 10], []),
   _cat("Disminuida", "Disminuida modo 1 (A)", "° (3b 5b 6)", [0, 3, 6, 9], [2, 5, 8, 11]),
   _cat("Disminuida", "Disminuida modo 1 (B)", "° (3b 5b 6)", [0, 3, 6, 9], [1, 4, 7, 10]),
+  _cat("Ambiguo", "Ambiguo", "", [0], [2, 5, 6, 7, 8, 9, 10, 11]),
 ];
-// Pares que el texto original marca como combinables bajo un mismo
-// rótulo (p.ej. "Frigia - Alterada") cuando matchean juntos.
-const TEREBEIKO_COMBINABLES = [["Frigia", "Dominante"], ["Locria", "Dominante"]];
+// Pares que el texto marca como combinables bajo un mismo rótulo
+// (p.ej. "Frigia - Alterada") cuando matchean juntos.
+const CATEGORIAS_COMBINABLES = [["Frigia", "Dominante"], ["Locria", "Dominante"]];
 
 function categoriaMatchea(semitoneSet, variante) {
   for (const r of variante.required) if (!semitoneSet.has(r)) return false;
@@ -2217,12 +2294,22 @@ function categoriaMatchea(semitoneSet, variante) {
 }
 function categoriasParaConjunto(pcArray) {
   const set = new Set(pcArray.map(mod12));
-  const matches = TEREBEIKO_CATEGORIAS.filter(v => categoriaMatchea(set, v));
-  if (!matches.length) return null;
+  // Diadas: exactamente 2 clases de altura distintas — rótulo aparte,
+  // "Diada (grados)", mismo criterio de asignación que Ambiguo.
+  if (set.size === 2) {
+    const grados = [...set].sort((a, b) => a - b).map(s => DEGREE_SPELL[s]).join(" ");
+    return `Diada (${grados})`;
+  }
+  const especificas = CATEGORIAS_DE_ACORDES.filter(v => v.categoria !== "Ambiguo");
+  const matches = especificas.filter(v => categoriaMatchea(set, v));
+  if (!matches.length) {
+    const ambiguo = CATEGORIAS_DE_ACORDES.find(v => v.categoria === "Ambiguo");
+    return categoriaMatchea(set, ambiguo) ? "Ambiguo" : null;
+  }
   const combinable = matches.some(a => matches.some(b => a !== b &&
-    TEREBEIKO_COMBINABLES.some(([x, y]) => (a.categoria === x && b.categoria === y) || (a.categoria === y && b.categoria === x))));
+    CATEGORIAS_COMBINABLES.some(([x, y]) => (a.categoria === x && b.categoria === y) || (a.categoria === y && b.categoria === x))));
   const sep = combinable ? " - " : " / ";
-  return matches.map(m => m.nombre).join(sep);
+  return matches.map(m => m.nombre + (m.aumentadoSiTiene8 && set.has(8) ? " (Aumentado)" : "")).join(sep);
 }
 
 // Genera las 12 filas de superposición cromática para un conjunto base
@@ -3017,6 +3104,181 @@ function runAnalysis() {
     renderSubSuper(null);
   }
 }
+</script>
+
+<script>
+/* ============================================================
+   GENERADOR DE PROGRESIONES ALEATORIO
+   Módulo aparte, al final del SetMusicBox: arma una progresión de
+   N acordes al azar. Para cada paso sortea, sin repetir el mismo
+   set dos veces seguidas, una fila de CHORDS_DATA (el mismo array
+   de 344 clases Forte/Solomon que alimenta el Anexo 1 · Tabla de
+   Sets) y una transposición cromática Tn al azar (0-11) — así puede
+   salir cualquier set de la tabla, no solo tríadas/tétradas de uso
+   común. El detalle completo de cada set elegido (Solomon, Forte,
+   normal form, prime form, IC vector, categoría y transposición) se
+   muestra arriba de su acorde, con los mismos campos que el panel
+   de análisis principal. La reproducción usa un synth propio,
+   independiente del motor del SetMusicBox de más abajo (no comparte
+   sus buses de ganancia ni su scheduler), para que Detener pueda
+   cortar limpio sin tocar nada del loop principal.
+   ============================================================ */
+(function () {
+  var progresionState = { chords: [] };
+  var progresionVoices = [];
+  var progresionTimer = null;
+  var STEP_DUR = 1.7;
+
+  function pickRandomChordsEntry(avoidKey) {
+    var entry, key, guard = 0;
+    do {
+      entry = CHORDS_DATA[Math.floor(Math.random() * CHORDS_DATA.length)];
+      key = entry["forte-code"];
+      guard++;
+    } while (key === avoidKey && guard < 20);
+    return entry;
+  }
+
+  function regenerarProgresion() {
+    var sel = document.getElementById("progresionPasos");
+    var n = parseInt(sel.value, 10) || 4;
+    var chords = [], prevKey = null;
+    for (var i = 0; i < n; i++) {
+      var entry = pickRandomChordsEntry(prevKey);
+      prevKey = entry["forte-code"];
+      var root = Math.floor(Math.random() * 12);
+      var pcs = entry["pitch-classes"].map(function (iv) { return mod12(iv + root); });
+      var r = analyze(CHORDS_DATA, pcs);
+      var categoria = categoriasParaConjunto(r.input);
+      chords.push({ root: root, pcs: r.input, r: r, categoria: categoria });
+    }
+    progresionState.chords = chords;
+    renderProgresion();
+  }
+
+  function renderProgresion() {
+    var grid = document.getElementById("progresionGrid");
+    if (!progresionState.chords.length) {
+      grid.innerHTML = '<div class="empty-state">Tocá &#128256; Regenerar para armar una progresión.</div>';
+      return;
+    }
+    grid.innerHTML = progresionState.chords.map(function (c, i) {
+      var notas = c.pcs.map(function (pc) { return spellPitchClass(pc); }).join(" ");
+      return '<div class="progresion-chord" data-idx="' + i + '">' +
+        '<div class="progresion-detalle">' +
+          '<div class="pd-row"><span class="pd-label">Solomon</span><span class="pd-value">' + (c.r.solomon_code ?? "—") + (c.r.solomon_name ? " · " + c.r.solomon_name : "") + '</span></div>' +
+          '<div class="pd-row"><span class="pd-label">Forte</span><span class="pd-value">' + (c.r.forte_code ?? "—") + (c.r.forte_name ? " · " + c.r.forte_name : "") + '</span></div>' +
+          '<div class="pd-row"><span class="pd-label">Normal form</span><span class="pd-value">[' + c.r.normal_form.join(", ") + ']</span></div>' +
+          '<div class="pd-row"><span class="pd-label">Prime form</span><span class="pd-value">[' + c.r.prime_form.join(", ") + ']</span></div>' +
+          '<div class="pd-row"><span class="pd-label">IC vector</span><span class="pd-value">&lt;' + c.r.ic_vector.join("") + '&gt;</span></div>' +
+          '<div class="pd-row"><span class="pd-label">Categoría</span><span class="pd-value">' + (c.categoria ?? "—") + '</span></div>' +
+          '<div class="pd-row"><span class="pd-label">Transposición</span><span class="pd-value">Tn=' + c.root + ' (' + spellPitchClass(c.root) + ')</span></div>' +
+        '</div>' +
+        '<div class="progresion-chip">' +
+          '<div class="pc-grado">Paso ' + (i + 1) + '</div>' +
+          '<div class="pc-notas">' + notas + '</div>' +
+          '<div class="pc-set">[' + c.pcs.join(", ") + ']</div>' +
+        '</div>' +
+      '</div>';
+    }).join("");
+  }
+
+  // Synth propio (sine+triangle con filtro y envolvente, mismo diseño
+  // que synthPad de más arriba) para no depender de currentSynth ni de
+  // los buses de ganancia del SetMusicBox — así Detener corta solo lo
+  // que este módulo tocó.
+  function progresionPlayNote(pc, octave, startOffset, duration, gain) {
+    var ctx = getAudioCtx();
+    if (!ctx) return;
+    var freq = pcToFreq(pc, octave);
+    var t0 = ctx.currentTime + startOffset;
+    var osc1 = ctx.createOscillator();
+    osc1.type = "sine";
+    osc1.frequency.setValueAtTime(freq, t0);
+    var osc2 = ctx.createOscillator();
+    osc2.type = "triangle";
+    osc2.frequency.setValueAtTime(freq * 2, t0);
+    osc2.detune.setValueAtTime(-6, t0);
+    var osc2Gain = ctx.createGain();
+    osc2Gain.gain.value = 0.2;
+    var filter = ctx.createBiquadFilter();
+    filter.type = "lowpass";
+    filter.frequency.setValueAtTime(3200, t0);
+    filter.Q.value = 0.5;
+    var env = ctx.createGain();
+    env.gain.setValueAtTime(0, t0);
+    env.gain.linearRampToValueAtTime(gain, t0 + 0.04);
+    env.gain.exponentialRampToValueAtTime(Math.max(gain * 0.4, 0.0001), t0 + duration * 0.5);
+    env.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
+    osc1.connect(filter); osc2.connect(osc2Gain); osc2Gain.connect(filter); filter.connect(env); env.connect(ctx.destination);
+    osc1.start(t0); osc2.start(t0);
+    osc1.stop(t0 + duration + 0.08); osc2.stop(t0 + duration + 0.08);
+    progresionVoices.push({ osc: osc1, env: env });
+    progresionVoices.push({ osc: osc2, env: null });
+  }
+
+  function detenerProgresion() {
+    if (progresionTimer) { clearTimeout(progresionTimer); progresionTimer = null; }
+    var ctx = getAudioCtx();
+    var now = ctx ? ctx.currentTime : 0;
+    progresionVoices.forEach(function (v) {
+      try {
+        if (v.env) {
+          v.env.gain.cancelScheduledValues(now);
+          v.env.gain.setValueAtTime(v.env.gain.value, now);
+          v.env.gain.linearRampToValueAtTime(0, now + 0.02);
+        }
+        v.osc.stop(now + 0.03);
+      } catch (e) { /* ya detenido */ }
+    });
+    progresionVoices = [];
+    document.getElementById("progresionPlayBtn").disabled = false;
+    document.getElementById("progresionStopBtn").disabled = true;
+    document.querySelectorAll("#progresionGrid .progresion-chord").forEach(function (el) { el.classList.remove("playing"); });
+  }
+
+  function reproducirProgresion() {
+    if (!progresionState.chords.length) return;
+    detenerProgresion();
+    var playBtn = document.getElementById("progresionPlayBtn");
+    var stopBtn = document.getElementById("progresionStopBtn");
+    playBtn.disabled = true;
+    stopBtn.disabled = false;
+    var cards = document.querySelectorAll("#progresionGrid .progresion-chord");
+    progresionState.chords.forEach(function (c, i) {
+      var t = i * STEP_DUR;
+      var g = Math.max(0.05, 0.15 / Math.sqrt(c.pcs.length));
+      c.pcs.forEach(function (pc) { progresionPlayNote(pc, 4, t, STEP_DUR * 0.92, g); });
+      var card = cards[i];
+      if (card) {
+        setTimeout(function () {
+          cards.forEach(function (el) { el.classList.remove("playing"); });
+          card.classList.add("playing");
+        }, Math.max(0, t * 1000));
+      }
+    });
+    var total = progresionState.chords.length * STEP_DUR;
+    progresionTimer = setTimeout(function () {
+      playBtn.disabled = false;
+      stopBtn.disabled = true;
+      document.querySelectorAll("#progresionGrid .progresion-chord").forEach(function (el) { el.classList.remove("playing"); });
+      progresionTimer = null;
+    }, total * 1000 + 60);
+  }
+
+  document.getElementById("progresionRegenBtn").addEventListener("click", function () {
+    detenerProgresion();
+    regenerarProgresion();
+  });
+  document.getElementById("progresionPlayBtn").addEventListener("click", reproducirProgresion);
+  document.getElementById("progresionStopBtn").addEventListener("click", detenerProgresion);
+  document.getElementById("progresionPasos").addEventListener("change", function () {
+    detenerProgresion();
+    regenerarProgresion();
+  });
+
+  regenerarProgresion();
+})();
 </script>
 
 <script>
