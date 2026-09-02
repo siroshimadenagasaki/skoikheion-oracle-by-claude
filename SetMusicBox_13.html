@@ -605,8 +605,12 @@
   .disp-dot.extendida{background:var(--red-warn);}
   .progresion-chip .pc-grado{
     font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;
-    text-transform:uppercase;color:var(--gold);margin-bottom:4px;
+    color:var(--gold);margin-bottom:4px;
   }
+  /* El grado se escribe tal cual (Im no es IM, IIø no es IIØ): la
+     caja del cifrado distingue mayor de menor, así que acá no va
+     text-transform. */
+  .progresion-chip .pc-grado b{font-size:12px;font-weight:700;}
   .progresion-chip .pc-notas{
     font-family:'Cormorant Garamond',serif;font-size:17px;line-height:1.35;font-weight:600;
     color:var(--ink);word-break:break-word;
@@ -3426,7 +3430,7 @@ function runAnalysis() {
           '<div class="pd-row"><span class="pd-label">Movimiento</span><span class="pd-value">' + (i === 0 ? "—" : c.movimiento + " st") + '</span></div>' +
         '</div>' +
         '<div class="progresion-chip">' +
-          '<div class="pc-grado">' + c.grado + ' &middot; bajo ' + spellPitchClass(c.bajo) + (c.limitado ? ' &middot; sin set del tamaño elegido' : '') + '</div>' +
+          '<div class="pc-grado"><b>' + c.grado + '</b> &middot; bajo ' + spellPitchClass(c.bajo) + (c.limitado ? ' &middot; sin set del tamaño elegido' : '') + '</div>' +
           '<div class="pc-notas">' + notas + '</div>' +
           '<div class="pc-set">[' + c.pcs.join(", ") + ']</div>' +
         '</div>' +
