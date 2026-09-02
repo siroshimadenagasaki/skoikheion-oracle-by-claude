@@ -884,15 +884,14 @@
 
   <div class="overlay-card progresion-card" id="progresionCard">
     <h2>Generador de progresiones aleatorio</h2>
-    <p class="consola-status">Arma una progresión de acordes al azar: para cada paso sortea un set de la Tabla de Sets (Anexo 1 &middot; las clases Forte/Solomon, filtradas por la cantidad de notas activa en el switch de abajo) y una transposición cromática al azar. Los acordes se realizan como voicings reales — mismo criterio que el Voicing Explorer y el modo &#127927; Jazz: registro dentro de un rango tocable, disposición cerrada / abierta / extendida (con inversión y "drop" de una voz interna) y, entre un acorde y el siguiente, la disposición que menos mueve las voces (conducción de voces suave), variando de forma cuando conviene. Arriba de cada acorde se muestra el detalle completo del set elegido — igual que en el panel de análisis de más arriba — más la disposición y el movimiento de voces respecto del acorde anterior. &#128256; Regenerar arma una progresión nueva; &#9658; Reproducir la toca en orden, un acorde por paso.</p>
+    <p class="consola-status">Arma al azar una de las cuatro progresiones, respetando el grado y el bajo fijo de cada acorde. <b>V</b> siempre con bajo en G, <b>I</b> / <b>Im</b> con bajo en C, <b>II</b> / <b>IIø</b> con bajo en D. Para cada grado se sortea un set de la Tabla de Sets (Anexo 1 &middot; las clases Forte/Solomon, en cualquiera de sus rotaciones, filtradas por el switch de cantidad de notas) que cumpla <em>únicamente</em> las categorías admitidas para ese grado: V &rarr; Mayor alt, Jónica/Lidia (no3), Dominante, Alterada y/o Frigia &middot; I &rarr; Mayor, Frigia (no3), Frigia (3) &middot; Im &rarr; Menor, Frigia (no3), Frigia (3b) &middot; II &rarr; Menor, Dominante &middot; IIø &rarr; Locria, Menor, Dominante. La categoría se evalúa siempre desde el bajo, como pide la tabla. Los acordes se realizan como voicings reales — mismo criterio que el Voicing Explorer y el modo &#127927; Jazz: registro tocable, disposición cerrada / abierta / extendida y, entre un acorde y el siguiente, la que menos mueve las voces — pero <b>sin invertir</b>: el bajo del grado siempre queda como nota más grave. Arriba de cada acorde se muestra el detalle completo del set elegido. &#128256; Regenerar sortea sets nuevos; &#9658; Reproducir toca la progresión en orden.</p>
     <div class="progresion-controls">
-      <label for="progresionPasos">Acordes:
-        <select id="progresionPasos">
-          <option value="3">3</option>
-          <option value="4" selected>4</option>
-          <option value="5">5</option>
-          <option value="6">6</option>
-          <option value="8">8</option>
+      <label for="progresionTipo">Progresión:
+        <select id="progresionTipo">
+          <option value="V-I" selected>V - I</option>
+          <option value="V-Im">V - Im</option>
+          <option value="II-V-I">II - V - I</option>
+          <option value="IIo-V-Im">IIø - V - Im</option>
         </select>
       </label>
       <div class="progresion-switch" role="group" aria-label="Cantidad de notas por acorde">
@@ -2255,15 +2254,16 @@ function buscarHibridoEnUniverso(conjuntoNotas) {
    dos variantes donde, si la tensión #5/6b (semitono 8) está
    presente, el texto pide agregar "(Aumentado)" al final del rótulo.
 
-   DOS PUNTOS QUE QUEDARON SIN IMPLEMENTAR por ser ambiguos en el
-   texto fuente (se listan tal cual para que el usuario los aclare):
-   1) "Jónica/Lidia (no3)" — la lista de grados que la acompaña
-      ("1 (2/3bb) 2#/3b 3/4b 4 4#/5b 5/6bb 5#/6b (6/7bb) (7)") pide
-      6 grados no-raíz simultáneos, casi idéntica a la nota general
-      de "grados equivalentes" de más arriba — probablemente un
-      duplicado de transcripción, no una lista real de grados
-      requeridos. No se agregó ninguna variante con ese nombre.
-   2) Sección "Ambiguo": la regla de "si comparte dos grados con
+   "Jónica / Lidia (no3)" quedó confirmada por el usuario tal cual
+   la transcribe la tabla ("1 (2/3bb) 2#/3b 3/4b 4 4#/5b 5/6bb
+   5#/6b (6/7bb) (7)"): pide simultáneamente los semitonos 3, 4, 5,
+   6, 7 y 8 sobre la fundamental — es decir, la 3ra menor Y la 3ra
+   mayor a la vez (de ahí el "no3": ninguna de las dos define el
+   acorde), más el racimo cromático completo hasta el 5#/6b.
+
+   UN PUNTO SIGUE SIN IMPLEMENTAR por ser ambiguo en el texto
+   fuente (se deja listado para que el usuario lo aclare):
+      Sección "Ambiguo": la regla de "si comparte dos grados con
       dos categorías, juntar los dos nombres" (con el ejemplo 1 2 4#
       → "Mixolidia 4#/Lidio") no alcanza a especificar CUÁNDO un
       conjunto cuenta como "comparte dos grados" con una categoría
@@ -2285,6 +2285,7 @@ const CATEGORIAS_DE_ACORDES = [
   _cat("Mayor", "Mayor aumentado (no4 5#)", "Δ+", [0, 4, 8], [2, 9, 11], [5]),
   _cat("Mayor", "Jónica / Lidia (no4 2#)", "Δ 2#", [0, 3, 4, 7], [9, 11], [5]),
   _cat("Mayor", "Mayor alt", "Mayor alt", [0, 4, 6, 8], [3, 11]),
+  _cat("Mayor", "Jónica / Lidia (no3)", "no3", [0, 3, 4, 5, 6, 7, 8], [2, 9, 11]),
   _cat("Menor", "Menor (no6)", "m (no6)", [0, 3], [7, 10, 11], [8, 9]),
   _cat("Menor", "Dórica (6)", "m 6 (natural)", [0, 3, 9], [7, 10, 11], [8]),
   _cat("Menor", "Eólica (6b)", "m 6b", [0, 3, 8], [7, 10, 11], [9]),
@@ -2314,24 +2315,35 @@ function categoriaMatchea(semitoneSet, variante) {
   for (const grupo of variante.requireAnyOf) if (!grupo.some(s => semitoneSet.has(s))) return false;
   return true;
 }
-function categoriasParaConjunto(pcArray) {
+// Devuelve las variantes que matchean, además del rótulo ya formateado.
+// IMPORTANTE: el conjunto que se pasa tiene que estar SIEMPRE relativo a
+// su propia fundamental (grado 1 = clase de altura 0), porque todas las
+// categorías definen sus grados desde ahí ("los análisis se hacen desde
+// el bajo"). Un conjunto ya transpuesto a otra altura daría un rótulo
+// equivocado — hay que normalizarlo antes de llamar acá.
+function categoriasMatches(pcArray) {
   const set = new Set(pcArray.map(mod12));
   // Diadas: exactamente 2 clases de altura distintas — rótulo aparte,
   // "Diada (grados)", mismo criterio de asignación que Ambiguo.
   if (set.size === 2) {
     const grados = [...set].sort((a, b) => a - b).map(s => DEGREE_SPELL[s]).join(" ");
-    return `Diada (${grados})`;
+    return { tipo: "diada", matches: [], label: `Diada (${grados})` };
   }
   const especificas = CATEGORIAS_DE_ACORDES.filter(v => v.categoria !== "Ambiguo");
   const matches = especificas.filter(v => categoriaMatchea(set, v));
   if (!matches.length) {
     const ambiguo = CATEGORIAS_DE_ACORDES.find(v => v.categoria === "Ambiguo");
-    return categoriaMatchea(set, ambiguo) ? "Ambiguo" : null;
+    const esAmbiguo = categoriaMatchea(set, ambiguo);
+    return { tipo: esAmbiguo ? "ambiguo" : "ninguna", matches: [], label: esAmbiguo ? "Ambiguo" : null };
   }
   const combinable = matches.some(a => matches.some(b => a !== b &&
     CATEGORIAS_COMBINABLES.some(([x, y]) => (a.categoria === x && b.categoria === y) || (a.categoria === y && b.categoria === x))));
   const sep = combinable ? " - " : " / ";
-  return matches.map(m => m.nombre + (m.aumentadoSiTiene8 && set.has(8) ? " (Aumentado)" : "")).join(sep);
+  const label = matches.map(m => m.nombre + (m.aumentadoSiTiene8 && set.has(8) ? " (Aumentado)" : "")).join(sep);
+  return { tipo: "especificas", matches, label };
+}
+function categoriasParaConjunto(pcArray) {
+  return categoriasMatches(pcArray).label;
 }
 
 // Genera las 12 filas de superposición cromática para un conjunto base
@@ -3146,11 +3158,70 @@ function runAnalysis() {
    cortar limpio sin tocar nada del loop principal.
    ============================================================ */
 (function () {
-  var progresionState = { chords: [] };
+  var progresionState = { chords: [], tipo: "V-I" };
   var progresionVoices = [];
   var progresionTimer = null;
   var STEP_DUR = 1.7;
   var progresionCardSizes = [3, 4, 5, 6]; // switch de tamaño de acorde, todas activas por defecto
+
+  /* --------------------------------------------------------------
+     LAS CUATRO PROGRESIONES. Cada paso fija tres cosas que NO se
+     sortean: el grado (V, I, Im, II, IIø), el bajo (G=7, C=0, D=2)
+     y la lista de categorías admitidas para ese grado. Lo único que
+     se sortea es CUÁL set de la tabla se usa, entre los que cumplen
+     esas categorías analizados desde ese bajo.
+        {n:"..."} = una categoría secundaria puntual (por nombre)
+        {g:"..."} = cualquier variante de esa categoría principal
+     -------------------------------------------------------------- */
+  var MATCH_V   = [{ n: "Mayor alt" }, { n: "Jónica / Lidia (no3)" }, { g: "Dominante" }, { g: "Frigia" }];
+  var MATCH_I   = [{ g: "Mayor" }, { n: "Frigia (no3)" }, { n: "Frigia (3)" }];
+  var MATCH_IM  = [{ g: "Menor" }, { n: "Frigia (no3)" }, { n: "Frigia (3b)" }];
+  var MATCH_II  = [{ g: "Menor" }, { g: "Dominante" }];
+  var MATCH_IIO = [{ g: "Locria" }, { g: "Menor" }, { g: "Dominante" }];
+
+  var PROGRESIONES = {
+    "V-I":      [{ grado: "V",   bajo: 7, acepta: MATCH_V },   { grado: "I",  bajo: 0, acepta: MATCH_I }],
+    "V-Im":     [{ grado: "V",   bajo: 7, acepta: MATCH_V },   { grado: "Im", bajo: 0, acepta: MATCH_IM }],
+    "II-V-I":   [{ grado: "II",  bajo: 2, acepta: MATCH_II },  { grado: "V",  bajo: 7, acepta: MATCH_V }, { grado: "I",  bajo: 0, acepta: MATCH_I }],
+    "IIo-V-Im": [{ grado: "IIø", bajo: 2, acepta: MATCH_IIO }, { grado: "V",  bajo: 7, acepta: MATCH_V }, { grado: "Im", bajo: 0, acepta: MATCH_IM }]
+  };
+
+  // Todas las rotaciones de un set: cada una de sus notas pasa a ser
+  // la fundamental (grado 1 = 0). Hace falta porque la Tabla de Sets
+  // guarda cada clase en forma prima, y la fundamental de la forma
+  // prima casi nunca es la que queremos como bajo.
+  function rotacionesDeSet(pcs) {
+    return pcs.map(function (m) {
+      return pcs.map(function (p) { return mod12(p - m); }).sort(function (a, b) { return a - b; });
+    });
+  }
+
+  // Sets que sirven para un grado: se prueban todas las rotaciones de
+  // los 344 sets y se guardan las que, analizadas desde su propia
+  // fundamental, caen en alguna de las categorías admitidas.
+  var poolCache = {};
+  function poolParaGrado(paso) {
+    if (poolCache[paso.grado]) return poolCache[paso.grado];
+    var out = [];
+    CHORDS_DATA.forEach(function (entry) {
+      var vistos = {};
+      rotacionesDeSet(entry["pitch-classes"]).forEach(function (rel) {
+        var key = rel.join(",");
+        if (vistos[key]) return;
+        vistos[key] = true;
+        var r = categoriasMatches(rel);
+        if (r.tipo !== "especificas") return;
+        var sirve = r.matches.some(function (v) {
+          return paso.acepta.some(function (m) {
+            return (m.n && v.nombre === m.n) || (m.g && v.categoria === m.g);
+          });
+        });
+        if (sirve) out.push({ entry: entry, rel: rel, label: r.label });
+      });
+    });
+    poolCache[paso.grado] = out;
+    return out;
+  }
 
   /* --------------------------------------------------------------
      Motor de voicings, adaptado del Voicing Explorer (ver módulo
@@ -3171,45 +3242,6 @@ function runAnalysis() {
     var oct = Math.floor(midi / 12) - 1;
     var pcv = ((midi % 12) + 12) % 12;
     return spellPitchClass(pcv) + oct;
-  }
-
-  // Apila las clases de altura, empezando por la que ocupa el bajo en
-  // esta rotación (= una inversión), subiendo de octava cada vez que
-  // hace falta para que quede en orden ascendente — la disposición
-  // "cerrada" de esa inversión.
-  function closedVoicingFromRotation(pcsSorted, rotationIdx) {
-    var n = pcsSorted.length;
-    var order = [];
-    var i;
-    for (i = 0; i < n; i++) order.push(pcsSorted[(rotationIdx + i) % n]);
-    var midiArr = [], prev = null, oct = 4;
-    for (i = 0; i < n; i++) {
-      var pcv = order[i];
-      var m = 12 * (oct + 1) + pcv;
-      if (prev !== null && m <= prev) { oct++; m = 12 * (oct + 1) + pcv; }
-      midiArr.push(m);
-      prev = m;
-    }
-    return midiArr;
-  }
-
-  // "Drop": técnica real de jazz (igual que drop2/drop3 del Voicing
-  // Explorer y del modo Jazz) — baja una voz interna una octava,
-  // ninguna nota nueva, solo otro registro.
-  function dropVoice(voicing, fromTop) {
-    var arr = voicing.slice();
-    var idx = arr.length - fromTop;
-    if (idx < 0 || idx >= arr.length) return null;
-    arr[idx] -= 12;
-    return arr.sort(function (a, b) { return a - b; });
-  }
-
-  function clampRange(voicing) {
-    var arr = voicing.slice(), guard = 0;
-    while (arr[0] < VOICING_LOW && guard < 8) { arr = arr.map(function (m) { return m + 12; }); guard++; }
-    guard = 0;
-    while (arr[arr.length - 1] > VOICING_HIGH && guard < 8) { arr = arr.map(function (m) { return m - 12; }); guard++; }
-    return arr.sort(function (a, b) { return a - b; });
   }
 
   function classifyShape(v) {
@@ -3255,24 +3287,42 @@ function runAnalysis() {
     return cost;
   }
 
-  function candidatosVoicing(pcArray) {
-    var pcsSorted = pcArray.slice().sort(function (a, b) { return a - b; });
-    var n = pcsSorted.length;
+  // Voicings posibles para un acorde CON EL BAJO FIJO: la nota del
+  // grado (G, C o D) queda siempre como la más grave — no se invierte
+  // nunca, porque el bajo es parte de la definición del grado. La
+  // variedad de disposición sale de subir una octava a alguna de las
+  // voces de arriba (equivalente a los "drop" del Voicing Explorer,
+  // pero hacia arriba, para no pasar por debajo del bajo).
+  function voicingsBajoFijo(pcArray, bajoPc) {
+    var b = mod12(bajoPc);
+    var resto = pcArray.map(mod12).filter(function (p) { return p !== b; })
+                       .sort(function (x, y) { return x - y; });
+    var base = [12 * (3 + 1) + b], prev = base[0];  // bajo en octava 3 (C3=48, D3=50, G3=55)
+    resto.forEach(function (p) {
+      var m = 12 * Math.floor(prev / 12) + p;
+      while (m <= prev) m += 12;
+      base.push(m);
+      prev = m;
+    });
     var pool = [], seen = {};
     function push(v) {
-      var vv = clampRange(v);
+      var vv = v.slice().sort(function (x, y) { return x - y; });
+      if (mod12(vv[0]) !== b) return;                                   // el bajo del grado tiene que quedar abajo
+      if (vv[vv.length - 1] - vv[0] > 31) return;                       // extensión tocable
+      if (vv[vv.length - 1] > VOICING_HIGH + 8) return;
       var key = vv.join(",");
       if (seen[key]) return;
       seen[key] = true;
       pool.push(vv);
     }
-    for (var rot = 0; rot < n; rot++) {
-      var closed = closedVoicingFromRotation(pcsSorted, rot);
-      push(closed);
-      if (n >= 3) { var d2 = dropVoice(closed, 2); if (d2) push(d2); }
-      if (n >= 4) { var d3 = dropVoice(closed, 3); if (d3) push(d3); }
+    push(base);
+    for (var i = 1; i < base.length; i++) {                             // subir una voz (nunca la 0 = el bajo)
+      var v1 = base.slice(); v1[i] += 12; push(v1);
     }
-    return pool;
+    for (var j = 1; j < base.length - 1; j++) {                         // subir dos voces contiguas
+      var v2 = base.slice(); v2[j] += 12; v2[j + 1] += 12; push(v2);
+    }
+    return pool.length ? pool : [base];
   }
 
   // Elige, para un paso, cuál de los voicings candidatos usar: sin
@@ -3280,8 +3330,8 @@ function runAnalysis() {
   // criterio que el voicing inicial del Voicing Explorer); con acorde
   // anterior, entre los de menor costo de conducción de voces, uno que
   // varíe de disposición si el mejor grupo lo permite (varyShape).
-  function elegirVoicing(pcArray, prevVoicing, prevShape) {
-    var candidatos = candidatosVoicing(pcArray);
+  function elegirVoicing(pcArray, bajoPc, prevVoicing, prevShape) {
+    var candidatos = voicingsBajoFijo(pcArray, bajoPc);
     if (!prevVoicing) {
       var mejor = null, mejorScore = Infinity;
       candidatos.forEach(function (v) {
@@ -3308,37 +3358,47 @@ function runAnalysis() {
     return '<span class="disp-pill"><span class="disp-dot ' + shape + '"></span>' + (DISP_LABEL[shape] || shape) + '</span>';
   }
 
-  function pickRandomChordsEntry(avoidKey, pool) {
-    var entry, key, guard = 0;
+  // Sortea un candidato para el grado, respetando el switch de
+  // cantidad de notas. Si ningún set del tamaño elegido cumple las
+  // categorías de ese grado (p.ej. Locria necesita 4 notas y el
+  // switch está en 3), se usa el pool completo del grado antes que
+  // romper la regla armónica, que es la que manda.
+  function sortearCandidato(paso, avoidKey) {
+    var pool = poolParaGrado(paso);
+    var filtrado = pool.filter(function (c) {
+      return progresionCardSizes.indexOf(c.rel.length) !== -1;
+    });
+    var usado = filtrado.length ? filtrado : pool;
+    var pick, guard = 0;
     do {
-      entry = pool[Math.floor(Math.random() * pool.length)];
-      key = entry["forte-code"];
+      pick = usado[Math.floor(Math.random() * usado.length)];
       guard++;
-    } while (key === avoidKey && guard < 20);
-    return entry;
+    } while (avoidKey && pick.entry["forte-code"] + "|" + pick.rel.join(",") === avoidKey && guard < 24);
+    return { pick: pick, limitado: !filtrado.length };
   }
 
   function regenerarProgresion() {
-    var sel = document.getElementById("progresionPasos");
-    var n = parseInt(sel.value, 10) || 4;
-    var pool = CHORDS_DATA.filter(function (c) {
-      return progresionCardSizes.indexOf(c["pitch-classes"].length) !== -1;
-    });
-    if (!pool.length) pool = CHORDS_DATA;
+    var tipo = document.getElementById("progresionTipo").value;
+    var pasos = PROGRESIONES[tipo] || PROGRESIONES["V-I"];
+    progresionState.tipo = tipo;
     var chords = [], prevKey = null, prevVoicing = null, prevShape = null;
-    for (var i = 0; i < n; i++) {
-      var entry = pickRandomChordsEntry(prevKey, pool);
-      prevKey = entry["forte-code"];
-      var root = Math.floor(Math.random() * 12);
-      var pcs = entry["pitch-classes"].map(function (iv) { return mod12(iv + root); });
+    pasos.forEach(function (paso) {
+      var sorteo = sortearCandidato(paso, prevKey);
+      var cand = sorteo.pick;
+      prevKey = cand.entry["forte-code"] + "|" + cand.rel.join(",");
+      // El set se realiza con su fundamental sobre el bajo del grado.
+      var pcs = cand.rel.map(function (iv) { return mod12(iv + paso.bajo); });
       var r = analyze(CHORDS_DATA, pcs);
-      var categoria = categoriasParaConjunto(r.input);
-      var voicing = elegirVoicing(r.input, prevVoicing, prevShape);
+      var voicing = elegirVoicing(pcs, paso.bajo, prevVoicing, prevShape);
       var shape = classifyShape(voicing);
       var movimiento = prevVoicing ? voiceLeadingCost(prevVoicing, voicing) : 0;
-      chords.push({ root: root, pcs: r.input, r: r, categoria: categoria, voicing: voicing, shape: shape, movimiento: movimiento });
+      chords.push({
+        grado: paso.grado, bajo: paso.bajo, pcs: pcs, rel: cand.rel, r: r,
+        categoria: cand.label, voicing: voicing, shape: shape,
+        movimiento: movimiento, limitado: sorteo.limitado
+      });
       prevVoicing = voicing; prevShape = shape;
-    }
+    });
     progresionState.chords = chords;
     renderProgresion();
   }
@@ -3351,6 +3411,7 @@ function runAnalysis() {
     }
     grid.innerHTML = progresionState.chords.map(function (c, i) {
       var notas = c.voicing.map(function (m) { return midiToNoteName(m); }).join(" ");
+      var grados = c.rel.map(function (s) { return DEGREE_SPELL[s]; }).join(" ");
       return '<div class="progresion-chord" data-idx="' + i + '">' +
         '<div class="progresion-detalle">' +
           '<div class="pd-row"><span class="pd-label">Solomon</span><span class="pd-value">' + (c.r.solomon_code ?? "—") + (c.r.solomon_name ? " · " + c.r.solomon_name : "") + '</span></div>' +
@@ -3359,12 +3420,13 @@ function runAnalysis() {
           '<div class="pd-row"><span class="pd-label">Prime form</span><span class="pd-value">[' + c.r.prime_form.join(", ") + ']</span></div>' +
           '<div class="pd-row"><span class="pd-label">IC vector</span><span class="pd-value">&lt;' + c.r.ic_vector.join("") + '&gt;</span></div>' +
           '<div class="pd-row"><span class="pd-label">Categoría</span><span class="pd-value">' + (c.categoria ?? "—") + '</span></div>' +
-          '<div class="pd-row"><span class="pd-label">Transposición</span><span class="pd-value">Tn=' + c.root + ' (' + spellPitchClass(c.root) + ')</span></div>' +
+          '<div class="pd-row"><span class="pd-label">Grados</span><span class="pd-value">' + grados + '</span></div>' +
+          '<div class="pd-row"><span class="pd-label">Bajo</span><span class="pd-value">' + spellPitchClass(c.bajo) + ' (grado 1)</span></div>' +
           '<div class="pd-row"><span class="pd-label">Disposición</span><span class="pd-value">' + dispPillHTML(c.shape) + '</span></div>' +
           '<div class="pd-row"><span class="pd-label">Movimiento</span><span class="pd-value">' + (i === 0 ? "—" : c.movimiento + " st") + '</span></div>' +
         '</div>' +
         '<div class="progresion-chip">' +
-          '<div class="pc-grado">Paso ' + (i + 1) + '</div>' +
+          '<div class="pc-grado">' + c.grado + ' &middot; bajo ' + spellPitchClass(c.bajo) + (c.limitado ? ' &middot; sin set del tamaño elegido' : '') + '</div>' +
           '<div class="pc-notas">' + notas + '</div>' +
           '<div class="pc-set">[' + c.pcs.join(", ") + ']</div>' +
         '</div>' +
@@ -3464,7 +3526,7 @@ function runAnalysis() {
   });
   document.getElementById("progresionPlayBtn").addEventListener("click", reproducirProgresion);
   document.getElementById("progresionStopBtn").addEventListener("click", detenerProgresion);
-  document.getElementById("progresionPasos").addEventListener("change", function () {
+  document.getElementById("progresionTipo").addEventListener("change", function () {
     detenerProgresion();
     regenerarProgresion();
   });
