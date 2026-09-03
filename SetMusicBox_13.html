@@ -917,7 +917,7 @@
       </label>
       <button type="button" class="chip toggle" id="progresionDrumMuteBtn" aria-pressed="false">&#129345; Mute drums</button>
       <button type="button" class="chip toggle" id="progresionLoopBtn" aria-pressed="true">&#128257; Loop</button>
-      <button type="button" class="chip toggle" id="progresionPerpetualBtn" aria-pressed="false">&#127760; Perpetual change</button>
+      <button type="button" class="chip toggle" id="progresionPerpetualBtn" aria-pressed="true">&#127760; Perpetual change</button>
       <button type="button" class="chip" id="progresionRegenBtn">&#128256; Regenerar</button>
       <button type="button" class="chip primary" id="progresionPlayBtn">&#9658; Reproducir</button>
       <button type="button" class="chip" id="progresionStopBtn" disabled>&#9632; Detener</button>
@@ -3187,7 +3187,7 @@ function runAnalysis() {
   var progresionDobleModo = false; // botón "2 chords with voice leading"
   var progresionDrumMuted = false; // botón "Mute drums"
   var progresionLoop = true; // botón "Loop" — prendido por defecto
-  var progresionPerpetualChange = false; // botón "Perpetual change" — apagado por defecto
+  var progresionPerpetualChange = true; // botón "Perpetual change" — prendido por defecto
 
   /* --------------------------------------------------------------
      LAS CUATRO PROGRESIONES. Cada paso fija tres cosas que NO se
