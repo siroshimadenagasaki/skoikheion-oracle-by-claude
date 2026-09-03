@@ -576,6 +576,9 @@
   .progresion-switch-label{
     font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-muted);
   }
+  .progresion-tempo{gap:8px !important;}
+  .progresion-tempo input[type=range]{width:110px;accent-color:var(--gold);}
+  .progresion-tempo span{color:var(--ink);min-width:62px;display:inline-block;}
   button.chip.toggle{padding:6px 12px;}
   button.chip.toggle[aria-pressed="true"]{
     background:var(--gold);border-color:var(--gold);color:#1a1622;
@@ -906,6 +909,11 @@
         <button type="button" class="chip toggle" id="progresionCard6" data-card="6" aria-pressed="true">6</button>
       </div>
       <button type="button" class="chip toggle" id="progresionDobleBtn" aria-pressed="false">2 chords with voice leading</button>
+      <label for="progresionTempo" class="progresion-tempo">Tempo:
+        <input type="range" id="progresionTempo" min="40" max="200" value="120" step="1">
+        <span id="progresionTempoVal">120 BPM</span>
+      </label>
+      <button type="button" class="chip toggle" id="progresionDrumMuteBtn" aria-pressed="false">&#129345; Mute drums</button>
       <button type="button" class="chip" id="progresionRegenBtn">&#128256; Regenerar</button>
       <button type="button" class="chip primary" id="progresionPlayBtn">&#9658; Reproducir</button>
       <button type="button" class="chip" id="progresionStopBtn" disabled>&#9632; Detener</button>
@@ -3166,9 +3174,13 @@ function runAnalysis() {
   var progresionState = { chords: [], tipo: "V-I" };
   var progresionVoices = [];
   var progresionTimer = null;
+  // STEP_DUR = duración de cada acorde en segundos = una redonda (4
+  // tiempos) al tempo elegido; lo actualiza el slider de Tempo. Con el
+  // default de 120 BPM da 2.0s, el mismo valor fijo que tenía antes.
   var STEP_DUR = 2.0;
-  var progresionCardSizes = [3, 4, 5, 6]; // switch de tamaño de acorde, todas activas por defecto
+  var progresionCardSizes = [3, 4, 5, 6]; // switch de tamaño de acorde, todas activas por defecto — se pueden mezclar 3 a 6 notas dentro de la misma corrida
   var progresionDobleModo = false; // botón "2 chords with voice leading"
+  var progresionDrumMuted = false; // botón "Mute drums"
 
   /* --------------------------------------------------------------
      LAS CUATRO PROGRESIONES. Cada paso fija tres cosas que NO se
@@ -3684,6 +3696,87 @@ function runAnalysis() {
     progresionVoices.push({ osc: noiseSrc, env: null });
   }
 
+  // ---- Batería de acompañamiento (bombo/caja/hi-hat), self-contained
+  // igual que el resto del módulo. Marca los 4 tiempos de cada acorde
+  // (bombo en 1 y 3, caja en 2 y 4, hi-hat en los 4) — patrón fijo tipo
+  // pop/backbeat, simple para acompañar sin tapar la armonía. Se apaga
+  // por completo con el botón "Mute drums" (progresionDrumMuted).
+  function progresionPlayKick(startOffset, gain) {
+    var ctx = getAudioCtx();
+    if (!ctx) return;
+    var t0 = ctx.currentTime + startOffset;
+    var osc = ctx.createOscillator();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(150, t0);
+    osc.frequency.exponentialRampToValueAtTime(48, t0 + 0.09);
+    var env = ctx.createGain();
+    env.gain.setValueAtTime(gain, t0);
+    env.gain.exponentialRampToValueAtTime(0.001, t0 + 0.28);
+    osc.connect(env); env.connect(ctx.destination);
+    osc.start(t0);
+    osc.stop(t0 + 0.3);
+    progresionVoices.push({ osc: osc, env: env });
+  }
+
+  function progresionPlayHat(startOffset, gain) {
+    var ctx = getAudioCtx();
+    if (!ctx) return;
+    var t0 = ctx.currentTime + startOffset;
+    var noiseSrc = ctx.createBufferSource();
+    noiseSrc.buffer = progresionGetNoiseBuffer(ctx);
+    var filter = ctx.createBiquadFilter();
+    filter.type = "highpass";
+    filter.frequency.setValueAtTime(7000, t0);
+    var env = ctx.createGain();
+    env.gain.setValueAtTime(gain, t0);
+    env.gain.exponentialRampToValueAtTime(0.001, t0 + 0.045);
+    noiseSrc.connect(filter); filter.connect(env); env.connect(ctx.destination);
+    noiseSrc.start(t0);
+    noiseSrc.stop(t0 + 0.06);
+    progresionVoices.push({ osc: noiseSrc, env: env });
+  }
+
+  function progresionPlaySnare(startOffset, gain) {
+    var ctx = getAudioCtx();
+    if (!ctx) return;
+    var t0 = ctx.currentTime + startOffset;
+    var noiseSrc = ctx.createBufferSource();
+    noiseSrc.buffer = progresionGetNoiseBuffer(ctx);
+    var noiseFilter = ctx.createBiquadFilter();
+    noiseFilter.type = "bandpass";
+    noiseFilter.frequency.setValueAtTime(1800, t0);
+    noiseFilter.Q.value = 0.8;
+    var noiseEnv = ctx.createGain();
+    noiseEnv.gain.setValueAtTime(gain, t0);
+    noiseEnv.gain.exponentialRampToValueAtTime(0.001, t0 + 0.14);
+    noiseSrc.connect(noiseFilter); noiseFilter.connect(noiseEnv); noiseEnv.connect(ctx.destination);
+
+    var tone = ctx.createOscillator();
+    tone.type = "triangle";
+    tone.frequency.setValueAtTime(190, t0);
+    var toneEnv = ctx.createGain();
+    toneEnv.gain.setValueAtTime(gain * 0.6, t0);
+    toneEnv.gain.exponentialRampToValueAtTime(0.001, t0 + 0.09);
+    tone.connect(toneEnv); toneEnv.connect(ctx.destination);
+
+    noiseSrc.start(t0);
+    noiseSrc.stop(t0 + 0.16);
+    tone.start(t0);
+    tone.stop(t0 + 0.1);
+    progresionVoices.push({ osc: noiseSrc, env: noiseEnv });
+    progresionVoices.push({ osc: tone, env: toneEnv });
+  }
+
+  function progresionPlayDrumBar(startOffset) {
+    var beatDur = STEP_DUR / 4;
+    for (var k = 0; k < 4; k++) {
+      var tb = startOffset + k * beatDur;
+      progresionPlayHat(tb, 0.05);
+      if (k === 0 || k === 2) progresionPlayKick(tb, 0.35);
+      if (k === 1 || k === 3) progresionPlaySnare(tb, 0.18);
+    }
+  }
+
   function detenerProgresion() {
     if (progresionTimer) { clearTimeout(progresionTimer); progresionTimer = null; }
     var ctx = getAudioCtx();
@@ -3723,6 +3816,7 @@ function runAnalysis() {
       var loMidi = c.voicing[0], hiMidi = c.voicing[c.voicing.length - 1];
       progresionPlayBassLayer(loMidi, t, STEP_DUR, 0.20);
       if (hiMidi !== loMidi) progresionPlayFluteLayer(hiMidi, t, STEP_DUR, 0.13);
+      if (!progresionDrumMuted) progresionPlayDrumBar(t);
       var card = cards[i];
       if (card) {
         setTimeout(function () {
@@ -3749,6 +3843,28 @@ function runAnalysis() {
   document.getElementById("progresionTipo").addEventListener("change", function () {
     detenerProgresion();
     regenerarProgresion();
+  });
+
+  // Slider de tempo: STEP_DUR (segundos por acorde) = una redonda a
+  // los BPM elegidos. El label se actualiza en cada arrastre; si la
+  // progresión está sonando, al soltar el slider se reinicia el loop
+  // desde el primer acorde para que el nuevo tempo se escuche ya.
+  document.getElementById("progresionTempo").addEventListener("input", function () {
+    var bpm = parseInt(this.value, 10) || 120;
+    STEP_DUR = (60 / bpm) * 4;
+    document.getElementById("progresionTempoVal").textContent = bpm + " BPM";
+  });
+  document.getElementById("progresionTempo").addEventListener("change", function () {
+    if (!document.getElementById("progresionStopBtn").disabled) reproducirProgresion();
+  });
+
+  // Mute drums: apaga/prende la pista de batería de acompañamiento sin
+  // tocar la armonía ya sorteada. Si está sonando, reinicia el loop
+  // para que el cambio se note al toque.
+  document.getElementById("progresionDrumMuteBtn").addEventListener("click", function () {
+    progresionDrumMuted = !progresionDrumMuted;
+    this.setAttribute("aria-pressed", progresionDrumMuted ? "true" : "false");
+    if (!document.getElementById("progresionStopBtn").disabled) reproducirProgresion();
   });
 
   // "2 chords with voice leading": duplica cada grado de la progresión
