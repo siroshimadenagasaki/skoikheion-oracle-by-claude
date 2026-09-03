@@ -3166,7 +3166,7 @@ function runAnalysis() {
   var progresionState = { chords: [], tipo: "V-I" };
   var progresionVoices = [];
   var progresionTimer = null;
-  var STEP_DUR = 1.7;
+  var STEP_DUR = 2.0;
   var progresionCardSizes = [3, 4, 5, 6]; // switch de tamaño de acorde, todas activas por defecto
   var progresionDobleModo = false; // botón "2 chords with voice leading"
 
@@ -3433,12 +3433,14 @@ function runAnalysis() {
     progresionState.doble = progresionDobleModo;
     var chords = [], prevKey = null, prevVoicing = null, prevShape = null, formaFija = null;
 
-    // Un mismo grado (mismo set, mismo bajo) puede sonar una o dos veces
-    // seguidas ("2 chords with voice leading"): se sortea el candidato
-    // UNA vez por grado, y cada ocurrencia elige su propio voicing
-    // encadenado al anterior — así las dos repeticiones comparten
-    // exactamente las mismas notas (conducción de voces ideal entre
-    // ellas) y lo único que varía es la disposición concreta.
+    // Un mismo grado (mismo bajo) puede sonar una o dos veces seguidas
+    // ("2 chords with voice leading"): cada ocurrencia sortea su PROPIO
+    // candidato (en general un set de pitch-classes distinto, siempre
+    // válido para las categorías de ese grado y con el mismo bajo fijo),
+    // y elige su voicing encadenado al de la ocurrencia anterior para
+    // minimizar el costo de conducción de voces — así, entre las dos
+    // ocurrencias, algunas voces se mantienen y otras se mueven poco
+    // (en cualquier dirección), en vez de repetir el mismo acorde.
     function agregarOcurrencia(paso, cand, limitado, ocurrencia, totalOcurrencias) {
       var pcs = cand.rel.map(function (iv) { return mod12(iv + paso.bajo); });
       var r = analyze(CHORDS_DATA, pcs);
@@ -3466,13 +3468,21 @@ function runAnalysis() {
     }
 
     pasos.forEach(function (paso) {
-      var sorteo = sortearCandidato(paso, prevKey);
-      var cand = sorteo.pick;
-      prevKey = cand.entry["forte-code"] + "|" + cand.rel.join(",");
       if (progresionDobleModo) {
-        agregarOcurrencia(paso, cand, sorteo.limitado, 1, 2);
-        agregarOcurrencia(paso, cand, sorteo.limitado, 2, 2);
+        var sorteo1 = sortearCandidato(paso, prevKey);
+        var cand1 = sorteo1.pick;
+        var key1 = cand1.entry["forte-code"] + "|" + cand1.rel.join(",");
+        // Segunda ocurrencia: sortea evitando repetir el mismo set que
+        // la primera (si el grado tiene más de un candidato posible).
+        var sorteo2 = sortearCandidato(paso, key1);
+        var cand2 = sorteo2.pick;
+        prevKey = cand2.entry["forte-code"] + "|" + cand2.rel.join(",");
+        agregarOcurrencia(paso, cand1, sorteo1.limitado, 1, 2);
+        agregarOcurrencia(paso, cand2, sorteo2.limitado, 2, 2);
       } else {
+        var sorteo = sortearCandidato(paso, prevKey);
+        var cand = sorteo.pick;
+        prevKey = cand.entry["forte-code"] + "|" + cand.rel.join(",");
         agregarOcurrencia(paso, cand, sorteo.limitado, 1, 1);
       }
     });
@@ -3511,41 +3521,49 @@ function runAnalysis() {
     }).join("");
   }
 
-  // Synth propio (sine+triangle con filtro y envolvente, mismo diseño
-  // que synthPad de más arriba) para no depender de currentSynth ni de
-  // los buses de ganancia del SetMusicBox — así Detener corta solo lo
-  // que este módulo tocó. Toma directamente una nota MIDI (ya con
-  // octava resuelta por el motor de voicings de arriba) en vez de una
-  // clase de altura a octava fija, para que la progresión suene con
-  // registro y disposición reales en vez de un bloque plano.
+  // Synth propio tipo órgano (drawbars aditivos: fundamental + octava +
+  // docena/quinta + doble octava, niveles al estilo Hammond 8'/4'/2⅔'/2')
+  // para no depender de currentSynth ni de los buses de ganancia del
+  // SetMusicBox — así Detener corta solo lo que este módulo tocó. Ataque
+  // rápido y sostenido casi plano (sin decaimiento natural, como una
+  // tecla de órgano sostenida) hasta el corte final. Toma directamente
+  // una nota MIDI (ya con octava resuelta por el motor de voicings de
+  // arriba) en vez de una clase de altura a octava fija, para que la
+  // progresión suene con registro y disposición reales en vez de un
+  // bloque plano.
+  var ORGAN_DRAWBARS = [
+    { mult: 1, amp: 1.00 },
+    { mult: 2, amp: 0.55 },
+    { mult: 3, amp: 0.35 },
+    { mult: 4, amp: 0.22 }
+  ];
+  var ORGAN_AMP_TOTAL = ORGAN_DRAWBARS.reduce(function (s, a) { return s + a.amp; }, 0);
   function progresionPlayNote(midi, startOffset, duration, gain) {
     var ctx = getAudioCtx();
     if (!ctx) return;
     var freq = 440 * Math.pow(2, (midi - 69) / 12);
     var t0 = ctx.currentTime + startOffset;
-    var osc1 = ctx.createOscillator();
-    osc1.type = "sine";
-    osc1.frequency.setValueAtTime(freq, t0);
-    var osc2 = ctx.createOscillator();
-    osc2.type = "triangle";
-    osc2.frequency.setValueAtTime(freq * 2, t0);
-    osc2.detune.setValueAtTime(-6, t0);
-    var osc2Gain = ctx.createGain();
-    osc2Gain.gain.value = 0.2;
     var filter = ctx.createBiquadFilter();
     filter.type = "lowpass";
-    filter.frequency.setValueAtTime(3200, t0);
-    filter.Q.value = 0.5;
+    filter.frequency.setValueAtTime(6000, t0);
+    filter.Q.value = 0.3;
     var env = ctx.createGain();
     env.gain.setValueAtTime(0, t0);
-    env.gain.linearRampToValueAtTime(gain, t0 + 0.04);
-    env.gain.exponentialRampToValueAtTime(Math.max(gain * 0.4, 0.0001), t0 + duration * 0.5);
-    env.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
-    osc1.connect(filter); osc2.connect(osc2Gain); osc2Gain.connect(filter); filter.connect(env); env.connect(ctx.destination);
-    osc1.start(t0); osc2.start(t0);
-    osc1.stop(t0 + duration + 0.08); osc2.stop(t0 + duration + 0.08);
-    progresionVoices.push({ osc: osc1, env: env });
-    progresionVoices.push({ osc: osc2, env: null });
+    env.gain.linearRampToValueAtTime(gain, t0 + 0.015);
+    env.gain.setValueAtTime(gain, t0 + Math.max(0.015, duration - 0.08));
+    env.gain.linearRampToValueAtTime(0.0001, t0 + duration);
+    filter.connect(env); env.connect(ctx.destination);
+    ORGAN_DRAWBARS.forEach(function (d, idx) {
+      var osc = ctx.createOscillator();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(freq * d.mult, t0);
+      var og = ctx.createGain();
+      og.gain.value = d.amp / ORGAN_AMP_TOTAL;
+      osc.connect(og); og.connect(filter);
+      osc.start(t0);
+      osc.stop(t0 + duration + 0.08);
+      progresionVoices.push({ osc: osc, env: idx === 0 ? env : null });
+    });
   }
 
   function detenerProgresion() {
