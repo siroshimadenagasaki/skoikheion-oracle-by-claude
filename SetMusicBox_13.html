@@ -891,7 +891,7 @@
 
   <div class="overlay-card progresion-card" id="progresionCard">
     <h2>Generador de progresiones aleatorio</h2>
-    <p class="consola-status">Arma al azar una de las cuatro progresiones, respetando el grado y el bajo fijo de cada acorde. <b>V</b> siempre con bajo en G, <b>I</b> / <b>Im</b> con bajo en C, <b>II</b> / <b>IIø</b> con bajo en D. Para cada grado se sortea un set de la Tabla de Sets (Anexo 1 &middot; las clases Forte/Solomon, en cualquiera de sus rotaciones, filtradas por el switch de cantidad de notas) que cumpla <em>únicamente</em> las categorías admitidas para ese grado: V &rarr; Mayor alt, Jónica/Lidia (no3), Dominante, Alterada y/o Frigia &middot; I &rarr; Mayor, Frigia (no3), Frigia (3) &middot; Im &rarr; Menor, Frigia (no3), Frigia (3b) &middot; II &rarr; Menor, Dominante &middot; IIø &rarr; Locria, Menor, Dominante. La categoría se evalúa siempre desde el bajo, como pide la tabla. Los acordes se realizan como voicings reales — mismo criterio que el Voicing Explorer y el modo &#127927; Jazz: registro tocable, disposición cerrada / abierta / extendida y, entre un acorde y el siguiente, la que menos mueve las voces — pero <b>sin invertir</b>: el bajo del grado siempre queda como nota más grave. Arriba de cada acorde se muestra el detalle completo del set elegido. &#128256; Regenerar sortea sets nuevos; &#9658; Reproducir toca la progresión en orden.</p>
+    <p class="consola-status">Arma al azar una de las seis progresiones, respetando el grado y el bajo fijo de cada acorde. <b>V</b> / <b>VI</b> siempre con bajo en G / A, <b>I</b> / <b>Im</b> con bajo en C, <b>II</b> / <b>IIø</b> / <b>VIø</b> con bajo en D / D / A. Para cada grado se sortea un set de la Tabla de Sets (Anexo 1 &middot; las clases Forte/Solomon, en cualquiera de sus rotaciones, filtradas por el switch de cantidad de notas) que cumpla <em>únicamente</em> las categorías admitidas para ese grado: V / VI &rarr; Mayor alt, Jónica/Lidia (no3), Dominante, Alterada y/o Frigia &middot; I &rarr; Mayor, Frigia (no3), Frigia (3) &middot; Im &rarr; Menor, Frigia (no3), Frigia (3b) &middot; II &rarr; Menor, Dominante &middot; IIø / VIø &rarr; Locria, Menor, Dominante. La categoría se evalúa siempre desde el bajo, como pide la tabla. Los acordes se realizan como voicings reales — mismo criterio que el Voicing Explorer y el modo &#127927; Jazz: registro tocable, disposición cerrada / abierta / extendida y, entre un acorde y el siguiente, la que menos mueve las voces — pero <b>sin invertir</b>: el bajo del grado siempre queda como nota más grave. Arriba de cada acorde se muestra el detalle completo del set elegido. &#128256; Regenerar sortea sets nuevos; &#9658; Reproducir toca la progresión en orden.</p>
     <div class="progresion-controls">
       <label for="progresionTipo">Progresión:
         <select id="progresionTipo">
@@ -899,6 +899,8 @@
           <option value="V-Im">V - Im</option>
           <option value="II-V-I">II - V - I</option>
           <option value="IIo-V-Im">IIø - V - Im</option>
+          <option value="II-V-I-VI">II - V - I - VI</option>
+          <option value="IIo-V-Im-VIo">IIø - V - Im - VIø</option>
         </select>
       </label>
       <div class="progresion-switch" role="group" aria-label="Cantidad de notas por acorde">
@@ -914,6 +916,7 @@
         <span id="progresionTempoVal">120 BPM</span>
       </label>
       <button type="button" class="chip toggle" id="progresionDrumMuteBtn" aria-pressed="false">&#129345; Mute drums</button>
+      <button type="button" class="chip toggle" id="progresionLoopBtn" aria-pressed="true">&#128257; Loop</button>
       <button type="button" class="chip" id="progresionRegenBtn">&#128256; Regenerar</button>
       <button type="button" class="chip primary" id="progresionPlayBtn">&#9658; Reproducir</button>
       <button type="button" class="chip" id="progresionStopBtn" disabled>&#9632; Detener</button>
@@ -3181,6 +3184,7 @@ function runAnalysis() {
   var progresionCardSizes = [3, 4, 5, 6]; // switch de tamaño de acorde, todas activas por defecto — se pueden mezclar 3 a 6 notas dentro de la misma corrida
   var progresionDobleModo = false; // botón "2 chords with voice leading"
   var progresionDrumMuted = false; // botón "Mute drums"
+  var progresionLoop = true; // botón "Loop" — prendido por defecto
 
   /* --------------------------------------------------------------
      LAS CUATRO PROGRESIONES. Cada paso fija tres cosas que NO se
@@ -3201,7 +3205,23 @@ function runAnalysis() {
     "V-I":      [{ grado: "V",   bajo: 7, acepta: MATCH_V },   { grado: "I",  bajo: 0, acepta: MATCH_I }],
     "V-Im":     [{ grado: "V",   bajo: 7, acepta: MATCH_V },   { grado: "Im", bajo: 0, acepta: MATCH_IM }],
     "II-V-I":   [{ grado: "II",  bajo: 2, acepta: MATCH_II },  { grado: "V",  bajo: 7, acepta: MATCH_V }, { grado: "I",  bajo: 0, acepta: MATCH_I }],
-    "IIo-V-Im": [{ grado: "IIø", bajo: 2, acepta: MATCH_IIO }, { grado: "V",  bajo: 7, acepta: MATCH_V }, { grado: "Im", bajo: 0, acepta: MATCH_IM }]
+    "IIo-V-Im": [{ grado: "IIø", bajo: 2, acepta: MATCH_IIO }, { grado: "V",  bajo: 7, acepta: MATCH_V }, { grado: "Im", bajo: 0, acepta: MATCH_IM }],
+    // VI usa las mismas categorías que V (Mayor alt, Jónica/Lidia no3,
+    // Dominante, Alterada y/o Frigia), con bajo en A en vez de G.
+    "II-V-I-VI": [
+      { grado: "II", bajo: 2, acepta: MATCH_II },
+      { grado: "V",  bajo: 7, acepta: MATCH_V },
+      { grado: "I",  bajo: 0, acepta: MATCH_I },
+      { grado: "VI", bajo: 9, acepta: MATCH_V }
+    ],
+    // VIø usa las mismas categorías que IIø (Locria, Menor, Dominante),
+    // con bajo en A en vez de D.
+    "IIo-V-Im-VIo": [
+      { grado: "IIø", bajo: 2, acepta: MATCH_IIO },
+      { grado: "V",   bajo: 7, acepta: MATCH_V },
+      { grado: "Im",  bajo: 0, acepta: MATCH_IM },
+      { grado: "VIø", bajo: 9, acepta: MATCH_IIO }
+    ]
   };
 
   // Todas las rotaciones de un set: cada una de sus notas pasa a ser
@@ -3826,11 +3846,20 @@ function runAnalysis() {
       }
     });
     var total = progresionState.chords.length * STEP_DUR;
+    // Con Loop prendido (default), al terminar la corrida se vuelve a
+    // reproducir la MISMA progresión desde el primer acorde (no se
+    // regeneran sets nuevos) — se relee progresionLoop recién al
+    // disparar el timeout, así que Detener corta el loop de una, y
+    // tocar Loop mientras suena decide recién en la vuelta siguiente.
     progresionTimer = setTimeout(function () {
-      playBtn.disabled = false;
-      stopBtn.disabled = true;
-      document.querySelectorAll("#progresionGrid .progresion-chord").forEach(function (el) { el.classList.remove("playing"); });
-      progresionTimer = null;
+      if (progresionLoop) {
+        reproducirProgresion();
+      } else {
+        playBtn.disabled = false;
+        stopBtn.disabled = true;
+        document.querySelectorAll("#progresionGrid .progresion-chord").forEach(function (el) { el.classList.remove("playing"); });
+        progresionTimer = null;
+      }
     }, total * 1000 + 60);
   }
 
@@ -3865,6 +3894,14 @@ function runAnalysis() {
     progresionDrumMuted = !progresionDrumMuted;
     this.setAttribute("aria-pressed", progresionDrumMuted ? "true" : "false");
     if (!document.getElementById("progresionStopBtn").disabled) reproducirProgresion();
+  });
+
+  // Loop: prendido por defecto. Solo decide qué pasa cuando termina la
+  // corrida actual (repetirla o parar) — no interrumpe nada mientras
+  // suena, así que no hace falta reiniciar la reproducción al tocarlo.
+  document.getElementById("progresionLoopBtn").addEventListener("click", function () {
+    progresionLoop = !progresionLoop;
+    this.setAttribute("aria-pressed", progresionLoop ? "true" : "false");
   });
 
   // "2 chords with voice leading": duplica cada grado de la progresión
