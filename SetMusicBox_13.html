@@ -917,6 +917,7 @@
       </label>
       <button type="button" class="chip toggle" id="progresionDrumMuteBtn" aria-pressed="false">&#129345; Mute drums</button>
       <button type="button" class="chip toggle" id="progresionLoopBtn" aria-pressed="true">&#128257; Loop</button>
+      <button type="button" class="chip toggle" id="progresionPerpetualBtn" aria-pressed="false">&#127760; Perpetual change</button>
       <button type="button" class="chip" id="progresionRegenBtn">&#128256; Regenerar</button>
       <button type="button" class="chip primary" id="progresionPlayBtn">&#9658; Reproducir</button>
       <button type="button" class="chip" id="progresionStopBtn" disabled>&#9632; Detener</button>
@@ -3177,6 +3178,7 @@ function runAnalysis() {
   var progresionState = { chords: [], tipo: "V-I" };
   var progresionVoices = [];
   var progresionTimer = null;
+  var progresionPerpetualTimers = []; // setTimeouts de "Perpetual change", uno por acorde en curso
   // STEP_DUR = duración de cada acorde en segundos = una redonda (4
   // tiempos) al tempo elegido; lo actualiza el slider de Tempo. Con el
   // default de 120 BPM da 2.0s, el mismo valor fijo que tenía antes.
@@ -3185,6 +3187,7 @@ function runAnalysis() {
   var progresionDobleModo = false; // botón "2 chords with voice leading"
   var progresionDrumMuted = false; // botón "Mute drums"
   var progresionLoop = true; // botón "Loop" — prendido por defecto
+  var progresionPerpetualChange = false; // botón "Perpetual change" — apagado por defecto
 
   /* --------------------------------------------------------------
      LAS CUATRO PROGRESIONES. Cada paso fija tres cosas que NO se
@@ -3717,24 +3720,28 @@ function runAnalysis() {
   }
 
   // ---- Batería de acompañamiento (bombo/caja/hi-hat), self-contained
-  // igual que el resto del módulo. Marca los 4 tiempos de cada acorde
-  // (bombo en 1 y 3, caja en 2 y 4, hi-hat en los 4) — patrón fijo tipo
-  // pop/backbeat, simple para acompañar sin tapar la armonía. Se apaga
-  // por completo con el botón "Mute drums" (progresionDrumMuted).
+  // igual que el resto del módulo. Patrón tipo hip-hop / boom-bap sobre
+  // una grilla de semicorcheas (16 pasos por acorde = un compás de
+  // 4/4): bombo sincopado (1, "e" de 2, "and" de 3 — no solo en los
+  // tiempos), caja siempre en el backbeat (2 y 4), hi-hat cerrado en
+  // corcheas con un swing sutil en los contratiempos y acento más
+  // fuerte en el tiempo, y un hi-hat abierto ("chick") en el último
+  // contratiempo del compás. Se apaga por completo con el botón "Mute
+  // drums" (progresionDrumMuted).
   function progresionPlayKick(startOffset, gain) {
     var ctx = getAudioCtx();
     if (!ctx) return;
     var t0 = ctx.currentTime + startOffset;
     var osc = ctx.createOscillator();
     osc.type = "sine";
-    osc.frequency.setValueAtTime(150, t0);
-    osc.frequency.exponentialRampToValueAtTime(48, t0 + 0.09);
+    osc.frequency.setValueAtTime(135, t0);
+    osc.frequency.exponentialRampToValueAtTime(40, t0 + 0.1);
     var env = ctx.createGain();
     env.gain.setValueAtTime(gain, t0);
-    env.gain.exponentialRampToValueAtTime(0.001, t0 + 0.28);
+    env.gain.exponentialRampToValueAtTime(0.001, t0 + 0.4);
     osc.connect(env); env.connect(ctx.destination);
     osc.start(t0);
-    osc.stop(t0 + 0.3);
+    osc.stop(t0 + 0.42);
     progresionVoices.push({ osc: osc, env: env });
   }
 
@@ -3746,13 +3753,33 @@ function runAnalysis() {
     noiseSrc.buffer = progresionGetNoiseBuffer(ctx);
     var filter = ctx.createBiquadFilter();
     filter.type = "highpass";
-    filter.frequency.setValueAtTime(7000, t0);
+    filter.frequency.setValueAtTime(7500, t0);
     var env = ctx.createGain();
     env.gain.setValueAtTime(gain, t0);
-    env.gain.exponentialRampToValueAtTime(0.001, t0 + 0.045);
+    env.gain.exponentialRampToValueAtTime(0.001, t0 + 0.04);
     noiseSrc.connect(filter); filter.connect(env); env.connect(ctx.destination);
     noiseSrc.start(t0);
     noiseSrc.stop(t0 + 0.06);
+    progresionVoices.push({ osc: noiseSrc, env: env });
+  }
+
+  // Hi-hat abierto (más sizzle, decae más lento) para el acento tipo
+  // "chick" al final del compás, muy característico del boom-bap.
+  function progresionPlayOpenHat(startOffset, gain) {
+    var ctx = getAudioCtx();
+    if (!ctx) return;
+    var t0 = ctx.currentTime + startOffset;
+    var noiseSrc = ctx.createBufferSource();
+    noiseSrc.buffer = progresionGetNoiseBuffer(ctx);
+    var filter = ctx.createBiquadFilter();
+    filter.type = "highpass";
+    filter.frequency.setValueAtTime(6000, t0);
+    var env = ctx.createGain();
+    env.gain.setValueAtTime(gain, t0);
+    env.gain.exponentialRampToValueAtTime(0.001, t0 + 0.22);
+    noiseSrc.connect(filter); filter.connect(env); env.connect(ctx.destination);
+    noiseSrc.start(t0);
+    noiseSrc.stop(t0 + 0.24);
     progresionVoices.push({ osc: noiseSrc, env: env });
   }
 
@@ -3764,41 +3791,97 @@ function runAnalysis() {
     noiseSrc.buffer = progresionGetNoiseBuffer(ctx);
     var noiseFilter = ctx.createBiquadFilter();
     noiseFilter.type = "bandpass";
-    noiseFilter.frequency.setValueAtTime(1800, t0);
+    noiseFilter.frequency.setValueAtTime(1600, t0);
     noiseFilter.Q.value = 0.8;
     var noiseEnv = ctx.createGain();
     noiseEnv.gain.setValueAtTime(gain, t0);
-    noiseEnv.gain.exponentialRampToValueAtTime(0.001, t0 + 0.14);
+    noiseEnv.gain.exponentialRampToValueAtTime(0.001, t0 + 0.16);
     noiseSrc.connect(noiseFilter); noiseFilter.connect(noiseEnv); noiseEnv.connect(ctx.destination);
 
     var tone = ctx.createOscillator();
     tone.type = "triangle";
-    tone.frequency.setValueAtTime(190, t0);
+    tone.frequency.setValueAtTime(175, t0);
     var toneEnv = ctx.createGain();
     toneEnv.gain.setValueAtTime(gain * 0.6, t0);
-    toneEnv.gain.exponentialRampToValueAtTime(0.001, t0 + 0.09);
+    toneEnv.gain.exponentialRampToValueAtTime(0.001, t0 + 0.1);
     tone.connect(toneEnv); toneEnv.connect(ctx.destination);
 
     noiseSrc.start(t0);
-    noiseSrc.stop(t0 + 0.16);
+    noiseSrc.stop(t0 + 0.18);
     tone.start(t0);
-    tone.stop(t0 + 0.1);
+    tone.stop(t0 + 0.11);
     progresionVoices.push({ osc: noiseSrc, env: noiseEnv });
     progresionVoices.push({ osc: tone, env: toneEnv });
   }
 
+  // Patrón fijo boom-bap sobre 16 semicorcheas (pasos 0-15, 4 por
+  // tiempo): bombo en 0 (tiempo 1), 6 ("e" del tiempo 2) y 10 ("and"
+  // del tiempo 3) — la síncopa típica del hip-hop, nunca solo en los
+  // tiempos — caja en 4 y 12 (tiempos 2 y 4, el backbeat de siempre),
+  // hi-hat cerrado en cada corchea con swing sutil en los contratiempos
+  // (16.7-16.7-16.7... reemplazado por un leve retraso, no un shuffle
+  // completo) y acento más fuerte en el tiempo, y un hi-hat abierto en
+  // el último contratiempo (paso 14) en vez del cerrado.
   function progresionPlayDrumBar(startOffset) {
-    var beatDur = STEP_DUR / 4;
-    for (var k = 0; k < 4; k++) {
-      var tb = startOffset + k * beatDur;
-      progresionPlayHat(tb, 0.05);
-      if (k === 0 || k === 2) progresionPlayKick(tb, 0.35);
-      if (k === 1 || k === 3) progresionPlaySnare(tb, 0.18);
-    }
+    var s16 = STEP_DUR / 16;
+    var swing = s16 * 0.12;
+    var KICK_STEPS = [0, 6, 10];
+    var SNARE_STEPS = [4, 12];
+    var HAT_STEPS = [0, 2, 4, 6, 8, 10, 12, 14];
+    var OPEN_HAT_STEP = 14;
+
+    KICK_STEPS.forEach(function (st) { progresionPlayKick(startOffset + st * s16, 0.4); });
+    SNARE_STEPS.forEach(function (st) { progresionPlaySnare(startOffset + st * s16, 0.2); });
+    HAT_STEPS.forEach(function (st) {
+      if (st === OPEN_HAT_STEP) return; // ese paso lo toca el hi-hat abierto, más abajo
+      var esContratiempo = (st % 4) === 2;
+      var t = startOffset + st * s16 + (esContratiempo ? swing : 0);
+      var accent = (st % 4) === 0 ? 0.07 : 0.045;
+      progresionPlayHat(t, accent);
+    });
+    progresionPlayOpenHat(startOffset + OPEN_HAT_STEP * s16 + swing, 0.05);
+  }
+
+  // "Perpetual change": re-sortea el acorde en la posición i (mismo
+  // grado, mismo bajo, mismas reglas de categoría de siempre) justo
+  // cuando termina de sonar, para la PRÓXIMA vez que le toque —  así
+  // el loop nunca vuelve a ser exactamente el mismo. Encadena el
+  // voice leading con la voz de la posición anterior (con wraparound:
+  // la posición 0 encadena con la última), igual que hace el sorteo
+  // inicial. No usa avoidKey (no es crítico evitar por casualidad el
+  // mismo set de vez en cuando en un loop que cambia solo).
+  function regenerarAcordeEnPosicion(i) {
+    var pasos = PROGRESIONES[progresionState.tipo] || PROGRESIONES["V-I"];
+    var chords = progresionState.chords;
+    var actual = chords[i];
+    if (!actual) return;
+    var pasoIndex = progresionState.doble ? Math.floor(i / 2) : i;
+    var paso = pasos[pasoIndex];
+    if (!paso) return;
+    var sorteo = sortearCandidato(paso, null);
+    var cand = sorteo.pick;
+    var pcs = cand.rel.map(function (iv) { return mod12(iv + paso.bajo); });
+    var r = analyze(CHORDS_DATA, pcs);
+    var prevIdx = (i - 1 + chords.length) % chords.length;
+    var prev = chords[prevIdx];
+    var prevVoicing = prev ? prev.voicing : null;
+    var prevShape = prev ? prev.shape : null;
+    var voicing = elegirVoicing(pcs, paso.bajo, prevVoicing, prevShape);
+    var shape = classifyShape(voicing);
+    var movimiento = prevVoicing ? voiceLeadingCost(prevVoicing, voicing) : 0;
+    chords[i] = {
+      grado: paso.grado, bajo: paso.bajo, pcs: pcs, rel: cand.rel, r: r,
+      categoria: cand.label, voicing: voicing, shape: shape,
+      movimiento: movimiento, limitado: sorteo.limitado,
+      ocurrencia: actual.ocurrencia, totalOcurrencias: actual.totalOcurrencias
+    };
+    renderProgresion();
   }
 
   function detenerProgresion() {
     if (progresionTimer) { clearTimeout(progresionTimer); progresionTimer = null; }
+    progresionPerpetualTimers.forEach(function (id) { clearTimeout(id); });
+    progresionPerpetualTimers = [];
     var ctx = getAudioCtx();
     var now = ctx ? ctx.currentTime : 0;
     progresionVoices.forEach(function (v) {
@@ -3834,7 +3917,15 @@ function runAnalysis() {
       var g = Math.max(0.05, 0.15 / Math.sqrt(c.voicing.length));
       c.voicing.forEach(function (midi) { progresionPlayNote(midi, t, STEP_DUR, g); });
       var loMidi = c.voicing[0], hiMidi = c.voicing[c.voicing.length - 1];
-      progresionPlayBassLayer(loMidi, t, STEP_DUR, 0.20);
+      // En "2 chords with voice leading" el bajo del grado es siempre
+      // la misma nota (mismo bajo fijo, misma octava) en las dos
+      // ocurrencias — en vez de retriggerearla, la capa de bajo suena
+      // UNA sola vez, prolongada por la duración de las dos, en la
+      // primera ocurrencia; la segunda no vuelve a atacarla.
+      var esParDoble = c.totalOcurrencias === 2;
+      if (!esParDoble || c.ocurrencia === 1) {
+        progresionPlayBassLayer(loMidi, t, esParDoble ? STEP_DUR * 2 : STEP_DUR, 0.20);
+      }
       if (hiMidi !== loMidi) progresionPlayFluteLayer(hiMidi, t, STEP_DUR, 0.13);
       if (!progresionDrumMuted) progresionPlayDrumBar(t);
       var card = cards[i];
@@ -3843,6 +3934,16 @@ function runAnalysis() {
           cards.forEach(function (el) { el.classList.remove("playing"); });
           card.classList.add("playing");
         }, Math.max(0, t * 1000));
+      }
+      // "Perpetual change": justo cuando termina de sonar esta
+      // posición, se re-sortea para la próxima vez que le toque —
+      // así el loop nunca se repite igual.
+      if (progresionPerpetualChange) {
+        var posIdx = i;
+        var tid = setTimeout(function () {
+          regenerarAcordeEnPosicion(posIdx);
+        }, (t + STEP_DUR) * 1000);
+        progresionPerpetualTimers.push(tid);
       }
     });
     var total = progresionState.chords.length * STEP_DUR;
@@ -3902,6 +4003,22 @@ function runAnalysis() {
   document.getElementById("progresionLoopBtn").addEventListener("click", function () {
     progresionLoop = !progresionLoop;
     this.setAttribute("aria-pressed", progresionLoop ? "true" : "false");
+  });
+
+  // Perpetual change: apagado por defecto. Al prenderlo, cada acorde
+  // se va re-sorteando solo apenas termina de sonar (ver
+  // regenerarAcordeEnPosicion), así el loop nunca vuelve a ser el
+  // mismo — por eso implica Loop prendido (si estaba apagado, se
+  // prende junto con este botón). Si ya está sonando, reinicia la
+  // reproducción para que los timers de regeneración se agreguen ya.
+  document.getElementById("progresionPerpetualBtn").addEventListener("click", function () {
+    progresionPerpetualChange = !progresionPerpetualChange;
+    this.setAttribute("aria-pressed", progresionPerpetualChange ? "true" : "false");
+    if (progresionPerpetualChange && !progresionLoop) {
+      progresionLoop = true;
+      document.getElementById("progresionLoopBtn").setAttribute("aria-pressed", "true");
+    }
+    if (!document.getElementById("progresionStopBtn").disabled) reproducirProgresion();
   });
 
   // "2 chords with voice leading": duplica cada grado de la progresión
