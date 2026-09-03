@@ -3566,6 +3566,124 @@ function runAnalysis() {
     });
   }
 
+  // Ruido compartido (para el "aire" de la flauta), cacheado por
+  // sampleRate igual que en el resto del archivo — propio de este
+  // módulo para no tocar el buffer del SetMusicBox principal.
+  var progresionNoiseBuffer = null;
+  function progresionGetNoiseBuffer(ctx) {
+    if (!progresionNoiseBuffer || progresionNoiseBuffer.sampleRate !== ctx.sampleRate) {
+      var len = ctx.sampleRate * 2;
+      progresionNoiseBuffer = ctx.createBuffer(1, len, ctx.sampleRate);
+      var data = progresionNoiseBuffer.getChannelData(0);
+      for (var i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+    }
+    return progresionNoiseBuffer;
+  }
+
+  // Duplica la voz más grave con timbre de bajo (fundamental + sub al
+  // octava para cuerpo, + un filo de triangular ligeramente destemplado)
+  // sonando en simultáneo con el órgano, no en su lugar — así el bajo
+  // queda reforzado en registro y color sin perder la nota dentro del
+  // acorde de órgano.
+  function progresionPlayBassLayer(midi, startOffset, duration, gain) {
+    var ctx = getAudioCtx();
+    if (!ctx) return;
+    var freq = 440 * Math.pow(2, (midi - 69) / 12);
+    var t0 = ctx.currentTime + startOffset;
+    var filter = ctx.createBiquadFilter();
+    filter.type = "lowpass";
+    filter.frequency.setValueAtTime(650, t0);
+    filter.Q.value = 0.3;
+    var env = ctx.createGain();
+    env.gain.setValueAtTime(0, t0);
+    env.gain.linearRampToValueAtTime(gain, t0 + 0.05);
+    env.gain.setValueAtTime(gain, t0 + Math.max(0.05, duration - 0.1));
+    env.gain.linearRampToValueAtTime(0.0001, t0 + duration);
+    filter.connect(env); env.connect(ctx.destination);
+
+    var sine = ctx.createOscillator();
+    sine.type = "sine"; sine.frequency.setValueAtTime(freq, t0);
+    sine.connect(filter);
+
+    var sub = ctx.createOscillator();
+    sub.type = "sine"; sub.frequency.setValueAtTime(freq / 2, t0);
+    var subGain = ctx.createGain(); subGain.gain.value = 0.7;
+    sub.connect(subGain); subGain.connect(filter);
+
+    var edge = ctx.createOscillator();
+    edge.type = "triangle"; edge.frequency.setValueAtTime(freq, t0); edge.detune.setValueAtTime(4, t0);
+    var edgeGain = ctx.createGain(); edgeGain.gain.value = 0.3;
+    edge.connect(edgeGain); edgeGain.connect(filter);
+
+    [sine, sub, edge].forEach(function (osc, idx) {
+      osc.start(t0);
+      osc.stop(t0 + duration + 0.1);
+      progresionVoices.push({ osc: osc, env: idx === 0 ? env : null });
+    });
+  }
+
+  // Duplica la voz más aguda con timbre de flauta (fundamental casi
+  // puro + un segundo armónico suave + vibrato que entra después del
+  // ataque + un toque de aire filtrado), también en simultáneo con el
+  // órgano.
+  function progresionPlayFluteLayer(midi, startOffset, duration, gain) {
+    var ctx = getAudioCtx();
+    if (!ctx) return;
+    var freq = 440 * Math.pow(2, (midi - 69) / 12);
+    var t0 = ctx.currentTime + startOffset;
+    var attack = 0.05, release = 0.12;
+    var filter = ctx.createBiquadFilter();
+    filter.type = "lowpass";
+    filter.frequency.setValueAtTime(Math.min(6000, freq * 5 + 800), t0);
+    filter.Q.value = 0.5;
+    var env = ctx.createGain();
+    env.gain.setValueAtTime(0, t0);
+    env.gain.linearRampToValueAtTime(gain, t0 + attack);
+    var sustainEnd = t0 + duration;
+    env.gain.setValueAtTime(gain, sustainEnd);
+    env.gain.linearRampToValueAtTime(0, sustainEnd + release);
+    filter.connect(env); env.connect(ctx.destination);
+
+    var osc = ctx.createOscillator();
+    osc.type = "sine"; osc.frequency.setValueAtTime(freq, t0);
+    osc.connect(filter);
+
+    var overtone = ctx.createOscillator();
+    overtone.type = "sine"; overtone.frequency.setValueAtTime(freq * 2, t0);
+    var overtoneGain = ctx.createGain(); overtoneGain.gain.value = 0.06;
+    overtone.connect(overtoneGain); overtoneGain.connect(filter);
+
+    var vibrato = ctx.createOscillator();
+    vibrato.type = "sine"; vibrato.frequency.setValueAtTime(5.2, t0);
+    var vibratoGain = ctx.createGain();
+    vibratoGain.gain.setValueAtTime(0, t0);
+    vibratoGain.gain.linearRampToValueAtTime(freq * 0.006, t0 + attack + 0.12);
+    vibrato.connect(vibratoGain); vibratoGain.connect(osc.frequency);
+
+    var noiseSrc = ctx.createBufferSource();
+    noiseSrc.buffer = progresionGetNoiseBuffer(ctx);
+    noiseSrc.loop = true;
+    var noiseFilter = ctx.createBiquadFilter();
+    noiseFilter.type = "bandpass";
+    noiseFilter.frequency.setValueAtTime(Math.min(9000, freq * 3), t0);
+    noiseFilter.Q.value = 0.7;
+    var noiseGain = ctx.createGain();
+    noiseGain.gain.setValueAtTime(gain * 0.35, t0);
+    noiseGain.gain.linearRampToValueAtTime(gain * 0.06, t0 + attack + 0.1);
+    noiseGain.gain.setValueAtTime(gain * 0.06, sustainEnd);
+    noiseGain.gain.linearRampToValueAtTime(0, sustainEnd + release);
+    noiseSrc.connect(noiseFilter); noiseFilter.connect(noiseGain); noiseGain.connect(ctx.destination);
+
+    [osc, overtone, vibrato].forEach(function (o, idx) {
+      o.start(t0);
+      o.stop(sustainEnd + release + 0.1);
+      progresionVoices.push({ osc: o, env: idx === 0 ? env : null });
+    });
+    noiseSrc.start(t0);
+    noiseSrc.stop(sustainEnd + release + 0.1);
+    progresionVoices.push({ osc: noiseSrc, env: null });
+  }
+
   function detenerProgresion() {
     if (progresionTimer) { clearTimeout(progresionTimer); progresionTimer = null; }
     var ctx = getAudioCtx();
@@ -3594,10 +3712,17 @@ function runAnalysis() {
     playBtn.disabled = true;
     stopBtn.disabled = false;
     var cards = document.querySelectorAll("#progresionGrid .progresion-chord");
+    // Duración = STEP_DUR completo (sin recorte): el release de cada
+    // acorde termina justo cuando entra el ataque del siguiente, así
+    // se solapan en un crossfade natural y no queda silencio entre
+    // acordes.
     progresionState.chords.forEach(function (c, i) {
       var t = i * STEP_DUR;
       var g = Math.max(0.05, 0.15 / Math.sqrt(c.voicing.length));
-      c.voicing.forEach(function (midi) { progresionPlayNote(midi, t, STEP_DUR * 0.92, g); });
+      c.voicing.forEach(function (midi) { progresionPlayNote(midi, t, STEP_DUR, g); });
+      var loMidi = c.voicing[0], hiMidi = c.voicing[c.voicing.length - 1];
+      progresionPlayBassLayer(loMidi, t, STEP_DUR, 0.20);
+      if (hiMidi !== loMidi) progresionPlayFluteLayer(hiMidi, t, STEP_DUR, 0.13);
       var card = cards[i];
       if (card) {
         setTimeout(function () {
