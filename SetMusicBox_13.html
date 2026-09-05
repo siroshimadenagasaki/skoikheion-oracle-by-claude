@@ -815,8 +815,8 @@
     <div class="consola-controls">
       <div class="consola-field">
         <label for="consolaTempo">Tempo</label>
-        <input type="range" id="consolaTempo" min="60" max="140" value="84" step="1">
-        <span class="consola-val" id="consolaTempoVal">84 BPM</span>
+        <input type="range" id="consolaTempo" min="60" max="140" value="100" step="1">
+        <span class="consola-val" id="consolaTempoVal">100 BPM</span>
       </div>
       <div class="consola-field consola-loop">
         <input type="checkbox" id="consolaLoopChk" checked>
@@ -842,6 +842,7 @@
       <div class="consola-field" style="flex-direction:row;gap:8px;">
         <button type="button" class="chip primary" id="consolaPlayBtn">&#9658; Reproducir</button>
         <button type="button" class="chip" id="consolaStopBtn" disabled>&#9632; Detener</button>
+        <button type="button" class="chip" id="consolaRegenBtn" title="Sortea una música nueva con las notas actuales y la empieza a reproducir">&#127922; Regenerate</button>
       </div>
     </div>
 
@@ -6158,6 +6159,16 @@ function runAnalysis() {
     setNotes([0,4,7,11]); // C E G B — dispara runAnalysis() -> regenerateConsola()
   });
   document.getElementById("consolaNormalBtn").addEventListener("click", normalizeConsola);
+  // Regenerate: sortea una música nueva con las mismas notas actuales
+  // (modo libre — re-tira subset/transposición/inversión/voicing de
+  // cero, como cualquier otro cambio de notas) y la arranca a
+  // reproducir de una — corta antes cualquier reproducción en curso
+  // para que no queden dos loops sonando a la vez.
+  document.getElementById("consolaRegenBtn").addEventListener("click", function(){
+    stopPlayback();
+    regenerateConsola();
+    if(state.chordEvents.length) startPlayback();
+  });
   document.getElementById("consolaJazzChk").addEventListener("change", function(){
     if(state.rootChord.length) regenerateConsola();
   });
