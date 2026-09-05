@@ -873,8 +873,8 @@
       <div class="mix-presets">
         <div class="mix-preset-group" id="harmonyPresetGroup" data-mix-group="harmony">
           <span class="mix-preset-label">Armonía</span>
-          <button type="button" class="mix-preset-opt active" data-preset="pad">Pad</button>
-          <button type="button" class="mix-preset-opt" data-preset="warmpad">Pad cálido</button>
+          <button type="button" class="mix-preset-opt" data-preset="pad">Pad</button>
+          <button type="button" class="mix-preset-opt active" data-preset="warmpad">Pad cálido</button>
           <button type="button" class="mix-preset-opt" data-preset="piano">Piano</button>
         </div>
         <div class="mix-preset-group" id="melodyPresetGroup" data-mix-group="melody">
@@ -5421,7 +5421,7 @@ function runAnalysis() {
   // presets solo deciden QUÉ función de síntesis usar para armonía y
   // melodía (Pad/Piano, Flauta/Saxo) — bajo y batería no tienen preset.
   var mixGains = { drum: 1, bass: 1, chord: 1, melody: 1 };
-  var mixPresets = { harmony: "pad", melody: "flute" };
+  var mixPresets = { harmony: "warmpad", melody: "flute" };
   var chordGainNode = null, bassGainNode = null, melodyGainNode = null, drumGainNode = null;
   function ensureInstrumentGains(ctx){
     var master = ensureMasterGain(ctx);
@@ -6070,7 +6070,6 @@ function runAnalysis() {
     playing = true;
     document.getElementById("consolaPlayBtn").disabled = true;
     document.getElementById("consolaStopBtn").disabled = false;
-    tempoEl.disabled = true;
     var rollHost = document.getElementById("consolaRollHost");
     if(rollHost) rollHost.scrollLeft = 0;
 
@@ -6155,6 +6154,14 @@ function runAnalysis() {
   document.getElementById("consolaTempo").addEventListener("input", function(){
     document.getElementById("consolaTempoVal").textContent = this.value + " BPM";
   });
+  // Tempo en caliente: si está sonando, al soltar el slider (evento
+  // "change", no en cada tick de "input") se reinicia el loop desde el
+  // primer compás con el BPM nuevo — no se puede re-agendar in situ el
+  // audio ya programado con Web Audio, así que la forma simple y
+  // confiable de que el tempo nuevo se escuche ya es relanzar el loop.
+  document.getElementById("consolaTempo").addEventListener("change", function(){
+    if(!document.getElementById("consolaStopBtn").disabled){ stopPlayback(); startPlayback(); }
+  });
   document.getElementById("consolaTryBtn").addEventListener("click", function(){
     setNotes([0,4,7,11]); // C E G B — dispara runAnalysis() -> regenerateConsola()
   });
@@ -6205,7 +6212,7 @@ function runAnalysis() {
     });
   })();
 
-  // ---- Mini mixer: conmutadores de preset (Armonía: Pad/Piano — Melodía: Flauta/Saxo) ----
+  // ---- Mini mixer: conmutadores de preset (Armonía: Pad/Pad cálido/Piano — Melodía: Flauta/Saxo) ----
   (function(){
     var GROUPS = [
       { id: "harmonyPresetGroup", key: "harmony" },
@@ -6220,6 +6227,12 @@ function runAnalysis() {
           btns.forEach(function(b){ b.classList.remove("active"); });
           this.classList.add("active");
           mixPresets[g.key] = this.dataset.preset;
+          // Si está sonando, reinicia el loop para que el timbre nuevo
+          // se escuche YA — scheduleLoopAt recién relee mixPresets en
+          // la PRÓXIMA vuelta del loop (o nunca, si Loop está apagado),
+          // así que sin este reinicio el cambio podía quedar mudo o
+          // tardar toda una corrida en notarse.
+          if(!document.getElementById("consolaStopBtn").disabled){ stopPlayback(); startPlayback(); }
         });
       });
     });
