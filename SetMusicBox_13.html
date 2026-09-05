@@ -263,6 +263,15 @@
     text-align:center;color:var(--ink-muted);font-style:italic;font-size:14px;
     margin:0 0 18px;
   }
+  .rules-collapse h3{
+    font-family:'JetBrains Mono',monospace;font-size:11.5px;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--violet);margin:24px 0 10px;font-weight:500;
+    border-bottom:1px solid var(--line);padding-bottom:6px;
+  }
+  .rules-collapse h3:first-of-type{margin-top:2px;}
+  .rules-collapse ul{margin:0 0 4px;padding-left:22px;}
+  .rules-collapse li{margin:0 0 9px;line-height:1.5;font-size:14px;color:var(--ink);}
+  .rules-collapse li::marker{color:var(--gold-dim);}
   .overlay-scroll{overflow-x:auto;}
   table.overlay-table{
     width:100%;border-collapse:collapse;font-size:13px;min-width:640px;
@@ -1403,6 +1412,230 @@
           if(willExpand && frame && !frame.getAttribute("src")){
             frame.setAttribute("src", "voicing_explorer.html");
           }
+        });
+      }
+    })();
+  </script>
+
+  <div class="overlay-card" id="rulesCard">
+    <div style="display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;">
+      <h2 style="margin:0;">Reglas del Proyecto</h2>
+      <button type="button" class="chip" id="rulesToggleBtn" aria-expanded="false" aria-controls="rulesCollapse">+ Expandir</button>
+    </div>
+    <div id="rulesCollapse" class="rules-collapse" hidden>
+      <p class="overlay-sub">Cada regla y decisión de diseño que fui pidiendo a lo largo de este proyecto, tal como quedó implementada — organizada por módulo.</p>
+        <h3>Reloj cromático / selector de notas (input de notas)</h3>
+        <ul>
+          <li>El input de notas tiene dos métodos sincronizados sobre el mismo conjunto de pitch-classes: el reloj cromático (12 nodos en círculo) y un teclado de piano de una octava (C a B); ambos reflejan siempre el mismo estado seleccionado.</li>
+          <li>Al tocar una nota se la agrega o quita de un conjunto de clases de altura (0-11); tocarla dispara un sonido corto de esa nota y vuelve a correr el análisis armónico completo.</li>
+          <li>El botón «Limpiar» vacía la selección completa y vuelve a correr el análisis (que muestra el estado vacío).</li>
+          <li>Hay atajos de «Ejemplos rápidos» que cargan de un clic conjuntos predefinidos: tríada mayor (0,4,7), tríada menor (0,3,7), dominante 7 (0,4,7,10) y semidisminuido 7 (0,3,6,10).</li>
+          <li>El botón «▶ Acorde» reproduce todas las notas seleccionadas juntas, como acorde (no arpegiado).</li>
+          <li>El botón «🎹 Compose» no reimplementa la reproducción del segmento: dispara un clic real sobre el botón «▶ Reproducir» de SetMusicBox, así hereda gratis su estado disabled/enabled y cualquier cambio futuro a esa lógica.</li>
+          <li>El deletreo enarmónico por defecto de una nota aislada usa la convención de menor cantidad de alteraciones de armadura respecto de Do en el círculo de quintas: Re♭ gana a Do♯, Mi♭ gana a Re♯, La♭ gana a Sol♯, Si♭ gana a La♯, y en el empate Fa♯/Sol♭ se elige Fa♯ (más frecuente en cifrado de guitarra/jazz).</li>
+          <li>Existe un segundo mecanismo de deletreo «por grado», usado cuando hay raíz y rol funcional definidos: primero fija la letra según el grado (apilado convencional de terceras, nunca salta ni repite una letra) y recién después calcula la alteración necesaria — es el único mecanismo que puede producir doble bemol/doble sostenido.</li>
+        </ul>
+        <h3>Diapasón de guitarra embebido en el Oráculo</h3>
+        <ul>
+          <li>Usa afinación estándar de guitarra E-A-D-G-B-E, con 24 trastes reales.</li>
+          <li>La cuerda al aire NO se dibuja como un traste sino como un círculo aparte, fuera de la grilla, en línea con cada cuerda — igual que en cualquier diagrama de guitarra.</li>
+          <li>Los marcadores de posición (dots) se ubican en los trastes 3, 5, 7, 9, 12, 15, 17, 19, 21 y 24.</li>
+          <li>La fila 1 de la grilla corresponde siempre al primer traste real (nunca a la cuerda al aire).</li>
+        </ul>
+        <h3>Voicing Explorer / Digitaciones de guitarra (módulos externos embebidos)</h3>
+        <ul>
+          <li>Son páginas aparte, cargadas en un iframe embebido dentro de esta página.</li>
+          <li>El iframe de cada módulo recién carga su contenido (y crea su propio audio o pide sus propias fuentes) la primera vez que el usuario expande esa sección — nunca antes, para no gastar recursos si nadie la abre.</li>
+          <li>El Voicing Explorer calcula, para cualquier conjunto de intervalos: todas las disposiciones de octava y doblados dentro de un rango, voicings drop2/drop3, y una cadena de transposición con conducción de voces.</li>
+          <li>Los mismos criterios del Voicing Explorer (variedad de disposición + conducción de voces suave) alimentan al modo Jazz del SetMusicBox.</li>
+          <li>El módulo de Digitaciones de Guitarra calcula posiciones tocables dentro de una ventana de 6 trastes a partir de las notas de un acorde y un bajo opcional, separadas en cuerdas contiguas y cuerdas abiertas, con un diapasón completo y uno por cada grupo de cuerdas, cada digitación con su propio color y reproducción de audio.</li>
+        </ul>
+        <h3>Análisis de teoría de conjuntos (Forte / Solomon, normal form, prime form, IC vector, Z-mate)</h3>
+        <ul>
+          <li>La tabla embebida contiene 344 (352 con el set vacío/unísono) clases Forte-Solomon, transcriptas de «Elementos musicales» de Sergio Terebeiko, sin necesitar conexión a internet.</li>
+          <li>La forma normal calcula la rotación más compacta de un conjunto (mínimo intervalo externo, desempatando por los intervalos internos sucesivos).</li>
+          <li>La prime form compara la forma normal transportada a 0 contra su inversión (también transportada a 0) y elige la de menor extensión total; en empate, compara los intervalos sucesivos uno por uno.</li>
+          <li>El vector de intervalos (IC vector) cuenta, sobre la prime form, cuántas veces aparece cada intervalo de clase 1 a 6 entre todos los pares de notas.</li>
+          <li>El cálculo del «Z-mate» replica el comportamiento del sitio original: compara el input crudo (no la prime form) contra la tabla, excluyendo al propio acorde — a veces da un resultado distinto de la relación Z académica estándar.</li>
+          <li>Los subconjuntos mostrados solo bajan hasta cardinalidad 4 (menos de 4 son intervalos triviales); los superconjuntos solo suben hasta cardinalidad 11 (12 es siempre la cromática completa).</li>
+          <li>Subconjuntos y superconjuntos se calculan sobre las notas reales elegidas, por lo que el resultado no cambia según qué transposición/inversión se haya elegido.</li>
+        </ul>
+        <h3>Superposición cromática sobre tónica inmóvil</h3>
+        <ul>
+          <li>Cada uno de los 12 grados transporta cromáticamente el conjunto elegido y lo recalcula siempre en relación a la tónica fija Do.</li>
+          <li>El tritono se escribe «4♯» si el conjunto contiene también el semitono 9 sin el semitono 10, y «5♭» en cualquier otro caso — verificado contra la ficha original de Terebeiko.</li>
+          <li>Cuando el grado transportado hace colisionar una nota con la tónica fija, esa fila se marca como «Inversión» e indica qué voz del acorde original quedó de bajo.</li>
+          <li>La agrupación final de la tabla por clase Solomon resultante se calcula dinámicamente, agrupando los 12 grados según a qué clase cae cada uno.</li>
+        </ul>
+        <h3>Generador de Cifrado de Acordes (notación anglosajona)</h3>
+        <ul>
+          <li>El generador manual y la columna «Cifrado» de la tabla de Superposición comparten el mismo motor de cálculo.</li>
+          <li>La tabla siempre usa símbolos especiales (Δ ø ° +); en el generador manual se puede alternar entre símbolos y texto (Maj7, m7♭5, dim7, aug).</li>
+          <li>Si el conjunto tiene a la vez 3ª mayor y semitono 3, ese semitono 3 se interpreta como 9ª aumentada (acorde 7♯9) y no como 3ª menor.</li>
+          <li>Entre los candidatos cuyos intervalos son subconjunto del set de entrada, se prioriza el que tenga más intervalos definidos (el acorde más completo que calce).</li>
+          <li>Las notas que sobran respecto del acorde detectado se nombran siempre como tensión (9/11/13), nunca como grado bajo equivalente.</li>
+          <li>Las notas esperadas por el acorde pero ausentes se listan como omitidas («no3ª», «no5ª», etc.).</li>
+          <li>Las notas agregadas se pueden mostrar entre paréntesis (C7(♭9)) o con la palabra «add», a elección del usuario.</li>
+          <li>Existe un analizador de grados que traduce texto tipo «1 3b 5b 7b» directamente al cifrado.</li>
+          <li>El panel del generador arranca colapsado por defecto (se expande con un botón «+»).</li>
+        </ul>
+        <h3>Híbridos (slash chords de tríada con bajo ajeno)</h3>
+        <ul>
+          <li>El universo de híbridos se construye recorriendo 5 calidades de tríada × 12 raíces × 9 bajos ajenos (540 combinaciones).</li>
+          <li>Un híbrido requiere exactamente 4 notas distintas: 3 de una tríada + 1 de bajo ajeno a esa tríada; cualquier otro tamaño deja la columna en blanco.</li>
+          <li>Cuando un mismo set de 4 notas admite más de una lectura válida, se desempata con prioridad fija: mayor, menor, disminuida, aumentada, cuartal; dentro de cada calidad, la raíz más grave primero — así la misma etiqueta sale siempre para el mismo set de 4 notas.</li>
+        </ul>
+        <h3>Categorías de acordes (modos: Mayor, Menor, Dominante, Frigia, Locria, Disminuida, Alterada…)</h3>
+        <ul>
+          <li>Transcriptas de la tabla de superposición por categorías de Terebeiko, traducidas de grados a semitonos.</li>
+          <li>Cada variante matchea solo si el conjunto contiene todos los grados requeridos, ninguno de los excluidos, y no tiene notas fuera de requeridos+opcionales.</li>
+          <li>«Jónica / Lidia (no3)» exige simultáneamente 3ª menor Y 3ª mayor a la vez, más todo el racimo cromático hasta el 5♯/6♭.</li>
+          <li>«Alterada» exige al menos una tensión alterada; «Mixolidia Alterada» exige a la vez una tensión diatónica y una alterada.</li>
+          <li>«Mayor alt» y «Mixolidia Alterada» agregan «(Aumentado)» al rótulo si está presente la tensión ♯5/6♭.</li>
+          <li>Cuando dos categorías combinables matchean juntas (Frigia+Dominante, Locria+Dominante) se muestran unidas con guion; si matchean varias no combinables, se separan con «/».</li>
+          <li>Un conjunto de exactamente 2 notas se etiqueta aparte como «Diada (grados)», nunca como tríada/acorde.</li>
+          <li>Si ninguna categoría específica matchea pero el conjunto entra en el molde amplio de la tabla, se etiqueta «Ambiguo» en vez de dejar la celda en blanco.</li>
+          <li>Las categorías siempre se evalúan con el conjunto normalizado respecto de su propia fundamental (nunca sobre un conjunto ya transpuesto), porque «los análisis se hacen siempre desde el bajo».</li>
+        </ul>
+        <h3>SetMusicBox — Perpetual change (generador de progresiones aleatorio)</h3>
+        <ul>
+          <li>Arma al azar una de seis progresiones predefinidas: V-I, V-Im, II-V-I, IIø-V-Im, II-V-I-VI, IIø-V-Im-VIø.</li>
+          <li>El grado y el bajo fijo de cada acorde NO se sortean (V y VI con bajo en Sol/La, I e Im con bajo en Do, II/IIø/VIø con bajo en Re/Re/La); lo único que se sortea es qué set de la tabla de 344 clases se usa, filtrado a los que caen en alguna categoría admitida para ese grado.</li>
+          <li>No se repite el mismo set dos veces seguidas en la misma corrida.</li>
+          <li>Los acordes se realizan como voicings reales tocables (registro A2-A5), con la disposición que menos mueve las voces entre un acorde y el siguiente — sin invertir nunca: el bajo del grado siempre queda como nota más grave.</li>
+          <li>El botón «2 chords with voice leading» duplica cada grado (V-I pasa a sonar V V I I) y fija una sola disposición para toda la corrida, sorteada solo para el primer acorde; el resto usa siempre el candidato de menor costo de conducción de voces restringido a esa disposición.</li>
+          <li>Cuando un mismo grado suena dos veces seguidas, la segunda ocurrencia evita repetir el mismo set que sorteó la primera si hay más de un candidato posible.</li>
+          <li>El switch de «Notas por acorde» (3/4/5/6) mezcla tamaños dentro de la misma corrida; no se permite apagar todos a la vez.</li>
+          <li>Este generador usa un sintetizador propio (separado del motor principal): un órgano tipo drawbars (fundamental + octava + docena/quinta + doble octava, niveles estilo Hammond), con la voz más grave duplicada en timbre de bajo y la más aguda duplicada en timbre de flauta.</li>
+          <li>Tiene batería de acompañamiento autocontenida (bombo/caja/hi-hat) con patrón fijo tipo hip-hop/boom-bap sobre 16 semicorcheas, silenciable con «Mute drums» sin tocar la armonía ya sorteada.</li>
+          <li>Cada acorde suena una redonda completa (4 tiempos) al tempo del slider (40-200 BPM, default 120), sin recorte, para que el release de uno termine justo cuando entra el ataque del siguiente.</li>
+          <li>En «2 chords with voice leading», si el bajo es la misma nota y octava en las dos ocurrencias seguidas, no se retriggerea: suena una sola vez prolongada.</li>
+          <li>Con Loop prendido (default), al terminar la corrida se repite la misma progresión — salvo que Perpetual change también esté prendido (default), en cuyo caso recién al terminar TODOS los acordes se regenera la progresión entera antes de volver a tocar.</li>
+          <li>Perpetual change implica Loop prendido; si Loop estaba apagado, se enciende junto con él.</li>
+          <li>Al soltar el slider de tempo mientras suena, se reinicia el loop desde el primer acorde para que el tempo nuevo se escuche ya.</li>
+          <li>El botón «🎲 Regenerar» sortea sets nuevos para cada grado; «▶ Reproducir» toca la progresión armada.</li>
+        </ul>
+        <h3>SetMusicBox — Consola de acordes en loop, modo «Normalito»</h3>
+        <ul>
+          <li>Segmento de 12 compases en loop, siempre dentro del mismo set de Solomon exacto que el conjunto elegido en el reloj/piano.</li>
+          <li>Usa el set completo, sin transposición ni subsets: cada compás solo cambia por inversión (la nota más grave sube una octava), en secuencia mezclada al azar en bloques con reparto parejo de cada inversión, sin repetir la misma en dos compases seguidos.</li>
+          <li>El acorde entero también puede desplazarse una octava arriba o abajo de compás en compás (mayormente se queda quieto: 3 de 5 valores del pool son «sin desplazar»), moviendo todas las voces a la vez para no alterar su orden relativo.</li>
+          <li>Después de cualquier desplazamiento, el voicing se reacota a un registro tocable (A2 a C6), dejando margen para el bajo (una octava y media más abajo) y la melodía (una octava arriba).</li>
+          <li>El bajo recorre distintos grados del acorde en curso (nunca una nota ajena): cada reataque toma el siguiente grado del voicing actual, hacia arriba.</li>
+          <li>La armonía se mantiene mayormente sostenida (redonda), con reataques ocasionales del mismo acorde — nunca cambia de nota dentro del compás.</li>
+          <li>La melodía predomina en notas largas; un fill de 10 notas cortas parejas aparece en los compases 3, 6, 9 y 12 del ciclo fijo (≈33%, la aproximación más cercana al 30% pedido).</li>
+          <li>El bajo usa solo blancas, con negras limitadas a un máximo del 30% (4 de 14 «mitades» partidas en el ciclo fijo de 6 compases, ≈28.6%).</li>
+          <li>El botón «↺ Normalito» es una acción de un solo clic, no un modo persistente: el próximo cambio de notas vuelve automáticamente al modo libre.</li>
+          <li>En ambos modos (Normalito y libre) cada reataque del acorde suena las notas completas de su voicing, nunca arpegiado — el arpegio solo existe en la melodía.</li>
+        </ul>
+        <h3>SetMusicBox — Consola de acordes en loop, modo libre (aleatorio, automático)</h3>
+        <ul>
+          <li>Es el modo por defecto, al que siempre se vuelve tras usar Normalito; se dispara de nuevo cada vez que cambian las notas elegidas.</li>
+          <li>La armonía cambia de subset, transposición cromática e inversión en cada reataque, siempre dentro del mismo set de Solomon exacto — nunca suena un acorde de otro set ni una nota ajena.</li>
+          <li>El ritmo armónico también es al azar por compás (sostenido, o reatacado 2, 3 o 4 veces), con pesos distintos por célula.</li>
+          <li>En cada reataque de armonía se sortea de nuevo el subset, la transposición y la inversión — nunca se repite exactamente la misma combinación en el reataque siguiente.</li>
+          <li>El subset al azar de cada compás nunca deja afuera más de 2 notas (MAX_SUBSET_GAP), porque el bajo de ese compás tiene que poder cubrir justo esas notas faltantes él solo.</li>
+          <li>Cada compás guarda un subset+transposición «de referencia»: las notas que dejó afuera son las que el bajo de ese mismo compás recupera primero — entre acorde y bajo, cada compás reconstruye siempre el set completo transportado.</li>
+          <li>La melodía toca exclusivamente notas del voicing de armonía que está sonando en ese preciso instante (no un acorde de referencia fijo del compás).</li>
+          <li>Los compases con ritmo más movido y más sostenido (armonía, bajo, melodía y batería) se reparten intercalados mediante peso + posiciones equiespaciadas, sin varios «largos» o «cortos» seguidos por casualidad, manteniendo el mismo promedio general.</li>
+          <li>Una pasada final intercambia compases seguidos con exactamente la misma forma rítmica, para reforzar el «sin rachas» también a nivel de forma exacta.</li>
+          <li>El bajo en modo libre sortea un grado al azar dentro del set en cada reataque (primero cubriendo las notas que dejó afuera el subset de referencia), en vez de recorrer grados en orden.</li>
+          <li>El ritmo de bajo es mayormente blancas, con negras y algún par de corcheas sincopadas metidas al azar, repartidas parejo entre compases.</li>
+          <li>El fill de melodía (10 notas cortas parejas) aparece en ~30% de los compases, repartido parejo para que no caigan varios fills seguidos y luego una racha larga sin ninguno.</li>
+          <li>Dentro de un fill, la melodía arpegia recorriendo sus grados en orden (ascendente en compases pares, descendente en impares); si el fill tiene más notas que grados tiene el acorde, sigue subiendo/bajando una octava más antes de repetir el ciclo.</li>
+          <li>Si la armonía cambia de acorde a mitad de un fill, el arpegio de la melodía simplemente sigue subiendo/bajando sobre el acorde nuevo.</li>
+          <li>El registro de un tramo de arpegio se ancla una sola vez al empezar a sonar ese acorde (no nota a nota), para que la corrida no «salte» de octava a mitad de camino.</li>
+          <li>Fuera de un fill, cada nota de melodía se acota de forma independiente, de a octavas enteras (G3-C7), corrigiendo solo en qué octava suena, nunca qué nota es.</li>
+          <li>~20% de las notas de melodía dentro de un compás quedan en silencio (ocupan su lugar rítmico pero no suenan), repartidas parejo dentro del compás.</li>
+          <li>~20% de los compases (repartidos a la mitad entre bajo y melodía, nunca ambos a la vez en el mismo compás) llevan tresillos de negra: 3 notas iguales de 2/3 de tiempo cada una ocupando el espacio de una blanca, más una blanca normal, en cualquiera de los dos órdenes posibles.</li>
+          <li>Los tresillos de negra en la melodía se saltan los compases de fill para no pisar ese patrón especial.</li>
+          <li>El botón «Regenerate» sortea una música nueva con las mismas notas actuales y la arranca a reproducir de inmediato, cortando antes cualquier reproducción en curso para que no queden dos loops sonando a la vez.</li>
+          <li>El tempo de la consola va de 60 a 140 BPM, con 100 BPM como valor por defecto.</li>
+          <li>El volumen general de la consola tiene un slider de 0 a 100%, con 70% por defecto.</li>
+          <li>Cada instrumento (Armonía, Bajo, Melodía, Batería) tiene su propio checkbox para silenciarlo sin cambiar el set ni parar el loop, todos prendidos por defecto; se puede tocar mientras suena.</li>
+          <li>El set de notas y el modo Normalito se pueden cambiar mientras el loop está sonando: el próximo ciclo toma el cambio.</li>
+          <li>El tempo y los presets de sonido también se pueden cambiar mientras la música está sonando: el loop se reinicia desde el primer compás con el valor nuevo, porque no se puede reagendar in situ el audio ya programado.</li>
+          <li>El botón «Batería» se puede prender y apagar incluso con el loop sonando.</li>
+        </ul>
+        <h3>Estructura rítmica compartida (reparto sin rachas)</h3>
+        <ul>
+          <li>Para evitar que el azar puro junte por casualidad varios compases «movidos» seguidos y luego varios «quietos» seguidos, primero se calcula cuántos compases de cada forma tocan según su peso (método del resto mayor, sin cambiar el promedio general), y después se reparten lo más parejo posible a lo largo del segmento.</li>
+          <li>Este mecanismo de reparto parejo se reutiliza para: el ritmo armónico, el ritmo de bajo, el fill de melodía, los silencios de melodía, los tresillos de negra y los estilos de compás de la batería genérica — siempre con el mismo criterio de «sin rachas, mismo promedio general».</li>
+        </ul>
+        <h3>Batería genérica (SetMusicBox)</h3>
+        <ul>
+          <li>Define 6 estilos de compás con distinta densidad de golpes: «basic» y «sparse» (quietos), «synKick» y «ghostSnare» (algo más movidos), «fill» (compás lleno) y «breath» (casi vacío), cada uno con su propio patrón fijo de bombo, caja e hi-hat.</li>
+          <li>Los estilos no dependen del set de notas elegido: siempre suenan igual mientras la batería esté encendida, solo cambia cuándo le toca a cada estilo.</li>
+          <li>Los estilos se reparten entre los compases con el mismo mecanismo de peso + reparto parejo, para que los movidos y los quietos se intercalen en vez de agruparse por casualidad.</li>
+        </ul>
+        <h3>Módulo Jazz</h3>
+        <ul>
+          <li>Se activa con un checkbox aparte (apagado por defecto) y actúa reemplazando los pools de ritmo y las funciones de voicing/arpegio del motor original, sin salir nunca del set de notas elegido.</li>
+          <li>Las grillas de ritmo vienen de una base de datos externa de jazz: grillas de 16 pasos que se convierten a células de duración tomando solo el patrón de reataques (nunca una nota); si el primer ataque no cae en el paso 0, la grilla se rota para que el compás siempre empiece con un ataque.</li>
+          <li>El comping reemplaza al ritmo armónico base; el walking bass reemplaza al ritmo de bajo base.</li>
+          <li>El fill de melodía usa corcheas swingueadas (largo-corto ≈2:1) en vez de las 10 notas parejas del fill original.</li>
+          <li>Las formas de arpegio (saltos de terceras, tríada quebrada, patrón bebop, zigzag tipo enclosure) se usan como índices relativos dentro del acorde vigente — nunca agregan una nota ajena, solo cambian el orden en que se recorren las notas existentes.</li>
+          <li>Aplica voicings drop reales (drop2 baja la 2ª voz desde arriba, drop3 la 3ª) y puede doblar una nota ya presente una octava arriba o abajo, sin agregar nunca una clase de altura ajena.</li>
+          <li>Los estilos de voicing (cerrada / drop2 / drop3 / abierta con doblado) se sortean con peso sobre un voicing ya calculado como válido por la lógica original.</li>
+          <li>Calcula un costo de conducción de voces simplificado para elegir, mayormente, el candidato que menos se mueve respecto del voicing anterior, sin dejar de variar de vez en cuando.</li>
+          <li>Con «Notas comunes» activo, el candidato de menor costo de conducción de voces se elige el 100% de las veces (en vez del 65% habitual).</li>
+          <li>Si el voicing quedó ancho por el doblado, a veces se «rasguea»: las notas entran en sucesión rápida en vez de todas juntas.</li>
+          <li>El bajo caminante busca la octava del tono ya elegido por la lógica original que quede más cercana a la nota anterior del bajo, dando una línea que se mueve por grados conjuntos.</li>
+          <li>La batería usa un patrón de ride «spang-a-lang» en vez del hi-hat parejo del motor base.</li>
+          <li>Dentro de un fill, usa una forma de arpegio tipo jazz como índices dentro del mismo acorde vigente, en vez de recorrerlo en línea recta.</li>
+        </ul>
+        <h3>Módulo «Más repetición» (MOREREP)</h3>
+        <ul>
+          <li>Se activa con un checkbox aparte (apagado por defecto) y combina sin problema con el modo Jazz: actúa después de que armonía/bajo/melodía/batería ya eligieron su ritmo.</li>
+          <li>40% de probabilidad extra, cada compás y por pista (armonía, bajo, melodía, batería), de repetir exactamente el patrón rítmico del compás anterior de esa misma pista.</li>
+          <li>40% de probabilidad, cada compás de bajo y de melodía (no la batería), de «acoplarse»: reatacar en los mismos instantes que tuvo la armonía en ese compás.</li>
+          <li>En ningún caso este módulo cambia qué nota suena — solo decide cuándo se reataca cada pista.</li>
+        </ul>
+        <h3>Módulo «Notas comunes» (continuidad armónica)</h3>
+        <ul>
+          <li>Se activa con un checkbox aparte; no introduce ninguna nota fuera del acorde/grado ya elegido — solo decide, entre varias combinaciones válidas, cuál usar.</li>
+          <li>En el motor base, sortea hasta 4 candidatos (en vez de 1 solo al azar) y se queda con el que comparte más notas (mismo pitch-class, sin importar octava) con el reataque anterior.</li>
+          <li>Con Jazz activo, sube al 100% la probabilidad con la que se elige el candidato de menor costo de conducción de voces (normalmente 65%).</li>
+        </ul>
+        <h3>Registro, transposición y clamping</h3>
+        <ul>
+          <li>La transposición cromática sube todas las notas del acorde n semitonos sin cambiar nunca su calidad ni su vector de intervalos: sigue siendo, nota por nota, el mismo set de Forte/Solomon.</li>
+          <li>El registro de armonía se reacota a un rango tocable de A2 a C6, moviendo todo el voicing en bloque (nunca una nota suelta), dejando margen para el bajo y la melodía sin cruzarse.</li>
+          <li>El desplazamiento de octava del acorde completo usa un pool de 5 valores donde 3 son «no desplazar», 1 es +12 y 1 es -12 — mayormente el acorde se queda quieto.</li>
+          <li>El rango de melodía se acota entre G3 y C7, corrigiendo solo de a octavas enteras (nunca cambia qué nota es, solo en qué octava suena).</li>
+        </ul>
+        <h3>Presets de sonido / mezcla (mini mixer)</h3>
+        <ul>
+          <li>Cada instrumento (Batería, Bajo, Armonía, Melodía) tiene su propio canal de ganancia conectado al bus general: el volumen general escala todo junto, y cada pista además tiene su nivel relativo propio (0-150%, default 100%).</li>
+          <li>Los presets de armonía son Pad, Pad cálido (default) y Piano; los de melodía son Flauta (default) y Saxo; bajo y batería no tienen preset de timbre.</li>
+          <li>Los presets solo deciden qué función de síntesis usar para armonía y melodía — no cambian nada de la lógica de composición.</li>
+          <li>Si la música está sonando y se cambia el preset de timbre, el loop se reinicia para que el cambio se escuche de inmediato.</li>
+          <li>«Pad cálido» usa ondas triangulares (menos brillo que el Pad normal), tres voces detuneadas (chorus más denso) y ataque/cutoff más lentos y oscuros — un color más aterciopelado pensado para convivir junto al Pad normal.</li>
+          <li>El Piano cierra su filtro con el tiempo (brillante en el golpe, más apagado mientras suena), suma fundamental + octava y quinta arriba con leve desafinado, más un click corto de ruido filtrado al golpe.</li>
+          <li>La Flauta usa un tono casi puro con leve segundo armónico, vibrato que entra recién después del ataque, y un toque de aire filtrado al ataque.</li>
+          <li>El Saxo usa un filtro resonante fijo tipo formante antes de un pasabajos, diente de sierra más un armónico reforzado, vibrato más marcado que la flauta, y ruido de aire/lengüeta más presente.</li>
+        </ul>
+        <h3>Controles de reproducción / transporte</h3>
+        <ul>
+          <li>El botón «MIDI all notes off» silencia de golpe todos los buses de instrumento con una rampa cortísima, cortando cualquier cola sonando en vez de esperar a que cada nota termine su propia envolvente.</li>
+          <li>Un reset completo detiene y libera todo lo agendado a futuro, para que no quede nada pendiente la próxima vez que se pulse Reproducir.</li>
+          <li>El playhead visual del piano roll se resetea al inicio al detener, y hace auto-scroll horizontal siguiéndolo mientras suena.</li>
+          <li>El rango de filas del piano roll es continuo (sin huecos) entre la nota más grave y la más aguda del segmento, para poder pintar al lado un teclado de piano que coincide fila a fila con la grilla.</li>
+          <li>El piano roll dibuja una franja de fondo a lo ancho de todo el rollo donde las teclas negras quedan sutilmente sombreadas también sobre la grilla, para poder «leer» blanca/negra aunque la vista esté desplazada.</li>
+        </ul>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      var toggleBtn = document.getElementById("rulesToggleBtn");
+      var collapse = document.getElementById("rulesCollapse");
+      if(toggleBtn && collapse){
+        toggleBtn.addEventListener("click", function(){
+          var willExpand = collapse.hidden;
+          collapse.hidden = !willExpand;
+          toggleBtn.textContent = willExpand ? "− Contraer" : "+ Expandir";
+          toggleBtn.setAttribute("aria-expanded", String(willExpand));
         });
       }
     })();
@@ -5013,11 +5246,35 @@ function runAnalysis() {
   // (distributeWeighted) para que los compases más movidos y los más
   // quietos se intercalen en vez de juntarse por azar, manteniendo el
   // mismo promedio general de siempre.
-  function buildBassRhythmRandom(numBars){
+  function buildBassRhythmRandom(numBars, tripletBars){
     var bassPool = JAZZ.enabled() ? JAZZ.BASS_RHYTHM_POOL : BASS_RHYTHM_POOL;
-    return avoidAdjacentDuplicates(
+    var cells = avoidAdjacentDuplicates(
       distributeWeighted(bassPool, numBars, function(cell){ return cell.length; })
     );
+    // Tresillos de negra: en los compases sorteados por planTripletBars,
+    // reemplaza la célula del compás por 3 negras-de-tresillo (2/3 de
+    // tiempo cada una, ocupando el espacio de una blanca) + una blanca
+    // normal, en cualquiera de los dos órdenes.
+    if (tripletBars && !JAZZ.enabled()){
+      var TQ = 2/3;
+      for (var tb=0; tb<numBars; tb++){
+        if (tripletBars[tb]) cells[tb] = Math.random() < 0.5 ? [TQ,TQ,TQ,2] : [2,TQ,TQ,TQ];
+      }
+    }
+    return cells;
+  }
+  // Decide, compás a compás (~20% de probabilidad), si ese compás lleva
+  // tresillo de negra — y si lo lleva, si es el bajo o la melodía el que
+  // lo toca (nunca ambos a la vez en el mismo compás).
+  var TRIPLET_PROB = 0.2;
+  function planTripletBars(numBars){
+    var bassBars = {}, melodyBars = {};
+    for (var bar=0; bar<numBars; bar++){
+      if (Math.random() < TRIPLET_PROB){
+        if (Math.random() < 0.5) bassBars[bar] = true; else melodyBars[bar] = true;
+      }
+    }
+    return { bass: bassBars, melody: melodyBars };
   }
   // Melodía: célula rítmica distinta por compás, arpegiando el acorde +8va.
   function buildMelodyEvents(progression){
@@ -5043,7 +5300,7 @@ function runAnalysis() {
   // larga sin ninguno. En el resto (~70%), mismo mecanismo de reparto
   // parejo para decidir, mitad por mitad de compás, cuáles quedan
   // partidas en 2 negras y cuáles como blanca.
-  function buildMelodyRhythmRandom(numBars){
+  function buildMelodyRhythmRandom(numBars, tripletBars){
     var flourishCount = Math.round(numBars*0.3);
     var normalCount = numBars - flourishCount;
     var barTags = [];
@@ -5077,6 +5334,16 @@ function runAnalysis() {
       if(half1.split) cell.push(1,1); else cell.push(2);
       cells.push(cell);
     }
+    // Tresillos de negra: igual que en el bajo, pero se salta los
+    // compases de fill (flourish) para no pisar ese patrón especial.
+    if (tripletBars && !JAZZ.enabled()){
+      var TQm = 2/3;
+      for (var tbm=0; tbm<numBars; tbm++){
+        if (tripletBars[tbm] && !barOrder[tbm].flourish){
+          cells[tbm] = Math.random() < 0.5 ? [TQm,TQm,TQm,2] : [2,TQm,TQm,TQm];
+        }
+      }
+    }
     return cells;
   }
   // Random (dentro del set): reorganiza de forma arbitraria la armonía
@@ -5100,8 +5367,9 @@ function runAnalysis() {
   // de slotChords ya es un subset transportado del set original).
   function buildBassMelodyEventsRandom(progression, meta, slotChords){
     var numBars = progression.length;
-    var bassCells = buildBassRhythmRandom(numBars);
-    var melodyCells = buildMelodyRhythmRandom(numBars);
+    var tripletBars = planTripletBars(numBars);
+    var bassCells = buildBassRhythmRandom(numBars, tripletBars.bass);
+    var melodyCells = buildMelodyRhythmRandom(numBars, tripletBars.melody);
     if (MOREREP.enabled()){
       // MÁS REPETICIÓN: 40% extra de probabilidad, compás a compás, de
       // repetir el patrón rítmico del compás anterior — para bajo y
