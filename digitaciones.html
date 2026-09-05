@@ -388,6 +388,60 @@
   .legend i.ring { background: none; border: 2px solid; box-sizing: border-box; }
   .note-legend { margin-top: -6px; margin-bottom: 22px; row-gap: 6px; }
 
+  .input-toggle {
+    display: flex; justify-content: center; gap: 6px; margin-bottom: 16px;
+  }
+  .toggle-btn {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
+    background: transparent; border: 1px solid var(--border); color: var(--text-muted);
+    padding: 6px 16px; border-radius: 100px; cursor: pointer; transition: 0.15s;
+  }
+  .toggle-btn:hover { color: var(--text); border-color: var(--accent); }
+  .toggle-btn.active { background: var(--accent); color: var(--accent-contrast); border-color: var(--accent); font-weight: 700; }
+
+  .clock-wrap {
+    position: relative; width: 100%; aspect-ratio: 1/1; max-width: 260px; margin: 0 auto 14px;
+  }
+  svg.dial { width: 100%; height: 100%; overflow: visible; }
+  .dial-ring { fill: none; stroke: var(--border); stroke-width: 1.2; }
+  .clock-note { cursor: pointer; transition: transform 0.15s ease; }
+  .clock-note circle.node {
+    fill: var(--surface-2); stroke: var(--border); stroke-width: 1.4;
+    transition: fill 0.18s ease, stroke 0.18s ease;
+  }
+  .clock-note:hover circle.node { stroke: var(--accent); }
+  .clock-note.selected circle.node { fill: var(--accent); stroke: var(--accent); }
+  .clock-note text.pc {
+    font-family: "IBM Plex Mono", monospace; font-size: 12px; fill: var(--text-muted);
+    text-anchor: middle; dominant-baseline: middle; pointer-events: none;
+  }
+  .clock-note.selected text.pc { fill: var(--accent-contrast); font-weight: 700; }
+  .clock-note text.name {
+    font-family: "Fraunces", serif; font-size: 10.5px; fill: var(--text-muted);
+    text-anchor: middle; pointer-events: none;
+  }
+  .clock-note.selected text.name { fill: var(--accent-contrast); }
+
+  .piano-wrap { width: 100%; max-width: 260px; margin: 0 auto 14px; }
+  svg.piano { width: 100%; height: auto; overflow: visible; }
+  .key { cursor: pointer; }
+  .key rect { stroke: var(--border); stroke-width: 1.5; transition: fill 0.15s ease; }
+  .key.white rect { fill: var(--surface); }
+  .key.white:hover rect { fill: var(--surface-2); }
+  .key.white.selected rect { fill: var(--accent); }
+  .key.black rect { fill: var(--text); }
+  .key.black:hover rect { fill: var(--accent); }
+  .key.black.selected rect { fill: var(--accent); }
+  .key text {
+    font-family: "IBM Plex Mono", monospace; font-size: 9px;
+    text-anchor: middle; pointer-events: none;
+  }
+  .key.white text { fill: var(--text-muted); }
+  .key.white.selected text { fill: var(--accent-contrast); font-weight: 700; }
+  .key.black text { fill: var(--bg); }
+  .key.black.selected text { fill: var(--accent-contrast); font-weight: 700; }
+
   .group-head {
     font-family: "IBM Plex Mono", monospace;
     font-size: 11px;
@@ -417,8 +471,23 @@
     <div>
       <div class="panel">
         <h2>Notas del acorde</h2>
-        <p class="hint">Tocá entre 3 y 6 notas. El número debajo de cada una es su pitch class (0–11).</p>
-        <div class="notes-grid" id="notesGrid"></div>
+        <p class="hint">Tocá entre 3 y 6 notas en el reloj o el piano. El número debajo de cada una es su pitch class (0–11).</p>
+        <div class="input-toggle">
+          <button class="toggle-btn active" id="tabClock" type="button">Reloj</button>
+          <button class="toggle-btn" id="tabPiano" type="button">Piano</button>
+        </div>
+        <div class="clock-wrap" id="clockWrap">
+          <svg class="dial" viewBox="0 0 300 300">
+            <circle class="dial-ring" cx="150" cy="150" r="128"/>
+            <g id="notesDial"></g>
+          </svg>
+        </div>
+        <div class="piano-wrap" id="pianoWrap" hidden>
+          <svg class="piano" viewBox="0 0 280 150" preserveAspectRatio="xMidYMid meet">
+            <g id="pianoKeys"></g>
+          </svg>
+        </div>
+        <button class="reset-link" id="clearNotesBtn" type="button">limpiar selección</button>
 
         <div class="field">
           <label for="bassSelect">Bajo (opcional)</label>
@@ -1024,28 +1093,142 @@
   var params = JSON.parse(JSON.stringify(DEFAULT_PARAMS));
   var revealed = { contiguas: 12, abiertas: 12 };
 
-  var notesGrid = document.getElementById("notesGrid");
-  NOTE_NAMES.forEach(function (name, pc) {
-    var btn = document.createElement("button");
-    btn.className = "note-btn";
-    btn.type = "button";
-    btn.innerHTML = name + '<span class="pc">' + pc + '</span>';
-    btn.addEventListener("click", function () {
-      if (selected.has(pc)) selected.delete(pc); else {
-        if (selected.size >= 6) return;
-        selected.add(pc);
-      }
-      syncNoteButtons();
-      syncBassOptions();
-    });
-    notesGrid.appendChild(btn);
-  });
+  // ---- Entrada de notas: reloj cromático + piano (mismo widget que la
+  // primera sección de la página principal), sobre el mismo Set `selected`.
+  var pcElements = {};
+  for (var pcI = 0; pcI < 12; pcI++) pcElements[pcI] = [];
+
+  function toggleNote(pc) {
+    if (selected.has(pc)) selected.delete(pc);
+    else {
+      if (selected.size >= 6) return;
+      selected.add(pc);
+    }
+    var isSelected = selected.has(pc);
+    pcElements[pc].forEach(function (el) { el.classList.toggle("selected", isSelected); });
+    syncBassOptions();
+  }
 
   function syncNoteButtons() {
-    Array.prototype.forEach.call(notesGrid.children, function (btn, pc) {
-      btn.classList.toggle("active", selected.has(pc));
-    });
+    for (var pc = 0; pc < 12; pc++) {
+      var isSelected = selected.has(pc);
+      pcElements[pc].forEach(function (el) { el.classList.toggle("selected", isSelected); });
+    }
   }
+
+  // ---- Reloj cromático ----
+  var notesDial = document.getElementById("notesDial");
+  var CLOCK_R = 128, CLOCK_CX = 150, CLOCK_CY = 150;
+  for (var pcClock = 0; pcClock < 12; pcClock++) {
+    (function (pc) {
+      var angle = (pc / 12) * 2 * Math.PI - Math.PI / 2;
+      var x = CLOCK_CX + CLOCK_R * Math.cos(angle);
+      var y = CLOCK_CY + CLOCK_R * Math.sin(angle);
+      var g = document.createElementNS(svgNS, "g");
+      g.setAttribute("class", "clock-note");
+
+      var circle = document.createElementNS(svgNS, "circle");
+      circle.setAttribute("class", "node");
+      circle.setAttribute("cx", x);
+      circle.setAttribute("cy", y);
+      circle.setAttribute("r", 22);
+      g.appendChild(circle);
+
+      var pcText = document.createElementNS(svgNS, "text");
+      pcText.setAttribute("class", "pc");
+      pcText.setAttribute("x", x);
+      pcText.setAttribute("y", y - 3);
+      pcText.textContent = pc;
+      g.appendChild(pcText);
+
+      var nameText = document.createElementNS(svgNS, "text");
+      nameText.setAttribute("class", "name");
+      nameText.setAttribute("x", x);
+      nameText.setAttribute("y", y + 12);
+      nameText.textContent = NOTE_NAMES[pc];
+      g.appendChild(nameText);
+
+      g.addEventListener("click", function () { toggleNote(pc); });
+      notesDial.appendChild(g);
+      pcElements[pc].push(g);
+    })(pcClock);
+  }
+
+  // ---- Piano (una octava, Do a Si) ----
+  var pianoKeysG = document.getElementById("pianoKeys");
+  var WHITE_PCS = [0, 2, 4, 5, 7, 9, 11];
+  var WHITE_W = 40, WHITE_H = 140;
+  var BLACK_PCS_X = { 1: 28, 3: 68, 6: 148, 8: 188, 10: 228 };
+  var BLACK_W = 24, BLACK_H = 85;
+
+  WHITE_PCS.forEach(function (pc, i) {
+    var x = i * WHITE_W;
+    var key = document.createElementNS(svgNS, "g");
+    key.setAttribute("class", "key white");
+
+    var rect = document.createElementNS(svgNS, "rect");
+    rect.setAttribute("x", x);
+    rect.setAttribute("y", 0);
+    rect.setAttribute("width", WHITE_W);
+    rect.setAttribute("height", WHITE_H);
+    rect.setAttribute("rx", 4);
+    key.appendChild(rect);
+
+    var label = document.createElementNS(svgNS, "text");
+    label.setAttribute("x", x + WHITE_W / 2);
+    label.setAttribute("y", WHITE_H - 12);
+    label.textContent = NOTE_NAMES[pc];
+    key.appendChild(label);
+
+    key.addEventListener("click", function () { toggleNote(pc); });
+    pianoKeysG.appendChild(key);
+    pcElements[pc].push(key);
+  });
+
+  Object.keys(BLACK_PCS_X).forEach(function (pcStr) {
+    var pc = Number(pcStr);
+    var x = BLACK_PCS_X[pcStr];
+    var key = document.createElementNS(svgNS, "g");
+    key.setAttribute("class", "key black");
+
+    var rect = document.createElementNS(svgNS, "rect");
+    rect.setAttribute("x", x);
+    rect.setAttribute("y", 0);
+    rect.setAttribute("width", BLACK_W);
+    rect.setAttribute("height", BLACK_H);
+    rect.setAttribute("rx", 3);
+    key.appendChild(rect);
+
+    var label = document.createElementNS(svgNS, "text");
+    label.setAttribute("x", x + BLACK_W / 2);
+    label.setAttribute("y", BLACK_H - 10);
+    label.textContent = NOTE_NAMES[pc];
+    key.appendChild(label);
+
+    key.addEventListener("click", function () { toggleNote(pc); });
+    pianoKeysG.appendChild(key);
+    pcElements[pc].push(key);
+  });
+
+  // ---- Toggle reloj / piano ----
+  var clockWrapEl = document.getElementById("clockWrap");
+  var pianoWrapEl = document.getElementById("pianoWrap");
+  var tabClock = document.getElementById("tabClock");
+  var tabPiano = document.getElementById("tabPiano");
+  tabClock.addEventListener("click", function () {
+    tabClock.classList.add("active"); tabPiano.classList.remove("active");
+    clockWrapEl.hidden = false; pianoWrapEl.hidden = true;
+  });
+  tabPiano.addEventListener("click", function () {
+    tabPiano.classList.add("active"); tabClock.classList.remove("active");
+    pianoWrapEl.hidden = false; clockWrapEl.hidden = true;
+  });
+
+  document.getElementById("clearNotesBtn").addEventListener("click", function () {
+    selected.clear();
+    syncNoteButtons();
+    syncBassOptions();
+  });
 
   var bassSelect = document.getElementById("bassSelect");
   function syncBassOptions() {

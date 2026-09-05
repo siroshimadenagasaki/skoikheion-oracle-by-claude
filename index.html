@@ -592,7 +592,9 @@
     background:var(--surface);width:210px;transition:border-color .15s,box-shadow .15s;
   }
   .progresion-chord.playing{
-    border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset;
+    border-color:#f4d03f;border-width:2px;padding:11px 13px;
+    background:rgba(244,208,63,.16);
+    box-shadow:0 0 0 2px #f4d03f, 0 0 14px rgba(244,208,63,.55);
   }
   .progresion-detalle{
     font-family:'JetBrains Mono',monospace;font-size:10px;line-height:1.5;
@@ -3211,7 +3213,6 @@ function runAnalysis() {
   var progresionState = { chords: [], tipo: "V-I" };
   var progresionVoices = [];
   var progresionTimer = null;
-  var progresionPerpetualTimers = []; // setTimeouts de "Perpetual change", uno por acorde en curso
   // STEP_DUR = duración de cada acorde en segundos = una redonda (4
   // tiempos) al tempo elegido; lo actualiza el slider de Tempo. Con el
   // default de 120 BPM da 2.0s, el mismo valor fijo que tenía antes.
@@ -3875,46 +3876,8 @@ function runAnalysis() {
     progresionPlayOpenHat(startOffset + OPEN_HAT_STEP * s16 + swing, 0.05);
   }
 
-  // "Perpetual change": re-sortea el acorde en la posición i (mismo
-  // grado, mismo bajo, mismas reglas de categoría de siempre) justo
-  // cuando termina de sonar, para la PRÓXIMA vez que le toque —  así
-  // el loop nunca vuelve a ser exactamente el mismo. Encadena el
-  // voice leading con la voz de la posición anterior (con wraparound:
-  // la posición 0 encadena con la última), igual que hace el sorteo
-  // inicial. No usa avoidKey (no es crítico evitar por casualidad el
-  // mismo set de vez en cuando en un loop que cambia solo).
-  function regenerarAcordeEnPosicion(i) {
-    var pasos = PROGRESIONES[progresionState.tipo] || PROGRESIONES["V-I"];
-    var chords = progresionState.chords;
-    var actual = chords[i];
-    if (!actual) return;
-    var pasoIndex = progresionState.doble ? Math.floor(i / 2) : i;
-    var paso = pasos[pasoIndex];
-    if (!paso) return;
-    var sorteo = sortearCandidato(paso, null);
-    var cand = sorteo.pick;
-    var pcs = cand.rel.map(function (iv) { return mod12(iv + paso.bajo); });
-    var r = analyze(CHORDS_DATA, pcs);
-    var prevIdx = (i - 1 + chords.length) % chords.length;
-    var prev = chords[prevIdx];
-    var prevVoicing = prev ? prev.voicing : null;
-    var prevShape = prev ? prev.shape : null;
-    var voicing = elegirVoicing(pcs, paso.bajo, prevVoicing, prevShape);
-    var shape = classifyShape(voicing);
-    var movimiento = prevVoicing ? voiceLeadingCost(prevVoicing, voicing) : 0;
-    chords[i] = {
-      grado: paso.grado, bajo: paso.bajo, pcs: pcs, rel: cand.rel, r: r,
-      categoria: cand.label, voicing: voicing, shape: shape,
-      movimiento: movimiento, limitado: sorteo.limitado,
-      ocurrencia: actual.ocurrencia, totalOcurrencias: actual.totalOcurrencias
-    };
-    renderProgresion();
-  }
-
   function detenerProgresion() {
     if (progresionTimer) { clearTimeout(progresionTimer); progresionTimer = null; }
-    progresionPerpetualTimers.forEach(function (id) { clearTimeout(id); });
-    progresionPerpetualTimers = [];
     var ctx = getAudioCtx();
     var now = ctx ? ctx.currentTime : 0;
     progresionVoices.forEach(function (v) {
@@ -3968,25 +3931,21 @@ function runAnalysis() {
           card.classList.add("playing");
         }, Math.max(0, t * 1000));
       }
-      // "Perpetual change": justo cuando termina de sonar esta
-      // posición, se re-sortea para la próxima vez que le toque —
-      // así el loop nunca se repite igual.
-      if (progresionPerpetualChange) {
-        var posIdx = i;
-        var tid = setTimeout(function () {
-          regenerarAcordeEnPosicion(posIdx);
-        }, (t + STEP_DUR) * 1000);
-        progresionPerpetualTimers.push(tid);
-      }
     });
     var total = progresionState.chords.length * STEP_DUR;
     // Con Loop prendido (default), al terminar la corrida se vuelve a
-    // reproducir la MISMA progresión desde el primer acorde (no se
-    // regeneran sets nuevos) — se relee progresionLoop recién al
-    // disparar el timeout, así que Detener corta el loop de una, y
-    // tocar Loop mientras suena decide recién en la vuelta siguiente.
+    // reproducir la MISMA progresión desde el primer acorde — salvo que
+    // "Perpetual change" esté prendido, en cuyo caso recién ACÁ, una vez
+    // que terminaron de sonar TODOS los acordes de la corrida (nunca a
+    // mitad de reproducción), se regenera la progresión entera de una
+    // sola vez (un solo refresh de grilla) antes de volver a tocar — se
+    // relee progresionLoop/progresionPerpetualChange recién al disparar
+    // el timeout, así que Detener corta el loop de una, y tocar
+    // Loop/Perpetual change mientras suena decide recién en la vuelta
+    // siguiente.
     progresionTimer = setTimeout(function () {
       if (progresionLoop) {
+        if (progresionPerpetualChange) regenerarProgresion();
         reproducirProgresion();
       } else {
         playBtn.disabled = false;
@@ -4038,12 +3997,14 @@ function runAnalysis() {
     this.setAttribute("aria-pressed", progresionLoop ? "true" : "false");
   });
 
-  // Perpetual change: apagado por defecto. Al prenderlo, cada acorde
-  // se va re-sorteando solo apenas termina de sonar (ver
-  // regenerarAcordeEnPosicion), así el loop nunca vuelve a ser el
-  // mismo — por eso implica Loop prendido (si estaba apagado, se
+  // Perpetual change: prendido por defecto. Con esto activo, recién al
+  // terminar de sonar TODOS los acordes de la corrida (nunca a mitad de
+  // reproducción) se regenera la progresión entera de una sola vez (ver
+  // el final de reproducirProgresion), así el loop nunca vuelve a ser
+  // el mismo — por eso implica Loop prendido (si estaba apagado, se
   // prende junto con este botón). Si ya está sonando, reinicia la
-  // reproducción para que los timers de regeneración se agreguen ya.
+  // corrida actual (el cambio de estado del botón se aplica recién en
+  // el próximo límite de loop).
   document.getElementById("progresionPerpetualBtn").addEventListener("click", function () {
     progresionPerpetualChange = !progresionPerpetualChange;
     this.setAttribute("aria-pressed", progresionPerpetualChange ? "true" : "false");
