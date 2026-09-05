@@ -507,7 +507,7 @@
     font-family:'JetBrains Mono',monospace;font-size:11.5px;letter-spacing:.03em;
     text-transform:none;color:var(--ink);cursor:pointer;
   }
-  .consola-roll-wrap{overflow-x:auto;overflow-y:auto;max-height:480px;scroll-behavior:auto;border:1px solid var(--line);border-radius:10px;}
+  .consola-roll-wrap{overflow-x:auto;overflow-y:auto;max-height:760px;scroll-behavior:auto;border:1px solid var(--line);border-radius:10px;}
   .consola-roll-wrap svg{display:block;}
   .consola-bar-tag{font-family:'JetBrains Mono',monospace;font-size:10px;fill:var(--ink-muted);}
   .consola-row-label{font-family:'JetBrains Mono',monospace;font-size:9.5px;fill:var(--ink-muted);}
@@ -653,6 +653,7 @@
       </div>
       <div class="clock-actions">
         <button class="chip primary" id="playChordBtn" type="button">▶ Acorde</button>
+        <button class="chip" id="composeBtn" type="button" title="Toca el segmento de 12 compases de SetMusicBox con las notas actuales">🎹 Compose</button>
         <button class="chip" id="clearBtn">Limpiar</button>
       </div>
       <div class="examples">
@@ -872,6 +873,7 @@
         <div class="mix-preset-group" id="harmonyPresetGroup" data-mix-group="harmony">
           <span class="mix-preset-label">Armonía</span>
           <button type="button" class="mix-preset-opt active" data-preset="pad">Pad</button>
+          <button type="button" class="mix-preset-opt" data-preset="warmpad">Pad cálido</button>
           <button type="button" class="mix-preset-opt" data-preset="piano">Piano</button>
         </div>
         <div class="mix-preset-group" id="melodyPresetGroup" data-mix-group="melody">
@@ -3104,6 +3106,16 @@ tabPiano.addEventListener("click", () => {
 
 document.getElementById("clearBtn").addEventListener("click", clearNotes);
 document.getElementById("playChordBtn").addEventListener("click", playChord);
+// "Compose": misma función que "► Reproducir" de SetMusicBox — en vez
+// de reimplementar la reproducción acá, dispara un click real sobre el
+// botón de la consola (que ya está siempre sincronizada con las notas
+// del reloj vía regenerateConsola), así hereda gratis su estado
+// disabled/enabled (sin notas, o mientras ya está sonando) y cualquier
+// cambio futuro a esa lógica.
+document.getElementById("composeBtn").addEventListener("click", function(){
+  var btn = document.getElementById("consolaPlayBtn");
+  if(btn && !btn.disabled) btn.click();
+});
 
 // ---- Selector de sintetizador ----
 document.querySelectorAll(".synth-opt").forEach(btn => {
@@ -5491,6 +5503,57 @@ function runAnalysis() {
     voices.push(sub);
   }
 
+  // ---------- audio: sintetizador PAD CÁLIDO (armonía, 2do preset de pad) ----------
+  // Misma estructura que playPadVoice (filtro + envolvente + capa sub),
+  // pero con ondas triangulares en vez de sierra (menos brillo/armónicos
+  // altos), tres voces detuneadas en vez de dos (chorus más denso) y
+  // ataque/cutoff más lentos/oscuros — un color más aterciopelado para
+  // elegir junto a "Pad" en vez de reemplazarlo.
+  function playWarmPadVoice(ctx, dest, midi, startTime, duration, opts){
+    opts = opts || {};
+    var attack = opts.attack != null ? opts.attack : 0.7;
+    var release = opts.release != null ? opts.release : 1.2;
+    var peakGain = opts.peakGain != null ? opts.peakGain : 0.15;
+    var cutoff = opts.cutoff != null ? opts.cutoff : 900;
+    var freq = freqFromMidi(midi);
+
+    var filter = ctx.createBiquadFilter();
+    filter.type = "lowpass";
+    filter.frequency.value = cutoff;
+    filter.Q.value = 0.3;
+
+    var voiceGain = ctx.createGain();
+    voiceGain.gain.setValueAtTime(0, startTime);
+    voiceGain.gain.linearRampToValueAtTime(peakGain, startTime + attack);
+    var sustainEnd = startTime + duration;
+    voiceGain.gain.setValueAtTime(peakGain, sustainEnd);
+    voiceGain.gain.linearRampToValueAtTime(0, sustainEnd + release);
+
+    filter.connect(voiceGain);
+    voiceGain.connect(dest);
+
+    [-9, 0, 9].forEach(function(cents){
+      var osc = ctx.createOscillator();
+      osc.type = "triangle";
+      osc.frequency.value = freq;
+      osc.detune.value = cents;
+      osc.connect(filter);
+      osc.start(startTime);
+      osc.stop(sustainEnd + release + 0.1);
+      voices.push(osc);
+    });
+    var sub = ctx.createOscillator();
+    sub.type = "sine";
+    sub.frequency.value = freq/2;
+    var subGain = ctx.createGain();
+    subGain.gain.value = 0.6;
+    sub.connect(subGain);
+    subGain.connect(filter);
+    sub.start(startTime);
+    sub.stop(sustainEnd + release + 0.1);
+    voices.push(sub);
+  }
+
   // ---------- audio: sintetizador PIANO (armonía, alternativa a Pad) ----------
   function playPianoVoice(ctx, dest, midi, startTime, duration, opts){
     opts = opts || {};
@@ -5918,18 +5981,20 @@ function runAnalysis() {
   function scheduleLoopAt(ctx, dest, loopStartTime, spb){
     // Mini mixer: un canal de ganancia por instrumento (independiente
     // del volumen general) y, para armonía/melodía, qué función de
-    // síntesis usar según el preset elegido (Pad/Piano, Flauta/Saxo).
+    // síntesis usar según el preset elegido (Pad/Pad cálido/Piano,
+    // Flauta/Saxo).
     var gains = ensureInstrumentGains(ctx);
     if(instEnabled("consolaChordChk")){
-      var harmonyIsPiano = mixPresets.harmony === "piano";
-      var chordVoiceFn = harmonyIsPiano ? playPianoVoice : playPadVoice;
+      var HARMONY_VOICE = {
+        pad:     { fn: playPadVoice,     opts: function(dur){ return { attack: Math.min(0.4, dur*0.3),  release: Math.min(0.9, dur*0.45), peakGain:0.14, cutoff:1600 }; } },
+        warmpad: { fn: playWarmPadVoice, opts: function(dur){ return { attack: Math.min(0.7, dur*0.4),  release: Math.min(1.2, dur*0.55), peakGain:0.15, cutoff:900  }; } },
+        piano:   { fn: playPianoVoice,   opts: function(dur){ return { attack: Math.min(0.012, dur*0.06), release: Math.min(0.5, dur*0.5), peakGain:0.22, cutoff:4200 }; } }
+      };
+      var harmonyVoice = HARMONY_VOICE[mixPresets.harmony] || HARMONY_VOICE.pad;
       state.chordEvents.forEach(function(ev){
         var t = loopStartTime + ev.startBeat*spb;
         var dur = ev.durBeats*spb;
-        var opts = harmonyIsPiano
-          ? { attack: Math.min(0.012, dur*0.06), release: Math.min(0.5, dur*0.5), peakGain:0.22, cutoff:4200 }
-          : { attack: Math.min(0.4, dur*0.3), release: Math.min(0.9, dur*0.45), peakGain:0.14, cutoff:1600 };
-        chordVoiceFn(ctx, gains.chord, ev.midi, t, dur*0.93, opts);
+        harmonyVoice.fn(ctx, gains.chord, ev.midi, t, dur*0.93, harmonyVoice.opts(dur));
       });
     }
     if(instEnabled("consolaBassChk")){
