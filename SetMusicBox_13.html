@@ -4519,14 +4519,14 @@ function runAnalysis() {
         var inv = picked.chord.length > 1 ? randomInt(0, picked.chord.length-1) : 0;
         var combo = picked.chord.join(",") + ":" + t + ":" + inv;
         if (combo === prevCombo) continue;
-        var voiced = invertChord(transposeChord(picked.chord, t), inv);
+        var voiced = fitHarmonyRegister(shiftChordOctaveBlock(JAZZ.applyVoicingStyle(invertChord(transposeChord(picked.chord, t), inv))));
         candidates.push({ picked:picked, t:t, inv:inv, combo:combo, voiced:voiced });
       }
       if (!candidates.length){
         var p2 = randomSubsetChord(rootChord);
         var t2 = randomInt(0, 11);
         var inv2 = p2.chord.length > 1 ? randomInt(0, p2.chord.length-1) : 0;
-        var v2 = invertChord(transposeChord(p2.chord, t2), inv2);
+        var v2 = fitHarmonyRegister(shiftChordOctaveBlock(JAZZ.applyVoicingStyle(invertChord(transposeChord(p2.chord, t2), inv2))));
         return { picked:p2, t:t2, inv:inv2, combo:p2.chord.join(",")+":"+t2+":"+inv2, voiced:v2 };
       }
       if (!prevVoiced || !prevVoiced.length){
@@ -4573,6 +4573,41 @@ function runAnalysis() {
   }
   function mod12(n){ return ((n % 12) + 12) % 12; }
   function randomInt(min, max){ return Math.floor(Math.random()*(max-min+1)) + min; }
+
+  /* ------------------------------------------------------------
+     Variedad de registro para la armonía: la disposición de siempre
+     (inversión simple, siempre anclada a BASE_MIDI=60) suena repetitiva
+     porque el acorde nunca se mueve de zona — solo rota QUÉ nota queda
+     abajo, en la misma octava de siempre. Estas dos funciones le dan
+     variedad real de "voicing" (registro variable, entre distintas
+     octavas) sin tocar nunca qué notas suenan:
+       - shiftChordOctaveBlock(v): a veces mueve el acorde ENTERO una
+         octava arriba o abajo (mayormente se queda quieto), como
+         cambiar de zona del teclado de una vuelta a otra — el mismo
+         desplazamiento para TODAS las voces a la vez (nunca una nota
+         suelta), así el orden relativo entre ellas no cambia.
+       - fitHarmonyRegister(v): reacota el resultado (después de
+         cualquier desplazamiento o "drop" de voces) a un registro
+         tocable — moviendo TODO el voicing en bloque, nunca una nota
+         suelta — dejando margen de sobra abajo para el bajo (que suena
+         una octava y media más abajo) y arriba para la melodía (que
+         suena una octava arriba), así la armonía queda siempre
+         confinada entre los dos sin cruzarse con ninguno.
+     ------------------------------------------------------------ */
+  var HARMONY_REG_LOW = 45, HARMONY_REG_HIGH = 84; // A2..C6
+  var HARMONY_OCTAVE_SHIFTS = [0, 0, 0, -12, 12]; // mayormente sin desplazar
+  function shiftChordOctaveBlock(v){
+    var shift = HARMONY_OCTAVE_SHIFTS[randomInt(0, HARMONY_OCTAVE_SHIFTS.length - 1)];
+    return v.map(function(m){ return m + shift; });
+  }
+  function fitHarmonyRegister(v){
+    var arr = v.slice();
+    var guard = 0;
+    while (Math.max.apply(null, arr) > HARMONY_REG_HIGH && guard < 6){ arr = arr.map(function(m){ return m - 12; }); guard++; }
+    guard = 0;
+    while (Math.min.apply(null, arr) < HARMONY_REG_LOW && guard < 6){ arr = arr.map(function(m){ return m + 12; }); guard++; }
+    return arr.sort(function(a,b){ return a - b; });
+  }
 
   /* ------------------------------------------------------------
      Reparto rítmico al azar CON promedio garantizado e intercalado
@@ -4713,9 +4748,17 @@ function runAnalysis() {
   // transposición ni subsets — solo reordenado por inversión (la nota
   // más grave sube una octava), mezcladas al azar entre compases. La
   // inversión es la única operación que se usa, así que nunca puede
-  // aparecer un acorde de otro set de Forte/Solomon.
+  // aparecer un acorde de otro set de Forte/Solomon. Además del orden
+  // (qué nota queda de bajo), el acorde entero puede desplazarse una
+  // octava arriba o abajo de compás en compás (shiftChordOctaveBlock)
+  // para que no suene siempre anclado a la misma zona del teclado —
+  // nunca cambia CUÁL nota es la más grave, así que la etiqueta de
+  // inversión (Fundamental / 1ª inversión / …) sigue siendo exacta.
   function buildProgression(rootChord, invSeq){
-    var progression = invSeq.map(function(inv){ return invertChord(rootChord, inv); });
+    var progression = invSeq.map(function(inv){
+      var v = invertChord(rootChord, inv);
+      return fitHarmonyRegister(shiftChordOctaveBlock(v));
+    });
     var roles = invSeq.map(invLabel);
     return { progression: progression, roles: roles };
   }
@@ -4892,7 +4935,14 @@ function runAnalysis() {
             inv = picked.chord.length > 1 ? randomInt(0, picked.chord.length-1) : 0;
             combo = picked.chord.join(",") + ":" + t + ":" + inv;
           } while(combo === prevCombo);
-          voiced = invertChord(transposeChord(picked.chord, t), inv);
+          // Variedad real de voicing (no solo la inversión que decide qué
+          // nota queda de bajo, sino disposición cerrada/drop2/drop3/
+          // abierta y un posible desplazamiento de octava del acorde
+          // entero) — mismo motor que usa el modo Jazz para esto
+          // (JAZZ.applyVoicingStyle), reacotado siempre a un registro
+          // tocable que deja lugar de sobra para el bajo (abajo) y la
+          // melodía (arriba).
+          voiced = fitHarmonyRegister(shiftChordOctaveBlock(JAZZ.applyVoicingStyle(invertChord(transposeChord(picked.chord, t), inv))));
           strum = false;
         }
         voiced.forEach(function(note, vi){
