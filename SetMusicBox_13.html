@@ -1402,6 +1402,39 @@
       }
     })();
   </script>
+
+  <div class="overlay-card" id="digitacionesCard">
+    <div style="display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;">
+      <h2 style="margin:0;">Digitaciones de Guitarra</h2>
+      <button type="button" class="chip" id="digitacionesToggleBtn" aria-expanded="false" aria-controls="digitacionesCollapse">+ Expandir</button>
+    </div>
+    <div id="digitacionesCollapse" hidden>
+      <p class="overlay-sub">Módulo aparte (su propia página, embebida acá) para calcular digitaciones de guitarra tocables: elegí las notas de un acorde y un bajo opcional, y muestra qué posiciones entran en una ventana de 6 trastes, separadas en cuerdas contiguas y cuerdas abiertas, con un diapasón completo y uno por cada grupo de cuerdas, cada digitación con su color y reproducción de audio.</p>
+      <div id="digitacionesFrameWrap" style="border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#eef1ee;">
+        <iframe id="digitacionesFrame" title="Digitaciones de Guitarra" style="display:block;width:100%;height:1500px;border:0;" loading="lazy"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      var toggleBtn = document.getElementById("digitacionesToggleBtn");
+      var collapse = document.getElementById("digitacionesCollapse");
+      var frame = document.getElementById("digitacionesFrame");
+      if(toggleBtn && collapse){
+        toggleBtn.addEventListener("click", function(){
+          var willExpand = collapse.hidden;
+          collapse.hidden = !willExpand;
+          toggleBtn.textContent = willExpand ? "− Contraer" : "+ Expandir";
+          toggleBtn.setAttribute("aria-expanded", String(willExpand));
+          // Carga el iframe recién al expandir por primera vez.
+          if(willExpand && frame && !frame.getAttribute("src")){
+            frame.setAttribute("src", "digitaciones.html");
+          }
+        });
+      }
+    })();
+  </script>
 </div>
 
 <script>

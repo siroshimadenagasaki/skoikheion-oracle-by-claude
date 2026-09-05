@@ -621,31 +621,6 @@
   .progresion-chip .pc-set{
     font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-muted);margin-top:4px;
   }
-
-  /* ---- Grados en Terceras (apilamiento de terceras sobre el conjunto del reloj) ---- */
-  .gt-row{
-    display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;
-    margin:0 0 18px;
-  }
-  .gt-row .gt-group{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
-  .gt-chord-wrap{position:relative;}
-  .gt-chord-header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:2px;}
-  .gt-chord-play{
-    font-family:'JetBrains Mono',monospace;font-size:10px;background:transparent;
-    border:1px solid var(--line);color:var(--ink-muted);border-radius:100px;
-    padding:3px 9px;cursor:pointer;transition:.15s;flex:none;
-  }
-  .gt-chord-play:hover{border-color:var(--gold-dim);color:var(--ink);}
-  .gt-root-picker{
-    display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:0 0 16px;
-  }
-  .gt-root-btn{
-    font-family:'JetBrains Mono',monospace;font-size:11px;background:transparent;
-    border:1px solid var(--line);color:var(--ink-muted);border-radius:100px;
-    padding:5px 12px;cursor:pointer;transition:.15s;
-  }
-  .gt-root-btn:hover{border-color:var(--gold-dim);color:var(--ink);}
-  .gt-root-btn[aria-pressed="true"]{background:var(--gold);border-color:var(--gold);color:#1a1622;}
 </style>
 </head>
 <body>
@@ -1428,265 +1403,36 @@
     })();
   </script>
 
-  <div class="overlay-card" id="gtCard">
+  <div class="overlay-card" id="digitacionesCard">
     <div style="display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;">
-      <h2 style="margin:0;">Grados en Terceras</h2>
-      <button type="button" class="chip" id="gtToggleBtn" aria-expanded="false" aria-controls="gtCollapse">+ Expandir</button>
+      <h2 style="margin:0;">Digitaciones de Guitarra</h2>
+      <button type="button" class="chip" id="digitacionesToggleBtn" aria-expanded="false" aria-controls="digitacionesCollapse">+ Expandir</button>
     </div>
-    <div id="gtCollapse" hidden>
-      <p class="overlay-sub">Apila en terceras el conjunto elegido arriba (reloj o piano) y analiza cada grado resultante: numeral romano, cifrado y sonido — funciona para cualquier cantidad de notas, no sólo escalas de 7.</p>
-
-      <div class="gt-root-picker" id="gtRootPicker"></div>
-
-      <div class="gt-row">
-        <div class="gt-group" role="group" aria-label="Extensión del acorde">
-          <button type="button" class="chip toggle" data-gt-tamano="3">Tríadas</button>
-          <button type="button" class="chip toggle" data-gt-tamano="4" aria-pressed="true">7mas</button>
-          <button type="button" class="chip toggle" data-gt-tamano="5">9nas</button>
-          <button type="button" class="chip toggle" data-gt-tamano="6">11nas</button>
-          <button type="button" class="chip toggle" data-gt-tamano="7">13nas</button>
-        </div>
-        <button type="button" class="chip primary" id="gtPlayAllBtn">▶ Escuchar todos los grados</button>
-      </div>
-
-      <div class="progresion-grid" id="gtGrid">
-        <div class="overlay-empty">Elegí al menos 3 notas en el reloj o el piano de arriba para apilar un acorde.</div>
+    <div id="digitacionesCollapse" hidden>
+      <p class="overlay-sub">Módulo aparte (su propia página, embebida acá) para calcular digitaciones de guitarra tocables: elegí las notas de un acorde y un bajo opcional, y muestra qué posiciones entran en una ventana de 6 trastes, separadas en cuerdas contiguas y cuerdas abiertas, con un diapasón completo y uno por cada grupo de cuerdas, cada digitación con su color y reproducción de audio.</p>
+      <div id="digitacionesFrameWrap" style="border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#eef1ee;">
+        <iframe id="digitacionesFrame" title="Digitaciones de Guitarra" style="display:block;width:100%;height:1500px;border:0;" loading="lazy"></iframe>
       </div>
     </div>
   </div>
 
   <script>
     (function(){
-      var toggleBtn = document.getElementById("gtToggleBtn");
-      var collapse = document.getElementById("gtCollapse");
-
-      var gtTamano = 4;
-      var gtRootPc = null; // null = automático (primera nota elegida en el reloj/piano)
-
-      var tamanoBtns = Array.prototype.slice.call(document.querySelectorAll('[data-gt-tamano]'));
-      tamanoBtns.forEach(function(b){
-        b.addEventListener("click", function(){
-          tamanoBtns.forEach(function(x){ x.setAttribute("aria-pressed", String(x === b)); });
-          gtTamano = Number(b.getAttribute("data-gt-tamano"));
-          gtRender();
-        });
-      });
-
-      // ---- calidades (mismo motor que el módulo standalone acordes-terceras.mjs) ----
-      var GT_TRIADA = {
-        "4,7":  { sufijo: "",    nombre: "Mayor",      numeral: "mayor" },
-        "3,7":  { sufijo: "m",   nombre: "Menor",      numeral: "menor" },
-        "3,6":  { sufijo: "dim", nombre: "Disminuida", numeral: "disminuida" },
-        "4,8":  { sufijo: "aug", nombre: "Aumentada",  numeral: "aumentada" }
-      };
-      var GT_SEPTIMA = {
-        "4,7,11": { sufijo: "maj7",    nombre: "Mayor, séptima mayor",       numeral: "mayor" },
-        "4,7,10": { sufijo: "7",       nombre: "Dominante (7ma menor)",      numeral: "dominante" },
-        "3,7,10": { sufijo: "m7",      nombre: "Menor, séptima menor",       numeral: "menor" },
-        "3,7,11": { sufijo: "m(maj7)", nombre: "Menor, séptima mayor",       numeral: "menor" },
-        "3,6,10": { sufijo: "m7b5",    nombre: "Semidisminuida",             numeral: "semidisminuida" },
-        "3,6,9":  { sufijo: "dim7",    nombre: "Disminuida, 7ma disminuida", numeral: "disminuida" },
-        "4,8,11": { sufijo: "maj7#5",  nombre: "Aumentada, séptima mayor",   numeral: "aumentada" },
-        "4,8,10": { sufijo: "7#5",     nombre: "Aumentada, séptima menor",   numeral: "aumentada" }
-      };
-      var GT_TENSION_NUM = [9, 11, 13];
-      var GT_TENSION_NAT = [2, 5, 9];
-
-      function gtRoman(n) {
-        var vals = [[10,"X"],[9,"IX"],[5,"V"],[4,"IV"],[1,"I"]];
-        var r = n, out = "";
-        vals.forEach(function(v){ while (r >= v[0]) { out += v[1]; r -= v[0]; } });
-        return out;
-      }
-      function gtNumeral(indice, tipo, total) {
-        var base = gtRoman((indice % total) + 1);
-        var sufijo = "";
-        if (tipo === "menor") base = base.toLowerCase();
-        else if (tipo === "disminuida") { base = base.toLowerCase(); sufijo = "°"; }
-        else if (tipo === "semidisminuida") { base = base.toLowerCase(); sufijo = "ø"; }
-        else if (tipo === "aumentada") sufijo = "+";
-        else if (tipo !== "mayor" && tipo !== "dominante") base += "?";
-        return base + sufijo;
-      }
-      function gtTension(intervaloMod12, indice) {
-        var numero = GT_TENSION_NUM[indice], natural = GT_TENSION_NAT[indice];
-        var dif = intervaloMod12 - natural;
-        while (dif > 6) dif -= 12;
-        while (dif < -6) dif += 12;
-        var signos = { "-2": "bb", "-1": "b", "0": "", "1": "#", "2": "##" };
-        var s = signos[String(dif)];
-        var etiqueta = (s !== undefined ? s : (dif > 0 ? "+" + dif : String(dif))) + numero;
-        return { numero: numero, etiqueta: etiqueta, alterada: dif !== 0 };
-      }
-
-      // NOTA: `selected`, `mod12`, `spellPitchClass`, `spellByDegree`, `pcToFreq`
-      // y `playSynthTone` viven en el <script> principal más abajo en el
-      // documento. Referenciarlos acá adentro de funciones es seguro (closures:
-      // sólo se resuelven cuando la función corre, y para entonces ese script ya
-      // se ejecutó) — nunca los uses a nivel superior de este IIFE.
-
-      function gtEscalaDesdeSeleccion() {
-        var pcs = Array.from(selected);
-        if (pcs.length === 0) return { escala: [], raiz: null, pcs: pcs };
-        var raiz = (gtRootPc !== null && pcs.indexOf(gtRootPc) !== -1) ? gtRootPc : pcs[0];
-        var unicos = Array.from(new Set(pcs.map(mod12)));
-        var escala = unicos
-          .map(function(pc){ return { pc: pc, d: mod12(pc - raiz) }; })
-          .sort(function(a, b){ return a.d - b.d; })
-          .map(function(o){ return o.pc; });
-        return { escala: escala, raiz: raiz, pcs: pcs };
-      }
-
-      function gtApilar(escala, indiceGrado, tamano) {
-        var n = escala.length, notas = [];
-        for (var k = 0; k < tamano; k++) {
-          var posicion = indiceGrado + 2 * k;
-          var octava = Math.floor(posicion / n);
-          notas.push({ pc: escala[posicion % n], octava: octava });
-        }
-        return notas;
-      }
-
-      function gtAnalizar(notas, indiceGrado, totalGrados) {
-        var raizAbs = notas[0].pc + 12 * notas[0].octava;
-        var intervalosCompuestos = notas.slice(1).map(function(n){ return (n.pc + 12 * n.octava) - raizAbs; });
-        var intervalos = intervalosCompuestos.map(function(d){ return mod12(d); });
-
-        var esTriada = notas.length === 3;
-        var claveBase = (esTriada ? intervalos : intervalos.slice(0, 3)).join(",");
-        var tabla = esTriada ? GT_TRIADA : GT_SEPTIMA;
-        var calidad = tabla[claveBase] || { sufijo: "(" + claveBase + ")", nombre: "Estructura no tertiana estándar", numeral: "desconocida" };
-
-        var rootLetter = spellPitchClass(notas[0].pc).charAt(0);
-        var nombres = notas.map(function(n, k){ return spellByDegree(rootLetter, n.pc, 2 * k + 1); });
-
-        var sufijoFinal = calidad.sufijo, nombreCalidad = calidad.nombre;
-        if (!esTriada && notas.length > 4) {
-          var tensiones = intervalosCompuestos.slice(3);
-          if (totalGrados === 7) {
-            var etiquetas = tensiones.map(function(d, idx){ return gtTension(mod12(d), idx); });
-            var masAlta = etiquetas[etiquetas.length - 1];
-            var todasNaturales = etiquetas.every(function(e){ return !e.alterada; });
-            sufijoFinal = (todasNaturales && calidad.sufijo.indexOf("7") !== -1)
-              ? calidad.sufijo.replace("7", String(masAlta.numero))
-              : calidad.sufijo + "(" + etiquetas.map(function(e){ return e.etiqueta; }).join(",") + ")";
-            nombreCalidad = calidad.nombre + " · extendido a " + masAlta.numero + "na" + (todasNaturales ? "" : ", con alteración");
-          } else {
-            sufijoFinal = calidad.sufijo + "(" + tensiones.map(function(d){ return (d >= 0 ? "+" + d : String(d)); }).join(",") + ")";
-            nombreCalidad = calidad.nombre + " · " + tensiones.length + " tensión(es) agregada(s) (intervalo compuesto en semitonos)";
-          }
-        }
-
-        return {
-          grado: indiceGrado + 1,
-          numeral: gtNumeral(indiceGrado, calidad.numeral, totalGrados),
-          simbolo: nombres[0] + sufijoFinal,
-          nombreCalidad: nombreCalidad,
-          notas: notas,
-          nombres: nombres
-        };
-      }
-
-      function gtReproducir(notas) {
-        notas.forEach(function(n, i) {
-          setTimeout(function(){
-            playSynthTone(pcToFreq(n.pc, 3 + n.octava), { duration: 1.5, gain: 0.13 });
-          }, i * 15);
-        });
-      }
-
-      function gtRenderRootPicker(pcs, raiz) {
-        var picker = document.getElementById("gtRootPicker");
-        picker.innerHTML = "";
-        if (pcs.length < 2) return;
-        var label = document.createElement("span");
-        label.className = "progresion-switch-label";
-        label.textContent = "Tónica: ";
-        picker.appendChild(label);
-        pcs.forEach(function(pc){
-          var b = document.createElement("button");
-          b.type = "button";
-          b.className = "gt-root-btn";
-          b.textContent = spellPitchClass(pc);
-          b.setAttribute("aria-pressed", String(pc === raiz));
-          b.addEventListener("click", function(){
-            gtRootPc = pc;
-            gtRender();
-          });
-          picker.appendChild(b);
-        });
-      }
-
-      function gtRender() {
-        if (!collapse || collapse.hidden) return; // no calcular nada si está oculto
-        var grid = document.getElementById("gtGrid");
-        var datos = gtEscalaDesdeSeleccion();
-        gtRenderRootPicker(datos.pcs, datos.raiz);
-
-        if (datos.escala.length < 3) {
-          grid.innerHTML = '<div class="overlay-empty">Elegí al menos 3 notas en el reloj o el piano de arriba para apilar un acorde.</div>';
-          return;
-        }
-
-        var n = datos.escala.length;
-        var grados = [];
-        for (var i = 0; i < n; i++) grados.push(gtAnalizar(gtApilar(datos.escala, i, gtTamano), i, n));
-
-        grid.innerHTML = "";
-        grados.forEach(function(g){
-          var card = document.createElement("div");
-          card.className = "progresion-chord";
-          card.innerHTML =
-            '<div class="progresion-chip">' +
-              '<div class="gt-chord-header">' +
-                '<span class="pc-grado"><b>' + g.numeral + '</b></span>' +
-                '<button type="button" class="gt-chord-play">&#9654;</button>' +
-              '</div>' +
-              '<div class="pc-notas">' + g.simbolo + '</div>' +
-              '<div class="pc-set">' + g.nombreCalidad + '</div>' +
-              '<div class="pc-set">' + g.nombres.join(" · ") + '</div>' +
-            '</div>';
-          card.querySelector(".gt-chord-play").addEventListener("click", function(){
-            card.classList.add("playing");
-            gtReproducir(g.notas);
-            setTimeout(function(){ card.classList.remove("playing"); }, 1200);
-          });
-          grid.appendChild(card);
-        });
-      }
-
-      var playAllBtn = document.getElementById("gtPlayAllBtn");
-      if (playAllBtn) {
-        playAllBtn.addEventListener("click", function(){
-          var datos = gtEscalaDesdeSeleccion();
-          if (datos.escala.length < 3) return;
-          var n = datos.escala.length;
-          var tarjetas = Array.prototype.slice.call(document.getElementById("gtGrid").children);
-          var t = 0;
-          var _loop = function(i){
-            var g = gtAnalizar(gtApilar(datos.escala, i, gtTamano), i, n);
-            setTimeout(function(){
-              tarjetas.forEach(function(el){ el.classList.remove("playing"); });
-              if (tarjetas[i]) tarjetas[i].classList.add("playing");
-              gtReproducir(g.notas);
-            }, t * 1000);
-          };
-          for (var i = 0; i < n; i++) { _loop(i); t += 0.85; }
-          setTimeout(function(){ tarjetas.forEach(function(el){ el.classList.remove("playing"); }); }, (t + 0.5) * 1000);
-        });
-      }
-
-      if (toggleBtn && collapse) {
+      var toggleBtn = document.getElementById("digitacionesToggleBtn");
+      var collapse = document.getElementById("digitacionesCollapse");
+      var frame = document.getElementById("digitacionesFrame");
+      if(toggleBtn && collapse){
         toggleBtn.addEventListener("click", function(){
           var willExpand = collapse.hidden;
           collapse.hidden = !willExpand;
           toggleBtn.textContent = willExpand ? "− Contraer" : "+ Expandir";
           toggleBtn.setAttribute("aria-expanded", String(willExpand));
-          if (willExpand) gtRender();
+          // Carga el iframe recién al expandir por primera vez.
+          if(willExpand && frame && !frame.getAttribute("src")){
+            frame.setAttribute("src", "digitaciones.html");
+          }
         });
       }
-
-      window.regenerateGradosTerceras = gtRender;
     })();
   </script>
 </div>
@@ -3376,7 +3122,6 @@ document.querySelectorAll("[data-ex]").forEach(btn => {
 
 function runAnalysis() {
   if (typeof window.regenerateConsola === "function") window.regenerateConsola();
-  if (typeof window.regenerateGradosTerceras === "function") window.regenerateGradosTerceras();
   const pcs = Array.from(selected);
   const results = document.getElementById("results");
   const statusEl = document.getElementById("status");
