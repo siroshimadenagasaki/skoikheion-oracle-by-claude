@@ -698,6 +698,8 @@
   <button data-target="diapasonSection" title="Ir a Diapasón">Diapasón</button>
   <button data-target="cifradoSection" title="Ir a Generador de Cifrado">Generador de Cifrado</button>
   <button data-target="superposicionSection" title="Ir a Superposición cromática">Superposición cromática</button>
+  <button data-target="modesCard" title="Ir a Modos del set">Modos del set</button>
+  <button data-target="digitacionesCard" title="Ir a Digitaciones de Guitarra">Digitaciones de Guitarra</button>
   <button data-target="consolaCard" title="Ir a SetMusicBox">SetMusicBox</button>
   <button data-target="progresionCard" title="Ir a Progresiones">Progresiones aleatorio</button>
   <button data-target="anexo1" title="Ir a Tabla de Sets">Anexo 1 · Tabla</button>
@@ -875,6 +877,91 @@
       <div class="overlay-groups" id="overlayGroups"></div>
     </div>
   </div>
+
+  <div class="overlay-card" id="modesCard">
+    <div style="display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;">
+      <h2 style="margin:0;">Modos del set</h2>
+      <button type="button" class="chip" id="modesToggleBtn" aria-expanded="false" aria-controls="modesCollapse">+ Expandir</button>
+    </div>
+    <div id="modesCollapse" hidden>
+      <p class="overlay-sub" id="modesSub">Igual que la Superposición cromática (tónica siempre fija en C), pero sin cromatismo: solo se usan como tónica los grados que ya están en el propio conjunto — un set de 7 notas da 7 modos, uno de 4 notas da 4.</p>
+      <div class="overlay-scroll">
+        <table class="overlay-table" id="modesTable" hidden>
+          <thead>
+            <tr>
+              <th>Modo</th>
+              <th>Grado</th>
+              <th>Notas sobre C</th>
+              <th>Cifrado</th>
+              <th>Categoría</th>
+              <th>Híbridos</th>
+              <th>Conjunto</th>
+              <th>Forte</th>
+              <th>Solomon</th>
+            </tr>
+          </thead>
+          <tbody id="modesBody"></tbody>
+        </table>
+        <div class="overlay-empty" id="modesEmpty">Elegí un conjunto (2+ notas) arriba para generar sus modos.</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      var toggleBtn = document.getElementById("modesToggleBtn");
+      var collapse = document.getElementById("modesCollapse");
+      if(toggleBtn && collapse){
+        toggleBtn.addEventListener("click", function(){
+          var willExpand = collapse.hidden;
+          collapse.hidden = !willExpand;
+          toggleBtn.textContent = willExpand ? "− Contraer" : "+ Expandir";
+          toggleBtn.setAttribute("aria-expanded", String(willExpand));
+        });
+      }
+    })();
+  </script>
+
+  <div class="overlay-card" id="digitacionesCard">
+    <div style="display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;">
+      <h2 style="margin:0;">Digitaciones de Guitarra</h2>
+      <button type="button" class="chip" id="digitacionesToggleBtn" aria-expanded="false" aria-controls="digitacionesCollapse">+ Expandir</button>
+    </div>
+    <div id="digitacionesCollapse" hidden>
+      <p class="overlay-sub">Módulo aparte (su propia página, embebida acá) para calcular digitaciones de guitarra tocables: elegí las notas de un acorde y un bajo opcional, y muestra qué posiciones entran en una ventana de 6 trastes, separadas en cuerdas contiguas y cuerdas abiertas, con un diapasón completo y uno por cada grupo de cuerdas — de cuerdas contiguas primero, y más abajo uno por cada grupo de cuerdas abiertas — cada digitación con su color y reproducción de audio.</p>
+      <div id="digitacionesFrameWrap" style="border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#eef1ee;">
+        <iframe id="digitacionesFrame" title="Digitaciones de Guitarra" style="display:block;width:100%;height:1500px;border:0;" loading="lazy"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      var toggleBtn = document.getElementById("digitacionesToggleBtn");
+      var collapse = document.getElementById("digitacionesCollapse");
+      var frame = document.getElementById("digitacionesFrame");
+      if(toggleBtn && collapse){
+        toggleBtn.addEventListener("click", function(){
+          var willExpand = collapse.hidden;
+          collapse.hidden = !willExpand;
+          toggleBtn.textContent = willExpand ? "− Contraer" : "+ Expandir";
+          toggleBtn.setAttribute("aria-expanded", String(willExpand));
+          // Carga el iframe recién al expandir por primera vez y, apenas
+          // termina de cargar, le manda las notas que ya estén elegidas
+          // en el reloj/piano de arriba (el reloj como método de entrada
+          // también para este módulo).
+          if(willExpand && frame && !frame.getAttribute("src")){
+            frame.addEventListener("load", function(){
+              if (typeof window.syncDigitacionesFrame === "function" && typeof selected !== "undefined") {
+                window.syncDigitacionesFrame(Array.from(selected));
+              }
+            });
+            frame.setAttribute("src", "digitaciones.html");
+          }
+        });
+      }
+    })();
+  </script>
 
   <div class="status" id="status">Listo · 344 clases Forte-Solomon cargadas · elegí notas en el reloj</div>
 
@@ -3121,6 +3208,106 @@ function renderSuperposicion(baseAnalysis) {
 }
 
 /* ============================================================
+   MODOS DEL SET
+   Igual criterio que la Superposición cromática (cada fila
+   recalcula el conjunto siempre en relación a la tónica fija C,
+   sobre el a_form estructural, no sobre las notas reales elegidas),
+   pero SIN desplazamientos cromáticos: en vez de barrer los 12
+   semitonos, solo se usan como tónica los grados que ya están
+   presentes en el propio conjunto — un set de 7 notas da 7 modos,
+   uno de 4 notas da 4. Cada modo se numera 1..N en el orden de sus
+   grados de origen (modo 1 = el propio conjunto sin rotar).
+   ============================================================ */
+function generarModosDelSet(chordsData, baseEstructural) {
+  const gradosBase = Array.from(new Set(baseEstructural.map(mod12))).sort((a, b) => a - b);
+  const filas = [];
+  gradosBase.forEach((gradoOrigen, idx) => {
+    const n = mod12(-gradoOrigen);
+    const transportado = baseEstructural.map(iv => mod12(iv + n)).sort((a, b) => a - b);
+    const contexto = new Set(transportado);
+    const notasTexto = transportado.map(iv => spellDegree(iv, contexto)).join(" ");
+    const r = analyze(chordsData, transportado);
+    const hibrido = buscarHibridoEnUniverso(r.input);
+    const categoria = categoriasParaConjunto(r.input);
+    filas.push({
+      modo: idx + 1,
+      gradoOrigen,
+      gradoLabel: ROMAN_DEGREES[gradoOrigen],
+      notas: notasTexto,
+      conjunto: r.input,
+      forte_code: r.forte_code,
+      forte_name: r.forte_name,
+      solomon_code: r.solomon_code,
+      solomon_name: r.solomon_name,
+      cifrado: cifradoParaConjunto(transportado),
+      hibrido,
+      categoria,
+    });
+  });
+  return filas;
+}
+
+function renderModosDelSet(baseAnalysis) {
+  const table = document.getElementById("modesTable");
+  const empty = document.getElementById("modesEmpty");
+  const body = document.getElementById("modesBody");
+  const sub = document.getElementById("modesSub");
+  if (!table || !empty || !body || !sub) return;
+
+  if (!baseAnalysis || baseAnalysis.input.length < 2) {
+    table.hidden = true;
+    empty.hidden = false;
+    empty.textContent = "Elegí un conjunto (2+ notas) arriba para generar sus modos.";
+    return;
+  }
+
+  const baseEstructural = baseAnalysis.a_form;
+  const filas = generarModosDelSet(CHORDS_DATA, baseEstructural);
+  const n = filas.length;
+
+  sub.textContent = `Base: [${baseAnalysis.a_form.join(", ")}]` +
+    (baseAnalysis.solomon_name ? ` · ${baseAnalysis.solomon_name}` : "") +
+    ` — ${n} nota${n === 1 ? "" : "s"} en el set → ${n} modo${n === 1 ? "" : "s"} (uno por cada grado propio, tónica siempre fija en C, sin transposiciones cromáticas ajenas al conjunto).`;
+
+  body.innerHTML = filas.map(f => `
+    <tr class="${f.modo === 1 ? "tonica" : ""}">
+      <td class="grado">${f.modo}</td>
+      <td class="grado">${f.gradoLabel}</td>
+      <td class="notas">${f.notas}</td>
+      <td class="cifrado"><span class="cifrado-acorde mono">${f.cifrado.html}</span></td>
+      <td class="categoria">${f.categoria ?? "—"}</td>
+      <td class="hibrido">${f.hibrido ?? "—"}</td>
+      <td class="set">[${f.conjunto.join(", ")}]</td>
+      <td class="forte">${f.forte_code ?? "—"}</td>
+      <td class="forte">${f.solomon_code ?? "—"}${f.solomon_name ? ` · ${f.solomon_name}` : ""}</td>
+    </tr>
+  `).join("");
+
+  table.hidden = false;
+  empty.hidden = true;
+}
+
+/* ============================================================
+   DIGITACIONES DE GUITARRA
+   Vive en su propio documento (digitaciones.html, embebido acá en
+   un iframe) — la sincronización con el reloj/piano de esta página
+   va por postMessage: cada cambio de selección le manda el conjunto
+   de notas actual (sin disparar el cálculo solo; hay que apretar
+   «Calcular digitaciones» igual que siempre). Si el iframe todavía
+   no cargó (el módulo sigue colapsado, nunca se le puso src) esto no
+   hace nada — al expandirlo por primera vez, su propio listener
+   "load" pide el estado actual una vez (ver el <script> de la tarjeta
+   más arriba).
+   ============================================================ */
+function syncDigitacionesFrame(pcs) {
+  const frame = document.getElementById("digitacionesFrame");
+  if (!frame || !frame.getAttribute("src") || !frame.contentWindow) return;
+  try {
+    frame.contentWindow.postMessage({ type: "stoikheion-notes", pcs: pcs }, window.location.origin);
+  } catch (e) {}
+}
+
+/* ============================================================
    SUBCONJUNTOS Y SUPERCONJUNTOS
    Para el conjunto elegido (cardinalidad n), calcula:
    - Subconjuntos: quitando notas del propio conjunto elegido, para
@@ -3767,15 +3954,17 @@ function runAnalysis() {
 
   // Reloj/piano como método de entrada, además de lo suyo, para el
   // Generador de Cifrado (reclama el control si el analizador de grados
-  // lo había pausado).
+  // lo había pausado) y para Digitaciones de Guitarra.
   if (typeof window.__cifradoRelinkClock === "function") window.__cifradoRelinkClock();
   if (typeof window.__cifradoOnClockNotes === "function") window.__cifradoOnClockNotes(pcs);
+  syncDigitacionesFrame(pcs);
 
   const results = document.getElementById("results");
   const statusEl = document.getElementById("status");
   if (pcs.length < 2) {
     results.innerHTML = '<div class="empty-state">Elegí al menos 2 notas para calcular un conjunto.</div>';
     renderSuperposicion(null);
+    renderModosDelSet(null);
     renderSubSuper(null);
     return;
   }
@@ -3839,6 +4028,7 @@ function runAnalysis() {
     statusEl.classList.remove("err");
     statusEl.textContent = `Listo · ${CHORDS_DATA.length} clases Forte-Solomon cargadas · elegí notas en el reloj`;
     renderSuperposicion(r);
+    renderModosDelSet(r);
     renderSubSuper(r);
   } catch (err) {
     console.error(err);
@@ -3846,6 +4036,7 @@ function runAnalysis() {
     statusEl.classList.add("err");
     statusEl.textContent = "Error: " + (err && err.message ? err.message : err);
     renderSuperposicion(null);
+    renderModosDelSet(null);
     renderSubSuper(null);
   }
 }
