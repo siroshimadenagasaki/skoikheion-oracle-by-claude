@@ -334,6 +334,14 @@
     display:flex;align-items:center;justify-content:center;
   }
   .cifrado-toggle:hover{border-color:var(--gold);background:var(--gold);color:#1a1622;}
+  .cifrado-fs-btn{
+    position:absolute;top:56px;right:18px;
+    font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.05em;
+    background:var(--surface-2);border:1px solid var(--line);color:var(--gold);
+    border-radius:8px;cursor:pointer;transition:.15s;padding:6px 10px;
+    display:flex;align-items:center;gap:4px;white-space:nowrap;
+  }
+  .cifrado-fs-btn:hover{border-color:var(--gold);background:var(--gold);color:#1a1622;}
   .cifrado-grados-box{
     margin-bottom:16px;padding:14px 16px;background:var(--surface-2);
     border:1px solid var(--line);border-radius:14px;
@@ -689,6 +697,30 @@
   .collapsible-content{transition:max-height .25s ease, opacity .25s ease;overflow:hidden;}
   .collapsible-content.collapsed{max-height:0;opacity:0;}
   .collapsible-content.expanded{max-height:2000px;opacity:1;}
+
+  /* ---- Full screen por tarjeta ---- */
+  button.chip.fullscreen-btn{white-space:nowrap;}
+  body.fs-lock{overflow:hidden;}
+  .module-fs-toggle{
+    position:absolute;top:16px;right:52px;
+    font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.05em;
+    background:var(--surface-2);border:1px solid var(--line);color:var(--gold);
+    border-radius:8px;cursor:pointer;transition:.15s;padding:6px 10px;
+    display:flex;align-items:center;gap:4px;white-space:nowrap;
+  }
+  .module-fs-toggle:hover{border-color:var(--gold);background:var(--gold);color:#1a1622;}
+  .fs-active{
+    position:fixed !important;
+    top:0 !important;left:0 !important;right:0 !important;bottom:0 !important;
+    width:100vw !important;height:100vh !important;
+    max-width:none !important;margin:0 !important;
+    z-index:9999;
+    overflow-y:auto;overflow-x:hidden;
+    border-radius:0 !important;
+    background:var(--bg);
+    padding:28px 24px 48px !important;
+    box-sizing:border-box;
+  }
 </style>
 </head>
 <body>
@@ -737,6 +769,7 @@
       </div>
       <div class="clock-actions">
         <button class="chip primary" id="playChordBtn" type="button">▶ Acorde</button>
+        <button class="chip" id="composeBtn" type="button" title="Toca el segmento de 12 compases de SetMusicBox con las notas actuales">🎹 Compose</button>
         <button class="chip" id="clearBtn">Limpiar</button>
       </div>
       <div class="examples">
@@ -750,6 +783,7 @@
 
     <div class="fretboard-card collapsible-card" id="diapasonSection">
       <button class="module-toggle" aria-expanded="false" aria-controls="diapasonContent" onclick="toggleModule(this)"></button>
+      <button type="button" class="module-fs-toggle fullscreen-btn" data-fs-card="diapasonSection" title="Pantalla completa">⛶ Full screen</button>
       <h2>Diapasón</h2>
       <div class="collapsible-content collapsed" id="diapasonContent">
         <div class="fretboard-wrap">
@@ -769,6 +803,7 @@
 
   <div class="cifrado-card" id="cifradoSection">
     <button type="button" class="cifrado-toggle" id="cifToggle" aria-expanded="false" aria-controls="cifBody" title="Mostrar el generador">+</button>
+    <button type="button" class="cifrado-fs-btn fullscreen-btn" data-fs-card="cifradoSection" title="Pantalla completa">⛶ Full screen</button>
     <h2>Generador de Cifrado de Acordes</h2>
     <p class="cifrado-sub">Notación anglosajona (cifrado americano) — analizá grados o armá el cifrado a mano, con los símbolos que no están en el teclado: Δ ø ° + ♭ ♯ ♮.</p>
 
@@ -852,6 +887,7 @@
 
   <div class="overlay-card collapsible-card" id="superposicionSection">
     <button class="module-toggle" aria-expanded="false" aria-controls="superposicionContent" onclick="toggleModule(this)"></button>
+    <button type="button" class="module-fs-toggle fullscreen-btn" data-fs-card="superposicionSection" title="Pantalla completa">⛶ Full screen</button>
     <h2>Superposición cromática sobre tónica inmóvil</h2>
     <div class="collapsible-content collapsed" id="superposicionContent">
       <p class="overlay-sub" id="overlaySub">Cada grado desplaza cromáticamente el conjunto elegido; las notas se recalculan siempre en relación a la tónica fija C.</p>
@@ -882,6 +918,7 @@
     <div style="display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;">
       <h2 style="margin:0;">Modos del set</h2>
       <button type="button" class="chip" id="modesToggleBtn" aria-expanded="false" aria-controls="modesCollapse">+ Expandir</button>
+      <button type="button" class="chip fullscreen-btn" data-fs-card="modesCard" title="Pantalla completa">⛶ Full screen</button>
     </div>
     <div id="modesCollapse" hidden>
       <p class="overlay-sub" id="modesSub">Igual que la Superposición cromática (tónica siempre fija en C), pero sin cromatismo: solo se usan como tónica los grados que ya están en el propio conjunto — un set de 7 notas da 7 modos, uno de 4 notas da 4.</p>
@@ -926,6 +963,7 @@
     <div style="display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;">
       <h2 style="margin:0;">Digitaciones de Guitarra</h2>
       <button type="button" class="chip" id="digitacionesToggleBtn" aria-expanded="false" aria-controls="digitacionesCollapse">+ Expandir</button>
+      <button type="button" class="chip fullscreen-btn" data-fs-card="digitacionesCard" title="Pantalla completa">⛶ Full screen</button>
     </div>
     <div id="digitacionesCollapse" hidden>
       <p class="overlay-sub">Módulo aparte (su propia página, embebida acá) para calcular digitaciones de guitarra tocables: elegí las notas de un acorde y un bajo opcional, y muestra qué posiciones entran en una ventana de 6 trastes, separadas en cuerdas contiguas y cuerdas abiertas, con un diapasón completo y uno por cada grupo de cuerdas — de cuerdas contiguas primero, y más abajo uno por cada grupo de cuerdas abiertas — cada digitación con su color y reproducción de audio.</p>
@@ -970,6 +1008,7 @@
 
   <div class="overlay-card consola-card collapsible-card" id="consolaCard">
     <button class="module-toggle" aria-expanded="false" aria-controls="consolaContent" onclick="toggleModule(this)"></button>
+    <button type="button" class="module-fs-toggle fullscreen-btn" data-fs-card="consolaCard" title="Pantalla completa">⛶ Full screen</button>
     <h2>SetMusicBox · Segmento en loop</h2>
     <div class="collapsible-content collapsed" id="consolaContent">
     <p class="consola-status">Con las notas que elegiste arriba (reloj o piano) arma un segmento de 12 compases en loop, siempre dentro del mismo set de Solomon exacto: por defecto, variación libre y al azar — el acorde cambia de subset, transposición cromática E inversión, con ritmo armónico también variable (a veces sostenido el compás entero, a veces partido varias veces); tocá &#8634; Normalito para volver a la versión simple (el set completo, sin transposición, una sola inversión por compás). El bajo y la batería también varían su ritmo al azar de compás en compás; la melodía toca únicamente notas del acorde que está sonando en ese instante, más un fill de notas muy cortas (10 por compás, arpegiado en vez de al azar) en el 30% de los compases, y además queda en silencio ~20% del tiempo (repartido parejo, no de a racha). En los tres — armonía, bajo y melodía — y en la batería, los compases movidos y los quietos se reparten intercalados a lo largo del segmento (nunca varios seguidos del mismo tipo por casualidad), manteniendo siempre el mismo promedio general. Armonía en pad, bajo con sintetizador de bajo dedicado, melodía con timbre de flauta — y una batería genérica (botón &#129345; Batería). Cada instrumento tiene su propio interruptor para silenciarlo sin cambiar nada más, y el rollo de abajo muestra un teclado de piano (blancas/negras) al costado para ver qué nota es cada fila, con scroll automático que sigue al cabezal mientras suena.</p>
@@ -1066,6 +1105,7 @@
 
   <div class="overlay-card progresion-card collapsible-card" id="progresionCard">
     <button class="module-toggle" aria-expanded="false" aria-controls="progresionContent" onclick="toggleModule(this)"></button>
+    <button type="button" class="module-fs-toggle fullscreen-btn" data-fs-card="progresionCard" title="Pantalla completa">⛶ Full screen</button>
     <h2>Generador de progresiones aleatorio</h2>
     <div class="collapsible-content collapsed" id="progresionContent">
     <p class="consola-status">Arma al azar una de las seis progresiones, respetando el grado y el bajo fijo de cada acorde. <b>V</b> / <b>VI</b> siempre con bajo en G / A, <b>I</b> / <b>Im</b> con bajo en C, <b>II</b> / <b>IIø</b> / <b>VIø</b> con bajo en D / D / A. Para cada grado se sortea un set de la Tabla de Sets (Anexo 1 &middot; las clases Forte/Solomon, en cualquiera de sus rotaciones, filtradas por el switch de cantidad de notas) que cumpla <em>únicamente</em> las categorías admitidas para ese grado: V / VI &rarr; Mayor alt, Jónica/Lidia (no3), Dominante, Alterada y/o Frigia &middot; I &rarr; Mayor, Frigia (no3), Frigia (3) &middot; Im &rarr; Menor, Frigia (no3), Frigia (3b) &middot; II &rarr; Menor, Dominante &middot; IIø / VIø &rarr; Locria, Menor, Dominante. La categoría se evalúa siempre desde el bajo, como pide la tabla. Los acordes se realizan como voicings reales — mismo criterio que el Voicing Explorer y el modo &#127927; Jazz: registro tocable, disposición cerrada / abierta / extendida y, entre un acorde y el siguiente, la que menos mueve las voces — pero <b>sin invertir</b>: el bajo del grado siempre queda como nota más grave. Arriba de cada acorde se muestra el detalle completo del set elegido. &#128256; Regenerar sortea sets nuevos; &#9658; Reproducir toca la progresión en orden.</p>
@@ -1109,6 +1149,7 @@
     <div style="display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;">
       <h2 style="margin:0;">Anexo 1 &middot; Tabla de Sets</h2>
       <button type="button" class="chip" id="anexo1ToggleBtn" aria-expanded="false" aria-controls="anexo1Collapse">+ Expandir</button>
+      <button type="button" class="chip fullscreen-btn" data-fs-card="anexo1" title="Pantalla completa">⛶ Full screen</button>
     </div>
     <div id="anexo1Collapse" hidden>
     <p class="overlay-sub">Referencia completa de las 352 clases de conjuntos de alturas (0 a 12 notas), Forte&ndash;Solomon &mdash; transcripta de "Elementos musicales", Sergio Terebeiko.</p>
@@ -1522,6 +1563,7 @@
     <div style="display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;">
       <h2 style="margin:0;">Subconjuntos y Superconjuntos</h2>
       <button type="button" class="chip" id="subsupToggleBtn" aria-expanded="false" aria-controls="subsupCollapse">+ Expandir</button>
+      <button type="button" class="chip fullscreen-btn" data-fs-card="subsupCard" title="Pantalla completa">⛶ Full screen</button>
     </div>
     <div id="subsupCollapse" hidden>
       <p class="overlay-sub" id="subsupSub">Todo conjunto que cabe adentro del elegido (subconjuntos, quitando notas) y todo conjunto que lo contiene (superconjuntos, agregando notas del resto del universo cromático), agrupados por cantidad de notas — con su nombre Forte/Solomon tomado de la misma tabla de 344 clases.</p>
@@ -1550,6 +1592,7 @@
     <div style="display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;">
       <h2 style="margin:0;">Voicing Explorer</h2>
       <button type="button" class="chip" id="voicingExplorerToggleBtn" aria-expanded="false" aria-controls="voicingExplorerCollapse">+ Expandir</button>
+      <button type="button" class="chip fullscreen-btn" data-fs-card="voicingExplorerCard" title="Pantalla completa">⛶ Full screen</button>
     </div>
     <div id="voicingExplorerCollapse" hidden>
       <p class="overlay-sub">Módulo aparte (su propia página, embebida acá) para explorar voicings de piano — todas las disposiciones de octava y doblados dentro de un rango, drop 2/3, y una cadena de transposición con conducción de voces — de cualquier conjunto de intervalos, sin depender de armonía funcional. Los mismos criterios (variedad de disposición + conducción de voces suave) alimentan al modo &#127927; Jazz del SetMusicBox de más arriba.</p>
@@ -1585,6 +1628,7 @@
     <div style="display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;">
       <h2 style="margin:0;">Grados en Terceras</h2>
       <button type="button" class="chip" id="gtToggleBtn" aria-expanded="false" aria-controls="gtCollapse">+ Expandir</button>
+      <button type="button" class="chip fullscreen-btn" data-fs-card="gtCard" title="Pantalla completa">⛶ Full screen</button>
     </div>
     <div id="gtCollapse" hidden>
       <p class="overlay-sub">Apila en terceras el conjunto elegido arriba (reloj o piano) y analiza cada grado resultante: numeral romano, cifrado y sonido — funciona para cualquier cantidad de notas, no sólo escalas de 7.</p>
@@ -1952,6 +1996,7 @@
     <div style="display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;">
       <h2 style="margin:0;">Reglas del Proyecto</h2>
       <button type="button" class="chip" id="projectRulesToggleBtn" aria-expanded="false" aria-controls="projectRulesCollapse">+ Expandir</button>
+      <button type="button" class="chip fullscreen-btn" data-fs-card="projectRulesCard" title="Pantalla completa">⛶ Full screen</button>
     </div>
     <div id="projectRulesCollapse" hidden>
       <p class="overlay-sub">Documentación y anexos del proyecto Stoikheion Oracle.</p>
@@ -3937,6 +3982,10 @@ tabPiano.addEventListener("click", () => {
 
 document.getElementById("clearBtn").addEventListener("click", clearNotes);
 document.getElementById("playChordBtn").addEventListener("click", playChord);
+document.getElementById("composeBtn").addEventListener("click", function(){
+  var btn = document.getElementById("consolaPlayBtn");
+  if (btn && !btn.disabled) btn.click();
+});
 
 // (Selector de sintetizador eliminado — el timbre de previsualización de
 // notas queda fijo en "pad", currentSynth ya no cambia desde la UI.)
@@ -7369,6 +7418,54 @@ function runAnalysis() {
       if (currentSection) {
         currentSection.classList.add('active');
       }
+    });
+  })();
+</script>
+
+<script>
+  (function () {
+    function findToggleBtn(card) {
+      return card.querySelector('button[aria-controls]:not(.fullscreen-btn):not(.cifrado-fs-btn)');
+    }
+    function isCollapsed(target) {
+      return !!target.hidden || target.classList.contains('collapsed');
+    }
+    function ensureExpanded(card) {
+      const toggle = findToggleBtn(card);
+      if (!toggle) return;
+      const target = document.getElementById(toggle.getAttribute("aria-controls"));
+      if (target && isCollapsed(target)) toggle.click();
+    }
+    function setFullscreen(card, btn, on) {
+      if (on) {
+        ensureExpanded(card);
+        card.classList.add("fs-active");
+        document.body.classList.add("fs-lock");
+        btn.textContent = "✕ Cerrar pantalla completa";
+        btn.setAttribute("aria-pressed", "true");
+        card.scrollIntoView({ behavior: "auto", block: "start" });
+      } else {
+        card.classList.remove("fs-active");
+        document.body.classList.remove("fs-lock");
+        btn.textContent = btn.dataset.fsLabel || "⛶ Full screen";
+        btn.setAttribute("aria-pressed", "false");
+      }
+    }
+    const buttons = Array.from(document.querySelectorAll("[data-fs-card]"));
+    buttons.forEach(btn => {
+      const card = document.getElementById(btn.getAttribute("data-fs-card"));
+      if (!card) return;
+      btn.dataset.fsLabel = btn.textContent;
+      btn.addEventListener("click", () => {
+        setFullscreen(card, btn, !card.classList.contains("fs-active"));
+      });
+    });
+    document.addEventListener("keydown", e => {
+      if (e.key !== "Escape") return;
+      const active = document.querySelector(".fs-active");
+      if (!active) return;
+      const btn = buttons.find(b => b.getAttribute("data-fs-card") === active.id);
+      if (btn) setFullscreen(active, btn, false);
     });
   })();
 </script>
