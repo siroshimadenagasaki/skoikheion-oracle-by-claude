@@ -58,17 +58,17 @@
 
   .stage{
     display:grid;
-    grid-template-columns:minmax(270px,360px) minmax(150px,475px) minmax(300px,1fr);
+    grid-template-columns:minmax(270px,360px) minmax(300px,1fr);
     gap:26px;
     align-items:start;
   }
-  @media (max-width:980px){
-    .stage{grid-template-columns:minmax(270px,380px) 1fr;}
-    .fretboard-card{grid-column:1 / -1;}
+  .clock-col{
+    display:flex;
+    flex-direction:column;
+    gap:26px;
   }
   @media (max-width:760px){
     .stage{grid-template-columns:1fr;}
-    .fretboard-card{grid-column:auto;}
   }
 
   .clock-card{
@@ -424,33 +424,8 @@
   }
   .subsup-card-empty{border-top:none;}
 
-  /* ---- Selector de sintetizador ---- */
-  .synth-card{
-    background:var(--surface);border:1px solid var(--line);border-radius:18px;
-    padding:24px 20px 22px;margin-top:22px;
-  }
-  .synth-card h2{
-    font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.24em;
-    text-transform:uppercase;color:var(--gold);text-align:center;margin:0 0 4px;font-weight:500;
-  }
-  .synth-sub{
-    text-align:center;color:var(--ink-muted);font-style:italic;font-size:14px;
-    margin:0 0 18px;
-  }
-  .synth-options{
-    display:flex;flex-wrap:wrap;justify-content:center;gap:10px;
-  }
-  .synth-opt{
-    font-family:'JetBrains Mono',monospace;
-    font-size:12px;letter-spacing:.03em;
-    background:var(--surface-2);border:1px solid var(--line);color:var(--ink-muted);
-    padding:12px 18px;border-radius:14px;cursor:pointer;transition:.15s;
-    display:flex;flex-direction:column;align-items:center;gap:4px;min-width:108px;
-  }
-  .synth-opt .glyph{font-size:18px;line-height:1;}
-  .synth-opt:hover{color:var(--ink);border-color:var(--gold-dim);}
-  .synth-opt.active{background:var(--gold);color:#1a1622;border-color:var(--gold);font-weight:700;}
-  .synth-opt.active .glyph{filter:none;}
+  /* (Selector de sintetizador eliminado — el timbre de previsualización
+     de notas queda fijo en "pad", currentSynth ya no cambia desde la UI.) */
 
   /* ---- SetMusicBox: consola de acordes en loop (armonía + bajo + melodía) ---- */
   :root{
@@ -723,7 +698,6 @@
   <button data-target="diapasonSection" title="Ir a Diapasón">Diapasón</button>
   <button data-target="cifradoSection" title="Ir a Generador de Cifrado">Generador de Cifrado</button>
   <button data-target="superposicionSection" title="Ir a Superposición cromática">Superposición cromática</button>
-  <button data-target="synthCard" title="Ir a Sintetizador">Modos del set</button>
   <button data-target="consolaCard" title="Ir a SetMusicBox">SetMusicBox</button>
   <button data-target="progresionCard" title="Ir a Progresiones">Progresiones aleatorio</button>
   <button data-target="anexo1" title="Ir a Tabla de Sets">Anexo 1 · Tabla</button>
@@ -741,6 +715,7 @@
   </header>
 
   <div class="stage">
+    <div class="clock-col">
     <div class="clock-card">
       <div class="input-toggle">
         <button class="toggle-btn active" id="tabClock" type="button">Reloj</button>
@@ -782,6 +757,7 @@
           </svg>
         </div>
       </div>
+    </div>
     </div>
 
     <div class="results" id="results">
@@ -904,17 +880,6 @@
 
   <footer>Lógica traducida a JavaScript desde el código fuente público de Stoikheion Oracle · tabla completa de 344 clases Forte-Solomon embebida (sin conexión a internet necesaria)</footer>
 
-  <div class="synth-card" id="synthCard">
-    <h2>Sintetizador</h2>
-    <p class="synth-sub">Elegí el timbre con el que suenan las notas — reloj, piano o diapasón.</p>
-    <div class="synth-options" id="synthOptions">
-      <button type="button" class="synth-opt active" data-synth="pad"><span class="glyph">◐</span>Pad</button>
-      <button type="button" class="synth-opt" data-synth="sine"><span class="glyph">〜</span>Seno</button>
-      <button type="button" class="synth-opt" data-synth="square"><span class="glyph">⊓</span>Cuadrada</button>
-      <button type="button" class="synth-opt" data-synth="fm"><span class="glyph">✳</span>Campana FM</button>
-      <button type="button" class="synth-opt" data-synth="pluck"><span class="glyph">♪</span>Cuerda pulsada</button>
-    </div>
-  </div>
 
   <div class="overlay-card consola-card collapsible-card" id="consolaCard">
     <button class="module-toggle" aria-expanded="false" aria-controls="consolaContent" onclick="toggleModule(this)"></button>
@@ -3786,16 +3751,8 @@ tabPiano.addEventListener("click", () => {
 document.getElementById("clearBtn").addEventListener("click", clearNotes);
 document.getElementById("playChordBtn").addEventListener("click", playChord);
 
-// ---- Selector de sintetizador ----
-document.querySelectorAll(".synth-opt").forEach(btn => {
-  btn.addEventListener("click", () => {
-    currentSynth = btn.dataset.synth;
-    document.querySelectorAll(".synth-opt").forEach(b => b.classList.toggle("active", b === btn));
-    // Previsualización: toca la nota actual (o un Do central) con el timbre elegido.
-    const previewPc = selected.size ? Array.from(selected)[0] : 0;
-    playSynthTone(pcToFreq(previewPc, 4), { duration: 0.9, gain: 0.16 });
-  });
-});
+// (Selector de sintetizador eliminado — el timbre de previsualización de
+// notas queda fijo en "pad", currentSynth ya no cambia desde la UI.)
 
 document.querySelectorAll("[data-ex]").forEach(btn => {
   btn.addEventListener("click", () => {
@@ -3865,7 +3822,20 @@ function runAnalysis() {
         <div class="label">Z-mate</div>
         <div class="value">${r.z_mate ?? "ninguno"}</div>
       </div>
+      <div class="row">
+        <div class="label">Cifrado</div>
+        <div class="value big cifrado-acorde" id="resultsCifrado">—</div>
+      </div>
     `;
+    // El Generador de Cifrado (más abajo en la página) ya calculó su
+    // propio preview a partir de estas mismas notas (vía
+    // __cifradoOnClockNotes, arriba) — acá solo se copia ese resultado
+    // al panel de detalles del set para no duplicar la lógica.
+    (function syncResultsCifrado() {
+      const src = document.getElementById("cifPreview");
+      const dst = document.getElementById("resultsCifrado");
+      if (src && dst) dst.innerHTML = src.innerHTML;
+    })();
     statusEl.classList.remove("err");
     statusEl.textContent = `Listo · ${CHORDS_DATA.length} clases Forte-Solomon cargadas · elegí notas en el reloj`;
     renderSuperposicion(r);
@@ -6930,6 +6900,12 @@ function runAnalysis() {
       addHtml + omitHtml;
 
     $("cifPreview").innerHTML = previewHtml;
+
+    // Copia el mismo cifrado al panel de detalles del set (Solomon,
+    // Forte, etc.), si ya está renderizado — así queda visible ahí sin
+    // tener que bajar hasta el generador.
+    const resultsCifradoEl = document.getElementById("resultsCifrado");
+    if (resultsCifradoEl) resultsCifradoEl.innerHTML = previewHtml;
 
     let infoText = `Notas: ${chord.formula}`;
     $("cifInfo").textContent = infoText;
