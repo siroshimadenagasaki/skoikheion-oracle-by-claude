@@ -7138,16 +7138,15 @@ function runAnalysis() {
         const targetElement = document.getElementById(targetId);
 
         if (targetElement) {
-          // Expandir el módulo si estaba colapsado — reusa el mismo
+          // Alterna expandir/colapsar el módulo — reusa el mismo
           // botón/handler que ya tiene cada tarjeta, en vez de duplicar
-          // su lógica de expandir/colapsar.
+          // su lógica: primer clic (colapsado) lo abre, un clic más
+          // (ya abierto) lo vuelve a cerrar.
           const toggleBtn = findToggleBtn(targetId, targetElement);
-          if (toggleBtn && toggleBtn.getAttribute('aria-expanded') === 'false') {
-            toggleBtn.click();
-          }
+          if (toggleBtn) toggleBtn.click();
 
-          // Scroll suave a la sección (después de expandir, para que la
-          // posición final ya tenga en cuenta el contenido revelado)
+          // Scroll suave a la sección (después de expandir/colapsar, para
+          // que la posición final ya tenga en cuenta el contenido)
           targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
           // Actualizar el estado del botón (active)
