@@ -646,9 +646,82 @@
   }
   .gt-root-btn:hover{border-color:var(--gold-dim);color:var(--ink);}
   .gt-root-btn[aria-pressed="true"]{background:var(--gold);border-color:var(--gold);color:#1a1622;}
+
+  /* ---- Botonera de Navegación "Ir a:" ---- */
+  .nav-modules{
+    position:fixed;
+    right:20px;
+    top:32px;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    z-index:100;
+    background:var(--surface);
+    padding:12px;
+    border:1px solid var(--line);
+    border-radius:8px;
+  }
+  .nav-modules button{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    background:transparent;
+    border:1px solid var(--line);
+    color:var(--ink-muted);
+    padding:6px 12px;
+    border-radius:4px;
+    cursor:pointer;
+    transition:.15s;
+    white-space:nowrap;
+  }
+  .nav-modules button:hover{
+    color:var(--ink);
+    border-color:var(--gold-dim);
+    background:var(--surface-2);
+  }
+  .nav-modules button.active{
+    background:var(--gold);
+    color:#1a1622;
+    border-color:var(--gold);
+    font-weight:700;
+  }
+
+  /* ---- Toggles para collapse/expand ---- */
+  .module-toggle{
+    position:absolute;top:16px;right:16px;
+    background:var(--surface-2);border:1px solid var(--line);color:var(--gold);
+    width:28px;height:28px;border-radius:6px;
+    font-size:18px;line-height:1;cursor:pointer;transition:.15s;
+    font-weight:700;display:flex;align-items:center;justify-content:center;
+  }
+  .module-toggle:hover{background:var(--surface);border-color:var(--gold);}
+  .module-toggle[aria-expanded="true"]::after{content:"−";}
+  .module-toggle[aria-expanded="false"]::after{content:"+";}
+
+  .collapsible-card{position:relative;}
+  .collapsible-content{transition:max-height .25s ease, opacity .25s ease;overflow:hidden;}
+  .collapsible-content.collapsed{max-height:0;opacity:0;}
+  .collapsible-content.expanded{max-height:2000px;opacity:1;}
 </style>
 </head>
 <body>
+
+<!-- Botonera de Navegación "Ir a:" -->
+<div class="nav-modules" id="navModules">
+  <button data-target="diapasonSection" title="Ir a Diapasón">Diapasón</button>
+  <button data-target="cifradoSection" title="Ir a Generador de Cifrado">Generador de Cifrado</button>
+  <button data-target="superposicionSection" title="Ir a Superposición cromática">Superposición cromática</button>
+  <button data-target="synthCard" title="Ir a Sintetizador">Modos del set</button>
+  <button data-target="consolaCard" title="Ir a SetMusicBox">SetMusicBox</button>
+  <button data-target="progresionCard" title="Ir a Progresiones">Progresiones aleatorio</button>
+  <button data-target="anexo1" title="Ir a Tabla de Sets">Anexo 1 · Tabla</button>
+  <button data-target="subsupCard" title="Ir a Subconjuntos y Superconjuntos">Subconjuntos y Superconjuntos</button>
+  <button data-target="voicingExplorerCard" title="Ir a Voicing Explorer">Voicing Explorer</button>
+  <button data-target="gtCard" title="Ir a Grados en Terceras">Grados en Terceras</button>
+  <button data-target="projectRulesCard" title="Ir a Reglas del Proyecto">Reglas del Proyecto</button>
+</div>
+
 <div class="wrap">
   <header>
     <div class="eyebrow">Teoría de conjuntos · Forte / Solomon</div>
@@ -687,13 +760,16 @@
       </div>
     </div>
 
-    <div class="fretboard-card">
+    <div class="fretboard-card collapsible-card" id="diapasonSection">
+      <button class="module-toggle" aria-expanded="false" aria-controls="diapasonContent" onclick="toggleModule(this)"></button>
       <h2>Diapasón</h2>
-      <div class="fretboard-wrap">
-        <svg class="fretboard" id="fretboardSvg" viewBox="0 0 180 686" preserveAspectRatio="xMidYMid meet">
-          <g id="fretGrid"></g>
-          <g id="fretNotes"></g>
-        </svg>
+      <div class="collapsible-content collapsed" id="diapasonContent">
+        <div class="fretboard-wrap">
+          <svg class="fretboard" id="fretboardSvg" viewBox="0 0 180 686" preserveAspectRatio="xMidYMid meet">
+            <g id="fretGrid"></g>
+            <g id="fretNotes"></g>
+          </svg>
+        </div>
       </div>
     </div>
 
@@ -702,7 +778,7 @@
     </div>
   </div>
 
-  <div class="cifrado-card">
+  <div class="cifrado-card" id="cifradoSection">
     <button type="button" class="cifrado-toggle" id="cifToggle" aria-expanded="false" aria-controls="cifBody" title="Mostrar el generador">+</button>
     <h2>Generador de Cifrado de Acordes</h2>
     <p class="cifrado-sub">Notación anglosajona (cifrado americano) — analizá grados o armá el cifrado a mano, con los símbolos que no están en el teclado: Δ ø ° + ♭ ♯ ♮.</p>
@@ -780,29 +856,32 @@
     </div>
   </div>
 
-  <div class="overlay-card">
+  <div class="overlay-card collapsible-card" id="superposicionSection">
+    <button class="module-toggle" aria-expanded="false" aria-controls="superposicionContent" onclick="toggleModule(this)"></button>
     <h2>Superposición cromática sobre tónica inmóvil</h2>
-    <p class="overlay-sub" id="overlaySub">Cada grado desplaza cromáticamente el conjunto elegido; las notas se recalculan siempre en relación a la tónica fija C.</p>
-    <div class="overlay-scroll">
-      <table class="overlay-table" id="overlayTable" hidden>
-        <thead>
-          <tr>
-            <th>Grado</th>
-            <th>Notas sobre C</th>
-            <th>Cifrado</th>
-            <th>Categoría</th>
-            <th>Híbridos</th>
-            <th>Conjunto</th>
-            <th>Forte</th>
-            <th>Solomon</th>
-            <th>Estado</th>
-          </tr>
-        </thead>
-        <tbody id="overlayBody"></tbody>
-      </table>
-      <div class="overlay-empty" id="overlayEmpty">Elegí un conjunto (2+ notas) arriba para generar la tabla de superposición.</div>
+    <div class="collapsible-content collapsed" id="superposicionContent">
+      <p class="overlay-sub" id="overlaySub">Cada grado desplaza cromáticamente el conjunto elegido; las notas se recalculan siempre en relación a la tónica fija C.</p>
+      <div class="overlay-scroll">
+        <table class="overlay-table" id="overlayTable" hidden>
+          <thead>
+            <tr>
+              <th>Grado</th>
+              <th>Notas sobre C</th>
+              <th>Cifrado</th>
+              <th>Categoría</th>
+              <th>Híbridos</th>
+              <th>Conjunto</th>
+              <th>Forte</th>
+              <th>Solomon</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody id="overlayBody"></tbody>
+        </table>
+        <div class="overlay-empty" id="overlayEmpty">Elegí un conjunto (2+ notas) arriba para generar la tabla de superposición.</div>
+      </div>
+      <div class="overlay-groups" id="overlayGroups"></div>
     </div>
-    <div class="overlay-groups" id="overlayGroups"></div>
   </div>
 
   <div class="status" id="status">Listo · 344 clases Forte-Solomon cargadas · elegí notas en el reloj</div>
@@ -821,8 +900,10 @@
     </div>
   </div>
 
-  <div class="overlay-card consola-card" id="consolaCard">
+  <div class="overlay-card consola-card collapsible-card" id="consolaCard">
+    <button class="module-toggle" aria-expanded="false" aria-controls="consolaContent" onclick="toggleModule(this)"></button>
     <h2>SetMusicBox · Segmento en loop</h2>
+    <div class="collapsible-content collapsed" id="consolaContent">
     <p class="consola-status">Con las notas que elegiste arriba (reloj o piano) arma un segmento de 12 compases en loop, siempre dentro del mismo set de Solomon exacto: por defecto, variación libre y al azar — el acorde cambia de subset, transposición cromática E inversión, con ritmo armónico también variable (a veces sostenido el compás entero, a veces partido varias veces); tocá &#8634; Normalito para volver a la versión simple (el set completo, sin transposición, una sola inversión por compás). El bajo y la batería también varían su ritmo al azar de compás en compás; la melodía toca únicamente notas del acorde que está sonando en ese instante, más un fill de notas muy cortas (10 por compás, arpegiado en vez de al azar) en el 30% de los compases, y además queda en silencio ~20% del tiempo (repartido parejo, no de a racha). En los tres — armonía, bajo y melodía — y en la batería, los compases movidos y los quietos se reparten intercalados a lo largo del segmento (nunca varios seguidos del mismo tipo por casualidad), manteniendo siempre el mismo promedio general. Armonía en pad, bajo con sintetizador de bajo dedicado, melodía con timbre de flauta — y una batería genérica (botón &#129345; Batería). Cada instrumento tiene su propio interruptor para silenciarlo sin cambiar nada más, y el rollo de abajo muestra un teclado de piano (blancas/negras) al costado para ver qué nota es cada fila, con scroll automático que sigue al cabezal mientras suena.</p>
 
     <div class="consola-readout">
@@ -912,10 +993,13 @@
       Bajo: sintetizador de bajo dedicado (fundamental + sub-octava + un filo de armónico, paso-bajos) que recorre distintos grados del acorde EN CURSO de cada compás (nunca una nota ajena a ese acorde ni a su set) — cada reataque de su célula rítmica toma el siguiente grado del voicing actual (o, en modo libre, primero cubre las notas que el subset de referencia dejó afuera). En modo libre, el ritmo del bajo también varía por compás (mayormente blancas, con negras y algún par de corcheas sincopadas al azar), con los compases más movidos y más quietos intercalados a lo largo del segmento en vez de agrupados por azar — mismo promedio general de siempre. Melodía: timbre de flauta (tono casi puro con un poco de vibrato y aire filtrado), una octava (o dos) arriba, que en cada nota toca exclusivamente una nota del acorde que está sonando en ESE preciso instante (el voicing del reataque de armonía vigente en ese momento, no un acorde de referencia fijo del compás) — con predominio de notas largas (redondas, blancas y blanca/negra con puntillo); en el 30% de los compases, en cambio, un fill de 10 notas muy cortas parejas llena el compás entero — ahí ya no salta al azar entre las notas del acorde: arpegia, recorriéndolas en orden (ascendente o descendente según el compás) y subiendo de octava si el fill tiene más notas que grados el acorde — esos compases de fill también se reparten intercalados, no todos seguidos.
       El modo libre también le da al bajo pitch más suelto (grado al azar en cada reataque, dentro del set) y a la melodía pitch ligado en todo momento al acorde en curso; &#8634; Normalito los vuelve a su patrón predecible de siempre. Batería: pista genérica opcional (bombo, caja e hi-hat) que marca el pulso de cada compás — se prende y apaga con el botón &#129345; Batería, incluso con el loop sonando. Su patrón también varía por compás al azar (desde compases bien quietos hasta algún compás de relleno más lleno de golpes), intercalado a lo largo del segmento con el mismo criterio que armonía/bajo/melodía. El segmento se repite en loop hasta Detener &mdash; podés cambiar el set o tocar &#8634; Normalito mientras suena y el próximo loop lo toma.
     </p>
+    </div>
   </div>
 
-  <div class="overlay-card progresion-card" id="progresionCard">
+  <div class="overlay-card progresion-card collapsible-card" id="progresionCard">
+    <button class="module-toggle" aria-expanded="false" aria-controls="progresionContent" onclick="toggleModule(this)"></button>
     <h2>Generador de progresiones aleatorio</h2>
+    <div class="collapsible-content collapsed" id="progresionContent">
     <p class="consola-status">Arma al azar una de las seis progresiones, respetando el grado y el bajo fijo de cada acorde. <b>V</b> / <b>VI</b> siempre con bajo en G / A, <b>I</b> / <b>Im</b> con bajo en C, <b>II</b> / <b>IIø</b> / <b>VIø</b> con bajo en D / D / A. Para cada grado se sortea un set de la Tabla de Sets (Anexo 1 &middot; las clases Forte/Solomon, en cualquiera de sus rotaciones, filtradas por el switch de cantidad de notas) que cumpla <em>únicamente</em> las categorías admitidas para ese grado: V / VI &rarr; Mayor alt, Jónica/Lidia (no3), Dominante, Alterada y/o Frigia &middot; I &rarr; Mayor, Frigia (no3), Frigia (3) &middot; Im &rarr; Menor, Frigia (no3), Frigia (3b) &middot; II &rarr; Menor, Dominante &middot; IIø / VIø &rarr; Locria, Menor, Dominante. La categoría se evalúa siempre desde el bajo, como pide la tabla. Los acordes se realizan como voicings reales — mismo criterio que el Voicing Explorer y el modo &#127927; Jazz: registro tocable, disposición cerrada / abierta / extendida y, entre un acorde y el siguiente, la que menos mueve las voces — pero <b>sin invertir</b>: el bajo del grado siempre queda como nota más grave. Arriba de cada acorde se muestra el detalle completo del set elegido. &#128256; Regenerar sortea sets nuevos; &#9658; Reproducir toca la progresión en orden.</p>
     <div class="progresion-controls">
       <label for="progresionTipo">Progresión:
@@ -949,6 +1033,7 @@
     </div>
     <div class="progresion-grid" id="progresionGrid">
       <div class="empty-state">Tocá &#128256; Regenerar para armar una progresión.</div>
+    </div>
     </div>
   </div>
 
@@ -1689,9 +1774,221 @@
       window.regenerateGradosTerceras = gtRender;
     })();
   </script>
+
+  <div class="overlay-card" id="projectRulesCard">
+    <div style="display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;">
+      <h2 style="margin:0;">Reglas del Proyecto</h2>
+      <button type="button" class="chip" id="projectRulesToggleBtn" aria-expanded="false" aria-controls="projectRulesCollapse">+ Expandir</button>
+    </div>
+    <div id="projectRulesCollapse" hidden>
+      <p class="overlay-sub">Documentación y anexos del proyecto Stoikheion Oracle.</p>
+
+      <div style="margin-top:16px;">
+        <h3 style="margin:0 0 12px;font-size:14px;color:var(--ink);">Anexos descargables:</h3>
+        <button type="button" class="chip primary" id="downloadPrioridadBtn">⬇ Descargar: Lista de Sets por Prioridad</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      var toggleBtn = document.getElementById("projectRulesToggleBtn");
+      var collapse = document.getElementById("projectRulesCollapse");
+      if(toggleBtn && collapse){
+        toggleBtn.addEventListener("click", function(){
+          var willExpand = collapse.hidden;
+          collapse.hidden = !willExpand;
+          toggleBtn.textContent = willExpand ? "− Contraer" : "+ Expandir";
+          toggleBtn.setAttribute("aria-expanded", String(willExpand));
+        });
+      }
+
+      var downloadBtn = document.getElementById("downloadPrioridadBtn");
+      if(downloadBtn){
+        downloadBtn.addEventListener("click", function(){
+          var content = `LISTA DE SETS POR ORDEN DE APARICION CON CODIGO SOLOMON (FORTE) Y PRIORIDAD
+Fuente: indice test.pdf
+Prioridad = orden de aparicion dentro de cada categoria (cardinalidad). Reinicia en 1 al cambiar de categoria.
+Formato de cada linea: Prioridad | Nombre del set | Codigo Solomon
+
+=== TRIADAS (3 notas) ===
+1 | Triada Mayor / Triada menor 6b (no5) | 3-11B (047)
+2 | Triada menor / Triada Mayor 6 (no5) | 3-11 (037)
+3 | Triada Cuartal | 3-9 (027)
+4 | Triada Aumentada | 3-12 (048)
+5 | Triada Tritono-Cuarta / Triada Frigia 2 | 3-5B (056)
+6 | Triada Cuarta-Tritono / Triada Lidia | 3-5 (016)
+7 | Triada Maj7(no5) | 3-4 (015)
+8 | Triada mMaj7(no5) | 3-3 (014)
+9 | Triada m7(no5) | 3-7 (025)
+10 | Triada 7(no5) [1 5 7b] | 3-7B (035)
+11 | Triada 7(no5) [1 3 7b] | 3-8 (026)
+12 | Triada 5b | 3-8B (046)
+13 | Triada Disminuida / m6(no5) / Triada menor 6 | 3-10 (036)
+14 | Triada tonal | 3-6 (024)
+15 | Triada cromatica | 3-1 (012)
+
+=== TETRADAS (4 notas) ===
+1 | Tetrada Maj7 / [Db/C] / [Em/C] | 4-20 (0158)
+2 | Tetrada 7 / [C/Bb] | 4-27B (0368)
+3 | Tetrada m7 / [C/A] / Tetrada Mayor 6 | 4-26 (0358)
+4 | Tetrada menor 6 / m7(5b) / [Ebm/C] | 4-27 (0258)
+5 | Tetrada Septima Disminuida | 4-28 (0369)
+6 | Tetracordio Cuartal / m7(11 no5) / 7 Sus4 | 4-23 (0257)
+7 | Tetrada C7(5b) / Sexta francesa | 4-25 (0268)
+8 | Tetracordio Septima aumentado / 7+ | 4-24 (0248)
+9 | Tetrada Mayor 9 / [Bb/C] | 4-22 (0247)
+10 | Tetrada Menor add2 / Maj7(6 no5) / [Bbm/C] | 4-14 (0237)
+11 | Tetrada m(11) / [Gm/C] | 4-22B (0357)
+12 | Tetrada Maj7+ / [E/C] | 4-19B (0348)
+13 | Tetrada mMaj7 / [Dbm/C] | 4-19 (0148)
+14 | Tetracordio menor / m9 11 (no5) | 4-10 (0235)
+15 | Tetrada Maj9(no3) / Mayor add4 / [G/C] | 4-14B (0457)
+16 | Tetracordio Frigio / Maj9(no5) | 4-11 (0135)
+17 | Tetracordio Mayor / Jonico / m9(no5) / [C/E] | 4-11B (0245)
+18 | Tetrada mMaj7(4 no5) / Todos los intervalos 1 | 4-15 (0146)
+19 | Tetrada 7(9#no5) / Todos los intervalos 2 | 4-15B (0256)
+20 | Tetracordio Tonal / Lidio | 4-21 (0246)
+21 | Tetrada 7(9b no5) / Hungaro menor / Tetrada mMaj7(6 no5) | 4-12 (0236)
+22 | Tetrada Disminuido 4b / Hungaro mayor | 4-12B (0346)
+23 | Tetrada menor 6/9 | 4-13B (0356)
+24 | Tetrada m7 (6 no5) | 4-13 (0136)
+25 | Tetrada Maj7(4#) | 4-16 (0157)
+26 | Tetrada 7(11) | 4-16B (0267)
+27 | Tetrada Bitonal / Arpegio Blues / [A/C] / [Abm/C] | 4-17 (0347)
+28 | Tetrada 7(6 no5) / Todos los intervalos 3 / [Bm/C] | 4-29 (0137)
+29 | Tetrada Mayor (11#) / Todos los intervalos 4 / [C/Gb] | 4-29B (0467)
+30 | Tetrada Disminuido Maj7 / Mayor disminuido / [B/C] | 4-18 (0147)
+31 | Tetrada menor disminuido / [F#m/C] | 4-18B (0367)
+32 | Tetracordio Alternado / mMaj9 (no5) | 4-3 (0134)
+33 | Tetrada Maj7 (4# no3) / Frigia(2b 6b no3) | 4-8 (0156)
+34 | Tetracordio Maj7(2b no5) | 4-4 (0125)
+35 | Tetracordio Frigio Maj7 | 4-5B (0456)
+36 | Tetrada Doble tritono | 4-9 (0167)
+37 | Tetracordio Arabe Maj7(2# no5) / Tetracordio armonico | 4-7 (0145)
+38 | Tetracordio cromatico | 4-1 (0123)
+
+=== PENTATONICAS (5 notas) ===
+1 | Pentatonica Mayor Tradicional / Pentatonica menor Tradicional | 5-35 (02479)
+2 | Pentatonica Prometeo / m(4 6) | 5-34 (02469)
+3 | Pentatonica Kumoi I | 5-29B (02578)
+4 | Pentatonica Kumoi II | 5-29 (01368)
+5 | Pentatonica Enigmatica | 5-30 (01468)
+6 | Pentatonica Enigmatica II | 5-30B (02478)
+7 | Pentatonica Napolitana | 5-32 (01469)
+8 | Pentatonica Alterada I | 5-32B (01479)
+9 | Pentatonica Gypsy I | 5-18 (01457)
+10 | Pentatonica Gypsy II | 5-18B (02367)
+11 | Pentatonica Balinesa | 5-19B (01467)
+12 | Pentatonica Pelog | 5-20 (01378)
+13 | Pentatonica Hirajoshi | 5-20B (01578)
+14 | Pentatonica Siria | 5-21 (01458)
+15 | Pentatonica Libanesa | 5-21B (03478)
+16 | Pentatonica Maj9 | 5-27 (01358)
+17 | Pentatonica m9 / Pentatonica Maj7(6) | 5-27B (03578)
+18 | Pentatonica Maj7+(6) | 5-17 (01348)
+19 | Pentatonica Persa | 5-22 (01478)
+20 | Pentatonica Disminuida 9b | 5-31 (01369)
+21 | Pentatonica 7(9b) / Disminuida Maj7 | 5-31B (02369)
+22 | Pentatonica Aumentada - Sexta | 5-28 (02368)
+23 | Pentatonica mayor / m11(no5) | 5-23B (02457)
+24 | Pentatonica Disminuida 9# / mMaj7(6) | 5-26 (02458)
+25 | Pentatonica espejo / Tritono simetrico | 5-8 (02346)
+
+=== HEXATONICAS (6 notas) ===
+1 | Hexatonica Tonal | 6-35 (02458A)
+2 | Hexatonica Aumentada (Modo 1 / Modo 2) | 6-20 (014589)
+3 | Hexatonica mMaj9(6) | 6-24B (024578)
+4 | Hexacordio Jonica no6 / Locrio no7 | 6-25 (013568)
+5 | Hexatonica Dorica no4 / m9(6) | 6-25B (023578)
+6 | Hexatonica Lidia no6 / Maj9(4#) | 6-26 (013578)
+7 | Hexatonica m11 | 6-32 (024579)
+8 | Hexatonica Lidia no7 / 9(6) | 6-33B (024679)
+9 | Hexatonica Lidia no5 / Maj9(4# 6) | 6-33 (023579)
+10 | Hexatonica Prometeo / Mixolidia 4# no5 / 9(4# 6 no5) | 6-34 (013579)
+11 | Hexatonica Mixolidia 4# no6 / 9(4#) | 6-34B (024689)
+12 | Hexatonica mMaj9(4#) / (Pseudo Aumentada menor) | 6-19 (013478)
+13 | Hexatonica Maj7(2# 4#) | 6-19B (014578)
+14 | Hexatonica Menor Bitonal | 6-30 (013679)
+15 | Hexatonica Mayor Bitonal | 6-30B (023689)
+16 | Hexatonica Blues | 6-47B (023479)
+17 | Hexatonica Napolitana Prometeo | 6-49 (013479)
+18 | Hexatonica C + F#m | 6-50 (014679)
+19 | Hexatonica Messiaen Modo 5 | 6-7 (012678)
+20 | Hexatonica Piramide / 7(2b 2#) | 6-27B (023569)
+
+=== SEPTATONICAS (7 notas) ===
+1 | Septatonica Diatonica / Mayor Jonica / Septatonica Diatonica - Menor Eolica | 7-35 (013568A)
+2 | Septatonica Menor Armonica | 7-32 (0134689)
+3 | Septatonica Menor Melodica / Septatonica Alterada | 7-34 (013468A)
+4 | Septatonica Mayor Armonica | 7-32B (0135689)
+5 | Septatonica Hungara Menor (Gypsy) / Doble Armonica | 7-22 (0125689)
+6 | Septatonica Hungara Mayor | 7-31 (0134579)
+7 | Septatonica Napolitana Menor | 7-30 (0124689)
+8 | Septatonica Napolitana Mayor | 7-33 (012468A)
+9 | Septatonica Enigmatica Mayor | 7-24 (0123579)
+10 | Septatonica Enigmatica menor | 7-18 (0123589)
+11 | Septatonica Persa | 7-20 (0124789)
+12 | Septatonica Chalanata | 7-20B (0125789)
+13 | Septatonica Gypsy | 7-21B (0134589)
+14 | Septatonica Blues Afroamericana | 7-12 (0123479)
+15 | Septatonica Blues | 7-25 (0234679)
+
+=== OCTATONICAS (8 notas) ===
+1 | Octatonica Disminuida (Modo 1 / Modo 2) | 8-28 (0134578A)
+2 | Octatonica Jonica Bebop (2b-2) | 8-22 (0123568A)
+3 | Octatonica Mixolidia Bebop (7b-7) / Dorica(3b-3) Bebop | 8-23 (0123578A)
+4 | Octatonica Mayor 6ta disminuida / Jonica(5-5#) Bebop | 8-26 (0124579A)
+5 | Octatonica Menor 6ta disminuida / Menor melodica (5-5#) Bebop | 8-27 (0124678A)
+6 | Octatonica Dominante disminuida | 8-27B (0124678A)
+7 | Octatonica Messiaen Modo 4 | 8-9 (01236789)
+8 | Octatonica Dominante 5b disminuida / Messiaen Modo 6 | 8-25 (0124678A)
+
+=== NONATONICAS (9 notas) ===
+1 | Nonatonica Tcherepnin (Messiaen Modo 3) | 9-12 (01245689A)
+2 | Nonatonica Mayor Barry Harris / Nonatonica Blues | 9-7 (01234578A)
+
+=== DECATONICAS (10 notas) ===
+1 | Messiaen Modo 7 | 10-6 (012346789A)
+
+=== DODECATONICA (12 notas) ===
+1 | Dodecatonica / Cromatica | 12-1 (0123456789AB)
+`;
+          var blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+          var url = URL.createObjectURL(blob);
+          var link = document.createElement("a");
+          link.href = url;
+          link.download = "sets_prioridad.txt";
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+        });
+      }
+    })();
+  </script>
+
 </div>
 
 <script>
+/* Toggle function for collapsible modules */
+function toggleModule(button) {
+  const expanded = button.getAttribute('aria-expanded') === 'true';
+  button.setAttribute('aria-expanded', String(!expanded));
+
+  const controlsId = button.getAttribute('aria-controls');
+  const contentEl = document.getElementById(controlsId);
+  if (contentEl) {
+    if (expanded) {
+      contentEl.classList.remove('expanded');
+      contentEl.classList.add('collapsed');
+    } else {
+      contentEl.classList.remove('collapsed');
+      contentEl.classList.add('expanded');
+    }
+  }
+}
+
 const NOTE_NAMES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
 const selected = new Set();
 
@@ -6611,6 +6908,56 @@ function runAnalysis() {
 
   renderPreview();
 })();
+</script>
+
+<script>
+  // Botonera de Navegación "Ir a:"
+  (function(){
+    const navModules = document.getElementById('navModules');
+    if (!navModules) return;
+
+    const buttons = navModules.querySelectorAll('button');
+
+    buttons.forEach(button => {
+      button.addEventListener('click', function(){
+        const targetId = this.getAttribute('data-target');
+        const targetElement = document.getElementById(targetId);
+
+        if (targetElement) {
+          // Scroll suave a la sección
+          targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+          // Actualizar el estado del botón (active)
+          buttons.forEach(b => b.classList.remove('active'));
+          this.classList.add('active');
+        }
+      });
+    });
+
+    // Detectar scroll y actualizar el botón activo
+    window.addEventListener('scroll', function(){
+      let currentSection = null;
+      let maxScroll = -Infinity;
+
+      buttons.forEach(button => {
+        const targetId = button.getAttribute('data-target');
+        const targetElement = document.getElementById(targetId);
+
+        if (targetElement) {
+          const rect = targetElement.getBoundingClientRect();
+          if (rect.top <= window.innerHeight / 3 && rect.top > maxScroll) {
+            maxScroll = rect.top;
+            currentSection = button;
+          }
+        }
+      });
+
+      buttons.forEach(b => b.classList.remove('active'));
+      if (currentSection) {
+        currentSection.classList.add('active');
+      }
+    });
+  })();
 </script>
 </body>
 </html>
