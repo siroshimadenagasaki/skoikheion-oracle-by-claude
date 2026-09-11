@@ -7121,13 +7121,33 @@ function runAnalysis() {
 
     const buttons = navModules.querySelectorAll('button');
 
+    // Encuentra el botón que expande/colapsa el módulo al que apunta
+    // data-target: en las tres variantes que usa la página (el
+    // .module-toggle de Diapasón/Superposición/SetMusicBox/Progresiones,
+    // el cifToggle del Generador de Cifrado, y el chip "+ Expandir" de
+    // las demás tarjetas) el botón siempre es el primer descendiente con
+    // aria-expanded dentro de la propia tarjeta — no hace falta conocer
+    // su id.
+    function findToggleBtn(targetId, targetEl) {
+      return targetEl.querySelector('button[aria-expanded]');
+    }
+
     buttons.forEach(button => {
       button.addEventListener('click', function(){
         const targetId = this.getAttribute('data-target');
         const targetElement = document.getElementById(targetId);
 
         if (targetElement) {
-          // Scroll suave a la sección
+          // Expandir el módulo si estaba colapsado — reusa el mismo
+          // botón/handler que ya tiene cada tarjeta, en vez de duplicar
+          // su lógica de expandir/colapsar.
+          const toggleBtn = findToggleBtn(targetId, targetElement);
+          if (toggleBtn && toggleBtn.getAttribute('aria-expanded') === 'false') {
+            toggleBtn.click();
+          }
+
+          // Scroll suave a la sección (después de expandir, para que la
+          // posición final ya tenga en cuenta el contenido revelado)
           targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
           // Actualizar el estado del botón (active)
