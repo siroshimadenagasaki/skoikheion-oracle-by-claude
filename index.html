@@ -785,6 +785,11 @@
 
     <div class="cifrado-body" id="cifBody" hidden>
 
+    <div class="cifrado-grados-box" id="cifClockBox">
+      <label>Entrada por reloj</label>
+      <div id="cifClockInfo" class="cifrado-grados-info">Elegí notas en el reloj o piano de arriba: root y calidad se completan solos acá.</div>
+    </div>
+
     <div class="cifrado-grados-box">
       <label for="cifGrados">Analizador de grados</label>
       <input type="text" id="cifGrados" placeholder="ej: 1 3b 5b 7b   (1 2b/9b 2/9 2#/9#/3b 3 4/11 4#/11#/b5 5 5#/6b/13b 6/13 7b 7)">
@@ -3686,6 +3691,13 @@ function runAnalysis() {
   if (typeof window.regenerateConsola === "function") window.regenerateConsola();
   if (typeof window.regenerateGradosTerceras === "function") window.regenerateGradosTerceras();
   const pcs = Array.from(selected);
+
+  // Reloj/piano como método de entrada, además de lo suyo, para el
+  // Generador de Cifrado (reclama el control si el analizador de grados
+  // lo había pausado).
+  if (typeof window.__cifradoRelinkClock === "function") window.__cifradoRelinkClock();
+  if (typeof window.__cifradoOnClockNotes === "function") window.__cifradoOnClockNotes(pcs);
+
   const results = document.getElementById("results");
   const statusEl = document.getElementById("status");
   if (pcs.length < 2) {
@@ -6838,6 +6850,15 @@ function runAnalysis() {
     const infoEl = $("cifGradosInfo");
     const tokens = raw.split(/[\s,;]+/).filter(Boolean);
 
+    // Usar el analizador de grados le saca el control al reloj para este
+    // generador (no toca la selección real del reloj, solo pausa el
+    // auto-completado acá) — se reactiva solo al volver a tocar una nota.
+    if (clockLinked) {
+      clockLinked = false;
+      const clockInfoEl = $("cifClockInfo");
+      if (clockInfoEl) clockInfoEl.textContent = "En pausa (se está usando el analizador de grados) — tocá una nota en el reloj para reactivarlo.";
+    }
+
     if (!tokens.length) {
       infoEl.textContent = "";
       infoEl.classList.remove("err");
@@ -6880,6 +6901,96 @@ function runAnalysis() {
 
     renderPreview();
   }
+
+  /* --------------------------------------------------------------
+     Reloj cromático (o piano) como método de entrada, además del
+     analizador de grados: cada vez que cambia la selección de notas
+     de arriba, se elige — probando cada nota elegida como posible
+     raíz — la combinación (raíz, calidad) que mejor matchea contra
+     CIFRADO_QUALITIES (más intervalos propios cubiertos, menos notas
+     sobrantes como "add"), y se completan solos raíz/calidad/add/
+     omit. Reloj y analizador de grados son mutuamente excluyentes:
+     usar el campo de texto resetea (pausa) la entrada del reloj para
+     este generador — sin tocar la selección real del reloj, que
+     sigue sirviendo para el resto de la página — y volver a tocar
+     una nota en el reloj la reactiva.
+     -------------------------------------------------------------- */
+  const CIFRADO_ROOT_BY_PC = ["C", "D♭", "D", "E♭", "E", "F", "F♯", "G", "A♭", "A", "B♭", "B"];
+  let clockLinked = true;
+
+  function bestChordFromPcs(pcsRaw) {
+    const uniq = Array.from(new Set(pcsRaw.map(pc => ((pc % 12) + 12) % 12)));
+    if (!uniq.length) return null;
+    let best = null, bestScore = -Infinity;
+    uniq.forEach(rootPc => {
+      const relSet = new Set(uniq.map(pc => ((pc - rootPc) % 12 + 12) % 12));
+      relSet.add(0);
+      const acorde = cifradoPickBestChord(relSet);
+      const matched = acorde.intervalos.filter(iv => relSet.has(iv.semitono)).length;
+      const missing = acorde.intervalos.length - matched; // notas propias del acorde que faltan (se mostrarían como "no3", "no5", etc.)
+      const extra = relSet.size - matched; // notas que sobran como tensión ("add")
+      // Prioridad: primero que no falte ninguna nota propia del acorde
+      // (missing = 0, el mismo criterio de "subconjunto exacto" de
+      // cifradoPickBestChord) — recién ahí, entre esas, la que menos
+      // notas sueltas deja como "add". Una coincidencia con huecos
+      // (missing > 0) nunca le gana a una sin huecos, sin importar cuántas
+      // tensiones agregue esta última. Empate exacto -> gana la raíz que
+      // se tocó primero en el reloj (orden de inserción de `uniq`).
+      const score = (missing === 0 ? 1000 : 0) - missing * 50 - extra * 5;
+      if (score > bestScore) { bestScore = score; best = { rootPc, acorde, relSet }; }
+    });
+    return best;
+  }
+
+  function applyClockNotes(pcsRaw) {
+    const infoEl = $("cifClockInfo");
+    if (!pcsRaw || pcsRaw.length < 1) {
+      if (infoEl && clockLinked) infoEl.textContent = "Elegí notas en el reloj o piano de arriba: root y calidad se completan solos acá.";
+      return;
+    }
+    if (!clockLinked) return; // el analizador de grados tiene el control
+
+    const best = bestChordFromPcs(pcsRaw);
+    if (!best) return;
+
+    const addOffsets = [];
+    best.relSet.forEach(off => {
+      if (!best.acorde.intervalos.some(iv => iv.semitono === off)) addOffsets.push(off);
+    });
+    addOffsets.sort((a, b) => a - b);
+
+    const omitGrados = best.acorde.intervalos
+      .filter(iv => !best.relSet.has(iv.semitono))
+      .map(iv => iv.grado);
+
+    const ADD_LABELS_ASCII = { 0:"1", 1:"9b", 2:"9", 3:"9#", 4:"3", 5:"11", 6:"11#", 7:"5", 8:"13b", 9:"13", 10:"7b", 11:"7" };
+
+    $("cifRoot").value = CIFRADO_ROOT_BY_PC[best.rootPc];
+    $("cifQuality").value = best.acorde.id;
+    $("cifAdd").value = addOffsets.map(off => ADD_LABELS_ASCII[off]).join(" ");
+    $("cifOmit").value = omitGrados.join(" ");
+
+    if (infoEl) {
+      const noteNames = Array.from(new Set(pcsRaw.map(pc => ((pc % 12) + 12) % 12)))
+        .sort((a, b) => a - b).map(pc => CIFRADO_ROOT_BY_PC[pc]).join(" ");
+      infoEl.classList.remove("err");
+      infoEl.textContent = `Desde el reloj (${noteNames}): ${CIFRADO_ROOT_BY_PC[best.rootPc]}${best.acorde.simbolo || ""} — activo`;
+    }
+    renderPreview();
+  }
+
+  // Hook global: runAnalysis() (definido más arriba, junto al reloj) llama
+  // a esto cada vez que cambia la selección de notas.
+  window.__cifradoOnClockNotes = applyClockNotes;
+  // Hook global: toggleNote/setNotes/clearNotes (el reloj/piano en sí)
+  // llaman a esto para reclamar el control de vuelta si el analizador
+  // de grados lo había pausado.
+  window.__cifradoRelinkClock = function () {
+    if (clockLinked) return;
+    clockLinked = true;
+    const infoEl = $("cifClockInfo");
+    if (infoEl) infoEl.classList.remove("err");
+  };
 
   buildRootSelect();
   buildQualitySelect();
