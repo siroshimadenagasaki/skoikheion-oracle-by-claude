@@ -647,6 +647,17 @@
   .gt-root-btn:hover{border-color:var(--gold-dim);color:var(--ink);}
   .gt-root-btn[aria-pressed="true"]{background:var(--gold);border-color:var(--gold);color:#1a1622;}
 
+  /* ---- Partitura simple del acorde de cada grado (pentagrama de Sol,
+     cabezas apiladas — sin figuras rítmicas, no depende de fuentes de
+     notación externas, sólo formas SVG). ---- */
+  .gt-staff-wrap{display:flex;justify-content:center;margin:2px 0 6px;}
+  .gt-staff-svg .gt-staff-line,
+  .gt-staff-svg .gt-staff-ledger{stroke:var(--ink-muted);stroke-width:1;}
+  .gt-staff-svg .gt-staff-stem{stroke:var(--ink);stroke-width:1.3;}
+  .gt-staff-svg .gt-staff-head{fill:var(--ink);stroke:var(--ink);stroke-width:1;}
+  .gt-staff-svg .gt-staff-acc{fill:var(--gold);font-size:11px;font-family:'JetBrains Mono',monospace;}
+  .progresion-chord.playing .gt-staff-svg .gt-staff-head{fill:var(--gold);stroke:var(--gold);}
+
   /* ---- Botonera de Navegación "Ir a:" ---- */
   .nav-modules{
     position:fixed;
@@ -1677,6 +1688,110 @@
         };
       }
 
+      // ---- Partitura simple (pentagrama de Sol, cabezas apiladas) ----
+      // No es un motor de grabado (no hay LilyPond/MuseScore/SMuFL acá):
+      // son líneas y elipses SVG a mano, alcanza para "ver" el acorde de
+      // cada grado. Usa las MISMAS letras que ya calculó gtAnalizar
+      // (g.nombres, vía spellByDegree) y la MISMA convención de octava
+      // que gtReproducir (octava real = 3 + nota.octave), para que la
+      // partitura y el audio siempre digan lo mismo.
+      var GT_LETTER_INDEX = { C: 0, D: 1, E: 2, F: 3, G: 4, A: 5, B: 6 };
+      var GT_BASE_STEP = 2; // paso diatónico absoluto de E4 (referencia)
+
+      function gtParseNombre(nombre) {
+        return { letter: nombre.charAt(0), accidental: nombre.slice(1) };
+      }
+      // Paso diatónico absoluto: C4=0, D4=1, ... B4=6, C5=7... (una unidad
+      // por letra, sin importar la alteración — la alteración sólo cambia
+      // el símbolo dibujado, nunca la altura en el pentagrama).
+      function gtDiatonicStep(letter, octavaAbs) {
+        return (octavaAbs - 4) * 7 + GT_LETTER_INDEX[letter];
+      }
+      function gtAccidentalGlyph(acc) {
+        if (!acc) return "";
+        var glyph = acc.charAt(0) === "#" ? "♯" : "♭";
+        return glyph.repeat(acc.length);
+      }
+
+      function gtChordSVG(g) {
+        var LINE_GAP = 10, STEP = LINE_GAP / 2;
+        var STAFF_BOTTOM = GT_BASE_STEP;      // E4: línea inferior
+        var STAFF_TOP = GT_BASE_STEP + 8;     // F5: línea superior
+
+        var puntos = g.notas.map(function(n, i){
+          var p = gtParseNombre(g.nombres[i]);
+          var step = gtDiatonicStep(p.letter, 3 + n.octava);
+          return { step: step, accidental: p.accidental };
+        }).sort(function(a, b){ return a.step - b.step; });
+
+        var minStep = Math.min.apply(null, puntos.map(function(p){ return p.step; }));
+        var maxStep = Math.max.apply(null, puntos.map(function(p){ return p.step; }));
+        var topLedger = Math.max(0, Math.ceil((maxStep - STAFF_TOP) / 2));
+        var botLedger = Math.max(0, Math.ceil((STAFF_BOTTOM - minStep) / 2));
+
+        var yFor = function(step){ return -(step - GT_BASE_STEP) * STEP; };
+        var padTop = 14 + topLedger * LINE_GAP, padBot = 14 + botLedger * LINE_GAP;
+        var height = (yFor(STAFF_BOTTOM) - yFor(STAFF_TOP)) + padTop + padBot;
+        var originY = padTop - yFor(STAFF_TOP);
+
+        // segundas adyacentes (a un paso diatónico) alternan lado del vástago
+        var sideFlip = false, prevStep = null;
+        var headX0 = 34, headR = 5.2, stemX = headX0 + headR;
+        var heads = puntos.map(function(p){
+          var closeSecond = prevStep !== null && Math.abs(p.step - prevStep) === 1;
+          sideFlip = closeSecond ? !sideFlip : false;
+          prevStep = p.step;
+          return { x: headX0 + (sideFlip ? headR * 1.9 : 0), y: yFor(p.step) + originY,
+                    accidental: p.accidental, step: p.step };
+        });
+
+        var staffLeft = 24, staffRight = 96;
+        var svg = '<svg class="gt-staff-svg" viewBox="0 0 100 ' + height.toFixed(1) +
+          '" width="100" height="' + height.toFixed(1) +
+          '" role="img" aria-label="Partitura del acorde ' + g.simbolo + '">';
+
+        for (var i = 0; i < 5; i++) {
+          var yLine = yFor(STAFF_BOTTOM + i * 2) + originY;
+          svg += '<line x1="' + staffLeft + '" y1="' + yLine.toFixed(1) + '" x2="' + staffRight +
+            '" y2="' + yLine.toFixed(1) + '" class="gt-staff-line"/>';
+        }
+
+        heads.forEach(function(h){
+          var ls = STAFF_TOP + 2;
+          while (ls <= h.step) {
+            var y1 = yFor(ls) + originY;
+            svg += '<line x1="' + (h.x - 8) + '" y1="' + y1.toFixed(1) + '" x2="' + (h.x + 8) +
+              '" y2="' + y1.toFixed(1) + '" class="gt-staff-ledger"/>';
+            ls += 2;
+          }
+          ls = STAFF_BOTTOM - 2;
+          while (ls >= h.step) {
+            var y2 = yFor(ls) + originY;
+            svg += '<line x1="' + (h.x - 8) + '" y1="' + y2.toFixed(1) + '" x2="' + (h.x + 8) +
+              '" y2="' + y2.toFixed(1) + '" class="gt-staff-ledger"/>';
+            ls -= 2;
+          }
+        });
+
+        if (heads.length >= 1) {
+          var ys = heads.map(function(h){ return h.y; });
+          svg += '<line x1="' + stemX + '" y1="' + Math.min.apply(null, ys) + '" x2="' + stemX +
+            '" y2="' + (Math.max.apply(null, ys) + 26) + '" class="gt-staff-stem"/>';
+        }
+
+        heads.forEach(function(h){
+          if (h.accidental) {
+            svg += '<text x="' + (h.x - headR - 5) + '" y="' + (h.y + 3.5) +
+              '" class="gt-staff-acc" text-anchor="end">' + gtAccidentalGlyph(h.accidental) + '</text>';
+          }
+          svg += '<ellipse cx="' + h.x + '" cy="' + h.y + '" rx="' + headR + '" ry="' + (headR * 0.72) +
+            '" transform="rotate(-18 ' + h.x + ' ' + h.y + ')" class="gt-staff-head"/>';
+        });
+
+        svg += '</svg>';
+        return svg;
+      }
+
       function gtReproducir(notas) {
         notas.forEach(function(n, i) {
           setTimeout(function(){
@@ -1732,6 +1847,7 @@
                 '<span class="pc-grado"><b>' + g.numeral + '</b></span>' +
                 '<button type="button" class="gt-chord-play">&#9654;</button>' +
               '</div>' +
+              '<div class="gt-staff-wrap">' + gtChordSVG(g) + '</div>' +
               '<div class="pc-notas">' + g.simbolo + '</div>' +
               '<div class="pc-set">' + g.nombreCalidad + '</div>' +
               '<div class="pc-set">' + g.nombres.join(" · ") + '</div>' +
