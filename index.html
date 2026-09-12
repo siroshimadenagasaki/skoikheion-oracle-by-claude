@@ -651,10 +651,29 @@
   .progresion-chord.playing .gt-staff-svg .gt-staff-head{fill:var(--gold);stroke:var(--gold);}
 
   /* ---- Botonera de Navegación "Ir a:" ---- */
+  .site-avatar{
+    position:fixed;
+    right:20px;
+    top:20px;
+    width:64px;
+    height:64px;
+    border-radius:50%;
+    overflow:hidden;
+    z-index:101;
+    border:2px solid var(--gold);
+    box-shadow:0 4px 14px rgba(0,0,0,.45);
+    background:var(--surface);
+  }
+  .site-avatar img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:block;
+  }
   .nav-modules{
     position:fixed;
     right:20px;
-    top:32px;
+    top:96px;
     display:flex;
     flex-direction:column;
     gap:6px;
@@ -766,6 +785,11 @@
 </style>
 </head>
 <body>
+
+<!-- Avatar del sitio -->
+<div class="site-avatar" title="Stoikheion Oracle">
+  <img src="assets/avatar-mozart.jpg" alt="Avatar Stoikheion Oracle">
+</div>
 
 <!-- Botonera de Navegación "Ir a:" -->
 <div class="nav-modules" id="navModules">
