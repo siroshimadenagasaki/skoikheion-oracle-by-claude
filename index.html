@@ -541,6 +541,13 @@
   }
   .mix-preset-opt:hover{color:var(--ink);border-color:var(--gold-dim);}
   .mix-preset-opt.active{background:var(--gold);color:#1a1622;border-color:var(--gold);font-weight:700;}
+  .mix-preset-select{
+    font-family:'JetBrains Mono',monospace;font-size:11.5px;
+    background:var(--surface);border:1px solid var(--line);color:var(--ink);
+    padding:6px 10px;border-radius:8px;cursor:pointer;
+  }
+  .mix-preset-select:hover{border-color:var(--gold-dim);}
+  .mix-preset-select:focus{outline:none;border-color:var(--gold);}
 
   /* ---- Generador de progresiones aleatorio (al final del SetMusicBox) ---- */
   .progresion-card{margin-top:22px;}
@@ -811,7 +818,7 @@
         <button class="chip primary" id="playChordBtn" type="button">▶ Acorde</button>
         <button class="chip" id="composeBtn" type="button" title="Toca el segmento de 12 compases de SetMusicBox con las notas actuales">🎹 Compose</button>
         <button class="chip" id="clearBtn">Limpiar</button>
-        <button class="chip toggle" id="sf2Btn" type="button" aria-pressed="false" title="Carga bajo demanda un SoundFont real (TBOSf.sf2, ~80MB) y reemplaza el sintetizador por muestras de instrumento reales. Un clic más para volver al sintetizador liviano.">🎼 Sonido real (SoundFont)</button>
+        <button class="chip toggle" id="sf2Btn" type="button" aria-pressed="false" title="Carga bajo demanda tres SoundFonts reales (Instruments+Drums+Percussion, ~29MB) y reemplaza el sintetizador por muestras de instrumento y batería reales (incluye SetMusicBox). Un clic más para volver al sintetizador liviano.">🎼 Sonido real (SoundFont)</button>
       </div>
       <div class="examples">
         <span>Ejemplos rápidos</span>
@@ -1126,14 +1133,62 @@
       </div>
       <div class="mix-presets">
         <div class="mix-preset-group" id="harmonyPresetGroup" data-mix-group="harmony">
-          <span class="mix-preset-label">Armonía</span>
-          <button type="button" class="mix-preset-opt active" data-preset="pad">Pad</button>
-          <button type="button" class="mix-preset-opt" data-preset="piano">Piano</button>
+          <label class="mix-preset-label" for="harmonyPresetSelect">Armonía</label>
+          <select class="mix-preset-select" id="harmonyPresetSelect">
+            <option value="piano">Piano</option>
+            <option value="epiano">Piano eléctrico</option>
+            <option value="harpsichord">Clavecín</option>
+            <option value="celesta">Celesta</option>
+            <option value="strings1" selected>Cuerdas (pad)</option>
+            <option value="brass1">Metales</option>
+            <option value="sopranoSax">Sax soprano</option>
+            <option value="tenorSax">Sax tenor</option>
+            <option value="bassoon">Fagot</option>
+            <option value="flute">Flauta</option>
+            <option value="contrabass">Contrabajo</option>
+            <option value="jazzGuitar">Guitarra jazz</option>
+          </select>
         </div>
         <div class="mix-preset-group" id="melodyPresetGroup" data-mix-group="melody">
-          <span class="mix-preset-label">Melodía</span>
-          <button type="button" class="mix-preset-opt active" data-preset="flute">Flauta</button>
-          <button type="button" class="mix-preset-opt" data-preset="sax">Saxo</button>
+          <label class="mix-preset-label" for="melodyPresetSelect">Melodía</label>
+          <select class="mix-preset-select" id="melodyPresetSelect">
+            <option value="piano">Piano</option>
+            <option value="epiano">Piano eléctrico</option>
+            <option value="harpsichord">Clavecín</option>
+            <option value="celesta">Celesta</option>
+            <option value="strings1">Cuerdas (pad)</option>
+            <option value="brass1">Metales</option>
+            <option value="sopranoSax">Sax soprano</option>
+            <option value="tenorSax">Sax tenor</option>
+            <option value="bassoon">Fagot</option>
+            <option value="flute" selected>Flauta</option>
+            <option value="contrabass">Contrabajo</option>
+            <option value="jazzGuitar">Guitarra jazz</option>
+          </select>
+        </div>
+        <div class="mix-preset-group" id="bassPresetGroup" data-mix-group="bass">
+          <label class="mix-preset-label" for="bassPresetSelect">Bajo</label>
+          <select class="mix-preset-select" id="bassPresetSelect">
+            <option value="piano">Piano</option>
+            <option value="epiano">Piano eléctrico</option>
+            <option value="harpsichord">Clavecín</option>
+            <option value="celesta">Celesta</option>
+            <option value="strings1">Cuerdas (pad)</option>
+            <option value="brass1">Metales</option>
+            <option value="sopranoSax">Sax soprano</option>
+            <option value="tenorSax">Sax tenor</option>
+            <option value="bassoon">Fagot</option>
+            <option value="flute">Flauta</option>
+            <option value="contrabass" selected>Contrabajo</option>
+            <option value="jazzGuitar">Guitarra jazz</option>
+          </select>
+        </div>
+        <div class="mix-preset-group" id="drumPresetGroup" data-mix-group="drum">
+          <label class="mix-preset-label" for="drumPresetSelect">Batería</label>
+          <select class="mix-preset-select" id="drumPresetSelect">
+            <option value="kit" selected>Kit (batería real)</option>
+            <option value="percussion">Percusión (congas)</option>
+          </select>
         </div>
       </div>
     </div>
@@ -3726,16 +3781,28 @@ function synthPluck(freq, { start = 0, duration = 1.6, gain = 0.5 } = {}) {
 }
 
 /* ------------------------------------------------------------
-   SF2: motor de sonido real a partir de un SoundFont (.sf2).
-   Se carga bajo demanda (botón "Sonido real") para no sumar 80MB+
+   SF2: motor de sonido real a partir de SoundFonts (.sf2).
+   Se cargan bajo demanda (botón "Sonido real") para no sumar peso
    a la carga inicial de la página. Parser propio en JS puro
    (RIFF/sfbk: phdr/pbag/pgen/inst/ibag/igen/shdr), sin
    dependencias nuevas — misma idea que el resto del sitio.
    No implementa modulación LFO ni filtros del SF2: es una
    aproximación (tuning + loop + ADSR de volumen) suficiente
    para reemplazar el timbre sintético por muestras reales.
+
+   Tres archivos, cargados juntos con el mismo botón:
+   - Soundfonts/Instruments.sf2 (~20MB): instrumentos melódicos
+     (piano, cuerdas, metales, saxos, fagot, flauta, contrabajo,
+     guitarra jazz) — usado para armonía/melodía/bajo del sitio y
+     de SetMusicBox.
+   - Soundfonts/Drums.sf2 (~8MB): kit de batería real (bombo,
+     redoblante, hi-hat, platillos, toms) en el banco GM 128.
+   - Soundfonts/Percussion.sf2 (~0.5MB): congas cromáticas, usada
+     como preset alternativo de la pista de batería en SetMusicBox.
    ------------------------------------------------------------ */
-const SF2_URL = "TBOSf.sf2";
+const SF2_URL = "Soundfonts/Instruments.sf2";
+const SF2_DRUMS_URL = "Soundfonts/Drums.sf2";
+const SF2_PERC_URL = "Soundfonts/Percussion.sf2";
 const SF2_DEFAULT_PRESET = { bank: 0, preset: 0 }; // Grand Piano
 
 const SF2_GEN = {
@@ -3755,7 +3822,9 @@ function sf2Tc2Sec(tc) { return Math.pow(2, tc / 1200); }
 function sf2Cb2Amp(cb) { return Math.pow(10, -cb / 200); }
 
 let sf2State = "idle"; // idle | loading | ready | error
-let sf2Font = null;
+let sf2Font = null;        // Instruments.sf2 (parseado)
+let sf2DrumsFont = null;   // Drums.sf2 (parseado)
+let sf2PercFont = null;    // Percussion.sf2 (parseado)
 let sf2PresetIdx = -1;
 const sf2BufferCache = new Map();
 
@@ -3910,14 +3979,16 @@ function sf2ResolveNote(font, presetIdx, note, vel) {
   return hits;
 }
 
-function sf2BufferFor(ctx, shdr) {
-  const key = shdr.start + ":" + shdr.end + ":" + shdr.sampleRate;
+function sf2BufferFor(ctx, shdr, font, fontTag) {
+  font = font || sf2Font;
+  fontTag = fontTag || "instruments";
+  const key = fontTag + ":" + shdr.start + ":" + shdr.end + ":" + shdr.sampleRate;
   let buf = sf2BufferCache.get(key);
   if (buf) return buf;
   const n = Math.max(1, shdr.end - shdr.start);
   buf = ctx.createBuffer(1, n, shdr.sampleRate || ctx.sampleRate);
   const data = buf.getChannelData(0);
-  const src = sf2Font.samples.subarray(shdr.start, shdr.end);
+  const src = font.samples.subarray(shdr.start, shdr.end);
   for (let i = 0; i < src.length; i++) data[i] = src[i] / 32768;
   sf2BufferCache.set(key, buf);
   return buf;
@@ -4005,25 +4076,45 @@ function playSynthTone(freq, opts) {
 // Botón "🎼 Sonido real": primer clic descarga y parsea el SoundFont
 // (bajo demanda, no bloquea la carga de la página); clics siguientes
 // alternan entre el SoundFont ya cargado y el sintetizador "pad".
+// Los tres .sf2 se cargan juntos con un solo clic — el progreso mostrado
+// es ponderado por tamaño aproximado de cada archivo (no hace falta que
+// sea exacto, solo que la barra avance parejo en vez de saltar de golpe
+// al pasar de un archivo al siguiente).
+const SF2_FILES = [
+  { key: "instruments", url: SF2_URL,       weight: 20.5 },
+  { key: "drums",       url: SF2_DRUMS_URL, weight: 8.4 },
+  { key: "percussion",  url: SF2_PERC_URL,  weight: 0.5 },
+];
 async function sf2Activate(btn) {
   sf2State = "loading";
   btn.disabled = true;
   try {
-    const buf = await sf2FetchWithProgress(SF2_URL, (frac) => {
-      btn.textContent = "🎼 Cargando " + Math.round(frac * 100) + "%…";
-    });
-    sf2Font = sf2ParseFont(buf);
+    const totalWeight = SF2_FILES.reduce((s, f) => s + f.weight, 0);
+    let doneWeight = 0;
+    const parsed = {};
+    for (const f of SF2_FILES) {
+      const buf = await sf2FetchWithProgress(f.url, (frac) => {
+        const overall = (doneWeight + frac * f.weight) / totalWeight;
+        btn.textContent = "🎼 Cargando " + Math.round(overall * 100) + "%…";
+      });
+      parsed[f.key] = sf2ParseFont(buf);
+      doneWeight += f.weight;
+    }
+    sf2Font = parsed.instruments;
+    sf2DrumsFont = parsed.drums;
+    sf2PercFont = parsed.percussion;
     sf2PresetIdx = sf2FindPresetIdx(sf2Font, SF2_DEFAULT_PRESET.bank, SF2_DEFAULT_PRESET.preset);
     if (sf2PresetIdx === -1) sf2PresetIdx = 0;
     sf2State = "ready";
     currentSynth = "sf2";
     btn.textContent = "🎼 Sonido real (SoundFont) ✓";
     btn.title = "Preset activo: " + (sf2Font.phdr[sf2PresetIdx] || {}).name +
-      " — clic para volver al sintetizador liviano";
+      " — incluye batería y percusión reales en SetMusicBox — clic para volver al sintetizador liviano";
     btn.setAttribute("aria-pressed", "true");
   } catch (err) {
     console.error("No se pudo cargar el SoundFont:", err);
     sf2State = "error";
+    sf2Font = null; sf2DrumsFont = null; sf2PercFont = null;
     btn.textContent = "🎼 Error al cargar — reintentar";
   } finally {
     btn.disabled = false;
@@ -6897,10 +6988,11 @@ function runAnalysis() {
   // Un canal de ganancia por instrumento, cada uno conectado al bus
   // general (masterGain) — así el volumen general sigue escalando todo
   // junto, y cada pista además tiene su propio nivel relativo. Los
-  // presets solo deciden QUÉ función de síntesis usar para armonía y
-  // melodía (Pad/Piano, Flauta/Saxo) — bajo y batería no tienen preset.
+  // presets deciden qué instrumento usar en armonía/melodía/bajo (los
+  // 12 de Instruments.sf2, con sintetizador de siempre como respaldo)
+  // y qué muestras usar en batería (kit real o percusión/congas).
   var mixGains = { drum: 1, bass: 1, chord: 1, melody: 1, comping2: 1 };
-  var mixPresets = { harmony: "pad", melody: "flute" };
+  var mixPresets = { harmony: "strings1", melody: "flute", bass: "contrabass", drum: "kit" };
   var chordGainNode = null, bassGainNode = null, melodyGainNode = null, drumGainNode = null, comping2GainNode = null;
   function ensureInstrumentGains(ctx){
     var master = ensureMasterGain(ctx);
@@ -6946,36 +7038,71 @@ function runAnalysis() {
 
   /* ================================================================
      PUENTE A SOUNDFONT REAL — cuando el botón "🎼 Sonido real
-     (SoundFont)" (arriba, fuera de SetMusicBox) está activado Y el
-     .sf2 ya terminó de cargar (sf2State/sf2Font/currentSynth son
-     globales del <script> principal, definidos antes de este —
-     mismo patrón que ya usa el resto del sitio), SetMusicBox toca
-     sus pistas con muestras reales del SoundFont en vez del
-     sintetizador, respetando el preset que ya elige el mini mixer
-     (Pad→cuerdas / Piano, Flauta / Saxo) y sin salir del bus de esa
-     pista (dest = gains.chord/bass/melody), así que el mini mixer y
-     el volumen general siguen funcionando igual. La batería sigue
-     sintetizada: este SoundFont no trae un kit de percusión.
+     (SoundFont)" (arriba, fuera de SetMusicBox) está activado Y los
+     .sf2 ya terminaron de cargar (sf2State/sf2Font/sf2DrumsFont/
+     sf2PercFont/currentSynth son globales del <script> principal,
+     definidos antes de este — mismo patrón que ya usa el resto del
+     sitio), SetMusicBox toca sus pistas con muestras reales en vez
+     del sintetizador, respetando el preset que elige cada selector
+     del mini mixer (Armonía/Melodía/Bajo → Instruments.sf2, Batería
+     → Drums.sf2 o Percussion.sf2) y sin salir del bus de esa pista
+     (dest = gains.chord/bass/melody/drum), así que el mini mixer y
+     el volumen general siguen funcionando igual.
      ================================================================ */
-  var SM2_PROGRAMS = {
-    pianoHarmony: { bank:0, program:0 },  // Grand Piano
-    padHarmony:   { bank:0, program:48 }, // String Section 1 (pad cálido)
-    bass:         { bank:0, program:43 }, // Contrabass
-    flute:        { bank:0, program:73 }, // Flute
-    sax:          { bank:0, program:65 }, // Alto Sax
-    strings:      { bank:0, program:49 }  // String Section 2 (pista moreComping)
+  // Instrumentos disponibles en Instruments.sf2 (banco 0, GM). "fallback"
+  // dice qué sintetizador de siempre usar si el SoundFont no está activo
+  // (no hay un sintetizador propio para cada uno de los 12 — se agrupan
+  // por familia tímbrica: piano/pad/sax/flauta/bajo).
+  var SM2_INSTRUMENTS = [
+    { key:"piano",       label:"Piano",             program:0,  fallback:"piano" },
+    { key:"epiano",      label:"Piano eléctrico",   program:4,  fallback:"piano" },
+    { key:"harpsichord", label:"Clavecín",          program:6,  fallback:"piano" },
+    { key:"celesta",     label:"Celesta",           program:8,  fallback:"piano" },
+    { key:"strings1",    label:"Cuerdas (pad)",     program:48, fallback:"pad"   },
+    { key:"brass1",      label:"Metales",           program:61, fallback:"pad"   },
+    { key:"sopranoSax",  label:"Sax soprano",       program:64, fallback:"sax"   },
+    { key:"tenorSax",    label:"Sax tenor",         program:66, fallback:"sax"   },
+    { key:"bassoon",     label:"Fagot",             program:70, fallback:"bass"  },
+    { key:"flute",       label:"Flauta",            program:73, fallback:"flute" },
+    { key:"contrabass",  label:"Contrabajo",        program:43, fallback:"bass"  },
+    { key:"jazzGuitar",  label:"Guitarra jazz",     program:26, fallback:"piano" }
+  ];
+  var SM2_INSTRUMENTS_BY_KEY = {};
+  SM2_INSTRUMENTS.forEach(function(it){ SM2_INSTRUMENTS_BY_KEY[it.key] = it; });
+  // Presets de la pista de batería: "kit" son muestras reales de batería
+  // (Drums.sf2, banco GM 128) y "percussion" son congas cromáticas
+  // (Percussion.sf2, banco 0) tocadas con las mismas notas MIDI de
+  // siempre (bombo=36, redoblante=38, hi-hat cerrado=42, abierto=46) —
+  // mismo patrón rítmico, timbre distinto.
+  var SM2_DRUM_KITS = {
+    kit:        { font:"drums",      bank:128, program:0 },
+    percussion: { font:"percussion", bank:0,   program:0 }
   };
+  var SM2_PROGRAMS = { strings: { font:"instruments", bank:0, program:48 } }; // pista moreComping
+  SM2_INSTRUMENTS.forEach(function(it){
+    SM2_PROGRAMS[it.key] = { font:"instruments", bank:0, program:it.program };
+  });
+  Object.keys(SM2_DRUM_KITS).forEach(function(k){ SM2_PROGRAMS[k] = SM2_DRUM_KITS[k]; });
   var sm2PresetCache = {};
   var sm2CacheFontRef = null;
   function sm2UsingSF2(){
     return typeof sf2State !== "undefined" && sf2State === "ready" && !!sf2Font &&
       typeof currentSynth !== "undefined" && currentSynth === "sf2";
   }
+  function sm2FontFor(fontKey){
+    if(fontKey === "drums") return (typeof sf2DrumsFont !== "undefined") ? sf2DrumsFont : null;
+    if(fontKey === "percussion") return (typeof sf2PercFont !== "undefined") ? sf2PercFont : null;
+    return sf2Font;
+  }
   function sm2PresetIdxFor(key){
+    // Los tres .sf2 se cargan/recargan siempre juntos (mismo botón), así
+    // que sf2Font alcanza como referencia para saber si hay que
+    // invalidar el cache (cambió de null a cargado, o al revés).
     if(sm2CacheFontRef !== sf2Font){ sm2PresetCache = {}; sm2CacheFontRef = sf2Font; }
     if(sm2PresetCache[key] !== undefined) return sm2PresetCache[key];
     var p = SM2_PROGRAMS[key];
-    var idx = sf2FindPresetIdx(sf2Font, p.bank, p.program);
+    var font = p ? sm2FontFor(p.font) : null;
+    var idx = (p && font) ? sf2FindPresetIdx(font, p.bank, p.program) : -1;
     sm2PresetCache[key] = idx;
     return idx;
   }
@@ -6987,12 +7114,16 @@ function runAnalysis() {
   function playSM2Voice(ctx, dest, presetKey, midi, startTime, duration, gain){
     var presetIdx = sm2PresetIdxFor(presetKey);
     if(presetIdx < 0) return false;
-    var hits = sf2ResolveNote(sf2Font, presetIdx, midi, 100);
+    var progInfo = SM2_PROGRAMS[presetKey];
+    var font = sm2FontFor(progInfo.font);
+    var fontTag = progInfo.font;
+    if(!font) return false;
+    var hits = sf2ResolveNote(font, presetIdx, midi, 100);
     if(!hits.length) return false;
     var perHitGain = gain / hits.length;
     hits.forEach(function(hit){
       var shdr = hit.shdr, gens = hit.gens;
-      var buffer = sf2BufferFor(ctx, shdr);
+      var buffer = sf2BufferFor(ctx, shdr, font, fontTag);
       var src = ctx.createBufferSource();
       src.buffer = buffer;
       var root = gens[SF2_GEN.OVERRIDE_ROOTKEY] !== -1 ? gens[SF2_GEN.OVERRIDE_ROOTKEY] : shdr.origPitch;
@@ -7558,53 +7689,71 @@ function runAnalysis() {
     var chk = document.getElementById(id);
     return !chk || chk.checked;
   }
+  // Familias de sintetizador de siempre, una por cada preset de
+  // Instruments.sf2 (ver SM2_INSTRUMENTS más arriba) — solo hay 5
+  // sintetizadores reales (piano/pad/sax/flauta/bajo) para 12
+  // instrumentos con muestras, así que varios presets comparten
+  // familia de respaldo cuando el SoundFont está apagado o falla.
+  var VOICE_FAMILY = {
+    piano: { fn: playPianoVoice, mk: function(dur){ return { attack: Math.min(0.012, dur*0.06), release: Math.min(0.5, dur*0.5), peakGain:0.22, cutoff:4200 }; } },
+    pad:   { fn: playPadVoice,   mk: function(dur){ return { attack: Math.min(0.4, dur*0.3), release: Math.min(0.9, dur*0.45), peakGain:0.14, cutoff:1600 }; } },
+    sax:   { fn: playSaxVoice,   mk: function(dur){ return { attack: Math.min(0.08, dur*0.25), release: Math.min(0.28, dur*0.5), peakGain:0.14 }; } },
+    flute: { fn: playFluteVoice, mk: function(dur){ return { attack: Math.min(0.06, dur*0.25), release: Math.min(0.22, dur*0.5), peakGain:0.15 }; } },
+    bass:  { fn: playBassVoice,  mk: function(dur){ return { attack: Math.min(0.12, dur*0.25), release: Math.min(0.3, dur*0.4), peakGain:0.22, cutoff:650 }; } }
+  };
+  function voiceFamilyFor(presetKey, fallbackKey){
+    var inst = SM2_INSTRUMENTS_BY_KEY[presetKey] || SM2_INSTRUMENTS_BY_KEY[fallbackKey];
+    return VOICE_FAMILY[inst.fallback] || VOICE_FAMILY.pad;
+  }
+  // Notas MIDI GM de siempre para el patrón de batería (bombo/redoblante/
+  // hi-hat) — se usan tal cual para resolver la muestra real, sea el kit
+  // de batería o el de percusión (ver SM2_DRUM_KITS): mismo ritmo, timbre
+  // distinto según el preset elegido en el selector "Batería".
+  function drumMidiFor(ev){
+    if(ev.type === "kick") return 36;
+    if(ev.type === "snare") return 38;
+    return ev.open ? 46 : 42; // hihat abierto / cerrado
+  }
   function scheduleLoopAt(ctx, dest, loopStartTime, spb){
     // Mini mixer: un canal de ganancia por instrumento (independiente
-    // del volumen general) y, para armonía/melodía, qué función de
-    // síntesis usar según el preset elegido (Pad/Piano, Flauta/Saxo).
+    // del volumen general) y, para armonía/melodía/bajo, qué instrumento
+    // usar según el preset elegido en su selector.
     var gains = ensureInstrumentGains(ctx);
     var sm2Active = sm2UsingSF2();
     if(instEnabled("consolaChordChk")){
-      var harmonyIsPiano = mixPresets.harmony === "piano";
-      var chordVoiceFn = harmonyIsPiano ? playPianoVoice : playPadVoice;
-      var chordSM2Key = harmonyIsPiano ? "pianoHarmony" : "padHarmony";
+      var chordFam = voiceFamilyFor(mixPresets.harmony, "strings1");
       state.chordEvents.forEach(function(ev){
         var t = loopStartTime + ev.startBeat*spb;
         var dur = ev.durBeats*spb;
-        if(sm2Active && playSM2Voice(ctx, gains.chord, chordSM2Key, ev.midi, t, dur*0.93, 0.2)) return;
-        var opts = harmonyIsPiano
-          ? { attack: Math.min(0.012, dur*0.06), release: Math.min(0.5, dur*0.5), peakGain:0.22, cutoff:4200 }
-          : { attack: Math.min(0.4, dur*0.3), release: Math.min(0.9, dur*0.45), peakGain:0.14, cutoff:1600 };
-        chordVoiceFn(ctx, gains.chord, ev.midi, t, dur*0.93, opts);
+        if(sm2Active && playSM2Voice(ctx, gains.chord, mixPresets.harmony, ev.midi, t, dur*0.93, 0.2)) return;
+        chordFam.fn(ctx, gains.chord, ev.midi, t, dur*0.93, chordFam.mk(dur*0.93));
       });
     }
     if(instEnabled("consolaBassChk")){
+      var bassFam = voiceFamilyFor(mixPresets.bass, "contrabass");
       state.bassEvents.forEach(function(ev){
         var t = loopStartTime + ev.startBeat*spb;
         var dur = ev.durBeats*spb;
-        if(sm2Active && playSM2Voice(ctx, gains.bass, "bass", ev.midi, t, dur*0.9, 0.24)) return;
-        var attack = Math.min(0.12, dur*0.25);
-        var release = Math.min(0.3, dur*0.4);
-        playBassVoice(ctx, gains.bass, ev.midi, t, dur*0.9, {attack:attack, release:release, peakGain:0.22, cutoff:650});
+        if(sm2Active && playSM2Voice(ctx, gains.bass, mixPresets.bass, ev.midi, t, dur*0.9, 0.24)) return;
+        bassFam.fn(ctx, gains.bass, ev.midi, t, dur*0.9, bassFam.mk(dur*0.9));
       });
     }
     if(instEnabled("consolaMelodyChk")){
-      var melodyIsSax = mixPresets.melody === "sax";
-      var melodyVoiceFn = melodyIsSax ? playSaxVoice : playFluteVoice;
-      var melodySM2Key = melodyIsSax ? "sax" : "flute";
+      var melodyFam = voiceFamilyFor(mixPresets.melody, "flute");
       state.melodyEvents.forEach(function(ev){
         var t = loopStartTime + ev.startBeat*spb;
         var dur = ev.durBeats*spb;
-        if(sm2Active && playSM2Voice(ctx, gains.melody, melodySM2Key, ev.midi, t, dur*0.85, 0.2)) return;
-        var opts = melodyIsSax
-          ? { attack: Math.min(0.08, dur*0.25), release: Math.min(0.28, dur*0.5), peakGain:0.14 }
-          : { attack: Math.min(0.06, dur*0.25), release: Math.min(0.22, dur*0.5), peakGain:0.15 };
-        melodyVoiceFn(ctx, gains.melody, ev.midi, t, dur*0.85, opts);
+        if(sm2Active && playSM2Voice(ctx, gains.melody, mixPresets.melody, ev.midi, t, dur*0.85, 0.2)) return;
+        melodyFam.fn(ctx, gains.melody, ev.midi, t, dur*0.85, melodyFam.mk(dur*0.85));
       });
     }
     if(instEnabled("consolaDrumChk")){
+      var drumKitKey = (mixPresets.drum === "percussion") ? "percussion" : "kit";
       drumEvents.forEach(function(ev){
         var t = loopStartTime + ev.startBeat*spb;
+        var sm2Gain = ev.type === "kick" ? 0.34 : ev.type === "snare" ? 0.26 : (ev.open ? 0.2 : 0.15);
+        var sm2Dur = ev.type === "kick" ? 0.3 : ev.type === "snare" ? 0.25 : (ev.open ? 0.5 : 0.15);
+        if(sm2Active && playSM2Voice(ctx, gains.drum, drumKitKey, drumMidiFor(ev), t, sm2Dur, sm2Gain)) return;
         if(ev.type === "kick") playKickDrum(ctx, gains.drum, t);
         else if(ev.type === "snare") playSnareDrum(ctx, gains.drum, t);
         else if(ev.type === "hihat") playHihat(ctx, gains.drum, t, ev.open);
@@ -7820,22 +7969,21 @@ function runAnalysis() {
     });
   })();
 
-  // ---- Mini mixer: conmutadores de preset (Armonía: Pad/Piano — Melodía: Flauta/Saxo) ----
+  // ---- Mini mixer: selectores de preset (Armonía/Melodía/Bajo → los 12
+  // instrumentos de Instruments.sf2 — Batería → Kit real / Percusión) ----
   (function(){
-    var GROUPS = [
-      { id: "harmonyPresetGroup", key: "harmony" },
-      { id: "melodyPresetGroup",  key: "melody"  }
+    var SELECTS = [
+      { id: "harmonyPresetSelect", key: "harmony" },
+      { id: "melodyPresetSelect",  key: "melody"  },
+      { id: "bassPresetSelect",    key: "bass"    },
+      { id: "drumPresetSelect",    key: "drum"    }
     ];
-    GROUPS.forEach(function(g){
-      var host = document.getElementById(g.id);
-      if(!host) return;
-      var btns = host.querySelectorAll(".mix-preset-opt");
-      btns.forEach(function(btn){
-        btn.addEventListener("click", function(){
-          btns.forEach(function(b){ b.classList.remove("active"); });
-          this.classList.add("active");
-          mixPresets[g.key] = this.dataset.preset;
-        });
+    SELECTS.forEach(function(cfg){
+      var el = document.getElementById(cfg.id);
+      if(!el) return;
+      el.value = mixPresets[cfg.key];
+      el.addEventListener("change", function(){
+        mixPresets[cfg.key] = this.value;
       });
     });
   })();
