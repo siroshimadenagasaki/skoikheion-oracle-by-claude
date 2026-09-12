@@ -4036,6 +4036,60 @@ function sf2BufferFor(ctx, shdr, font, fontTag) {
   return buf;
 }
 
+// Aplica una envolvente de SoundFont (delay/attack/hold/decay/sustain/
+// release) a un AudioParam de ganancia. A diferencia de una ADSR "de
+// juguete", esto corta la fase que esté en curso (attack, hold o decay)
+// en el instante real de "note off" (t0+duration) y pasa derecho a
+// release desde el nivel interpolado en ese momento — como hace
+// cualquier sintetizador/soundfont real. Sin esto, un instrumento con
+// una fase de decay larga (p.ej. el Grand Piano real de este sitio,
+// ~16s de decay) ignora por completo la duración pedida: el código
+// esperaba a que el decay completo terminara antes de recién empezar a
+// apagar la nota, así que una nota pensada para sonar 0.7s (clic en el
+// reloj) o un par de compases (acorde de armonía) terminaba sonando
+// 16+ segundos — la causa real de las "notas colgadas". Devuelve el
+// instante en que termina el release (para agendar el stop() del nodo).
+function sf2ApplyNoteEnvelope(g, t0, opts){
+  var delay = opts.delay, attack = opts.attack, hold = opts.hold, decay = opts.decay,
+      sustainAmp = opts.sustainAmp, release = opts.release, peak = opts.peak, duration = opts.duration;
+  var tDelayEnd = t0 + delay;
+  var tAttackEnd = tDelayEnd + attack;
+  var tHoldEnd = tAttackEnd + hold;
+  var tDecayEnd = tHoldEnd + decay;
+  var sustainLevel = Math.max(peak * sustainAmp, 0.0001);
+  var noteOffAt = t0 + duration;
+
+  g.setValueAtTime(0, t0);
+  if (noteOffAt <= tDelayEnd) {
+    g.setValueAtTime(0, tDelayEnd);
+    g.setValueAtTime(0, noteOffAt);
+  } else if (noteOffAt <= tAttackEnd) {
+    g.setValueAtTime(0, tDelayEnd);
+    var lvlA = peak * (noteOffAt - tDelayEnd) / Math.max(attack, 1e-6);
+    g.linearRampToValueAtTime(Math.max(lvlA, 0.0001), noteOffAt);
+  } else if (noteOffAt <= tHoldEnd) {
+    g.setValueAtTime(0, tDelayEnd);
+    g.linearRampToValueAtTime(peak, tAttackEnd);
+    g.setValueAtTime(peak, noteOffAt);
+  } else if (noteOffAt <= tDecayEnd) {
+    g.setValueAtTime(0, tDelayEnd);
+    g.linearRampToValueAtTime(peak, tAttackEnd);
+    g.setValueAtTime(peak, tHoldEnd);
+    var frac = (noteOffAt - tHoldEnd) / Math.max(decay, 1e-6);
+    var lvlD = peak + (sustainLevel - peak) * frac;
+    g.linearRampToValueAtTime(Math.max(lvlD, 0.0001), noteOffAt);
+  } else {
+    g.setValueAtTime(0, tDelayEnd);
+    g.linearRampToValueAtTime(peak, tAttackEnd);
+    g.setValueAtTime(peak, tHoldEnd);
+    g.linearRampToValueAtTime(sustainLevel, tDecayEnd);
+    g.setValueAtTime(sustainLevel, noteOffAt);
+  }
+  var tReleaseEnd = noteOffAt + release;
+  g.linearRampToValueAtTime(0.0001, tReleaseEnd);
+  return tReleaseEnd;
+}
+
 function synthSF2(freq, { start = 0, duration = 1.2, gain = 0.15 } = {}) {
   if (sf2State !== "ready" || !sf2Font || sf2PresetIdx < 0) {
     synthPad(freq, { start, duration, gain });
@@ -4072,25 +4126,18 @@ function synthSF2(freq, { start = 0, duration = 1.2, gain = 0.15 } = {}) {
     const hold = sf2Tc2Sec(gens[SF2_GEN.HOLD_VOLENV]);
     const decay = sf2Tc2Sec(gens[SF2_GEN.DECAY_VOLENV]);
     const sustainAmp = Math.min(1, sf2Cb2Amp(gens[SF2_GEN.SUSTAIN_VOLENV]));
-    const release = Math.max(0.02, sf2Tc2Sec(gens[SF2_GEN.RELEASE_VOLENV]));
+    // Tope de 2s: algunas muestras del SoundFont (p.ej. el hi-hat abierto
+    // de Drums.sf2) declaran un release real de hasta 80s pensado para
+    // que quede "abierto" hasta el próximo choke — inapropiado para
+    // notas discretas/rítmicas como las de este sitio, donde nada manda
+    // ese choke. Sin este tope, cada nota dejaría una cola de varios
+    // segundos (o minutos) sonando por encima de todo lo que sigue.
+    const release = Math.min(2, Math.max(0.02, sf2Tc2Sec(gens[SF2_GEN.RELEASE_VOLENV])));
     const atten = Math.min(1, sf2Cb2Amp(gens[SF2_GEN.INITIAL_ATTEN]));
     const peak = perHitGain * atten;
 
-    const tAttackEnd = t0 + delay + attack;
-    const tDecayEnd = tAttackEnd + hold + decay;
-    const noteOffAt = t0 + duration;
-    const tSustainHeld = Math.max(noteOffAt, tDecayEnd);
-    const tReleaseEnd = Math.max(tSustainHeld + 0.01, noteOffAt + release);
-
     const env = ctx.createGain();
-    const g = env.gain;
-    g.setValueAtTime(0, t0);
-    g.setValueAtTime(0, t0 + delay);
-    g.linearRampToValueAtTime(peak, tAttackEnd);
-    g.setValueAtTime(peak, tAttackEnd + hold);
-    g.linearRampToValueAtTime(Math.max(peak * sustainAmp, 0.0001), tDecayEnd);
-    g.setValueAtTime(Math.max(peak * sustainAmp, 0.0001), tSustainHeld);
-    g.linearRampToValueAtTime(0.0001, tReleaseEnd);
+    const tReleaseEnd = sf2ApplyNoteEnvelope(env.gain, t0, { delay, attack, hold, decay, sustainAmp, release, peak, duration });
 
     src.connect(env);
     env.connect(ctx.destination);
@@ -7192,23 +7239,14 @@ function runAnalysis() {
       var hold = sf2Tc2Sec(gens[SF2_GEN.HOLD_VOLENV]);
       var decay = sf2Tc2Sec(gens[SF2_GEN.DECAY_VOLENV]);
       var sustainAmp = Math.min(1, sf2Cb2Amp(gens[SF2_GEN.SUSTAIN_VOLENV]));
-      var release = Math.max(0.02, sf2Tc2Sec(gens[SF2_GEN.RELEASE_VOLENV]));
+      // Tope de 2s (ver misma nota en synthSF2): el hi-hat abierto de
+      // Drums.sf2, entre otras muestras, declara un release real de
+      // hasta 80s pensado para un choke que este sitio nunca manda.
+      var release = Math.min(2, Math.max(0.02, sf2Tc2Sec(gens[SF2_GEN.RELEASE_VOLENV])));
       var atten = Math.min(1, sf2Cb2Amp(gens[SF2_GEN.INITIAL_ATTEN]));
       var peak = perHitGain * atten;
-      var tAttackEnd = startTime + delay + attack;
-      var tDecayEnd = tAttackEnd + hold + decay;
-      var noteOffAt = startTime + duration;
-      var tSustainHeld = Math.max(noteOffAt, tDecayEnd);
-      var tReleaseEnd = Math.max(tSustainHeld + 0.01, noteOffAt + release);
       var env = ctx.createGain();
-      var g = env.gain;
-      g.setValueAtTime(0, startTime);
-      g.setValueAtTime(0, startTime + delay);
-      g.linearRampToValueAtTime(peak, tAttackEnd);
-      g.setValueAtTime(peak, tAttackEnd + hold);
-      g.linearRampToValueAtTime(Math.max(peak*sustainAmp, 0.0001), tDecayEnd);
-      g.setValueAtTime(Math.max(peak*sustainAmp, 0.0001), tSustainHeld);
-      g.linearRampToValueAtTime(0.0001, tReleaseEnd);
+      var tReleaseEnd = sf2ApplyNoteEnvelope(env.gain, startTime, { delay:delay, attack:attack, hold:hold, decay:decay, sustainAmp:sustainAmp, release:release, peak:peak, duration:duration });
       src.connect(env);
       env.connect(dest);
       src.start(startTime);
@@ -7751,7 +7789,7 @@ function runAnalysis() {
     pad:   { fn: playPadVoice,   mk: function(dur){ return { attack: Math.min(0.4, dur*0.3), release: Math.min(0.9, dur*0.45), peakGain:0.14, cutoff:1600 }; } },
     sax:   { fn: playSaxVoice,   mk: function(dur){ return { attack: Math.min(0.08, dur*0.25), release: Math.min(0.28, dur*0.5), peakGain:0.14 }; } },
     flute: { fn: playFluteVoice, mk: function(dur){ return { attack: Math.min(0.06, dur*0.25), release: Math.min(0.22, dur*0.5), peakGain:0.15 }; } },
-    bass:  { fn: playBassVoice,  mk: function(dur){ return { attack: Math.min(0.12, dur*0.25), release: Math.min(0.3, dur*0.4), peakGain:0.22, cutoff:650 }; } }
+    bass:  { fn: playBassVoice,  mk: function(dur){ return { attack: Math.min(0.12, dur*0.25), release: Math.min(0.06, dur*0.1), peakGain:0.22, cutoff:650 }; } }
   };
   function voiceFamilyFor(presetKey, fallbackKey){
     var inst = SM2_INSTRUMENTS_BY_KEY[presetKey] || SM2_INSTRUMENTS_BY_KEY[fallbackKey];
