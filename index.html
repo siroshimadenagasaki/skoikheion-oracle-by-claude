@@ -1161,11 +1161,11 @@
         <div class="mix-preset-group" id="harmonyPresetGroup" data-mix-group="harmony">
           <label class="mix-preset-label" for="harmonyPresetSelect">Armonía</label>
           <select class="mix-preset-select" id="harmonyPresetSelect">
-            <option value="piano">Piano</option>
+            <option value="piano" selected>Piano</option>
             <option value="epiano">Piano eléctrico</option>
             <option value="harpsichord">Clavecín</option>
             <option value="celesta">Celesta</option>
-            <option value="strings1" selected>Cuerdas (pad)</option>
+            <option value="strings1">Cuerdas (pad)</option>
             <option value="brass1">Metales</option>
             <option value="sopranoSax">Sax soprano</option>
             <option value="tenorSax">Sax tenor</option>
@@ -1195,7 +1195,7 @@
         <div class="mix-preset-group" id="bassPresetGroup" data-mix-group="bass">
           <label class="mix-preset-label" for="bassPresetSelect">Bajo</label>
           <select class="mix-preset-select" id="bassPresetSelect">
-            <option value="synthBass">Bajo original (sintetizado)</option>
+            <option value="synthBass" selected>Bajo original (sintetizado)</option>
             <option value="piano">Piano</option>
             <option value="epiano">Piano eléctrico</option>
             <option value="harpsichord">Clavecín</option>
@@ -1206,7 +1206,7 @@
             <option value="tenorSax">Sax tenor</option>
             <option value="bassoon">Fagot</option>
             <option value="flute">Flauta</option>
-            <option value="contrabass" selected>Contrabajo</option>
+            <option value="contrabass">Contrabajo</option>
             <option value="jazzGuitar">Guitarra jazz</option>
           </select>
         </div>
@@ -7029,7 +7029,7 @@ function runAnalysis() {
   // 12 de Instruments.sf2, con sintetizador de siempre como respaldo)
   // y qué muestras usar en batería (kit real o percusión/congas).
   var mixGains = { drum: 1, bass: 1, chord: 1, melody: 1, comping2: 1 };
-  var mixPresets = { harmony: "strings1", melody: "flute", bass: "contrabass", drum: "kit" };
+  var mixPresets = { harmony: "piano", melody: "flute", bass: "synthBass", drum: "kit" };
   var chordGainNode = null, bassGainNode = null, melodyGainNode = null, drumGainNode = null, comping2GainNode = null;
   function ensureInstrumentGains(ctx){
     var master = ensureMasterGain(ctx);
