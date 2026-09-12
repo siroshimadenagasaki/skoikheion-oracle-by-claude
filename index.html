@@ -1021,6 +1021,10 @@
         <button type="button" class="chip" id="consolaTryBtn">Probar con C E G B</button>
         <button type="button" class="chip" id="consolaNormalBtn" disabled>&#8634; Normalito</button>
       </div>
+      <div style="margin-top:8px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+        <span class="consola-inst-toggle"><input type="checkbox" id="consolaSubsetsChk"><label for="consolaSubsetsChk">⬇ Subsets (variedad)</label></span>
+        <span class="consola-inst-toggle"><input type="checkbox" id="consolaSupersetsChk"><label for="consolaSupersetsChk">⬆ Supersets (variedad)</label></span>
+      </div>
     </div>
 
     <div class="consola-controls">
@@ -5985,27 +5989,92 @@ function runAnalysis() {
   // solo toca notas del acorde EN CURSO), y necesita que quepan en sus
   // propias ranuras rítmicas (mínimo 2 por compás, de ahí el tope de 2).
   var MAX_SUBSET_GAP = 2;
+  // Función auxiliar: genera todos los subsets posibles de un conjunto
+  function getAllSubsets(arr){
+    var subsets = [];
+    for(var i=0; i<Math.pow(2, arr.length); i++){
+      var subset = [];
+      for(var j=0; j<arr.length; j++){
+        if((i & (1 << j)) > 0){
+          subset.push(arr[j]);
+        }
+      }
+      if(subset.length >= 2 && subset.length < arr.length){ // Mínimo 2 notas, máximo arr.length-1
+        subsets.push(subset);
+      }
+    }
+    return subsets;
+  }
+
+  // Función auxiliar: genera el complemento (notas fuera del set)
+  function getComplement(arr){
+    var complement = [];
+    for(var i=0; i<12; i++){
+      if(arr.indexOf(i) === -1){
+        complement.push(i);
+      }
+    }
+    return complement.length >= 2 ? complement : null; // Mínimo 2 notas
+  }
+
   // Subset al azar del set completo seleccionado (entre "set completo
   // menos MAX_SUBSET_GAP" y el set completo): todas sus notas siguen
   // siendo, sin excepción, notas del mismo set elegido — solo que no
   // suenan todas juntas en ese compás. Devuelve también los ÍNDICES no
   // usados (el complemento) para que el bajo/melodía de ese compás
   // completen la estructura vertical.
+  // CON VARIEDAD: si subsetVarietyEnabled o supersetVarietyEnabled están activos,
+  // agrega opciones de subsets/supersets del set original con probabilidad ~50%.
   function randomSubsetChord(rootChord){
     var n = rootChord.length;
-    var minSize = Math.max(2, n - MAX_SUBSET_GAP);
-    var size = minSize >= n ? n : randomInt(minSize, n);
-    var idx = [];
-    for(var i=0;i<n;i++) idx.push(i);
-    for(var i=idx.length-1;i>0;i--){
-      var j = randomInt(0,i);
-      var tmp = idx[i]; idx[i]=idx[j]; idx[j]=tmp;
+
+    // Coleccionar opciones de variedad si están habilitadas
+    var varietyChords = [];
+
+    if(subsetVarietyEnabled){
+      var allSubsets = getAllSubsets(rootChord);
+      varietyChords = varietyChords.concat(allSubsets);
     }
-    var chosenIdx = idx.slice(0, size).sort(function(a,b){return a-b;});
-    var complementIdx = idx.slice(size).sort(function(a,b){return a-b;});
+
+    if(supersetVarietyEnabled){
+      var complement = getComplement(rootChord);
+      if(complement && complement.length > 0){
+        varietyChords.push(complement);
+      }
+    }
+
+    // Decidir si usar una armonía de variedad (~50% máximo si hay opciones)
+    var useVariety = varietyChords.length > 0 && Math.random() < 0.5;
+
+    var chord, complement;
+
+    if(useVariety){
+      // Elegir una armonía aleatoria de variedad
+      var varietyChord = varietyChords[Math.floor(Math.random() * varietyChords.length)];
+      chord = varietyChord;
+      // El complemento es lo que falta del conjunto original
+      complement = rootChord.filter(function(note){
+        return chord.indexOf(note) === -1;
+      });
+    } else {
+      // Modo original: subset del set original
+      var minSize = Math.max(2, n - MAX_SUBSET_GAP);
+      var size = minSize >= n ? n : randomInt(minSize, n);
+      var idx = [];
+      for(var i=0;i<n;i++) idx.push(i);
+      for(var i=idx.length-1;i>0;i--){
+        var j = randomInt(0,i);
+        var tmp = idx[i]; idx[i]=idx[j]; idx[j]=tmp;
+      }
+      var chosenIdx = idx.slice(0, size).sort(function(a,b){return a-b;});
+      var complementIdx = idx.slice(size).sort(function(a,b){return a-b;});
+      chord = chosenIdx.map(function(i){ return rootChord[i]; });
+      complement = complementIdx.map(function(i){ return rootChord[i]; });
+    }
+
     return {
-      chord: chosenIdx.map(function(i){ return rootChord[i]; }),
-      complement: complementIdx.map(function(i){ return rootChord[i]; })
+      chord: chord,
+      complement: complement
     };
   }
   // Variación libre/aleatoria (con Random): cada compás elige, al azar,
@@ -6417,6 +6486,10 @@ function runAnalysis() {
   // ---------- estado / regeneración ----------
   var state = { rootChord: [], progression: [], roles: [], chordEvents: [], bassEvents: [], melodyEvents: [] };
   window.__consolaState = state; // hook de diagnóstico (solo lectura)
+
+  // Opciones de variedad armónica
+  var subsetVarietyEnabled = false;
+  var supersetVarietyEnabled = false;
 
   // Modo automático (se dispara solo, cada vez que cambian las notas
   // elegidas): ahora es el que antes era "Random" — libre y variado,
@@ -7293,6 +7366,16 @@ function runAnalysis() {
     setNotes([0,4,7,11]); // C E G B — dispara runAnalysis() -> regenerateConsola()
   });
   document.getElementById("consolaNormalBtn").addEventListener("click", normalizeConsola);
+
+  // ---- Toggles de Subsets y Supersets para variedad armónica ----
+  document.getElementById("consolaSubsetsChk").addEventListener("change", function(){
+    subsetVarietyEnabled = this.checked;
+    if(state.rootChord.length) regenerateConsola();
+  });
+  document.getElementById("consolaSupersetsChk").addEventListener("change", function(){
+    supersetVarietyEnabled = this.checked;
+    if(state.rootChord.length) regenerateConsola();
+  });
   document.getElementById("consolaJazzChk").addEventListener("change", function(){
     if(state.rootChord.length) regenerateConsola();
   });
