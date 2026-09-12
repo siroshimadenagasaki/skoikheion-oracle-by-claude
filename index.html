@@ -1019,6 +1019,7 @@
       <div class="notes" id="consolaNotesReadout">&mdash;</div>
       <div style="margin-top:10px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
         <button type="button" class="chip" id="consolaTryBtn">Probar con C E G B</button>
+        <button type="button" class="chip" id="consolaRegenBtn" disabled title="Sortea una variación distinta del segmento — mismo set de notas, nuevos subsets/transposiciones/ritmos al azar">&#128256; Regenerar</button>
         <button type="button" class="chip" id="consolaNormalBtn" disabled>&#8634; Normalito</button>
       </div>
       <div style="margin-top:8px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
@@ -6499,6 +6500,7 @@ function runAnalysis() {
   function regenerateConsola(){
     var playBtn = document.getElementById("consolaPlayBtn");
     var normalBtn = document.getElementById("consolaNormalBtn");
+    var regenBtn = document.getElementById("consolaRegenBtn");
     if(!playBtn) return; // sección todavía no está en el DOM
     var readout = document.getElementById("consolaNotesReadout");
     if(selected.size < 2){
@@ -6507,10 +6509,12 @@ function runAnalysis() {
       renderRoll();
       playBtn.disabled = true;
       if(normalBtn) normalBtn.disabled = true;
+      if(regenBtn) regenBtn.disabled = true;
       return;
     }
     playBtn.disabled = false;
     if(normalBtn) normalBtn.disabled = false;
+    if(regenBtn) regenBtn.disabled = false;
     var rootChord = pcSetToChord(selected);
     readout.textContent = rootChord.map(noteName).join("  ");
     state.rootChord = rootChord;
@@ -7366,6 +7370,11 @@ function runAnalysis() {
     setNotes([0,4,7,11]); // C E G B — dispara runAnalysis() -> regenerateConsola()
   });
   document.getElementById("consolaNormalBtn").addEventListener("click", normalizeConsola);
+  document.getElementById("consolaRegenBtn").addEventListener("click", function(){
+    if(!state.rootChord.length) return;
+    if(playing) stopPlayback();
+    regenerateConsola();
+  });
 
   // ---- Toggles de Subsets y Supersets para variedad armónica ----
   document.getElementById("consolaSubsetsChk").addEventListener("change", function(){
