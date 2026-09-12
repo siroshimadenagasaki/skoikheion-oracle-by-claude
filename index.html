@@ -1117,7 +1117,7 @@
           <span class="consola-inst-toggle" title="Aplica ritmos de comping/walking bass, voicings tipo drop-2 y swing (adaptados de una base de datos de jazz), sin salir nunca del set de notas elegido."><input type="checkbox" id="consolaJazzChk"><label for="consolaJazzChk">&#127927; Jazz</label></span>
           <span class="consola-inst-toggle" title="Cada compás de armonía, bajo, melodía y batería tiene un 40% extra de probabilidad de repetir exactamente el patrón del compás anterior; además, bajo y melodía tienen un 40% de probabilidad por compás de acoplar sus ataques a los de la armonía en vez de llevar su propio ritmo."><input type="checkbox" id="consolaMoreRepChk"><label for="consolaMoreRepChk">&#128257; More repetition</label></span>
           <span class="consola-inst-toggle" title="En cada reataque de armonía se sortean varias combinaciones válidas de subconjunto/transposición/inversión dentro del MISMO acorde/grado elegido (nunca de otro) y se elige la que comparte más notas con el acorde anterior — el doble de notas comunes en promedio que al azar puro, con la misma restricción de conjunto de siempre."><input type="checkbox" id="consolaCommonNotesChk"><label for="consolaCommonNotesChk">&#128279; Notas comunes</label></span>
-          <span class="consola-inst-toggle" title="Mezcla figuras largas y cortas DENTRO del mismo compás de melodía, en vez del comportamiento de siempre (un compás entero de figuras largas y, cada tanto, un compás entero de fill de notas cortas). No cambia qué nota suena, solo el ritmo."><input type="checkbox" id="consolaMixDurChk"><label for="consolaMixDurChk">&#127925; Mix melody duration</label></span>
+          <span class="consola-inst-toggle" title="Mezcla figuras largas y cortas DENTRO del mismo compás de melodía, en vez del comportamiento de siempre (un compás entero de figuras largas y, cada tanto, un compás entero de fill de notas cortas). No cambia qué nota suena, solo el ritmo."><input type="checkbox" id="consolaMixDurChk" checked><label for="consolaMixDurChk">&#127925; Mix melody duration</label></span>
         </div>
       </div>
       <div class="consola-field">
@@ -6577,7 +6577,7 @@ function runAnalysis() {
 
   /* ================================================================
      MÓDULO MIX MELODY DURATION — se activa con el checkbox
-     #consolaMixDurChk (apagado por defecto). El motor de siempre
+     #consolaMixDurChk (activado por defecto). El motor de siempre
      (más abajo en esta misma función) decide por COMPÁS ENTERO si
      ese compás es "de figuras largas" o "el fill de 10 notas
      cortas" — nunca mezcla ambas dentro del mismo compás. Este
