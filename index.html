@@ -681,6 +681,39 @@
     border-color:var(--gold);
     font-weight:700;
   }
+  .nav-modules-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+  }
+  .nav-modules-label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:var(--ink-muted);
+  }
+  .nav-modules-toggle{
+    flex:0 0 auto;
+    width:22px;height:22px;
+    display:flex;align-items:center;justify-content:center;
+    background:var(--surface-2);border:1px solid var(--line);color:var(--gold);
+    border-radius:5px;font-size:15px;line-height:1;font-weight:700;
+    cursor:pointer;transition:.15s;padding:0;
+  }
+  .nav-modules-toggle:hover{background:var(--surface);border-color:var(--gold);}
+  .nav-modules-toggle[aria-expanded="true"]::after{content:"−";}
+  .nav-modules-toggle[aria-expanded="false"]::after{content:"+";}
+  .nav-modules-list{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    transition:max-height .25s ease, opacity .25s ease;
+    overflow:hidden;
+  }
+  .nav-modules-list.collapsed{max-height:0;opacity:0;}
+  .nav-modules-list.expanded{max-height:2000px;opacity:1;}
 
   /* ---- Toggles para collapse/expand ---- */
   .module-toggle{
@@ -728,18 +761,24 @@
 
 <!-- Botonera de Navegación "Ir a:" -->
 <div class="nav-modules" id="navModules">
-  <button data-target="diapasonSection" title="Ir a Diapasón">Diapasón</button>
-  <button data-target="cifradoSection" title="Ir a Generador de Cifrado">Generador de Cifrado</button>
-  <button data-target="superposicionSection" title="Ir a Superposición cromática">Superposición cromática</button>
-  <button data-target="modesCard" title="Ir a Modos del set">Modos del set</button>
-  <button data-target="digitacionesCard" title="Ir a Digitaciones de Guitarra">Digitaciones de Guitarra</button>
-  <button data-target="consolaCard" title="Ir a SetMusicBox">SetMusicBox</button>
-  <button data-target="progresionCard" title="Ir a Progresiones">Progresiones aleatorio</button>
-  <button data-target="anexo1" title="Ir a Tabla de Sets">Anexo 1 · Tabla</button>
-  <button data-target="subsupCard" title="Ir a Subconjuntos y Superconjuntos">Subconjuntos y Superconjuntos</button>
-  <button data-target="voicingExplorerCard" title="Ir a Voicing Explorer">Voicing Explorer</button>
-  <button data-target="gtCard" title="Ir a Grados en Terceras">Grados en Terceras</button>
-  <button data-target="projectRulesCard" title="Ir a Reglas del Proyecto">Reglas del Proyecto</button>
+  <div class="nav-modules-header">
+    <span class="nav-modules-label">Ir a:</span>
+    <button type="button" class="nav-modules-toggle" id="navModulesToggle" aria-expanded="true" aria-controls="navModulesList" title="Contraer/expandir esta botonera" onclick="toggleModule(this)"></button>
+  </div>
+  <div class="nav-modules-list collapsible-content expanded" id="navModulesList">
+    <button data-target="diapasonSection" title="Ir a Diapasón">Diapasón</button>
+    <button data-target="cifradoSection" title="Ir a Generador de Cifrado">Generador de Cifrado</button>
+    <button data-target="superposicionSection" title="Ir a Superposición cromática">Superposición cromática</button>
+    <button data-target="modesCard" title="Ir a Modos del set">Modos del set</button>
+    <button data-target="digitacionesCard" title="Ir a Digitaciones de Guitarra">Digitaciones de Guitarra</button>
+    <button data-target="consolaCard" title="Ir a SetMusicBox">SetMusicBox</button>
+    <button data-target="progresionCard" title="Ir a Progresiones">Progresiones aleatorio</button>
+    <button data-target="anexo1" title="Ir a Tabla de Sets">Anexo 1 · Tabla</button>
+    <button data-target="subsupCard" title="Ir a Subconjuntos y Superconjuntos">Subconjuntos y Superconjuntos</button>
+    <button data-target="voicingExplorerCard" title="Ir a Voicing Explorer">Voicing Explorer</button>
+    <button data-target="gtCard" title="Ir a Grados en Terceras">Grados en Terceras</button>
+    <button data-target="projectRulesCard" title="Ir a Reglas del Proyecto">Reglas del Proyecto</button>
+  </div>
 </div>
 
 <div class="wrap">
@@ -1041,9 +1080,12 @@
           <span class="consola-inst-toggle"><input type="checkbox" id="consolaBassChk" checked><label for="consolaBassChk">Bajo</label></span>
           <span class="consola-inst-toggle"><input type="checkbox" id="consolaMelodyChk" checked><label for="consolaMelodyChk">Melodía</label></span>
           <span class="consola-inst-toggle"><input type="checkbox" id="consolaDrumChk" checked><label for="consolaDrumChk">&#129345; Batería</label></span>
+          <span class="consola-inst-toggle" title="Además del subset de siempre (el set completo o casi completo), a veces usa un subconjunto MÁS CHICO del mismo set elegido — más variedad de tamaños de acorde por compás, sin salir nunca del set."><input type="checkbox" id="consolaSubsetsChk"><label for="consolaSubsetsChk">&#8681; Subsets (variedad)</label></span>
+          <span class="consola-inst-toggle" title="Además del subset de siempre, a veces usa el COMPLEMENTO del set elegido (las notas que el set deja afuera dentro de la octava) — más variedad armónica, siempre derivada del mismo set."><input type="checkbox" id="consolaSupersetsChk"><label for="consolaSupersetsChk">&#8679; Supersets (variedad)</label></span>
           <span class="consola-inst-toggle" title="Aplica ritmos de comping/walking bass, voicings tipo drop-2 y swing (adaptados de una base de datos de jazz), sin salir nunca del set de notas elegido."><input type="checkbox" id="consolaJazzChk"><label for="consolaJazzChk">&#127927; Jazz</label></span>
           <span class="consola-inst-toggle" title="Cada compás de armonía, bajo, melodía y batería tiene un 40% extra de probabilidad de repetir exactamente el patrón del compás anterior; además, bajo y melodía tienen un 40% de probabilidad por compás de acoplar sus ataques a los de la armonía en vez de llevar su propio ritmo."><input type="checkbox" id="consolaMoreRepChk"><label for="consolaMoreRepChk">&#128257; More repetition</label></span>
           <span class="consola-inst-toggle" title="En cada reataque de armonía se sortean varias combinaciones válidas de subconjunto/transposición/inversión dentro del MISMO acorde/grado elegido (nunca de otro) y se elige la que comparte más notas con el acorde anterior — el doble de notas comunes en promedio que al azar puro, con la misma restricción de conjunto de siempre."><input type="checkbox" id="consolaCommonNotesChk"><label for="consolaCommonNotesChk">&#128279; Notas comunes</label></span>
+          <span class="consola-inst-toggle" title="Mezcla figuras largas y cortas DENTRO del mismo compás de melodía, en vez del comportamiento de siempre (un compás entero de figuras largas y, cada tanto, un compás entero de fill de notas cortas). No cambia qué nota suena, solo el ritmo."><input type="checkbox" id="consolaMixDurChk"><label for="consolaMixDurChk">&#127925; Mix melody duration</label></span>
         </div>
       </div>
       <div class="consola-field">
@@ -1052,7 +1094,7 @@
         <span class="consola-val" id="consolaVolumeVal">70%</span>
       </div>
       <div class="consola-field" style="flex-direction:row;gap:8px;">
-        <button type="button" class="chip primary" id="consolaPlayBtn">&#9658; Reproducir</button>
+        <button type="button" class="chip primary" id="consolaPlayBtn" title="Antes de tocar, sortea una variación nueva del segmento (mismo set de notas elegido) — cada Reproducir es una versión distinta.">&#9658; Reproducir &#128256;</button>
         <button type="button" class="chip" id="consolaStopBtn" disabled>&#9632; Detener</button>
         <button type="button" class="chip" id="consolaMoreCompingBtn" title="Agrega una QUINTA pista MIDI, con timbre de cuerdas (strings), que dobla cada nota de la melodía junto con 1 o 2 notas más del acorde vigente en ese instante (siempre del mismo set, nunca una nota ajena) — el grupito entero queda siempre pegado a la nota de melodía, a lo sumo a una octava o dos de distancia.">moreComping</button>
       </div>
@@ -6042,14 +6084,75 @@ function runAnalysis() {
   // solo toca notas del acorde EN CURSO), y necesita que quepan en sus
   // propias ranuras rítmicas (mínimo 2 por compás, de ahí el tope de 2).
   var MAX_SUBSET_GAP = 2;
+  // Función auxiliar: genera todos los subsets posibles de un conjunto
+  // (mínimo 2 notas, máximo arr.length-1 — el set completo no cuenta
+  // como "subset" acá, ya es la opción de siempre).
+  function getAllSubsets(arr){
+    var subsets = [];
+    for(var i=0; i<Math.pow(2, arr.length); i++){
+      var subset = [];
+      for(var j=0; j<arr.length; j++){
+        if((i & (1 << j)) > 0){
+          subset.push(arr[j]);
+        }
+      }
+      if(subset.length >= 2 && subset.length < arr.length){
+        subsets.push(subset);
+      }
+    }
+    return subsets;
+  }
+  // Función auxiliar: genera el complemento (clases de tono fuera del
+  // set, dentro de la octava) — mínimo 2 notas para que valga como
+  // acorde. `arr` trae notas MIDI absolutas (BASE_MIDI + clase de tono),
+  // no clases de tono sueltas — por eso compara por CLASE DE TONO
+  // (mod12) y devuelve también notas absolutas en el mismo registro
+  // (BASE_MIDI + clase), para que sea comparable/combinable con el
+  // resto de rootChord más abajo.
+  function getComplement(arr){
+    var pcsInSet = {};
+    arr.forEach(function(m){ pcsInSet[mod12(m)] = true; });
+    var complement = [];
+    for(var i=0; i<12; i++){
+      if(!pcsInSet[i]) complement.push(BASE_MIDI + i);
+    }
+    return complement.length >= 2 ? complement : null;
+  }
   // Subset al azar del set completo seleccionado (entre "set completo
   // menos MAX_SUBSET_GAP" y el set completo): todas sus notas siguen
   // siendo, sin excepción, notas del mismo set elegido — solo que no
   // suenan todas juntas en ese compás. Devuelve también los ÍNDICES no
   // usados (el complemento) para que el bajo/melodía de ese compás
   // completen la estructura vertical.
+  // CON VARIEDAD: si subsetVarietyEnabled o supersetVarietyEnabled están
+  // activos (checkboxes #consolaSubsetsChk/#consolaSupersetsChk, apagados
+  // por defecto), agrega subsets más chicos del set y/o su complemento
+  // como opciones extra, con ~50% de probabilidad de usar una de ellas
+  // en vez del subset "modo original" de siempre.
   function randomSubsetChord(rootChord){
     var n = rootChord.length;
+
+    var varietyChords = [];
+    if(subsetVarietyEnabled){
+      varietyChords = varietyChords.concat(getAllSubsets(rootChord));
+    }
+    if(supersetVarietyEnabled){
+      var complement = getComplement(rootChord);
+      if(complement && complement.length > 0){
+        varietyChords.push(complement);
+      }
+    }
+    var useVariety = varietyChords.length > 0 && Math.random() < 0.5;
+
+    if(useVariety){
+      var varietyChord = varietyChords[randomInt(0, varietyChords.length-1)];
+      var chord = varietyChord;
+      var complementNotes = rootChord.filter(function(note){
+        return chord.indexOf(note) === -1;
+      });
+      return { chord: chord, complement: complementNotes };
+    }
+
     var minSize = Math.max(2, n - MAX_SUBSET_GAP);
     var size = minSize >= n ? n : randomInt(minSize, n);
     var idx = [];
@@ -6155,6 +6258,68 @@ function runAnalysis() {
   // por azar, sin cambiar cuántos hay de cada uno en total. En CADA
   // reataque (sea cual sea su duración) se sortea de nuevo, por
   // separado, el subset + transposición + inversión.
+  /* ================================================================
+     MÓDULO ATAQUE QUEBRADO DE ARMONÍA — la armonía no siempre ataca
+     "en bloque" (todas las notas del voicing pegadas exactamente en el
+     mismo instante): en ~50% de los reataques (cada uno decide por su
+     cuenta, sin checkbox — es parte del motor de siempre), las notas
+     entran ESCALONADAS en vez de todas juntas, con alguna de estas
+     formas al azar:
+       - grave → agudo, una por una (como un arpegio ascendente);
+       - agudo → grave, una por una (arpegio descendente);
+       - con 3 notas o más: los dos extremos (la más grave y la más
+         aguda) juntos primero, y el resto del centro entra después
+         (variación "de afuera hacia adentro");
+       - o al revés: el centro primero, los extremos después.
+     Nunca cambia QUÉ notas suenan (mismo voicing de siempre) — solo
+     CUÁNDO entra cada una dentro de ese reataque; todas las notas
+     igual terminan en el mismo instante final que tendría el reataque
+     en bloque (se les recorta la duración, nunca se corren para
+     adelante), así el reataque de afuera sigue durando lo mismo.
+     ================================================================ */
+  var BROKENCHORD = (function(){
+    var PROB = 0.5;
+    // Paso entre notas ≈ una corchea, pero nunca más de lo que entra
+    // cómodo en la duración disponible de ese reataque.
+    function stepFor(dur, n){
+      return Math.min(0.5, dur/(n+1));
+    }
+    // Devuelve un array de offsets en beats (uno por nota de `voiced`,
+    // en el mismo orden que `voiced`) según una forma elegida al azar.
+    function offsetsFor(voiced, dur){
+      var n = voiced.length;
+      if(n < 2) return voiced.map(function(){ return 0; });
+      var order = voiced.map(function(_, i){ return i; })
+        .sort(function(a,b){ return voiced[a]-voiced[b]; }); // índices, grave -> agudo
+      var step = stepFor(dur, n);
+      var byRank = {}; // rank (0=grave ... n-1=agudo) -> offset
+      var maxPattern = n >= 3 ? 3 : 1;
+      var pattern = randomInt(0, maxPattern);
+      if(pattern === 0){
+        // Grave -> agudo, una por una.
+        for(var r=0;r<n;r++) byRank[r] = r*step;
+      } else if(pattern === 1){
+        // Agudo -> grave, una por una.
+        for(var r=0;r<n;r++) byRank[r] = (n-1-r)*step;
+      } else {
+        // Extremos primero, centro después (o al revés) — el "después"
+        // usa lo que entre de la duración disponible, hasta una negra.
+        var mid = Math.min(1, Math.max(step, dur*0.4));
+        var extremesFirst = pattern === 2;
+        for(var r2=0;r2<n;r2++){
+          var isExtreme = (r2 === 0 || r2 === n-1);
+          byRank[r2] = (isExtreme === extremesFirst) ? 0 : mid;
+        }
+      }
+      var offsets = new Array(n);
+      order.forEach(function(idx, rank){ offsets[idx] = byRank[rank]; });
+      return offsets;
+    }
+    return {
+      enabledRoll: function(){ return Math.random() < PROB; },
+      offsetsFor: offsetsFor
+    };
+  })();
   function buildChordEventsRandom(rootChord, numBars){
     var chordPool = JAZZ.enabled() ? JAZZ.CHORD_RHYTHM_POOL : CHORD_RHYTHM_POOL;
     var cellsByBar = avoidAdjacentDuplicates(
@@ -6202,12 +6367,17 @@ function runAnalysis() {
           voiced = invertChord(transposeChord(picked.chord, t), inv);
           strum = false;
         }
+        // Ataque quebrado (ver módulo BROKENCHORD arriba): si no hubo
+        // ya un "rasgueo" de Jazz en este reataque, ~50% de las veces
+        // las notas del voicing entran escalonadas en vez de en bloque.
+        var brokenOffsets = (!strum && BROKENCHORD.enabledRoll()) ? BROKENCHORD.offsetsFor(voiced, dur) : null;
         voiced.forEach(function(note, vi){
           // JAZZ: "rasgueo" ocasional en voicings anchos — las notas
           // entran en rápida sucesión en vez de todas juntas (variedad
           // rítmica ligada al voicing, nunca cambia qué nota suena).
           var strumOff = strum ? vi*0.02 : 0;
-          events.push({midi:note, startBeat:bar*BEATS_PER_BAR+offset+strumOff, durBeats:Math.max(0.05,dur-strumOff), bar:bar});
+          var noteOff = strumOff + (brokenOffsets ? brokenOffsets[vi] : 0);
+          events.push({midi:note, startBeat:bar*BEATS_PER_BAR+offset+noteOff, durBeats:Math.max(0.05,dur-noteOff), bar:bar});
         });
         slots.push({chord:voiced, startBeat:offset, durBeats:dur});
         prevCombo = combo;
@@ -6280,6 +6450,57 @@ function runAnalysis() {
     return events;
   }
 
+  /* ================================================================
+     MÓDULO MIX MELODY DURATION — se activa con el checkbox
+     #consolaMixDurChk (apagado por defecto). El motor de siempre
+     (más abajo en esta misma función) decide por COMPÁS ENTERO si
+     ese compás es "de figuras largas" o "el fill de 10 notas
+     cortas" — nunca mezcla ambas dentro del mismo compás. Este
+     módulo reemplaza esa decisión: cada compás se arma nota a nota,
+     sorteando en cada paso si la siguiente figura sale del pool de
+     duraciones LARGAS o del de CORTAS (LONG_PROB), hasta llenar el
+     compás — así compases con figuras largas y cortas mezcladas son
+     el caso normal, no la excepción. No toca nada más: sigue siendo
+     solo el ritmo (array de duraciones por compás); qué nota suena
+     la sigue decidiendo buildBassMelodyEventsRandom exactamente igual
+     que siempre.
+     ================================================================ */
+  var MIXDUR = (function(){
+    function enabled(){
+      var chk = document.getElementById("consolaMixDurChk");
+      return !!(chk && chk.checked);
+    }
+    var LONG_POOL  = [4, 3, 2, 1.5];   // redonda, blanca c/puntillo, blanca, negra c/puntillo
+    var SHORT_POOL = [1, 0.75, 0.5];   // negra, corchea c/puntillo, corchea
+    var LONG_PROB = 0.55;
+    function pickFrom(pool, maxDur){
+      var fits = pool.filter(function(d){ return d <= maxDur + 1e-9; });
+      if(!fits.length) return null;
+      return fits[randomInt(0, fits.length-1)];
+    }
+    function buildBarCell(){
+      var cell = [];
+      var remaining = BEATS_PER_BAR;
+      var guard = 0;
+      while(remaining > 1e-9 && guard < 40){
+        guard++;
+        var useLong = Math.random() < LONG_PROB;
+        var dur = pickFrom(useLong ? LONG_POOL : SHORT_POOL, remaining);
+        if(dur === null) dur = pickFrom(useLong ? SHORT_POOL : LONG_POOL, remaining);
+        if(dur === null) dur = remaining; // remanente chico: se completa igual
+        cell.push(dur);
+        remaining = Math.round((remaining - dur)*1000)/1000;
+      }
+      return cell;
+    }
+    function buildMixedCells(numBars){
+      var cells = [];
+      for(var bar=0; bar<numBars; bar++) cells.push(buildBarCell());
+      return cells;
+    }
+    return { enabled: enabled, buildMixedCells: buildMixedCells };
+  })();
+
   // Célula rítmica de melodía al azar: ~30% de los compases se llevan el
   // fill de notas muy cortas (10 por compás) — repartidos parejo entre
   // los N compases (spreadByGroup) en vez de puramente al azar, para que
@@ -6288,6 +6509,7 @@ function runAnalysis() {
   // parejo para decidir, mitad por mitad de compás, cuáles quedan
   // partidas en 2 negras y cuáles como blanca.
   function buildMelodyRhythmRandom(numBars){
+    if (MIXDUR.enabled()) return MIXDUR.buildMixedCells(numBars);
     var flourishCount = Math.round(numBars*0.3);
     var normalCount = numBars - flourishCount;
     var barTags = [];
@@ -6474,6 +6696,10 @@ function runAnalysis() {
   // ---------- estado / regeneración ----------
   var state = { rootChord: [], progression: [], roles: [], chordEvents: [], bassEvents: [], melodyEvents: [], comping2Events: [] };
   window.__consolaState = state; // hook de diagnóstico (solo lectura)
+
+  // Opciones de variedad armónica
+  var subsetVarietyEnabled = false;
+  var supersetVarietyEnabled = false;
 
   // Modo automático (se dispara solo, cada vez que cambian las notas
   // elegidas): ahora es el que antes era "Random" — libre y variado,
@@ -6716,6 +6942,98 @@ function runAnalysis() {
       var ctx = getAudioCtx();
       node.gain.setTargetAtTime(value, ctx ? ctx.currentTime : 0, 0.01);
     }
+  }
+
+  /* ================================================================
+     PUENTE A SOUNDFONT REAL — cuando el botón "🎼 Sonido real
+     (SoundFont)" (arriba, fuera de SetMusicBox) está activado Y el
+     .sf2 ya terminó de cargar (sf2State/sf2Font/currentSynth son
+     globales del <script> principal, definidos antes de este —
+     mismo patrón que ya usa el resto del sitio), SetMusicBox toca
+     sus pistas con muestras reales del SoundFont en vez del
+     sintetizador, respetando el preset que ya elige el mini mixer
+     (Pad→cuerdas / Piano, Flauta / Saxo) y sin salir del bus de esa
+     pista (dest = gains.chord/bass/melody), así que el mini mixer y
+     el volumen general siguen funcionando igual. La batería sigue
+     sintetizada: este SoundFont no trae un kit de percusión.
+     ================================================================ */
+  var SM2_PROGRAMS = {
+    pianoHarmony: { bank:0, program:0 },  // Grand Piano
+    padHarmony:   { bank:0, program:48 }, // String Section 1 (pad cálido)
+    bass:         { bank:0, program:43 }, // Contrabass
+    flute:        { bank:0, program:73 }, // Flute
+    sax:          { bank:0, program:65 }, // Alto Sax
+    strings:      { bank:0, program:49 }  // String Section 2 (pista moreComping)
+  };
+  var sm2PresetCache = {};
+  var sm2CacheFontRef = null;
+  function sm2UsingSF2(){
+    return typeof sf2State !== "undefined" && sf2State === "ready" && !!sf2Font &&
+      typeof currentSynth !== "undefined" && currentSynth === "sf2";
+  }
+  function sm2PresetIdxFor(key){
+    if(sm2CacheFontRef !== sf2Font){ sm2PresetCache = {}; sm2CacheFontRef = sf2Font; }
+    if(sm2PresetCache[key] !== undefined) return sm2PresetCache[key];
+    var p = SM2_PROGRAMS[key];
+    var idx = sf2FindPresetIdx(sf2Font, p.bank, p.program);
+    sm2PresetCache[key] = idx;
+    return idx;
+  }
+  // Reproduce `midi` con muestras reales (misma envolvente ADSR que ya
+  // usa synthSF2 para el resto del sitio), conectado al bus `dest` de
+  // la pista. Devuelve false (sin sonar nada) si el preset no existe o
+  // la nota queda fuera de su rango — el llamador debe usar el
+  // sintetizador de siempre como respaldo en ese caso.
+  function playSM2Voice(ctx, dest, presetKey, midi, startTime, duration, gain){
+    var presetIdx = sm2PresetIdxFor(presetKey);
+    if(presetIdx < 0) return false;
+    var hits = sf2ResolveNote(sf2Font, presetIdx, midi, 100);
+    if(!hits.length) return false;
+    var perHitGain = gain / hits.length;
+    hits.forEach(function(hit){
+      var shdr = hit.shdr, gens = hit.gens;
+      var buffer = sf2BufferFor(ctx, shdr);
+      var src = ctx.createBufferSource();
+      src.buffer = buffer;
+      var root = gens[SF2_GEN.OVERRIDE_ROOTKEY] !== -1 ? gens[SF2_GEN.OVERRIDE_ROOTKEY] : shdr.origPitch;
+      var semis = (midi - root) + gens[SF2_GEN.COARSETUNE] + gens[SF2_GEN.FINETUNE]/100 - shdr.pitchCorrection/100;
+      src.playbackRate.value = Math.pow(2, semis/12);
+      var modes = gens[SF2_GEN.SAMPLEMODES];
+      if((modes === 1 || modes === 3) && shdr.loopEnd > shdr.loopStart){
+        src.loop = true;
+        src.loopStart = Math.max(0, shdr.loopStart - shdr.start) / (shdr.sampleRate || ctx.sampleRate);
+        src.loopEnd = Math.max(src.loopStart, shdr.loopEnd - shdr.start) / (shdr.sampleRate || ctx.sampleRate);
+      }
+      var delay = sf2Tc2Sec(gens[SF2_GEN.DELAY_VOLENV]);
+      var attack = Math.max(0.004, sf2Tc2Sec(gens[SF2_GEN.ATTACK_VOLENV]));
+      var hold = sf2Tc2Sec(gens[SF2_GEN.HOLD_VOLENV]);
+      var decay = sf2Tc2Sec(gens[SF2_GEN.DECAY_VOLENV]);
+      var sustainAmp = Math.min(1, sf2Cb2Amp(gens[SF2_GEN.SUSTAIN_VOLENV]));
+      var release = Math.max(0.02, sf2Tc2Sec(gens[SF2_GEN.RELEASE_VOLENV]));
+      var atten = Math.min(1, sf2Cb2Amp(gens[SF2_GEN.INITIAL_ATTEN]));
+      var peak = perHitGain * atten;
+      var tAttackEnd = startTime + delay + attack;
+      var tDecayEnd = tAttackEnd + hold + decay;
+      var noteOffAt = startTime + duration;
+      var tSustainHeld = Math.max(noteOffAt, tDecayEnd);
+      var tReleaseEnd = Math.max(tSustainHeld + 0.01, noteOffAt + release);
+      var env = ctx.createGain();
+      var g = env.gain;
+      g.setValueAtTime(0, startTime);
+      g.setValueAtTime(0, startTime + delay);
+      g.linearRampToValueAtTime(peak, tAttackEnd);
+      g.setValueAtTime(peak, tAttackEnd + hold);
+      g.linearRampToValueAtTime(Math.max(peak*sustainAmp, 0.0001), tDecayEnd);
+      g.setValueAtTime(Math.max(peak*sustainAmp, 0.0001), tSustainHeld);
+      g.linearRampToValueAtTime(0.0001, tReleaseEnd);
+      src.connect(env);
+      env.connect(dest);
+      src.start(startTime);
+      src.stop(tReleaseEnd + 0.05);
+      voices.push(src);
+      src.onended = function(){ try{ src.disconnect(); env.disconnect(); }catch(e){} };
+    });
+    return true;
   }
 
   function playPadVoice(ctx, dest, midi, startTime, duration, opts){
@@ -7245,12 +7563,15 @@ function runAnalysis() {
     // del volumen general) y, para armonía/melodía, qué función de
     // síntesis usar según el preset elegido (Pad/Piano, Flauta/Saxo).
     var gains = ensureInstrumentGains(ctx);
+    var sm2Active = sm2UsingSF2();
     if(instEnabled("consolaChordChk")){
       var harmonyIsPiano = mixPresets.harmony === "piano";
       var chordVoiceFn = harmonyIsPiano ? playPianoVoice : playPadVoice;
+      var chordSM2Key = harmonyIsPiano ? "pianoHarmony" : "padHarmony";
       state.chordEvents.forEach(function(ev){
         var t = loopStartTime + ev.startBeat*spb;
         var dur = ev.durBeats*spb;
+        if(sm2Active && playSM2Voice(ctx, gains.chord, chordSM2Key, ev.midi, t, dur*0.93, 0.2)) return;
         var opts = harmonyIsPiano
           ? { attack: Math.min(0.012, dur*0.06), release: Math.min(0.5, dur*0.5), peakGain:0.22, cutoff:4200 }
           : { attack: Math.min(0.4, dur*0.3), release: Math.min(0.9, dur*0.45), peakGain:0.14, cutoff:1600 };
@@ -7261,6 +7582,7 @@ function runAnalysis() {
       state.bassEvents.forEach(function(ev){
         var t = loopStartTime + ev.startBeat*spb;
         var dur = ev.durBeats*spb;
+        if(sm2Active && playSM2Voice(ctx, gains.bass, "bass", ev.midi, t, dur*0.9, 0.24)) return;
         var attack = Math.min(0.12, dur*0.25);
         var release = Math.min(0.3, dur*0.4);
         playBassVoice(ctx, gains.bass, ev.midi, t, dur*0.9, {attack:attack, release:release, peakGain:0.22, cutoff:650});
@@ -7269,9 +7591,11 @@ function runAnalysis() {
     if(instEnabled("consolaMelodyChk")){
       var melodyIsSax = mixPresets.melody === "sax";
       var melodyVoiceFn = melodyIsSax ? playSaxVoice : playFluteVoice;
+      var melodySM2Key = melodyIsSax ? "sax" : "flute";
       state.melodyEvents.forEach(function(ev){
         var t = loopStartTime + ev.startBeat*spb;
         var dur = ev.durBeats*spb;
+        if(sm2Active && playSM2Voice(ctx, gains.melody, melodySM2Key, ev.midi, t, dur*0.85, 0.2)) return;
         var opts = melodyIsSax
           ? { attack: Math.min(0.08, dur*0.25), release: Math.min(0.28, dur*0.5), peakGain:0.14 }
           : { attack: Math.min(0.06, dur*0.25), release: Math.min(0.22, dur*0.5), peakGain:0.15 };
@@ -7294,6 +7618,7 @@ function runAnalysis() {
     state.comping2Events.forEach(function(ev){
       var t = loopStartTime + ev.startBeat*spb;
       var dur = ev.durBeats*spb;
+      if(sm2Active && playSM2Voice(ctx, gains.comping2, "strings", ev.midi, t, dur*0.9, 0.14)) return;
       playStringsVoice(ctx, gains.comping2, ev.midi, t, dur*0.9, {attack: Math.min(0.09, dur*0.25), release: Math.min(0.5, dur*0.5), peakGain:0.1, cutoff:2600});
     });
   }
@@ -7420,7 +7745,17 @@ function runAnalysis() {
     if(rollHost) rollHost.scrollLeft = 0;
   }
 
-  document.getElementById("consolaPlayBtn").addEventListener("click", startPlayback);
+  // Reproducir ya no requiere un botón "Regenerar" aparte: cada vez que
+  // se aprieta, primero sortea una variación nueva del segmento (mismo
+  // set de notas elegido, igual que hacía el viejo botón &#128256;) y
+  // recién ahí arranca la reproducción — por eso el botón ahora dice
+  // "Reproducir &#128256;". Si todavía no hay notas elegidas,
+  // regenerateConsola() no hace nada (deja todo vacío) y startPlayback()
+  // tampoco, por chordEvents.length === 0.
+  document.getElementById("consolaPlayBtn").addEventListener("click", function(){
+    if(state.rootChord.length) regenerateConsola();
+    startPlayback();
+  });
   document.getElementById("consolaStopBtn").addEventListener("click", stopPlayback);
   document.getElementById("consolaTempo").addEventListener("input", function(){
     document.getElementById("consolaTempoVal").textContent = this.value + " BPM";
@@ -7429,6 +7764,14 @@ function runAnalysis() {
     setNotes([0,4,7,11]); // C E G B — dispara runAnalysis() -> regenerateConsola()
   });
   document.getElementById("consolaNormalBtn").addEventListener("click", normalizeConsola);
+  document.getElementById("consolaSubsetsChk").addEventListener("change", function(){
+    subsetVarietyEnabled = this.checked;
+    if(state.rootChord.length) regenerateConsola();
+  });
+  document.getElementById("consolaSupersetsChk").addEventListener("change", function(){
+    supersetVarietyEnabled = this.checked;
+    if(state.rootChord.length) regenerateConsola();
+  });
   document.getElementById("consolaJazzChk").addEventListener("change", function(){
     if(state.rootChord.length) regenerateConsola();
   });
@@ -7436,6 +7779,9 @@ function runAnalysis() {
     if(state.rootChord.length) regenerateConsola();
   });
   document.getElementById("consolaCommonNotesChk").addEventListener("change", function(){
+    if(state.rootChord.length) regenerateConsola();
+  });
+  document.getElementById("consolaMixDurChk").addEventListener("change", function(){
     if(state.rootChord.length) regenerateConsola();
   });
   // moreComping: botón, no checkbox — queda prendido/apagado (clase
@@ -7814,7 +8160,34 @@ function runAnalysis() {
     const navModules = document.getElementById('navModules');
     if (!navModules) return;
 
-    const buttons = navModules.querySelectorAll('button');
+    // Solo los botones de navegación de la lista (data-target) — el
+    // botón +/− que contrae/expande esta botonera vive aparte, en el
+    // header, y tiene su propio manejo más abajo.
+    const buttons = navModules.querySelectorAll('#navModulesList button');
+
+    // Contraer/expandir la botonera completa: reusa toggleModule (mismo
+    // mecanismo que ya usan las tarjetas colapsables) y recuerda la
+    // preferencia entre visitas — así, una vez colapsada, no vuelve a
+    // molestar mientras se explora la página.
+    const navToggleBtn = document.getElementById('navModulesToggle');
+    if (navToggleBtn) {
+      const navList = document.getElementById('navModulesList');
+      try {
+        if (localStorage.getItem('navModulesCollapsed') === '1' && navList) {
+          navToggleBtn.setAttribute('aria-expanded', 'false');
+          navList.classList.remove('expanded');
+          navList.classList.add('collapsed');
+        }
+      } catch (e) { /* almacenamiento no disponible (modo privado, etc.) */ }
+      navToggleBtn.addEventListener('click', function(){
+        // toggleModule(this) ya corrió (onclick inline) antes de este
+        // listener, así que aria-expanded acá ya refleja el estado NUEVO.
+        try {
+          const nowExpanded = this.getAttribute('aria-expanded') === 'true';
+          localStorage.setItem('navModulesCollapsed', nowExpanded ? '0' : '1');
+        } catch (e) { /* almacenamiento no disponible */ }
+      });
+    }
 
     // Encuentra el botón que expande/colapsa el módulo al que apunta
     // data-target: en las tres variantes que usa la página (el
