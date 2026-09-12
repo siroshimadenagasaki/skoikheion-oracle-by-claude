@@ -7893,6 +7893,10 @@ function runAnalysis() {
   function startPlayback(){
     if(state.chordEvents.length === 0) return;
     var ctx = getAudioCtx();
+    alert("DEBUG — ctx.state=" + (ctx ? ctx.state : "NULL") +
+      " | currentSynth=" + currentSynth +
+      " | sf2State=" + sf2State +
+      " | sf2Font=" + (sf2Font ? "cargado" : "null"));
     if(!ctx) return;
     var dest = ensureMasterGain(ctx);
     voices = [];
