@@ -205,6 +205,7 @@
     transition:.15s;
   }
   button.chip:hover{border-color:var(--gold-dim);color:var(--ink);}
+  button.chip.chip-small{padding:7px 10px;font-size:13px;line-height:1;}
   button.chip.primary{border-color:var(--gold);color:var(--gold);}
   button.chip.primary:hover{background:var(--gold);color:#1a1622;}
   button.chip.primary:active{background:var(--gold);color:#1a1622;transform:scale(.97);}
@@ -1101,7 +1102,8 @@
         <span class="consola-val" id="consolaVolumeVal">70%</span>
       </div>
       <div class="consola-field" style="flex-direction:row;gap:8px;">
-        <button type="button" class="chip primary" id="consolaPlayBtn" title="Antes de tocar, sortea una variación nueva del segmento (mismo set de notas elegido) — cada Reproducir es una versión distinta.">&#9658; Reproducir &#128256;</button>
+        <button type="button" class="chip primary" id="consolaPlayBtn" title="Reproduce el segmento en loop — repite siempre la misma secuencia (la última generada) hasta que la cambies con 🔀 o elijas otras notas.">&#9658; Reproducir</button>
+        <button type="button" class="chip chip-small" id="consolaRegenPlayBtn" disabled title="Sortea una variación nueva del segmento (mismo set de notas elegido) y la reproduce de una — equivalente al viejo botón Regenerar, fusionado con Reproducir.">&#128256;</button>
         <button type="button" class="chip" id="consolaStopBtn" disabled>&#9632; Detener</button>
         <button type="button" class="chip" id="consolaMoreCompingBtn" title="Agrega una QUINTA pista MIDI, con timbre de cuerdas (strings), que dobla cada nota de la melodía junto con 1 o 2 notas más del acorde vigente en ese instante (siempre del mismo set, nunca una nota ajena) — el grupito entero queda siempre pegado a la nota de melodía, a lo sumo a una octava o dos de distancia.">moreComping</button>
       </div>
@@ -1169,6 +1171,7 @@
         <div class="mix-preset-group" id="bassPresetGroup" data-mix-group="bass">
           <label class="mix-preset-label" for="bassPresetSelect">Bajo</label>
           <select class="mix-preset-select" id="bassPresetSelect">
+            <option value="synthBass">Bajo original (sintetizado)</option>
             <option value="piano">Piano</option>
             <option value="epiano">Piano eléctrico</option>
             <option value="harpsichord">Clavecín</option>
@@ -4138,6 +4141,13 @@ function sf2ToggleBtnClick(e) {
   sf2Activate(btn);
 }
 document.getElementById("sf2Btn").addEventListener("click", sf2ToggleBtnClick);
+// Por defecto el sitio arranca con el SoundFont real ya activado (antes
+// había que tocar el botón a mano) — se dispara la misma carga de
+// siempre apenas termina de correr este script, sin bloquear el resto
+// de la página. Un clic en el botón mientras carga no hace nada
+// (sf2ToggleBtnClick ya ignora clics con sf2State === "loading"); un
+// clic después de cargado alterna a sintetizador liviano, como siempre.
+sf2Activate(document.getElementById("sf2Btn"));
 
 // Sonido breve al activar una nota de entrada (reloj, piano o diapasón).
 function playInputNote(pc) {
@@ -6799,6 +6809,7 @@ function runAnalysis() {
   // de Forte/Solomon, nunca notas ajenas.
   function regenerateConsola(){
     var playBtn = document.getElementById("consolaPlayBtn");
+    var regenPlayBtn = document.getElementById("consolaRegenPlayBtn");
     var normalBtn = document.getElementById("consolaNormalBtn");
     if(!playBtn) return; // sección todavía no está en el DOM
     var readout = document.getElementById("consolaNotesReadout");
@@ -6807,10 +6818,12 @@ function runAnalysis() {
       state.rootChord = []; state.progression = []; state.roles = []; state.chordEvents = []; state.bassEvents = []; state.melodyEvents = []; state.comping2Events = [];
       renderRoll();
       playBtn.disabled = true;
+      if(regenPlayBtn) regenPlayBtn.disabled = true;
       if(normalBtn) normalBtn.disabled = true;
       return;
     }
     playBtn.disabled = false;
+    if(regenPlayBtn) regenPlayBtn.disabled = false;
     if(normalBtn) normalBtn.disabled = false;
     var rootChord = pcSetToChord(selected);
     readout.textContent = rootChord.map(noteName).join("  ");
@@ -7812,6 +7825,8 @@ function runAnalysis() {
     var loopDur = TOTAL_BEATS*spb;
     playing = true;
     document.getElementById("consolaPlayBtn").disabled = true;
+    var regenPlayBtnEl = document.getElementById("consolaRegenPlayBtn");
+    if(regenPlayBtnEl) regenPlayBtnEl.disabled = true;
     document.getElementById("consolaStopBtn").disabled = false;
     tempoEl.disabled = true;
     var rollHost = document.getElementById("consolaRollHost");
@@ -7881,6 +7896,8 @@ function runAnalysis() {
     if(comping2GainNode) comping2GainNode.gain.setValueAtTime(mixGains.comping2, restoreAt);
 
     document.getElementById("consolaPlayBtn").disabled = state.chordEvents.length===0;
+    var regenPlayBtnEl2 = document.getElementById("consolaRegenPlayBtn");
+    if(regenPlayBtnEl2) regenPlayBtnEl2.disabled = state.chordEvents.length===0;
     document.getElementById("consolaStopBtn").disabled = true;
     document.getElementById("consolaTempo").disabled = false;
     var ph = document.getElementById("consolaPlayhead");
@@ -7894,14 +7911,17 @@ function runAnalysis() {
     if(rollHost) rollHost.scrollLeft = 0;
   }
 
-  // Reproducir ya no requiere un botón "Regenerar" aparte: cada vez que
-  // se aprieta, primero sortea una variación nueva del segmento (mismo
-  // set de notas elegido, igual que hacía el viejo botón &#128256;) y
-  // recién ahí arranca la reproducción — por eso el botón ahora dice
-  // "Reproducir &#128256;". Si todavía no hay notas elegidas,
-  // regenerateConsola() no hace nada (deja todo vacío) y startPlayback()
-  // tampoco, por chordEvents.length === 0.
+  // Reproducir: siempre toca la ÚLTIMA secuencia generada (repite igual
+  // mientras no cambies las notas ni toques el botón chico &#128256;) — no
+  // sortea nada nuevo por sí solo. El botón chico &#128256; (al lado) es el
+  // que sortea una variación nueva del segmento (mismo set de notas
+  // elegido) y la reproduce de una, en un solo click — separa "repetir"
+  // de "regenerar", que antes venían fusionados en un solo botón.
   document.getElementById("consolaPlayBtn").addEventListener("click", function(){
+    startPlayback();
+  });
+  document.getElementById("consolaRegenPlayBtn").addEventListener("click", function(){
+    if(playing) stopPlayback();
     if(state.rootChord.length) regenerateConsola();
     startPlayback();
   });
