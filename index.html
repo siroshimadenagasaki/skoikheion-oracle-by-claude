@@ -771,6 +771,7 @@
         <button class="chip primary" id="playChordBtn" type="button">▶ Acorde</button>
         <button class="chip" id="composeBtn" type="button" title="Toca el segmento de 12 compases de SetMusicBox con las notas actuales">🎹 Compose</button>
         <button class="chip" id="clearBtn">Limpiar</button>
+        <button class="chip toggle" id="sf2Btn" type="button" aria-pressed="false" title="Carga bajo demanda un SoundFont real (TBOSf.sf2, ~80MB) y reemplaza el sintetizador por muestras de instrumento reales. Un clic más para volver al sintetizador liviano.">🎼 Sonido real (SoundFont)</button>
       </div>
       <div class="examples">
         <span>Ejemplos rápidos</span>
@@ -3680,12 +3681,275 @@ function synthPluck(freq, { start = 0, duration = 1.6, gain = 0.5 } = {}) {
   }, Math.max(0, cleanupMs));
 }
 
+/* ------------------------------------------------------------
+   SF2: motor de sonido real a partir de un SoundFont (.sf2).
+   Se carga bajo demanda (botón "Sonido real") para no sumar 80MB+
+   a la carga inicial de la página. Parser propio en JS puro
+   (RIFF/sfbk: phdr/pbag/pgen/inst/ibag/igen/shdr), sin
+   dependencias nuevas — misma idea que el resto del sitio.
+   No implementa modulación LFO ni filtros del SF2: es una
+   aproximación (tuning + loop + ADSR de volumen) suficiente
+   para reemplazar el timbre sintético por muestras reales.
+   ------------------------------------------------------------ */
+const SF2_URL = "TBOSf.sf2";
+const SF2_DEFAULT_PRESET = { bank: 0, preset: 0 }; // Grand Piano
+
+const SF2_GEN = {
+  INSTRUMENT: 41, KEYRANGE: 43, VELRANGE: 44, SAMPLEID: 53, SAMPLEMODES: 54,
+  OVERRIDE_ROOTKEY: 58, FINETUNE: 52, COARSETUNE: 51,
+  DELAY_VOLENV: 33, ATTACK_VOLENV: 34, HOLD_VOLENV: 35, DECAY_VOLENV: 36,
+  SUSTAIN_VOLENV: 37, RELEASE_VOLENV: 38, INITIAL_ATTEN: 48,
+};
+const SF2_GEN_DEFAULTS = {
+  [SF2_GEN.KEYRANGE]: [0, 127], [SF2_GEN.VELRANGE]: [0, 127], [SF2_GEN.SAMPLEMODES]: 0,
+  [SF2_GEN.OVERRIDE_ROOTKEY]: -1, [SF2_GEN.FINETUNE]: 0, [SF2_GEN.COARSETUNE]: 0,
+  [SF2_GEN.DELAY_VOLENV]: -12000, [SF2_GEN.ATTACK_VOLENV]: -12000, [SF2_GEN.HOLD_VOLENV]: -12000,
+  [SF2_GEN.DECAY_VOLENV]: -12000, [SF2_GEN.SUSTAIN_VOLENV]: 0, [SF2_GEN.RELEASE_VOLENV]: -12000,
+  [SF2_GEN.INITIAL_ATTEN]: 0,
+};
+function sf2Tc2Sec(tc) { return Math.pow(2, tc / 1200); }
+function sf2Cb2Amp(cb) { return Math.pow(10, -cb / 200); }
+
+let sf2State = "idle"; // idle | loading | ready | error
+let sf2Font = null;
+let sf2PresetIdx = -1;
+const sf2BufferCache = new Map();
+
+async function sf2FetchWithProgress(url, onProgress) {
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error("HTTP " + resp.status + " al pedir " + url);
+  const total = parseInt(resp.headers.get("Content-Length") || "0", 10);
+  if (!resp.body || !total) return await resp.arrayBuffer();
+  const reader = resp.body.getReader();
+  const chunks = [];
+  let received = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+    received += value.length;
+    if (onProgress) onProgress(received / total);
+  }
+  const out = new Uint8Array(received);
+  let offset = 0;
+  for (const c of chunks) { out.set(c, offset); offset += c.length; }
+  return out.buffer;
+}
+
+function sf2ParseFont(arrayBuffer) {
+  const dv = new DataView(arrayBuffer);
+  const dec = new TextDecoder("latin1");
+  const id = (off) => dec.decode(new Uint8Array(arrayBuffer, off, 4));
+  if (id(0) !== "RIFF" || id(8) !== "sfbk") throw new Error("No es un SoundFont v2 (sfbk) válido");
+  const riffSize = dv.getUint32(4, true);
+  const end = 8 + riffSize;
+  const lists = {};
+  let pos = 12;
+  while (pos < end) {
+    if (id(pos) !== "LIST") break;
+    const size = dv.getUint32(pos + 4, true);
+    lists[id(pos + 8)] = { start: pos + 12, end: pos + 8 + size };
+    pos += 8 + size;
+    if (size % 2 === 1) pos++;
+  }
+  function readChunks(s, e) {
+    const chunks = {};
+    let p = s;
+    while (p < e) {
+      const cid = id(p);
+      const size = dv.getUint32(p + 4, true);
+      const cstart = p + 8;
+      (chunks[cid] = chunks[cid] || []).push([cstart, cstart + size]);
+      p = cstart + size;
+      if (size % 2 === 1) p++;
+    }
+    return chunks;
+  }
+  function cstr(off, len) {
+    const bytes = new Uint8Array(arrayBuffer, off, len);
+    let z = bytes.indexOf(0);
+    if (z === -1) z = len;
+    return dec.decode(bytes.subarray(0, z));
+  }
+  function parseArray(span, itemSize, readFn) {
+    const [s, e] = span;
+    const n = Math.floor((e - s) / itemSize);
+    const out = new Array(n);
+    for (let i = 0; i < n; i++) out[i] = readFn(s + i * itemSize);
+    return out;
+  }
+
+  const pdta = readChunks(lists["pdta"].start, lists["pdta"].end);
+  const phdr = parseArray(pdta["phdr"][0], 38, (o) => ({
+    name: cstr(o, 20), preset: dv.getUint16(o + 20, true), bank: dv.getUint16(o + 22, true),
+    bagIdx: dv.getUint16(o + 24, true),
+  }));
+  const pbag = parseArray(pdta["pbag"][0], 4, (o) => ({ genIdx: dv.getUint16(o, true) }));
+  const pgen = parseArray(pdta["pgen"][0], 4, (o) => ({ oper: dv.getUint16(o, true), amount: dv.getInt16(o + 2, true) }));
+  const inst = parseArray(pdta["inst"][0], 22, (o) => ({ name: cstr(o, 20), bagIdx: dv.getUint16(o + 20, true) }));
+  const ibag = parseArray(pdta["ibag"][0], 4, (o) => ({ genIdx: dv.getUint16(o, true) }));
+  const igen = parseArray(pdta["igen"][0], 4, (o) => ({ oper: dv.getUint16(o, true), amount: dv.getInt16(o + 2, true) }));
+  const shdr = parseArray(pdta["shdr"][0], 46, (o) => ({
+    name: cstr(o, 20), start: dv.getUint32(o + 20, true), end: dv.getUint32(o + 24, true),
+    loopStart: dv.getUint32(o + 28, true), loopEnd: dv.getUint32(o + 32, true),
+    sampleRate: dv.getUint32(o + 36, true), origPitch: dv.getUint8(o + 40),
+    pitchCorrection: dv.getInt8(o + 41),
+  }));
+
+  const sdta = readChunks(lists["sdta"].start, lists["sdta"].end);
+  const [smplStart, smplEnd] = sdta["smpl"][0];
+  const samples = new Int16Array(arrayBuffer, smplStart, (smplEnd - smplStart) / 2);
+
+  return { phdr, pbag, pgen, inst, ibag, igen, shdr, samples };
+}
+
+function sf2FindPresetIdx(font, bank, preset) {
+  for (let i = 0; i < font.phdr.length - 1; i++) {
+    if (font.phdr[i].bank === bank && font.phdr[i].preset === preset) return i;
+  }
+  return -1;
+}
+
+function sf2ZonesFrom(bagArr, genArr, bagStart, bagEnd) {
+  const zones = [];
+  for (let bi = bagStart; bi < bagEnd; bi++) {
+    const g0 = bagArr[bi].genIdx, g1 = bagArr[bi + 1].genIdx;
+    const gens = {};
+    for (let gi = g0; gi < g1; gi++) {
+      const g = genArr[gi];
+      if (g.oper === SF2_GEN.KEYRANGE || g.oper === SF2_GEN.VELRANGE) {
+        gens[g.oper] = [g.amount & 0xFF, (g.amount >> 8) & 0xFF];
+      } else {
+        gens[g.oper] = g.amount;
+      }
+    }
+    zones.push(gens);
+  }
+  return zones;
+}
+
+function sf2ResolveNote(font, presetIdx, note, vel) {
+  const p = font.phdr[presetIdx], pNext = font.phdr[presetIdx + 1];
+  const pZones = sf2ZonesFrom(font.pbag, font.pgen, p.bagIdx, pNext.bagIdx);
+  let pGlobal = {};
+  const pLocal = [];
+  for (const z of pZones) { if (!(SF2_GEN.INSTRUMENT in z)) pGlobal = z; else pLocal.push(z); }
+
+  const hits = [];
+  for (const pz of pLocal) {
+    const kr = pz[SF2_GEN.KEYRANGE] || pGlobal[SF2_GEN.KEYRANGE] || SF2_GEN_DEFAULTS[SF2_GEN.KEYRANGE];
+    const vr = pz[SF2_GEN.VELRANGE] || pGlobal[SF2_GEN.VELRANGE] || SF2_GEN_DEFAULTS[SF2_GEN.VELRANGE];
+    if (!(note >= kr[0] && note <= kr[1] && vel >= vr[0] && vel <= vr[1])) continue;
+    const instIdx = pz[SF2_GEN.INSTRUMENT];
+    const it = font.inst[instIdx], itNext = font.inst[instIdx + 1];
+    const iZones = sf2ZonesFrom(font.ibag, font.igen, it.bagIdx, itNext.bagIdx);
+    let iGlobal = {};
+    const iLocal = [];
+    for (const z of iZones) { if (!(SF2_GEN.SAMPLEID in z)) iGlobal = z; else iLocal.push(z); }
+    for (const iz of iLocal) {
+      const ikr = iz[SF2_GEN.KEYRANGE] || iGlobal[SF2_GEN.KEYRANGE] || SF2_GEN_DEFAULTS[SF2_GEN.KEYRANGE];
+      const ivr = iz[SF2_GEN.VELRANGE] || iGlobal[SF2_GEN.VELRANGE] || SF2_GEN_DEFAULTS[SF2_GEN.VELRANGE];
+      if (!(note >= ikr[0] && note <= ikr[1] && vel >= ivr[0] && vel <= ivr[1])) continue;
+      const merged = Object.assign({}, SF2_GEN_DEFAULTS, iGlobal, iz);
+      const presetAdd = Object.assign({}, pGlobal, pz);
+      for (const operStr in presetAdd) {
+        const oper = Number(operStr);
+        if (oper === SF2_GEN.INSTRUMENT || oper === SF2_GEN.SAMPLEID ||
+            oper === SF2_GEN.KEYRANGE || oper === SF2_GEN.VELRANGE) continue;
+        const amt = presetAdd[oper];
+        if (Array.isArray(amt)) continue;
+        merged[oper] = (merged[oper] || 0) + amt;
+      }
+      hits.push({ shdr: font.shdr[iz[SF2_GEN.SAMPLEID]], gens: merged });
+    }
+  }
+  return hits;
+}
+
+function sf2BufferFor(ctx, shdr) {
+  const key = shdr.start + ":" + shdr.end + ":" + shdr.sampleRate;
+  let buf = sf2BufferCache.get(key);
+  if (buf) return buf;
+  const n = Math.max(1, shdr.end - shdr.start);
+  buf = ctx.createBuffer(1, n, shdr.sampleRate || ctx.sampleRate);
+  const data = buf.getChannelData(0);
+  const src = sf2Font.samples.subarray(shdr.start, shdr.end);
+  for (let i = 0; i < src.length; i++) data[i] = src[i] / 32768;
+  sf2BufferCache.set(key, buf);
+  return buf;
+}
+
+function synthSF2(freq, { start = 0, duration = 1.2, gain = 0.15 } = {}) {
+  if (sf2State !== "ready" || !sf2Font || sf2PresetIdx < 0) {
+    synthPad(freq, { start, duration, gain });
+    return;
+  }
+  const ctx = getAudioCtx();
+  if (!ctx) return;
+  const note = Math.round(69 + 12 * Math.log2(freq / 440));
+  const hits = sf2ResolveNote(sf2Font, sf2PresetIdx, note, 100);
+  if (!hits.length) { synthPad(freq, { start, duration, gain }); return; }
+
+  const t0 = ctx.currentTime + start;
+  const perHitGain = gain / hits.length;
+
+  hits.forEach(({ shdr, gens }) => {
+    const buffer = sf2BufferFor(ctx, shdr);
+    const src = ctx.createBufferSource();
+    src.buffer = buffer;
+
+    const root = gens[SF2_GEN.OVERRIDE_ROOTKEY] !== -1 ? gens[SF2_GEN.OVERRIDE_ROOTKEY] : shdr.origPitch;
+    const semis = (note - root) + gens[SF2_GEN.COARSETUNE] +
+      gens[SF2_GEN.FINETUNE] / 100 - shdr.pitchCorrection / 100;
+    src.playbackRate.value = Math.pow(2, semis / 12);
+
+    const modes = gens[SF2_GEN.SAMPLEMODES];
+    if ((modes === 1 || modes === 3) && shdr.loopEnd > shdr.loopStart) {
+      src.loop = true;
+      src.loopStart = Math.max(0, shdr.loopStart - shdr.start) / (shdr.sampleRate || ctx.sampleRate);
+      src.loopEnd = Math.max(src.loopStart, shdr.loopEnd - shdr.start) / (shdr.sampleRate || ctx.sampleRate);
+    }
+
+    const delay = sf2Tc2Sec(gens[SF2_GEN.DELAY_VOLENV]);
+    const attack = Math.max(0.004, sf2Tc2Sec(gens[SF2_GEN.ATTACK_VOLENV]));
+    const hold = sf2Tc2Sec(gens[SF2_GEN.HOLD_VOLENV]);
+    const decay = sf2Tc2Sec(gens[SF2_GEN.DECAY_VOLENV]);
+    const sustainAmp = Math.min(1, sf2Cb2Amp(gens[SF2_GEN.SUSTAIN_VOLENV]));
+    const release = Math.max(0.02, sf2Tc2Sec(gens[SF2_GEN.RELEASE_VOLENV]));
+    const atten = Math.min(1, sf2Cb2Amp(gens[SF2_GEN.INITIAL_ATTEN]));
+    const peak = perHitGain * atten;
+
+    const tAttackEnd = t0 + delay + attack;
+    const tDecayEnd = tAttackEnd + hold + decay;
+    const noteOffAt = t0 + duration;
+    const tSustainHeld = Math.max(noteOffAt, tDecayEnd);
+    const tReleaseEnd = Math.max(tSustainHeld + 0.01, noteOffAt + release);
+
+    const env = ctx.createGain();
+    const g = env.gain;
+    g.setValueAtTime(0, t0);
+    g.setValueAtTime(0, t0 + delay);
+    g.linearRampToValueAtTime(peak, tAttackEnd);
+    g.setValueAtTime(peak, tAttackEnd + hold);
+    g.linearRampToValueAtTime(Math.max(peak * sustainAmp, 0.0001), tDecayEnd);
+    g.setValueAtTime(Math.max(peak * sustainAmp, 0.0001), tSustainHeld);
+    g.linearRampToValueAtTime(0.0001, tReleaseEnd);
+
+    src.connect(env);
+    env.connect(ctx.destination);
+    src.start(t0);
+    src.stop(tReleaseEnd + 0.05);
+    src.onended = () => { try { src.disconnect(); env.disconnect(); } catch (e) { /* ya desconectado */ } };
+  });
+}
+
 const SYNTHS = {
   pad:    { label: "Pad",             fn: synthPad },
   sine:   { label: "Seno",            fn: synthSine },
   square: { label: "Cuadrada",        fn: synthSquare },
   fm:     { label: "Campana FM",      fn: synthFM },
   pluck:  { label: "Cuerda pulsada",  fn: synthPluck },
+  sf2:    { label: "SoundFont (real)", fn: synthSF2 },
 };
 let currentSynth = "pad";
 
@@ -3693,6 +3957,52 @@ function playSynthTone(freq, opts) {
   const engine = SYNTHS[currentSynth] || SYNTHS.pad;
   engine.fn(freq, opts);
 }
+
+// Botón "🎼 Sonido real": primer clic descarga y parsea el SoundFont
+// (bajo demanda, no bloquea la carga de la página); clics siguientes
+// alternan entre el SoundFont ya cargado y el sintetizador "pad".
+async function sf2Activate(btn) {
+  sf2State = "loading";
+  btn.disabled = true;
+  try {
+    const buf = await sf2FetchWithProgress(SF2_URL, (frac) => {
+      btn.textContent = "🎼 Cargando " + Math.round(frac * 100) + "%…";
+    });
+    sf2Font = sf2ParseFont(buf);
+    sf2PresetIdx = sf2FindPresetIdx(sf2Font, SF2_DEFAULT_PRESET.bank, SF2_DEFAULT_PRESET.preset);
+    if (sf2PresetIdx === -1) sf2PresetIdx = 0;
+    sf2State = "ready";
+    currentSynth = "sf2";
+    btn.textContent = "🎼 Sonido real (SoundFont) ✓";
+    btn.title = "Preset activo: " + (sf2Font.phdr[sf2PresetIdx] || {}).name +
+      " — clic para volver al sintetizador liviano";
+    btn.setAttribute("aria-pressed", "true");
+  } catch (err) {
+    console.error("No se pudo cargar el SoundFont:", err);
+    sf2State = "error";
+    btn.textContent = "🎼 Error al cargar — reintentar";
+  } finally {
+    btn.disabled = false;
+  }
+}
+function sf2ToggleBtnClick(e) {
+  const btn = e.currentTarget;
+  if (sf2State === "ready") {
+    if (currentSynth === "sf2") {
+      currentSynth = "pad";
+      btn.setAttribute("aria-pressed", "false");
+      btn.textContent = "🎼 Sonido real (SoundFont)";
+    } else {
+      currentSynth = "sf2";
+      btn.setAttribute("aria-pressed", "true");
+      btn.textContent = "🎼 Sonido real (SoundFont) ✓";
+    }
+    return;
+  }
+  if (sf2State === "loading") return;
+  sf2Activate(btn);
+}
+document.getElementById("sf2Btn").addEventListener("click", sf2ToggleBtnClick);
 
 // Sonido breve al activar una nota de entrada (reloj, piano o diapasón).
 function playInputNote(pc) {
