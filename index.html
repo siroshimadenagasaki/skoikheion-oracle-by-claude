@@ -1171,6 +1171,7 @@
           <span class="consola-inst-toggle"><input type="checkbox" id="consolaBassChk" checked><label for="consolaBassChk">Bajo</label></span>
           <span class="consola-inst-toggle"><input type="checkbox" id="consolaMelodyChk" checked><label for="consolaMelodyChk">Melodía</label></span>
           <span class="consola-inst-toggle"><input type="checkbox" id="consolaDrumChk" checked><label for="consolaDrumChk">&#129345; Batería</label></span>
+          <span class="consola-inst-toggle" title="Tildado (default): el bajo de cada compás siempre recupera las notas que el subset de armonía dejó afuera, así armonía+bajo+melodía reconstruyen entre todos el set completo transportado. Destildado: el bajo puede doblar notas del mismo subset que ya está sonando en armonía, sin obligación de completar el set en ese compás — sonido más variado/disperso, sigue sin salir nunca del set elegido."><input type="checkbox" id="consolaAlwaysCompleteChk" checked><label for="consolaAlwaysCompleteChk">Always complete set</label></span>
           <span class="consola-inst-toggle" title="Además del subset de siempre (el set completo o casi completo), a veces usa un subconjunto MÁS CHICO del mismo set elegido — más variedad de tamaños de acorde por compás, sin salir nunca del set."><input type="checkbox" id="consolaSubsetsChk"><label for="consolaSubsetsChk">&#8681; Subsets (variedad)</label></span>
           <span class="consola-inst-toggle" title="Además del subset de siempre, a veces usa el COMPLEMENTO del set elegido (las notas que el set deja afuera dentro de la octava) — más variedad armónica, siempre derivada del mismo set."><input type="checkbox" id="consolaSupersetsChk"><label for="consolaSupersetsChk">&#8679; Supersets (variedad)</label></span>
           <span class="consola-inst-toggle" title="Aplica ritmos de comping/walking bass, voicings tipo drop-2 y swing (adaptados de una base de datos de jazz), sin salir nunca del set de notas elegido."><input type="checkbox" id="consolaJazzChk"><label for="consolaJazzChk">&#127927; Jazz</label></span>
@@ -6912,7 +6913,14 @@ function runAnalysis() {
     var bassEvents = [], melodyEvents = [];
     var jazzPrevBass = null; // JAZZ: nota anterior del bajo, para caminar por grados conjuntos
     progression.forEach(function(chord, bar){
-      var queue = meta[bar].complement.slice(); // notas del set que el bajo de este compás debe recuperar
+      // Con "Always complete set" tildado (default): el bajo arranca con
+      // la cola del complemento y va cubriendo esas notas primero (lo
+      // que garantiza que armonía+bajo+melodía reconstruyan el set
+      // completo). Destildado: la cola queda vacía a propósito — el
+      // bajo directamente dobla notas del subset vigente (misma rama
+      // "queue.length ? ... : chord[randomInt(...)]" de más abajo, que
+      // ya existe para cuando la cola se agota sola).
+      var queue = alwaysCompleteSet ? meta[bar].complement.slice() : []; // notas del set que el bajo de este compás debe recuperar (si corresponde)
 
       var bOffset = 0;
       bassCells[bar].forEach(function(dur){
@@ -7024,6 +7032,7 @@ function runAnalysis() {
   // Opciones de variedad armónica
   var subsetVarietyEnabled = false;
   var supersetVarietyEnabled = false;
+  var alwaysCompleteSet = true; // checkbox #consolaAlwaysCompleteChk (tildado por defecto) — ver buildBassMelodyEventsRandom
   var chromaVariety = 0.25; // 0..1 — slider #consolaChromaSlider (default 25%), ver randomChromaTransposition/currentSubsetGap
 
   // Modo automático (se dispara solo, cada vez que cambian las notas
@@ -8242,6 +8251,10 @@ function runAnalysis() {
     setNotes([0,4,7,11]); // C E G B — dispara runAnalysis() -> regenerateConsola()
   });
   document.getElementById("consolaNormalBtn").addEventListener("click", normalizeConsola);
+  document.getElementById("consolaAlwaysCompleteChk").addEventListener("change", function(){
+    alwaysCompleteSet = this.checked;
+    if(state.rootChord.length) regenerateConsola();
+  });
   document.getElementById("consolaSubsetsChk").addEventListener("change", function(){
     subsetVarietyEnabled = this.checked;
     if(state.rootChord.length) regenerateConsola();
