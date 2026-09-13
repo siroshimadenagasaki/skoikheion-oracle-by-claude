@@ -1160,6 +1160,16 @@
         <input type="range" id="consolaChromaSlider" min="0" max="100" value="25" step="1">
         <span class="consola-val" id="consolaChromaVal">25%</span>
       </div>
+      <div class="consola-field" title="Probabilidad, en cada decisión del motor (ritmo de armonía/bajo, voicing de cada reataque, orden del arpegio, registro del bajo, patrón de batería), de usar la variante estilo jazz en vez de la del motor base. 0% = nunca (motor base, igual que con el checkbox viejo apagado). 100% = siempre (igual que con el checkbox viejo prendido). En el medio, una mezcla gradual: a mayor %, más decisiones caen del lado jazz, compás a compás y nota a nota.">
+        <label for="consolaJazzSlider">&#127927; Jazz</label>
+        <input type="range" id="consolaJazzSlider" min="0" max="100" value="0" step="1">
+        <span class="consola-val" id="consolaJazzVal">0%</span>
+      </div>
+      <div class="consola-field" title="Qué tan simultáneas entran las notas de cada acorde de armonía (2+ notas). 0% = block chords: todas las notas del voicing pegadas exactamente en el mismo instante. 100% = ataque quebrado al máximo (comportamiento de siempre): las notas entran escalonadas, nunca simultáneas. En el medio, escalona con menos distancia entre notas — ni bloque puro ni el quiebre completo. Afecta tanto al motor libre como a Normalito, que comparten el mismo mecanismo.">
+        <label for="consolaChordSimulSlider">Chord simultaneity</label>
+        <input type="range" id="consolaChordSimulSlider" min="0" max="100" value="50" step="1">
+        <span class="consola-val" id="consolaChordSimulVal">50%</span>
+      </div>
       <div class="consola-field consola-loop">
         <input type="checkbox" id="consolaLoopChk" checked>
         <label for="consolaLoopChk">Loop</label>
@@ -1174,7 +1184,6 @@
           <span class="consola-inst-toggle" title="Tildado (default): el bajo de cada compás siempre recupera las notas que el subset de armonía dejó afuera, así armonía+bajo+melodía reconstruyen entre todos el set completo transportado. Destildado: el bajo puede doblar notas del mismo subset que ya está sonando en armonía, sin obligación de completar el set en ese compás — sonido más variado/disperso, sigue sin salir nunca del set elegido."><input type="checkbox" id="consolaAlwaysCompleteChk" checked><label for="consolaAlwaysCompleteChk">Always complete set</label></span>
           <span class="consola-inst-toggle" title="Además del subset de siempre (el set completo o casi completo), a veces usa un subconjunto MÁS CHICO del mismo set elegido — más variedad de tamaños de acorde por compás, sin salir nunca del set."><input type="checkbox" id="consolaSubsetsChk"><label for="consolaSubsetsChk">&#8681; Subsets (variedad)</label></span>
           <span class="consola-inst-toggle" title="Además del subset de siempre, a veces usa el COMPLEMENTO del set elegido (las notas que el set deja afuera dentro de la octava) — más variedad armónica, siempre derivada del mismo set."><input type="checkbox" id="consolaSupersetsChk"><label for="consolaSupersetsChk">&#8679; Supersets (variedad)</label></span>
-          <span class="consola-inst-toggle" title="Aplica ritmos de comping/walking bass, voicings tipo drop-2 y swing (adaptados de una base de datos de jazz), sin salir nunca del set de notas elegido."><input type="checkbox" id="consolaJazzChk"><label for="consolaJazzChk">&#127927; Jazz</label></span>
           <span class="consola-inst-toggle" title="Cada compás de armonía, bajo, melodía y batería tiene un 40% extra de probabilidad de repetir exactamente el patrón del compás anterior; además, bajo y melodía tienen un 40% de probabilidad por compás de acoplar sus ataques a los de la armonía en vez de llevar su propio ritmo."><input type="checkbox" id="consolaMoreRepChk"><label for="consolaMoreRepChk">&#128257; More repetition</label></span>
           <span class="consola-inst-toggle" title="En cada reataque de armonía se sortean varias combinaciones válidas de subconjunto/transposición/inversión dentro del MISMO acorde/grado elegido (nunca de otro) y se elige la que comparte más notas con el acorde anterior — el doble de notas comunes en promedio que al azar puro, con la misma restricción de conjunto de siempre."><input type="checkbox" id="consolaCommonNotesChk"><label for="consolaCommonNotesChk">&#128279; Notas comunes</label></span>
           <span class="consola-inst-toggle" title="Mezcla figuras largas y cortas DENTRO del mismo compás de melodía, en vez del comportamiento de siempre (un compás entero de figuras largas y, cada tanto, un compás entero de fill de notas cortas). No cambia qué nota suena, solo el ritmo."><input type="checkbox" id="consolaMixDurChk" checked><label for="consolaMixDurChk">&#127925; Mix melody duration</label></span>
@@ -5753,9 +5762,18 @@ function runAnalysis() {
 
   /* ================================================================
      MÓDULO JAZZ — separado a propósito del motor de arriba/abajo.
-     Se activa solo con el checkbox #consolaJazzChk (apagado por
-     defecto). Apagado, el motor se comporta EXACTAMENTE igual que
-     antes (nada de acá se ejecuta). Prendido, reemplaza:
+     Se controla con el slider #consolaJazzSlider, 0-100% (0% por
+     defecto). Ya NO es un interruptor binario: JAZZ.roll() tira un
+     dado independiente en CADA punto de decisión del motor (pool de
+     ritmo de armonía, pool de ritmo de bajo, voicing de cada
+     reataque, forma del arpegio de cada fill, registro del bajo nota
+     a nota, pool de batería) usando esa probabilidad — así el
+     resultado se mezcla gradualmente entre el motor base y el estilo
+     jazz a medida que se mueve el slider, en vez de saltar de golpe
+     de "nada" a "todo". A 0% el resultado es estadísticamente
+     idéntico al viejo checkbox apagado (JAZZ.roll() nunca da true);
+     a 100%, idéntico al viejo checkbox prendido (siempre da true).
+     Prendido total, reemplaza:
        - los pools de ritmo de armonía/bajo (comping y walking bass,
          adaptados de grillas de una base de datos de jazz),
        - el fill de melodía (corcheas swingueadas en vez de parejas),
@@ -5771,9 +5789,16 @@ function runAnalysis() {
      jazz decide ritmo, orden de recorrido y octava, nunca qué nota.
      ================================================================ */
   var JAZZ = (function(){
-    function enabled(){
-      var chk = document.getElementById("consolaJazzChk");
-      return !!(chk && chk.checked);
+    function intensity(){
+      var sl = document.getElementById("consolaJazzSlider");
+      var v = sl ? Number(sl.value) : 0;
+      if (isNaN(v)) v = 0;
+      return Math.max(0, Math.min(100, v)) / 100;
+    }
+    // Dado independiente por punto de decisión — ver comentario del
+    // módulo. Reemplaza al viejo enabled() (checkbox binario).
+    function roll(){
+      return Math.random() < intensity();
     }
 
     // Convierte una grilla de 16 pasos (semicorcheas, 1=ataque) de la
@@ -5998,7 +6023,8 @@ function runAnalysis() {
     ];
 
     return {
-      enabled: enabled,
+      intensity: intensity,
+      roll: roll,
       CHORD_RHYTHM_POOL: CHORD_RHYTHM_POOL,
       BASS_RHYTHM_POOL: BASS_RHYTHM_POOL,
       SWUNG_FILL_CELL: SWUNG_FILL_CELL,
@@ -6577,10 +6603,21 @@ function runAnalysis() {
   /* ================================================================
      MÓDULO ATAQUE QUEBRADO DE ARMONÍA — la armonía NUNCA ataca "en
      bloque" (todas las notas del voicing pegadas exactamente en el
-     mismo instante, salvo que el voicing tenga una sola nota): en
-     TODO reataque de 2+ notas (sin checkbox, sin azar de si se aplica
-     — es parte del motor de siempre) las notas entran ESCALONADAS,
-     nunca simultáneas, con alguna de estas formas al azar:
+     mismo instante, salvo que el voicing tenga una sola nota): la
+     CANTIDAD de quiebre la controla el slider #consolaChordSimulSlider
+     ("Chord simultaneity", 0-100%, 50% por defecto):
+       - 0% = block chords puro: los offsets se escalan a 0, todas las
+         notas entran exactamente juntas (equivalente a ANTES de que
+         existiera este módulo).
+       - 100% = el quiebre completo de siempre (offsets sin escalar) —
+         comportamiento histórico, sin cambios.
+       - En el medio, los mismos offsets de siempre se escalan por la
+         intensidad del slider: el ORDEN/FORMA elegida (ver abajo) no
+         cambia, solo qué tan separadas quedan las notas entre sí — a
+         menor %, más pegadas (más "bloque"), sin llegar a 0% a ser
+         simultáneas del todo salvo en el extremo.
+     En TODO reataque de 2+ notas se sortea al azar una de estas formas
+     (antes de aplicar el escalado de intensidad):
        - grave → agudo, una por una (como un arpegio ascendente);
        - agudo → grave, una por una (arpegio descendente);
        - con 3 notas o más: los dos extremos (la más grave y la más
@@ -6588,16 +6625,29 @@ function runAnalysis() {
          (variación "de afuera hacia adentro");
        - o al revés: el centro primero, los extremos después.
      El paso entre ataques consecutivos escala con la duración del
-     reataque (dur/(n+1), sin techo fijo): un reataque cortito (corchea,
-     negra) queda con las notas casi pegadas, y uno largo (redonda,
-     blanca) las reparte con bastante más distancia entre sí — nunca al
-     revés. Nunca cambia QUÉ notas suenan (mismo voicing de siempre) —
-     solo CUÁNDO entra cada una dentro de ese reataque; todas las notas
-     igual terminan en el mismo instante final que tendría el reataque
-     en bloque (se les recorta la duración, nunca se corren para
-     adelante), así el reataque de afuera sigue durando lo mismo.
+     reataque (dur/(n+1), sin techo fijo) ANTES del escalado por
+     intensidad: un reataque cortito (corchea, negra) queda con las
+     notas casi pegadas, y uno largo (redonda, blanca) las reparte con
+     bastante más distancia entre sí — nunca al revés. Nunca cambia QUÉ
+     notas suenan (mismo voicing de siempre) — solo CUÁNDO entra cada
+     una dentro de ese reataque; todas las notas igual terminan en el
+     mismo instante final que tendría el reataque en bloque (se les
+     recorta la duración, nunca se corren para adelante), así el
+     reataque de afuera sigue durando lo mismo.
+     Afecta por igual al motor libre (buildChordEventsRandom) y a
+     Normalito (chordEventsFromCells/buildChordEvents) — ambos llaman
+     a BROKENCHORD.offsetsFor, así que comparten el mismo slider.
      ================================================================ */
   var BROKENCHORD = (function(){
+    // Intensidad del slider #consolaChordSimulSlider, 0..1. 0 = block
+    // chords (offsets escalados a 0). 1 = quiebre completo (offsets
+    // sin escalar, comportamiento histórico).
+    function intensity(){
+      var sl = document.getElementById("consolaChordSimulSlider");
+      var v = sl ? Number(sl.value) : 50;
+      if (isNaN(v)) v = 50;
+      return Math.max(0, Math.min(100, v)) / 100;
+    }
     // Paso entre ataques consecutivos: escala directo con la duración
     // disponible del reataque — sin techo de una corchea como antes,
     // así un acorde largo separa mucho más sus ataques que uno corto.
@@ -6636,14 +6686,17 @@ function runAnalysis() {
       }
       var offsets = new Array(n);
       order.forEach(function(idx, rank){ offsets[idx] = byRank[rank]; });
+      var k = intensity();
+      if (k !== 1) offsets = offsets.map(function(o){ return o*k; });
       return offsets;
     }
     return {
-      offsetsFor: offsetsFor
+      offsetsFor: offsetsFor,
+      intensity: intensity
     };
   })();
   function buildChordEventsRandom(rootChord, numBars){
-    var chordPool = JAZZ.enabled() ? JAZZ.CHORD_RHYTHM_POOL : CHORD_RHYTHM_POOL;
+    var chordPool = JAZZ.roll() ? JAZZ.CHORD_RHYTHM_POOL : CHORD_RHYTHM_POOL;
     var cellsByBar = avoidAdjacentDuplicates(
       distributeWeighted(chordPool, numBars, function(cell){ return cell.length; })
     );
@@ -6659,7 +6712,7 @@ function runAnalysis() {
       var slots = [];
       cellsByBar[bar].forEach(function(dur){
         var picked, t, inv, combo, voiced, strum;
-        if (JAZZ.enabled()){
+        if (JAZZ.roll()){
           // JAZZ: variedad de voicing (cerrada/drop2/drop3/abierta con
           // doblado, como el Voicing Explorer) + conducción de voces
           // suave la mayoría de las veces — ver JAZZ.pickChordVoicing.
@@ -6753,7 +6806,7 @@ function runAnalysis() {
   // quietos se intercalen en vez de juntarse por azar, manteniendo el
   // mismo promedio general de siempre.
   function buildBassRhythmRandom(numBars){
-    var bassPool = JAZZ.enabled() ? JAZZ.BASS_RHYTHM_POOL : BASS_RHYTHM_POOL;
+    var bassPool = JAZZ.roll() ? JAZZ.BASS_RHYTHM_POOL : BASS_RHYTHM_POOL;
     return avoidAdjacentDuplicates(
       distributeWeighted(bassPool, numBars, function(cell){ return cell.length; })
     );
@@ -6858,7 +6911,7 @@ function runAnalysis() {
       if(barOrder[bar].flourish){
         // JAZZ: fill swingueado (corcheas largo-corto) en vez de las
         // 10 notas parejas del fill original.
-        cells.push((JAZZ.enabled() ? JAZZ.SWUNG_FILL_CELL : MELODY_FLOURISH_CELL).slice());
+        cells.push((JAZZ.roll() ? JAZZ.SWUNG_FILL_CELL : MELODY_FLOURISH_CELL).slice());
         continue;
       }
       var half0 = halfOrder[halfPtr++];
@@ -6929,7 +6982,7 @@ function runAnalysis() {
         // JAZZ: en vez de la octava fija (-24), elige la octava del
         // mismo tono YA permitido (pick) más cercana a la nota
         // anterior del bajo — línea caminante, nunca una nota nueva.
-        if (JAZZ.enabled()){
+        if (JAZZ.roll()){
           bassMidi = jazzPrevBass === null ? JAZZ.clampBass(pick-24) : JAZZ.clampBass(JAZZ.nearestOctave(pick, jazzPrevBass));
           jazzPrevBass = bassMidi;
         } else {
@@ -6984,7 +7037,7 @@ function runAnalysis() {
           // jazz (saltos de terceras, tríada quebrada, patrón bebop)
           // como ÍNDICES dentro del MISMO acorde vigente — solo
           // cambia el orden en que se visitan sus notas.
-          if (JAZZ.enabled()){
+          if (JAZZ.roll()){
             var jShape = JAZZ.ARP_SHAPES[bar % JAZZ.ARP_SHAPES.length];
             var jK = arpUp ? k : (cellLen-1-k);
             var jAi = JAZZ.arpIndex(jShape, jK, n);
@@ -7959,7 +8012,7 @@ function runAnalysis() {
     // JAZZ: patrón de ride "spang-a-lang" en vez del hi-hat parejo —
     // la batería no tiene altura definida, así que acá no hay ninguna
     // restricción de set que respetar, es variedad rítmica pura.
-    var pool = JAZZ.enabled() ? JAZZ.DRUM_STYLE_POOL : DRUM_STYLE_POOL;
+    var pool = JAZZ.roll() ? JAZZ.DRUM_STYLE_POOL : DRUM_STYLE_POOL;
     var styleByBar = avoidAdjacentDuplicates(
       distributeWeighted(pool, numBars, function(style){ return style.tier; })
     );
@@ -7977,7 +8030,7 @@ function runAnalysis() {
       style.snare.forEach(function(b){ events.push({type:"snare", startBeat: base+b}); });
       if (style.hihatHits){
         style.hihatHits.forEach(function(h){ events.push({type:"hihat", startBeat: base+h.b, open: !!h.open}); });
-      } else if (!JAZZ.enabled() && HIHAT_VARIETY_TIERS[style.tier]){
+      } else if (!JAZZ.roll() && HIHAT_VARIETY_TIERS[style.tier]){
         var cell = hihatVarietyByBar[bar];
         var tOff = 0;
         cell.dur.forEach(function(d, idx){
@@ -8270,7 +8323,16 @@ function runAnalysis() {
   document.getElementById("consolaChromaSlider").addEventListener("change", function(){
     if(state.rootChord.length) regenerateConsola();
   });
-  document.getElementById("consolaJazzChk").addEventListener("change", function(){
+  document.getElementById("consolaJazzSlider").addEventListener("input", function(){
+    document.getElementById("consolaJazzVal").textContent = this.value + "%";
+  });
+  document.getElementById("consolaJazzSlider").addEventListener("change", function(){
+    if(state.rootChord.length) regenerateConsola();
+  });
+  document.getElementById("consolaChordSimulSlider").addEventListener("input", function(){
+    document.getElementById("consolaChordSimulVal").textContent = this.value + "%";
+  });
+  document.getElementById("consolaChordSimulSlider").addEventListener("change", function(){
     if(state.rootChord.length) regenerateConsola();
   });
   document.getElementById("consolaMoreRepChk").addEventListener("change", function(){
