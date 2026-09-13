@@ -1099,7 +1099,7 @@
     <button type="button" class="module-fs-toggle fullscreen-btn" data-fs-card="consolaCard" title="Pantalla completa">⛶ Full screen</button>
     <h2>SetMusicBox · Segmento en loop</h2>
     <div class="collapsible-content collapsed" id="consolaContent">
-    <p class="consola-status">Con las notas que elegiste arriba (reloj o piano) arma un segmento de 12 compases en loop, siempre dentro del mismo set de Solomon exacto: por defecto, variación libre y al azar — el acorde cambia de subset, transposición cromática E inversión, con ritmo armónico también variable (a veces sostenido el compás entero, a veces partido varias veces); tocá &#8634; Normalito para volver a la versión simple (el set completo, sin transposición, una sola inversión por compás). El bajo y la batería también varían su ritmo al azar de compás en compás; la melodía toca únicamente notas del acorde que está sonando en ese instante, más un fill de notas muy cortas (10 por compás, arpegiado en vez de al azar) en el 30% de los compases, y además queda en silencio ~20% del tiempo (repartido parejo, no de a racha). En los tres — armonía, bajo y melodía — y en la batería, los compases movidos y los quietos se reparten intercalados a lo largo del segmento (nunca varios seguidos del mismo tipo por casualidad), manteniendo siempre el mismo promedio general. Armonía en pad, bajo con sintetizador de bajo dedicado, melodía con timbre de flauta — y una batería genérica (botón &#129345; Batería). Cada instrumento tiene su propio interruptor para silenciarlo sin cambiar nada más, y el rollo de abajo muestra un teclado de piano (blancas/negras) al costado para ver qué nota es cada fila, con scroll automático que sigue al cabezal mientras suena.</p>
+    <p class="consola-status">Con las notas que elegiste arriba (reloj o piano) arma un segmento de 12 compases en loop, siempre dentro del mismo set de Solomon exacto: por defecto (slider &#8681;&#8679; Transposición/achique en 0%) suenan las notas literales que elegiste, set completo, sin transportar — subí ese slider para que el acorde empiece a cambiar de subset y transposición cromática por compás; la inversión sí varía siempre, con ritmo armónico también variable (a veces sostenido el compás entero, a veces partido varias veces); tocá &#8634; Normalito para volver a la versión simple (el set completo, sin transposición, una sola inversión por compás). El bajo y la batería también varían su ritmo al azar de compás en compás; la melodía toca únicamente notas del acorde que está sonando en ese instante, más un fill de notas muy cortas (10 por compás, arpegiado en vez de al azar) en el 30% de los compases, y además queda en silencio ~20% del tiempo (repartido parejo, no de a racha). En los tres — armonía, bajo y melodía — y en la batería, los compases movidos y los quietos se reparten intercalados a lo largo del segmento (nunca varios seguidos del mismo tipo por casualidad), manteniendo siempre el mismo promedio general. Armonía en pad, bajo con sintetizador de bajo dedicado, melodía con timbre de flauta — y una batería genérica (botón &#129345; Batería). Cada instrumento tiene su propio interruptor para silenciarlo sin cambiar nada más, y el rollo de abajo muestra un teclado de piano (blancas/negras) al costado para ver qué nota es cada fila, con scroll automático que sigue al cabezal mientras suena.</p>
 
     <div class="consola-readout">
       <div class="label">Set actual</div>
@@ -1115,6 +1115,11 @@
         <label for="consolaTempo">Tempo</label>
         <input type="range" id="consolaTempo" min="60" max="140" value="84" step="1">
         <span class="consola-val" id="consolaTempoVal">84 BPM</span>
+      </div>
+      <div class="consola-field" title="Controla, en conjunto, la transposición cromática al azar por compás y el achique automático del acorde (hasta 2 notas menos) que el motor libre aplicaba siempre a máxima intensidad. 0% = notas literales elegidas, sin transportar, set completo siempre. 100% = comportamiento de siempre.">
+        <label for="consolaChromaSlider">Transposición/achique automático</label>
+        <input type="range" id="consolaChromaSlider" min="0" max="100" value="0" step="1">
+        <span class="consola-val" id="consolaChromaVal">0%</span>
       </div>
       <div class="consola-field consola-loop">
         <input type="checkbox" id="consolaLoopChk" checked>
@@ -5828,7 +5833,7 @@ function runAnalysis() {
       while (candidates.length < N_CAND && guard < GUARD){
         guard++;
         var picked = randomSubsetChord(rootChord);
-        var t = randomInt(0, 11);
+        var t = randomChromaTransposition();
         var inv = picked.chord.length > 1 ? randomInt(0, picked.chord.length-1) : 0;
         var combo = picked.chord.join(",") + ":" + t + ":" + inv;
         if (combo === prevCombo) continue;
@@ -5837,7 +5842,7 @@ function runAnalysis() {
       }
       if (!candidates.length){
         var p2 = randomSubsetChord(rootChord);
-        var t2 = randomInt(0, 11);
+        var t2 = randomChromaTransposition();
         var inv2 = p2.chord.length > 1 ? randomInt(0, p2.chord.length-1) : 0;
         var v2 = applyVoicingStyle(invertChord(transposeChord(p2.chord, t2), inv2));
         return { picked:p2, t:t2, inv:inv2, combo:p2.chord.join(",")+":"+t2+":"+inv2, voiced:v2, strum:false };
@@ -5996,7 +6001,7 @@ function runAnalysis() {
       while (candidates.length < N_CAND && guard < GUARD){
         guard++;
         var picked = randomSubsetChord(rootChord);
-        var t = randomInt(0, 11);
+        var t = randomChromaTransposition();
         var inv = picked.chord.length > 1 ? randomInt(0, picked.chord.length-1) : 0;
         var combo = picked.chord.join(",") + ":" + t + ":" + inv;
         if (combo === prevCombo) continue;
@@ -6005,7 +6010,7 @@ function runAnalysis() {
       }
       if (!candidates.length){
         var p2 = randomSubsetChord(rootChord);
-        var t2 = randomInt(0, 11);
+        var t2 = randomChromaTransposition();
         var inv2 = p2.chord.length > 1 ? randomInt(0, p2.chord.length-1) : 0;
         var v2 = invertChord(transposeChord(p2.chord, t2), inv2);
         return { picked:p2, t:t2, inv:inv2, combo:p2.chord.join(",")+":"+t2+":"+inv2, voiced:v2 };
@@ -6271,6 +6276,24 @@ function runAnalysis() {
   // solo toca notas del acorde EN CURSO), y necesita que quepan en sus
   // propias ranuras rítmicas (mínimo 2 por compás, de ahí el tope de 2).
   var MAX_SUBSET_GAP = 2;
+  // Slider #consolaChromaSlider ("Transposición/achique automático", 0% por
+  // defecto). Antes de este slider, el motor "libre y al azar" aplicaba
+  // SIEMPRE, a máxima intensidad y sin depender de ningún checkbox, dos
+  // mecanismos: transposición cromática al azar por reataque, y achique
+  // automático del acorde (hasta MAX_SUBSET_GAP notas menos). Este slider
+  // escala ambos mecanismos juntos, en 0..1 (chromaVariety): en 0, ninguno
+  // de los dos se aplica (notas literales elegidas, set completo siempre,
+  // sin transportar); en 1, idéntico al comportamiento de siempre. Los
+  // checkboxes "Subsets (variedad)" / "Supersets (variedad)" siguen siendo
+  // independientes de este slider — solo agregan variedad EXTRA por encima.
+  function randomChromaTransposition(){
+    var maxDist = Math.round(chromaVariety * 6); // 0..6 semitonos de distancia circular
+    if(maxDist <= 0) return 0;
+    return mod12(randomInt(-maxDist, maxDist));
+  }
+  function currentSubsetGap(){
+    return Math.round(chromaVariety * MAX_SUBSET_GAP);
+  }
   // Función auxiliar: genera todos los subsets posibles de un conjunto
   // (mínimo 2 notas, máximo arr.length-1 — el set completo no cuenta
   // como "subset" acá, ya es la opción de siempre).
@@ -6340,7 +6363,7 @@ function runAnalysis() {
       return { chord: chord, complement: complementNotes };
     }
 
-    var minSize = Math.max(2, n - MAX_SUBSET_GAP);
+    var minSize = Math.max(2, n - currentSubsetGap());
     var size = minSize >= n ? n : randomInt(minSize, n);
     var idx = [];
     for(var i=0;i<n;i++) idx.push(i);
@@ -6383,7 +6406,7 @@ function runAnalysis() {
       var picked, t, key;
       do{
         picked = randomSubsetChord(rootChord);
-        t = randomInt(0, 11);
+        t = randomChromaTransposition();
         key = picked.chord.join(",") + ":" + t;
       } while(key === prevKey);
       progression.push(transposeChord(picked.chord, t));
@@ -6547,7 +6570,7 @@ function runAnalysis() {
         } else {
           do{
             picked = randomSubsetChord(rootChord);
-            t = randomInt(0, 11);
+            t = randomChromaTransposition();
             inv = picked.chord.length > 1 ? randomInt(0, picked.chord.length-1) : 0;
             combo = picked.chord.join(",") + ":" + t + ":" + inv;
           } while(combo === prevCombo);
@@ -6887,6 +6910,7 @@ function runAnalysis() {
   // Opciones de variedad armónica
   var subsetVarietyEnabled = false;
   var supersetVarietyEnabled = false;
+  var chromaVariety = 0; // 0..1 — slider #consolaChromaSlider, ver randomChromaTransposition/currentSubsetGap
 
   // Modo automático (se dispara solo, cada vez que cambian las notas
   // elegidas): ahora es el que antes era "Random" — libre y variado,
@@ -8016,6 +8040,13 @@ function runAnalysis() {
   });
   document.getElementById("consolaSupersetsChk").addEventListener("change", function(){
     supersetVarietyEnabled = this.checked;
+    if(state.rootChord.length) regenerateConsola();
+  });
+  document.getElementById("consolaChromaSlider").addEventListener("input", function(){
+    chromaVariety = this.value / 100;
+    document.getElementById("consolaChromaVal").textContent = this.value + "%";
+  });
+  document.getElementById("consolaChromaSlider").addEventListener("change", function(){
     if(state.rootChord.length) regenerateConsola();
   });
   document.getElementById("consolaJazzChk").addEventListener("change", function(){
