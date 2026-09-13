@@ -20,6 +20,31 @@
     --red-warn:#c4696f;
   }
   *{box-sizing:border-box;}
+  /* Indicador flotante de carga de SoundFonts — fijo arriba a la
+     izquierda, visible mientras sf2Activate() descarga/parsea los tres
+     .sf2; desaparece solo (fade-out) apenas sf2State pasa a "ready". Si
+     algo falla se queda visible con el mensaje de error (para que no
+     pase desapercibido), no desaparece sola en ese caso. */
+  .sf2-load-overlay{
+    position:fixed; top:14px; left:14px; z-index:9999;
+    background:var(--surface); border:1px solid var(--line);
+    border-radius:10px; padding:10px 14px;
+    font-family:'JetBrains Mono',monospace; font-size:12px;
+    color:var(--ink); box-shadow:0 6px 20px rgba(0,0,0,.35);
+    display:flex; align-items:center; gap:10px;
+    opacity:1; transition:opacity .4s ease;
+    pointer-events:none;
+  }
+  .sf2-load-overlay.sf2-load-hidden{ opacity:0; }
+  .sf2-load-overlay .sf2-load-bar{
+    width:90px; height:6px; border-radius:4px; overflow:hidden;
+    background:var(--surface-2); border:1px solid var(--line);
+  }
+  .sf2-load-overlay .sf2-load-bar-fill{
+    height:100%; width:0%; background:var(--gold); transition:width .15s linear;
+  }
+  .sf2-load-overlay.sf2-load-error .sf2-load-bar-fill{ background:var(--red-warn); }
+  .sf2-load-overlay .sf2-load-label{ white-space:nowrap; }
   body{
     margin:0;
     background:
@@ -798,6 +823,12 @@
 </head>
 <body>
 
+<!-- Indicador flotante de carga de SoundFonts (ver sf2Activate) -->
+<div class="sf2-load-overlay" id="sf2LoadOverlay">
+  <span class="sf2-load-label" id="sf2LoadLabel">&#127932; Cargando sonidos&hellip; 0%</span>
+  <span class="sf2-load-bar"><span class="sf2-load-bar-fill" id="sf2LoadBarFill"></span></span>
+</div>
+
 <!-- Fondo de página: avatar detrás del texto -->
 <div class="page-bg-avatar"></div>
 
@@ -1263,7 +1294,7 @@
     <p class="consola-foot">
       Armonía (pad), 12 compases. Modo libre (automático, apenas elegís el set): el ritmo armónico también es al azar por compás — a veces el acorde suena sostenido el compás entero (redonda) y otras veces se reataca dos, tres o cuatro veces (mitades, negras, síncopas) — y en CADA reataque, sea cual sea su duración, se sortea de nuevo, por separado, un SUBSET del set elegido (o el set completo), su propia transposición cromática (Tn) y su inversión — nunca la misma combinación dos reataques seguidos. Los compases con ritmo más movido y los más sostenidos se reparten intercalados a lo largo del segmento (nunca varios largos o varios cortos seguidos por casualidad), sin cambiar cuántos hay de cada tipo en total. Cualquier subset transportado por cualquier Tn sigue siendo, nota por nota, un recorte del set original, así que esto nunca puede sonar un acorde de otro set de Forte/Solomon ni una nota ajena — por eso ya no tiene sentido nombrar cada compás con un subset/transposición/inversión fijos, cambian constantemente dentro del mismo compás. Por separado, cada compás también guarda un subset+transposición "de referencia" (el que se ve en la etiqueta del compás) — un subset de referencia por sí solo formaría, en ESE compás, un set de Forte/Solomon distinto (otra cardinalidad), así que las notas que dejó afuera las recupera el BAJO de ese mismo compás (por eso el subset de referencia nunca deja afuera más de 2 notas — el bajo, con mínimo 2 ranuras rítmicas por compás, siempre alcanza a cubrirlas él solo): entre acorde + bajo, cada compás sigue reconstruyendo, nota por nota, el set completo transportado — nunca un set distinto al elegido. &#8634; Normalito (con botón) vuelve a la versión simple: el set completo, sin transposición ni subsets, una sola inversión por compás — mezcladas al azar entre compases (sin repetir la misma dos veces seguidas, con reparto parejo de cada una). En ambos modos, cada reataque del acorde suena las notas completas de su voicing (nunca arpegiado ni con voces sueltas).
       Bajo: sintetizador de bajo dedicado (fundamental + sub-octava + un filo de armónico, paso-bajos) que recorre distintos grados del acorde EN CURSO de cada compás (nunca una nota ajena a ese acorde ni a su set) — cada reataque de su célula rítmica toma el siguiente grado del voicing actual (o, en modo libre, primero cubre las notas que el subset de referencia dejó afuera). En modo libre, el ritmo del bajo también varía por compás (mayormente blancas, con negras y algún par de corcheas sincopadas al azar), con los compases más movidos y más quietos intercalados a lo largo del segmento en vez de agrupados por azar — mismo promedio general de siempre. Melodía: timbre de flauta (tono casi puro con un poco de vibrato y aire filtrado), una octava (o dos) arriba, que en cada nota toca exclusivamente una nota del acorde que está sonando en ESE preciso instante (el voicing del reataque de armonía vigente en ese momento, no un acorde de referencia fijo del compás) — con predominio de notas largas (redondas, blancas y blanca/negra con puntillo); en el 30% de los compases, en cambio, un fill de 10 notas muy cortas parejas llena el compás entero — ahí ya no salta al azar entre las notas del acorde: arpegia, recorriéndolas en orden (ascendente o descendente según el compás) y subiendo de octava si el fill tiene más notas que grados el acorde — esos compases de fill también se reparten intercalados, no todos seguidos.
-      El modo libre también le da al bajo pitch más suelto (grado al azar en cada reataque, dentro del set) y a la melodía pitch ligado en todo momento al acorde en curso; &#8634; Normalito los vuelve a su patrón predecible de siempre. Batería: pista genérica opcional (bombo, caja e hi-hat) que marca el pulso de cada compás — se prende y apaga con el botón &#129345; Batería, incluso con el loop sonando. Su patrón también varía por compás al azar (desde compases bien quietos hasta algún compás de relleno más lleno de golpes), intercalado a lo largo del segmento con el mismo criterio que armonía/bajo/melodía. El segmento se repite en loop hasta Detener &mdash; podés cambiar el set o tocar &#8634; Normalito mientras suena y el próximo loop lo toma.
+      El modo libre también le da al bajo pitch más suelto (grado al azar en cada reataque, dentro del set) y a la melodía pitch ligado en todo momento al acorde en curso; &#8634; Normalito los vuelve a su patrón predecible de siempre. Batería: pista genérica opcional (bombo, caja e hi-hat) que marca el pulso de cada compás — se prende y apaga con el botón &#129345; Batería, incluso con el loop sonando. Su patrón también varía por compás al azar (desde compases bien quietos hasta algún compás de relleno más lleno de golpes), intercalado a lo largo del segmento con el mismo criterio que armonía/bajo/melodía; además, en los compases regulares el hi-hat alterna corcheas parejas, negras y corcheas con puntillo (+ semicorchea), en vez de sonar siempre igual. El segmento se repite en loop hasta Detener &mdash; podés cambiar el set o tocar &#8634; Normalito mientras suena y el próximo loop lo toma.
     </p>
     </div>
   </div>
@@ -4197,6 +4228,26 @@ const SF2_FILES = [
   { key: "drums",       url: SF2_DRUMS_URL, weight: 8.4 },
   { key: "percussion",  url: SF2_PERC_URL,  weight: 0.5 },
 ];
+// Indicador flotante (arriba a la izquierda, ver #sf2LoadOverlay): mismo
+// porcentaje ponderado que ya se mostraba en el botón, más una barra
+// visual — desaparece solo (fade-out) al llegar a "ready"; si falla,
+// se queda visible con el error (no desaparece sola en ese caso).
+function sf2UpdateLoadOverlay(pct) {
+  const label = document.getElementById("sf2LoadLabel");
+  const fill = document.getElementById("sf2LoadBarFill");
+  if (label) label.textContent = "🎼 Cargando sonidos… " + pct + "%";
+  if (fill) fill.style.width = pct + "%";
+}
+function sf2HideLoadOverlay() {
+  const overlay = document.getElementById("sf2LoadOverlay");
+  if (overlay) overlay.classList.add("sf2-load-hidden");
+}
+function sf2ShowLoadOverlayError() {
+  const overlay = document.getElementById("sf2LoadOverlay");
+  const label = document.getElementById("sf2LoadLabel");
+  if (label) label.textContent = "🎼 Error al cargar sonidos";
+  if (overlay) overlay.classList.add("sf2-load-error");
+}
 async function sf2Activate(btn) {
   sf2State = "loading";
   btn.disabled = true;
@@ -4207,7 +4258,9 @@ async function sf2Activate(btn) {
     for (const f of SF2_FILES) {
       const buf = await sf2FetchWithProgress(f.url, (frac) => {
         const overall = (doneWeight + frac * f.weight) / totalWeight;
-        btn.textContent = "🎼 Cargando " + Math.round(overall * 100) + "%…";
+        const pct = Math.round(overall * 100);
+        btn.textContent = "🎼 Cargando " + pct + "%…";
+        sf2UpdateLoadOverlay(pct);
       });
       parsed[f.key] = sf2ParseFont(buf);
       doneWeight += f.weight;
@@ -4223,11 +4276,14 @@ async function sf2Activate(btn) {
     btn.title = "Preset activo: " + (sf2Font.phdr[sf2PresetIdx] || {}).name +
       " — incluye batería y percusión reales en SetMusicBox — clic para volver al sintetizador liviano";
     btn.setAttribute("aria-pressed", "true");
+    sf2UpdateLoadOverlay(100);
+    sf2HideLoadOverlay();
   } catch (err) {
     console.error("No se pudo cargar el SoundFont:", err);
     sf2State = "error";
     sf2Font = null; sf2DrumsFont = null; sf2PercFont = null;
     btn.textContent = "🎼 Error al cargar — reintentar";
+    sf2ShowLoadOverlayError();
   } finally {
     btn.disabled = false;
   }
@@ -7790,6 +7846,20 @@ function runAnalysis() {
   // synKick, ghostSnare) y los quietos (sparse, breath) se intercalan a
   // lo largo del segmento en vez de agruparse por casualidad, con el
   // mismo promedio de siempre.
+  // Variedad rítmica de hi-hat: en vez de la corchea pareja fija de
+  // siempre, los tiers "basic"/"synKick"/"ghostSnare" sortean, compás a
+  // compás, una celda entre corcheas parejas, negras o corcheas con
+  // puntillo (+ semicorchea) — igual mecanismo de reparto que
+  // armonía/bajo (peso + posiciones equiespaciadas por "feel", sin dos
+  // compases seguidos con la misma celda). "sparse" (negras, ya pensado
+  // como el contraste quieto) y "fill"/"breath" (patrones fijos con
+  // sentido rítmico propio) no entran en este sorteo.
+  var HIHAT_RHYTHM_POOL = [
+    { val:{ feel:"eighths",      dur:[0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5],         accents:[7] }, w:4 },
+    { val:{ feel:"dottedEighth", dur:[0.75,0.25,0.75,0.25,0.75,0.25,0.75,0.25], accents:[7] }, w:3 },
+    { val:{ feel:"quarters",     dur:[1,1,1,1],                                 accents:[3] }, w:2 }
+  ];
+  var HIHAT_VARIETY_TIERS = { basic:true, synKick:true, ghostSnare:true };
   function buildDrumEvents(numBars){
     // JAZZ: patrón de ride "spang-a-lang" en vez del hi-hat parejo —
     // la batería no tiene altura definida, así que acá no hay ninguna
@@ -7797,6 +7867,9 @@ function runAnalysis() {
     var pool = JAZZ.enabled() ? JAZZ.DRUM_STYLE_POOL : DRUM_STYLE_POOL;
     var styleByBar = avoidAdjacentDuplicates(
       distributeWeighted(pool, numBars, function(style){ return style.tier; })
+    );
+    var hihatVarietyByBar = avoidAdjacentDuplicates(
+      distributeWeighted(HIHAT_RHYTHM_POOL, numBars, function(v){ return v.feel; })
     );
     // MÁS REPETICIÓN: 40% extra de probabilidad, compás a compás, de
     // repetir el patrón de batería del compás anterior.
@@ -7809,6 +7882,13 @@ function runAnalysis() {
       style.snare.forEach(function(b){ events.push({type:"snare", startBeat: base+b}); });
       if (style.hihatHits){
         style.hihatHits.forEach(function(h){ events.push({type:"hihat", startBeat: base+h.b, open: !!h.open}); });
+      } else if (!JAZZ.enabled() && HIHAT_VARIETY_TIERS[style.tier]){
+        var cell = hihatVarietyByBar[bar];
+        var tOff = 0;
+        cell.dur.forEach(function(d, idx){
+          events.push({type:"hihat", startBeat: base+tOff, open: cell.accents.indexOf(idx) !== -1});
+          tOff += d;
+        });
       } else {
         var step = style.hihat.step;
         var openSet = {};
