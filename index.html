@@ -1099,7 +1099,7 @@
     <button type="button" class="module-fs-toggle fullscreen-btn" data-fs-card="consolaCard" title="Pantalla completa">⛶ Full screen</button>
     <h2>SetMusicBox · Segmento en loop</h2>
     <div class="collapsible-content collapsed" id="consolaContent">
-    <p class="consola-status">Con las notas que elegiste arriba (reloj o piano) arma un segmento de 12 compases en loop, siempre dentro del mismo set de Solomon exacto: por defecto (slider &#8681;&#8679; Transposición/achique en 0%) suenan las notas literales que elegiste, set completo, sin transportar — subí ese slider para que el acorde empiece a cambiar de subset y transposición cromática por compás; la inversión sí varía siempre, con ritmo armónico también variable (a veces sostenido el compás entero, a veces partido varias veces); tocá &#8634; Normalito para volver a la versión simple (el set completo, sin transposición, una sola inversión por compás). El bajo y la batería también varían su ritmo al azar de compás en compás; la melodía toca únicamente notas del acorde que está sonando en ese instante, más un fill de notas muy cortas (10 por compás, arpegiado en vez de al azar) en el 30% de los compases, y además queda en silencio ~20% del tiempo (repartido parejo, no de a racha). En los tres — armonía, bajo y melodía — y en la batería, los compases movidos y los quietos se reparten intercalados a lo largo del segmento (nunca varios seguidos del mismo tipo por casualidad), manteniendo siempre el mismo promedio general. Armonía en pad, bajo con sintetizador de bajo dedicado, melodía con timbre de flauta — y una batería genérica (botón &#129345; Batería). Cada instrumento tiene su propio interruptor para silenciarlo sin cambiar nada más, y el rollo de abajo muestra un teclado de piano (blancas/negras) al costado para ver qué nota es cada fila, con scroll automático que sigue al cabezal mientras suena.</p>
+    <p class="consola-status">Con las notas que elegiste arriba (reloj o piano) arma un segmento de 12 compases en loop, siempre dentro del mismo set de Solomon exacto: por defecto (slider &#8681;&#8679; Chromatism en 0%) suenan las notas literales que elegiste, set completo, sin transportar — subí ese slider para que el acorde empiece a cambiar de subset y transposición cromática por compás; la inversión sí varía siempre, con ritmo armónico también variable (a veces sostenido el compás entero, a veces partido varias veces); tocá &#8634; Normalito para volver a la versión simple (el set completo, sin transposición, una sola inversión por compás). El bajo y la batería también varían su ritmo al azar de compás en compás; la melodía toca únicamente notas del acorde que está sonando en ese instante, más un fill de notas muy cortas (10 por compás, arpegiado en vez de al azar) en el 30% de los compases, y además queda en silencio ~20% del tiempo (repartido parejo, no de a racha). En los tres — armonía, bajo y melodía — y en la batería, los compases movidos y los quietos se reparten intercalados a lo largo del segmento (nunca varios seguidos del mismo tipo por casualidad), manteniendo siempre el mismo promedio general. Armonía en pad, bajo con sintetizador de bajo dedicado, melodía con timbre de flauta — y una batería genérica (botón &#129345; Batería). Cada instrumento tiene su propio interruptor para silenciarlo sin cambiar nada más, y el rollo de abajo muestra un teclado de piano (blancas/negras) al costado para ver qué nota es cada fila, con scroll automático que sigue al cabezal mientras suena.</p>
 
     <div class="consola-readout">
       <div class="label">Set actual</div>
@@ -1117,7 +1117,7 @@
         <span class="consola-val" id="consolaTempoVal">84 BPM</span>
       </div>
       <div class="consola-field" title="Controla, en conjunto, la transposición cromática al azar por compás y el achique automático del acorde (hasta 2 notas menos) que el motor libre aplicaba siempre a máxima intensidad. 0% = notas literales elegidas, sin transportar, set completo siempre. 100% = comportamiento de siempre.">
-        <label for="consolaChromaSlider">Transposición/achique automático</label>
+        <label for="consolaChromaSlider">Chromatism</label>
         <input type="range" id="consolaChromaSlider" min="0" max="100" value="0" step="1">
         <span class="consola-val" id="consolaChromaVal">0%</span>
       </div>
@@ -1208,6 +1208,24 @@
             <option value="tenorSax">Sax tenor</option>
             <option value="bassoon">Fagot</option>
             <option value="flute" selected>Flauta</option>
+            <option value="contrabass">Contrabajo</option>
+            <option value="jazzGuitar">Guitarra jazz</option>
+          </select>
+        </div>
+        <div class="mix-preset-group" id="melodyDoublePresetGroup" data-mix-group="melodyDouble" title="Repite exactamente las mismas notas y el mismo ritmo de la Melodía, con un segundo timbre — para doblarla. En Mute (default) no genera ningún sonido nuevo ni dobla nada.">
+          <label class="mix-preset-label" for="melodyDoublePresetSelect">Doblar melodía</label>
+          <select class="mix-preset-select" id="melodyDoublePresetSelect">
+            <option value="mute" selected>Mute (apagado)</option>
+            <option value="piano">Piano</option>
+            <option value="epiano">Piano eléctrico</option>
+            <option value="harpsichord">Clavecín</option>
+            <option value="celesta">Celesta</option>
+            <option value="strings1">Cuerdas (pad)</option>
+            <option value="brass1">Metales</option>
+            <option value="sopranoSax">Sax soprano</option>
+            <option value="tenorSax">Sax tenor</option>
+            <option value="bassoon">Fagot</option>
+            <option value="flute">Flauta</option>
             <option value="contrabass">Contrabajo</option>
             <option value="jazzGuitar">Guitarra jazz</option>
           </select>
@@ -6276,7 +6294,7 @@ function runAnalysis() {
   // solo toca notas del acorde EN CURSO), y necesita que quepan en sus
   // propias ranuras rítmicas (mínimo 2 por compás, de ahí el tope de 2).
   var MAX_SUBSET_GAP = 2;
-  // Slider #consolaChromaSlider ("Transposición/achique automático", 0% por
+  // Slider #consolaChromaSlider ("Chromatism", 0% por
   // defecto). Antes de este slider, el motor "libre y al azar" aplicaba
   // SIEMPRE, a máxima intensidad y sin depender de ningún checkbox, dos
   // mecanismos: transposición cromática al azar por reataque, y achique
@@ -7117,9 +7135,9 @@ function runAnalysis() {
   // presets deciden qué instrumento usar en armonía/melodía/bajo (los
   // 12 de Instruments.sf2, con sintetizador de siempre como respaldo)
   // y qué muestras usar en batería (kit real o percusión/congas).
-  var mixGains = { drum: 1, bass: 1, chord: 1, melody: 1, comping2: 1 };
-  var mixPresets = { harmony: "piano", melody: "flute", bass: "synthBass", drum: "kit" };
-  var chordGainNode = null, bassGainNode = null, melodyGainNode = null, drumGainNode = null, comping2GainNode = null;
+  var mixGains = { drum: 1, bass: 1, chord: 1, melody: 1, melodyDouble: 1, comping2: 1 };
+  var mixPresets = { harmony: "piano", melody: "flute", melodyDouble: "mute", bass: "synthBass", drum: "kit" };
+  var chordGainNode = null, bassGainNode = null, melodyGainNode = null, drumGainNode = null, melodyDoubleGainNode = null, comping2GainNode = null;
   function ensureInstrumentGains(ctx){
     var master = ensureMasterGain(ctx);
     if(!chordGainNode){
@@ -7137,6 +7155,11 @@ function runAnalysis() {
       melodyGainNode.gain.value = mixGains.melody;
       melodyGainNode.connect(master);
     }
+    if(!melodyDoubleGainNode){
+      melodyDoubleGainNode = ctx.createGain();
+      melodyDoubleGainNode.gain.value = mixGains.melodyDouble;
+      melodyDoubleGainNode.connect(master);
+    }
     if(!drumGainNode){
       drumGainNode = ctx.createGain();
       drumGainNode.gain.value = mixGains.drum;
@@ -7147,7 +7170,7 @@ function runAnalysis() {
       comping2GainNode.gain.value = mixGains.comping2;
       comping2GainNode.connect(master);
     }
-    return { chord: chordGainNode, bass: bassGainNode, melody: melodyGainNode, drum: drumGainNode, comping2: comping2GainNode };
+    return { chord: chordGainNode, bass: bassGainNode, melody: melodyGainNode, melodyDouble: melodyDoubleGainNode, drum: drumGainNode, comping2: comping2GainNode };
   }
   // Cambia el nivel de un canal en caliente (mientras suena o no) — usa
   // setTargetAtTime, igual que el volumen general, para que no haga clic.
@@ -7155,6 +7178,7 @@ function runAnalysis() {
     mixGains[track] = value;
     var node = track === "chord" ? chordGainNode : track === "bass" ? bassGainNode :
                track === "melody" ? melodyGainNode : track === "drum" ? drumGainNode :
+               track === "melodyDouble" ? melodyDoubleGainNode :
                track === "comping2" ? comping2GainNode : null;
     if(node){
       var ctx = getAudioCtx();
@@ -7863,6 +7887,19 @@ function runAnalysis() {
         if(sm2Active && playSM2Voice(ctx, gains.melody, mixPresets.melody, ev.midi, t, dur*0.85, 0.2)) return;
         melodyFam.fn(ctx, gains.melody, ev.midi, t, dur*0.85, melodyFam.mk(dur*0.85));
       });
+      // Doblar melodía: selector aparte (#melodyDoublePresetSelect, "Mute"
+      // por defecto) — repite exactamente las mismas notas y el mismo
+      // ritmo de la melodía, con un segundo timbre. En Mute (default) no
+      // entra a este bloque: no genera ningún sonido nuevo ni dobla nada.
+      if(mixPresets.melodyDouble !== "mute"){
+        var melodyDoubleFam = voiceFamilyFor(mixPresets.melodyDouble, "flute");
+        state.melodyEvents.forEach(function(ev){
+          var t = loopStartTime + ev.startBeat*spb;
+          var dur = ev.durBeats*spb;
+          if(sm2Active && playSM2Voice(ctx, gains.melodyDouble, mixPresets.melodyDouble, ev.midi, t, dur*0.85, 0.2)) return;
+          melodyDoubleFam.fn(ctx, gains.melodyDouble, ev.midi, t, dur*0.85, melodyDoubleFam.mk(dur*0.85));
+        });
+      }
     }
     if(instEnabled("consolaDrumChk")){
       var drumKitKey = (mixPresets.drum === "percussion") ? "percussion" : "kit";
@@ -7975,7 +8012,7 @@ function runAnalysis() {
     // estuviera sonando (release de un pad, del saxo, etc.) en vez de
     // esperar a que cada nota termine su propia envolvente.
     var FADE = 0.015;
-    [chordGainNode, bassGainNode, melodyGainNode, drumGainNode, comping2GainNode, masterGain].forEach(function(g){
+    [chordGainNode, bassGainNode, melodyGainNode, drumGainNode, melodyDoubleGainNode, comping2GainNode, masterGain].forEach(function(g){
       if(!g) return;
       g.gain.cancelScheduledValues(now);
       g.gain.setValueAtTime(g.gain.value, now);
@@ -7996,6 +8033,7 @@ function runAnalysis() {
     if(chordGainNode) chordGainNode.gain.setValueAtTime(mixGains.chord, restoreAt);
     if(bassGainNode) bassGainNode.gain.setValueAtTime(mixGains.bass, restoreAt);
     if(melodyGainNode) melodyGainNode.gain.setValueAtTime(mixGains.melody, restoreAt);
+    if(melodyDoubleGainNode) melodyDoubleGainNode.gain.setValueAtTime(mixGains.melodyDouble, restoreAt);
     if(drumGainNode) drumGainNode.gain.setValueAtTime(mixGains.drum, restoreAt);
     if(comping2GainNode) comping2GainNode.gain.setValueAtTime(mixGains.comping2, restoreAt);
 
@@ -8104,10 +8142,11 @@ function runAnalysis() {
   // instrumentos de Instruments.sf2 — Batería → Kit real / Percusión) ----
   (function(){
     var SELECTS = [
-      { id: "harmonyPresetSelect", key: "harmony" },
-      { id: "melodyPresetSelect",  key: "melody"  },
-      { id: "bassPresetSelect",    key: "bass"    },
-      { id: "drumPresetSelect",    key: "drum"    }
+      { id: "harmonyPresetSelect",      key: "harmony"      },
+      { id: "melodyPresetSelect",       key: "melody"       },
+      { id: "melodyDoublePresetSelect", key: "melodyDouble" },
+      { id: "bassPresetSelect",         key: "bass"         },
+      { id: "drumPresetSelect",         key: "drum"         }
     ];
     SELECTS.forEach(function(cfg){
       var el = document.getElementById(cfg.id);
