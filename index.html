@@ -6403,12 +6403,13 @@ function runAnalysis() {
   function buildProgressionRandom(rootChord, numBars){
     var progression = [], roles = [], meta = [], prevKey = null;
     for(var bar=0; bar<numBars; bar++){
-      var picked, t, key;
+      var picked, t, key, guard = 0;
       do{
         picked = randomSubsetChord(rootChord);
         t = randomChromaTransposition();
         key = picked.chord.join(",") + ":" + t;
-      } while(key === prevKey);
+        guard++;
+      } while(key === prevKey && guard < 40);
       progression.push(transposeChord(picked.chord, t));
       meta.push({ t: t, complement: picked.complement.map(function(m){ return m + t; }) });
       var sizeTag = picked.chord.length < rootChord.length ? (picked.chord.length + "n") : "";
@@ -6568,12 +6569,14 @@ function runAnalysis() {
           strum = false;
           jazzPrevVoiced = voiced;
         } else {
+          var comboGuard = 0;
           do{
             picked = randomSubsetChord(rootChord);
             t = randomChromaTransposition();
             inv = picked.chord.length > 1 ? randomInt(0, picked.chord.length-1) : 0;
             combo = picked.chord.join(",") + ":" + t + ":" + inv;
-          } while(combo === prevCombo);
+            comboGuard++;
+          } while(combo === prevCombo && comboGuard < 40);
           voiced = invertChord(transposeChord(picked.chord, t), inv);
           strum = false;
         }
