@@ -1130,8 +1130,6 @@
     </div>
 
     <div class="consola-roll-wrap" id="consolaRollHost"></div>
-    <div id="consolaBebopRollLabel" style="margin-top:10px;margin-bottom:4px;font-size:12px;color:var(--ink-muted);" hidden>🎷 bebopMelody — piano roll separado (aislado del principal)</div>
-    <div class="consola-roll-wrap" id="consolaBebopRollHost" hidden></div>
 
     <p class="consola-foot">
       Armonía: cada reataque sortea un subset del set elegido (o el set completo) con su propia transposición e inversión, nunca la misma combinación dos veces seguidas ni una nota ajena al set; el bajo de ese compás cubre lo que ese subset dejó afuera, así acorde+bajo siempre reconstruyen el set completo. Las notas nunca entran en bloque: se escalonan, con más distancia entre ataques cuanto más dura el acorde. &#8634; Normalito toca el set completo sin subsets ni transposición, una sola inversión por compás.
@@ -7398,7 +7396,6 @@ function runAnalysis() {
       readout.textContent = selected.size === 0 ? "—" : Array.from(selected).sort(function(a,b){return a-b;}).map(function(pc){return spellPitchClass(pc);}).join(" ");
       state.rootChord = []; state.progression = []; state.roles = []; state.chordEvents = []; state.slotChords = []; state.bassEvents = []; state.melodyEvents = []; state.comping2Events = []; state.bebopEvents = [];
       renderRoll();
-      renderBebopRoll();
       playBtn.disabled = true;
       if(regenPlayBtn) regenPlayBtn.disabled = true;
       if(normalBtn) normalBtn.disabled = true;
@@ -7428,7 +7425,6 @@ function runAnalysis() {
       : [];
     drumEvents = buildDrumEvents(NUM_BARS);
     renderRoll();
-    renderBebopRoll();
   }
 
   // ↺ Normalito (con botón): vuelve a la versión simple de siempre — el
@@ -7455,7 +7451,6 @@ function runAnalysis() {
       : [];
     drumEvents = buildDrumEvents(NUM_BARS);
     renderRoll();
-    renderBebopRoll();
   }
   window.regenerateConsola = regenerateConsola;
 
@@ -7556,10 +7551,7 @@ function runAnalysis() {
     state.bassEvents.forEach(function(e){ allMidi.push(e.midi); });
     state.melodyEvents.forEach(function(e){ allMidi.push(e.midi); });
     state.comping2Events.forEach(function(e){ allMidi.push(e.midi); });
-    // bebopEvents YA NO participa del rango de filas del roll principal:
-    // tiene su propio piano roll aparte (ver renderBebopRoll), con su
-    // propio rango de notas — así no estira ni desalinea este teclado
-    // por notas que en realidad suenan en otra pista/vista.
+    state.bebopEvents.forEach(function(e){ allMidi.push(e.midi); });
     // Rango cromático CONTINUO (sin huecos) entre la nota más grave y la
     // más aguda que suenan en el segmento — así cada fila es un semitono
     // real y se puede pintar al lado un teclado de piano (blancas/negras)
@@ -7634,7 +7626,7 @@ function runAnalysis() {
     state.chordEvents.forEach(function(ev){ drawEventRect(svg, ev, rowOf, BAR_COLORS[ev.bar % BAR_COLORS.length], 0.55, 0.95); });
     state.bassEvents.forEach(function(ev){ drawEventRect(svg, ev, rowOf, "var(--c-bass)", 0.65, 0.95); });
     state.comping2Events.forEach(function(ev){ drawEventRect(svg, ev, rowOf, "var(--c-comping2)", 0.55, 0.7); });
-    // bebopEvents se dibuja en su propio roll (renderBebopRoll), no acá.
+    state.bebopEvents.forEach(function(ev){ drawEventRect(svg, ev, rowOf, "var(--c-bebop)", 0.6, 0.78); });
     state.melodyEvents.forEach(function(ev){ drawEventRect(svg, ev, rowOf, "var(--c-melody)", 0.9, 0.82); });
 
     var playhead = svgEl("line", {id:"consolaPlayhead", x1:MARGIN_L, x2:MARGIN_L, y1:MARGIN_T, y2:height-MARGIN_B, stroke:"var(--gold)", "stroke-width":2, visibility:"hidden"});
@@ -7653,89 +7645,13 @@ function runAnalysis() {
       ["var(--c-melody)","Melodía"]
     ];
     if(state.comping2Events.length) items.push(["var(--c-comping2)","moreComping (cuerdas)"]);
-    // bebopMelody ya no lleva ítem acá: tiene su propio roll+label aparte.
+    if(state.bebopEvents.length) items.push(["var(--c-bebop)","bebopMelody (sax)"]);
     items.forEach(function(it){
       var span = document.createElement("span");
       span.innerHTML = '<span class="sw" style="background:'+it[0]+'"></span>'+it[1];
       wrap.appendChild(span);
     });
     host.appendChild(wrap);
-  }
-
-  // Piano roll SEPARADO para bebopMelody — a pedido: antes compartía el
-  // roll principal (mismas filas/rango que armonía+bajo+melodía), lo que
-  // lo hacía difícil de leer aparte. Ahora tiene su propio <svg>, su
-  // propio rango de filas (solo las notas que ESTA pista realmente usa,
-  // no todo el segmento) y su propio playhead (#consolaBebopPlayhead,
-  // ver tickPlayhead) — pero el mismo grid horizontal (compases/beats,
-  // mismos MARGIN_L/PPB/TOTAL_BEATS) que el roll principal, para poder
-  // leer ambos alineados verticalmente en la página. Se oculta entero
-  // (label + host) cuando bebopMelody está apagado o no generó notas.
-  function renderBebopRoll(){
-    var label = document.getElementById("consolaBebopRollLabel");
-    var host = document.getElementById("consolaBebopRollHost");
-    if(!host) return;
-    host.innerHTML = "";
-    if(!state.bebopEvents.length){
-      if(label) label.hidden = true;
-      host.hidden = true;
-      return;
-    }
-    if(label) label.hidden = false;
-    host.hidden = false;
-
-    var allMidi = state.bebopEvents.map(function(e){ return e.midi; });
-    var minMidi = allMidi.reduce(function(a,b){ return Math.min(a,b); }, allMidi[0]);
-    var maxMidi = allMidi.reduce(function(a,b){ return Math.max(a,b); }, allMidi[0]);
-    var uniq = [];
-    for(var m0=maxMidi; m0>=minMidi; m0--) uniq.push(m0);
-    var rowOf = {};
-    uniq.forEach(function(m,i){ rowOf[m] = i; });
-
-    var width = MARGIN_L + TOTAL_BEATS*PPB + 10;
-    var height = MARGIN_T + uniq.length*ROW_H + MARGIN_B;
-    var svg = svgEl("svg", {width:width, height:height, viewBox:"0 0 "+width+" "+height});
-
-    var BLACK_PCS_BEBOP = {1:true, 3:true, 6:true, 8:true, 10:true};
-    var KB_X0_BEBOP = 4, KB_WHITE_W_BEBOP = 28, KB_BLACK_W_BEBOP = 18;
-    uniq.forEach(function(m,i){
-      var y = MARGIN_T + i*ROW_H;
-      var pc = mod12(m);
-      var isBlack = !!BLACK_PCS_BEBOP[pc];
-      var isC = pc === 0;
-      svg.appendChild(svgEl("rect", {x:MARGIN_L, y:y, width:Math.max(0,width-MARGIN_L-8), height:ROW_H, fill: isBlack ? "rgba(0,0,0,.18)" : "transparent"}));
-      svg.appendChild(svgEl("rect", {
-        x:KB_X0_BEBOP, y:y+1, width:isBlack?KB_BLACK_W_BEBOP:KB_WHITE_W_BEBOP, height:ROW_H-2, rx:2,
-        fill:isBlack?"#0d0c14":"#efe8d8", stroke:"var(--line)", "stroke-width":1
-      }));
-      svg.appendChild(svgEl("line", {x1:MARGIN_L, x2:width-8, y1:y+ROW_H, y2:y+ROW_H, stroke:"var(--line)", "stroke-width": isC ? 1.3 : 0.6}));
-      var t = svgEl("text", {x:MARGIN_L-8, y:y+ROW_H-6, "text-anchor":"end", class:"consola-row-label"});
-      t.textContent = noteName(m);
-      if(isC) t.setAttribute("font-weight", "700");
-      svg.appendChild(t);
-    });
-
-    for(var b=0;b<=NUM_BARS;b++){
-      var x = MARGIN_L + b*BEATS_PER_BAR*PPB;
-      svg.appendChild(svgEl("line", {x1:x, x2:x, y1:MARGIN_T, y2:height-MARGIN_B, stroke:"var(--ink-muted)", "stroke-width":1.1}));
-      if(b < NUM_BARS){
-        var lab = svgEl("text", {x:x+8, y:16, class:"consola-bar-tag"});
-        lab.textContent = "C" + (b+1);
-        svg.appendChild(lab);
-      }
-    }
-    for(var beat=0; beat<TOTAL_BEATS; beat++){
-      if(beat % BEATS_PER_BAR === 0) continue;
-      var xb = MARGIN_L + beat*PPB;
-      svg.appendChild(svgEl("line", {x1:xb, x2:xb, y1:MARGIN_T, y2:height-MARGIN_B, stroke:"var(--line)", "stroke-width":0.6, "stroke-dasharray":"2,3"}));
-    }
-
-    state.bebopEvents.forEach(function(ev){ drawEventRect(svg, ev, rowOf, "var(--c-bebop)", 0.78, 0.82); });
-
-    var playhead = svgEl("line", {id:"consolaBebopPlayhead", x1:MARGIN_L, x2:MARGIN_L, y1:MARGIN_T, y2:height-MARGIN_B, stroke:"var(--gold)", "stroke-width":2, visibility:"hidden"});
-    svg.appendChild(playhead);
-
-    host.appendChild(svg);
   }
 
   // ---------- audio: sintetizador PAD (comparte el AudioContext del Oráculo) ----------
@@ -8606,23 +8522,16 @@ function runAnalysis() {
   function tickPlayhead(ctx, loopAnchor, spb, loopDur){
     var ph = document.getElementById("consolaPlayhead");
     var host = document.getElementById("consolaRollHost");
-    // Playhead propio del roll de bebop (separado) — se mueve en el
-    // mismo instante que el del roll principal (mismo grid de beats),
-    // pero con su propio scroll porque vive en otro <div> aparte.
-    var phBebop = document.getElementById("consolaBebopPlayhead");
-    var hostBebop = document.getElementById("consolaBebopRollHost");
     var AUTOSCROLL_MARGIN = 80; // deja este margen visible a la izquierda del playhead
     function step(){
       if(!playing) return;
       var elapsed = ctx.currentTime - loopAnchor;
-      if(elapsed >= 0){
+      if(elapsed >= 0 && ph){
         var inLoop = elapsed % loopDur;
         var beats = inLoop/spb;
         var x = MARGIN_L + beats*PPB;
-        if(ph){
-          ph.setAttribute("x1", x); ph.setAttribute("x2", x);
-          ph.setAttribute("visibility", "visible");
-        }
+        ph.setAttribute("x1", x); ph.setAttribute("x2", x);
+        ph.setAttribute("visibility", "visible");
         // Auto-scroll horizontal: sigue al playhead para que siempre
         // quede a la vista, sin importar cuán ancho sea el segmento —
         // al reiniciar el loop, el playhead vuelve al principio y el
@@ -8631,15 +8540,6 @@ function runAnalysis() {
           var maxScroll = Math.max(0, host.scrollWidth - host.clientWidth);
           var target = Math.min(maxScroll, Math.max(0, x - AUTOSCROLL_MARGIN));
           host.scrollLeft = target;
-        }
-        if(phBebop){
-          phBebop.setAttribute("x1", x); phBebop.setAttribute("x2", x);
-          phBebop.setAttribute("visibility", "visible");
-        }
-        if(hostBebop && !hostBebop.hidden){
-          var maxScrollB = Math.max(0, hostBebop.scrollWidth - hostBebop.clientWidth);
-          var targetB = Math.min(maxScrollB, Math.max(0, x - AUTOSCROLL_MARGIN));
-          hostBebop.scrollLeft = targetB;
         }
       }
       rafId = requestAnimationFrame(step);
