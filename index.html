@@ -470,6 +470,7 @@
     --c-bass:#6f6a85;
     --c-melody:var(--ink);
     --c-comping2:#6f9bd8;
+    --c-bebop:#cf7a3c;
   }
   .consola-card{margin-top:22px;}
   .consola-status{
@@ -1209,6 +1210,7 @@
         <button type="button" class="chip chip-small" id="consolaRegenPlayBtn" disabled title="Sortea una variación nueva del segmento (mismo set de notas elegido) y la reproduce de una — equivalente al viejo botón Regenerar, fusionado con Reproducir.">&#128256;</button>
         <button type="button" class="chip" id="consolaStopBtn" disabled>&#9632; Detener</button>
         <button type="button" class="chip" id="consolaMoreCompingBtn" title="Agrega una QUINTA pista MIDI, con timbre de cuerdas (strings), que dobla cada nota de la melodía junto con 1 o 2 notas más del acorde vigente en ese instante (siempre del mismo set, nunca una nota ajena) — el grupito entero queda siempre pegado a la nota de melodía, a lo sumo a una octava o dos de distancia.">moreComping</button>
+        <button type="button" class="chip" id="consolaBebopBtn" title="Agrega una SEXTA pista MIDI: una línea melódica INDEPENDIENTE (no dobla a la melodía principal, tiene su propia nota en cada instante), elegida por función tonal dentro del mismo set — chord tone (nota del acorde vigente) en los tiempos fuertes, y nota del resto del set (tensión) en los tiempos débiles, aproximando por el paso más chico disponible hacia el próximo acorde. Timbre fijo de saxo. Apagada por defecto — tiene su propio volumen en el mini mixer (🎷 Bebop, en 0% por defecto).">bebopMelody</button>
       </div>
     </div>
 
@@ -1234,6 +1236,11 @@
           <label for="mixMelodyVol">Melodía</label>
           <input type="range" id="mixMelodyVol" min="0" max="150" value="100" step="1">
           <span class="mix-val" id="mixMelodyVolVal">100%</span>
+        </div>
+        <div class="mix-channel" title="Volumen de la pista bebopMelody (línea melódica independiente, chord-scale). Arranca en 0% — muteada por defecto — aunque el botón bebopMelody esté prendido.">
+          <label for="mixBebopVol">&#127929; Bebop</label>
+          <input type="range" id="mixBebopVol" min="0" max="150" value="0" step="1">
+          <span class="mix-val" id="mixBebopVolVal">0%</span>
         </div>
       </div>
       <div class="mix-presets">
@@ -6216,6 +6223,169 @@ function runAnalysis() {
     return { enabled: enabled, nearestMidiForPc: nearestMidiForPc, buildEvents: buildEvents };
   })();
 
+  /* ================================================================
+     MÓDULO CHORDSCALE — utilidad pura (sin DOM, sin estado propio) de
+     selección de nota por función tonal, adaptada al principio de
+     Stoikheion Oracle: NUNCA agrega una nota ajena al set elegido.
+
+     La "escala" no es una escala diatónica externa (eso agregaría
+     notas que el set no tiene) — es el SET COMPLETO elegido
+     (rootChord). Dentro de ese set se distinguen dos funciones:
+       - chordTones:   clases de tono presentes en el voicing vigente
+                        de este instante (currentChordAt).
+       - tensionTones: el resto del set — no suena en el voicing de
+                        este instante, pero sigue siendo del mismo set
+                        (mismo concepto que meta[bar].complement, que
+                        ya usa el bajo).
+     Regla que se conserva de chord-scale theory: chordTones en
+     tiempos fuertes (nota "objetivo"), tensionTones permitidas en
+     tiempos débiles, aproximando el próximo target por el paso más
+     chico disponible DENTRO DEL SET (no un semitono cromático
+     externo).
+     ================================================================ */
+  var CHORDSCALE = (function(){
+    function classify(rootChordMidi, currentChordMidi){
+      var chordPCs = {};
+      currentChordMidi.forEach(function(m){ chordPCs[mod12(m)] = true; });
+      var chordTones = [], tensionTones = [], seenPC = {};
+      rootChordMidi.forEach(function(m){
+        var pc = mod12(m);
+        if(seenPC[pc]) return;
+        seenPC[pc] = true;
+        (chordPCs[pc] ? chordTones : tensionTones).push(pc);
+      });
+      return { chordTones: chordTones, tensionTones: tensionTones };
+    }
+    // Fuerza de tiempo dentro del compás (4/4 fijo, igual que el resto
+    // del motor): 2 = tiempo fuerte (beat 1), 1 = medio (beat 3), 0 =
+    // débil. startBeat puede ser absoluto (bar*4+offset): el módulo lo
+    // reduce mod 4, así que da igual.
+    function beatStrength(startBeat){
+      var b = ((startBeat % BEATS_PER_BAR) + BEATS_PER_BAR) % BEATS_PER_BAR;
+      if(Math.abs(b - 0) < 1e-6) return 2;
+      if(Math.abs(b - 2) < 1e-6) return 1;
+      return 0;
+    }
+    // De una lista de clases de tono candidatas, la que registra más
+    // cerca (en semitonos) de refMidi — mismo patrón que ya usa
+    // MORECOMPING.nearestMidiForPc para no saltar de octava de más.
+    function nearestToRef(candidatePCs, refMidi){
+      var best = null, bestDist = Infinity;
+      candidatePCs.forEach(function(pc){
+        for(var oct=-1; oct<=1; oct++){
+          var base = Math.floor(refMidi/12)*12 + pc + oct*12;
+          var dist = Math.abs(base - refMidi);
+          if(dist < bestDist){ bestDist = dist; best = base; }
+        }
+      });
+      return best;
+    }
+    // Aproximación por "paso" dentro del set (no cromático externo): de
+    // tensionTones (o chordTones si no hay tensiones disponibles),
+    // elige la que quede más cerca de cualquier target del PRÓXIMO
+    // voicing (nextChordMidi) — "target note technique" de chord-scale,
+    // con el paso medido en el set elegido.
+    function approachTone(tensionTones, chordTones, nextChordMidi, ref){
+      var nextPCs = {};
+      nextChordMidi.forEach(function(m){ nextPCs[mod12(m)] = true; });
+      var pool = tensionTones.length ? tensionTones : chordTones;
+      var best = null, bestScore = Infinity;
+      pool.forEach(function(pc){
+        var candMidi = nearestToRef([pc], ref);
+        var minDistToTarget = Infinity;
+        Object.keys(nextPCs).forEach(function(tpcStr){
+          var t = nearestToRef([Number(tpcStr)], candMidi);
+          minDistToTarget = Math.min(minDistToTarget, Math.abs(t - candMidi));
+        });
+        if(minDistToTarget < bestScore){ bestScore = minDistToTarget; best = candMidi; }
+      });
+      return best != null ? best : nearestToRef(chordTones, ref);
+    }
+    // Punto central: pide la nota para UN evento de melodía.
+    //  rootChordMidi:    MIDI del set completo elegido.
+    //  currentChordMidi: MIDI del voicing vigente en este instante.
+    //  startBeat:         posición del evento (absoluta o relativa, da igual).
+    //  prevMidi:          última nota elegida (null si es la primera).
+    //  nextChordMidi:      voicing vigente en el SIGUIENTE evento, para
+    //                     look-ahead (null si no hay).
+    //  registerCenter:     referencia de octava si prevMidi es null.
+    // Devuelve MIDI absoluto — siempre una clase de tono del rootChord.
+    function pickNote(opts){
+      var rootChordMidi = opts.rootChordMidi, currentChordMidi = opts.currentChordMidi,
+          startBeat = opts.startBeat, prevMidi = opts.prevMidi,
+          nextChordMidi = opts.nextChordMidi, registerCenter = opts.registerCenter;
+      var cls = classify(rootChordMidi, currentChordMidi);
+      var chordTones = cls.chordTones, tensionTones = cls.tensionTones;
+      var ref = prevMidi != null ? prevMidi : registerCenter;
+      var strength = beatStrength(startBeat);
+
+      if(strength === 2 || tensionTones.length === 0){
+        return nearestToRef(chordTones.length ? chordTones : tensionTones, ref);
+      }
+      if(strength === 1){
+        if(nextChordMidi && Math.random() < 0.35) return approachTone(tensionTones, chordTones, nextChordMidi, ref);
+        return nearestToRef(chordTones, ref);
+      }
+      if(nextChordMidi) return approachTone(tensionTones, chordTones, nextChordMidi, ref);
+      var pool = Math.random() < 0.5 ? tensionTones : chordTones;
+      return nearestToRef(pool.length ? pool : chordTones, ref);
+    }
+    return { classify: classify, beatStrength: beatStrength, pickNote: pickNote };
+  })();
+
+  /* ================================================================
+     MÓDULO BEBOP MELODY — botón #consolaBebopBtn (apagado por
+     defecto, mismo patrón "primary" que moreComping) + volumen propio
+     #mixBebopVol (0% por defecto — muteada aunque el botón esté
+     prendido). Agrega una SEXTA pista MIDI: a diferencia de
+     moreComping (que DOBLA la melodía), esta es una línea melódica
+     INDEPENDIENTE — una nota propia por cada evento de la melodía
+     principal (mismo ritmo, mismos silencios), elegida con
+     CHORDSCALE.pickNote en vez de repetir la nota de la melodía.
+     Sigue siendo, nota a nota, un recorte del mismo set elegido.
+     ================================================================ */
+  var BEBOPMELODY = (function(){
+    function enabled(){
+      var btn = document.getElementById("consolaBebopBtn");
+      return !!(btn && btn.classList.contains("primary"));
+    }
+    // melodyEvents: eventos de la melodía principal (mismo contrato que
+    // recibe MORECOMPING.buildEvents) — se reusa su ritmo (startBeat/
+    // durBeats/bar), solo cambia la nota.
+    // chordAt(bar, offsetInBar): mismo contrato que ya usa MORECOMPING
+    // (currentChordAt en modo libre, o state.progression[bar] en
+    // Normalito — el segundo argumento se ignora en ese caso).
+    // rootChordMidi: el set completo elegido (state.rootChord).
+    function buildEvents(melodyEvents, chordAt, rootChordMidi){
+      var events = [];
+      var prevMidi = null;
+      melodyEvents.forEach(function(mEv, idx){
+        var offsetInBar = mEv.startBeat - mEv.bar*BEATS_PER_BAR;
+        var currentChordMidi = chordAt(mEv.bar, offsetInBar) || [];
+        var nextEv = melodyEvents[idx+1];
+        var nextChordMidi = null;
+        if(nextEv){
+          var nextOffset = nextEv.startBeat - nextEv.bar*BEATS_PER_BAR;
+          nextChordMidi = chordAt(nextEv.bar, nextOffset) || null;
+        }
+        var registerCenter = currentChordMidi.length ? currentChordMidi[0] : (rootChordMidi[0] || 60);
+        var midi = CHORDSCALE.pickNote({
+          rootChordMidi: rootChordMidi,
+          currentChordMidi: currentChordMidi,
+          startBeat: mEv.startBeat,
+          prevMidi: prevMidi,
+          nextChordMidi: nextChordMidi,
+          registerCenter: registerCenter
+        });
+        midi = clampMelodyRange(midi);
+        prevMidi = midi;
+        events.push({ midi: midi, startBeat: mEv.startBeat, durBeats: mEv.durBeats, bar: mEv.bar });
+      });
+      return events;
+    }
+    return { enabled: enabled, buildEvents: buildEvents };
+  })();
+
   var voices = [];
   var playing = false;
   var rafId = null;
@@ -7138,7 +7308,7 @@ function runAnalysis() {
   }
 
   // ---------- estado / regeneración ----------
-  var state = { rootChord: [], progression: [], roles: [], chordEvents: [], slotChords: [], bassEvents: [], melodyEvents: [], comping2Events: [] };
+  var state = { rootChord: [], progression: [], roles: [], chordEvents: [], slotChords: [], bassEvents: [], melodyEvents: [], comping2Events: [], bebopEvents: [] };
   window.__consolaState = state; // hook de diagnóstico (solo lectura)
 
   // Opciones de variedad armónica
@@ -7160,7 +7330,7 @@ function runAnalysis() {
     var readout = document.getElementById("consolaNotesReadout");
     if(selected.size < 2){
       readout.textContent = selected.size === 0 ? "—" : Array.from(selected).sort(function(a,b){return a-b;}).map(function(pc){return spellPitchClass(pc);}).join(" ");
-      state.rootChord = []; state.progression = []; state.roles = []; state.chordEvents = []; state.slotChords = []; state.bassEvents = []; state.melodyEvents = []; state.comping2Events = [];
+      state.rootChord = []; state.progression = []; state.roles = []; state.chordEvents = []; state.slotChords = []; state.bassEvents = []; state.melodyEvents = []; state.comping2Events = []; state.bebopEvents = [];
       renderRoll();
       playBtn.disabled = true;
       if(regenPlayBtn) regenPlayBtn.disabled = true;
@@ -7186,6 +7356,9 @@ function runAnalysis() {
     state.comping2Events = MORECOMPING.enabled()
       ? MORECOMPING.buildEvents(bm.melodyEvents, function(bar, offset){ return currentChordAt(chordBuilt.slotChords[bar], offset); })
       : [];
+    state.bebopEvents = BEBOPMELODY.enabled()
+      ? BEBOPMELODY.buildEvents(bm.melodyEvents, function(bar, offset){ return currentChordAt(chordBuilt.slotChords[bar], offset); }, rootChord)
+      : [];
     drumEvents = buildDrumEvents(NUM_BARS);
     renderRoll();
   }
@@ -7208,6 +7381,9 @@ function runAnalysis() {
     state.melodyEvents = buildMelodyEvents(state.progression);
     state.comping2Events = MORECOMPING.enabled()
       ? MORECOMPING.buildEvents(state.melodyEvents, function(bar){ return state.progression[bar]; })
+      : [];
+    state.bebopEvents = BEBOPMELODY.enabled()
+      ? BEBOPMELODY.buildEvents(state.melodyEvents, function(bar){ return state.progression[bar]; }, state.rootChord)
       : [];
     drumEvents = buildDrumEvents(NUM_BARS);
     renderRoll();
@@ -7280,6 +7456,7 @@ function runAnalysis() {
     state.bassEvents.forEach(function(e){ allMidi.push(e.midi); });
     state.melodyEvents.forEach(function(e){ allMidi.push(e.midi); });
     state.comping2Events.forEach(function(e){ allMidi.push(e.midi); });
+    state.bebopEvents.forEach(function(e){ allMidi.push(e.midi); });
     // Rango cromático CONTINUO (sin huecos) entre la nota más grave y la
     // más aguda que suenan en el segmento — así cada fila es un semitono
     // real y se puede pintar al lado un teclado de piano (blancas/negras)
@@ -7355,6 +7532,7 @@ function runAnalysis() {
     state.chordEvents.forEach(function(ev){ drawEventRect(svg, ev, rowOf, BAR_COLORS[ev.bar % BAR_COLORS.length], 0.55, 0.95); });
     state.bassEvents.forEach(function(ev){ drawEventRect(svg, ev, rowOf, "var(--c-bass)", 0.65, 0.95); });
     state.comping2Events.forEach(function(ev){ drawEventRect(svg, ev, rowOf, "var(--c-comping2)", 0.55, 0.7); });
+    state.bebopEvents.forEach(function(ev){ drawEventRect(svg, ev, rowOf, "var(--c-bebop)", 0.6, 0.78); });
     state.melodyEvents.forEach(function(ev){ drawEventRect(svg, ev, rowOf, "var(--c-melody)", 0.9, 0.82); });
 
     var playhead = svgEl("line", {id:"consolaPlayhead", x1:MARGIN_L, x2:MARGIN_L, y1:MARGIN_T, y2:height-MARGIN_B, stroke:"var(--gold)", "stroke-width":2, visibility:"hidden"});
@@ -7373,6 +7551,7 @@ function runAnalysis() {
       ["var(--c-melody)","Melodía"]
     ];
     if(state.comping2Events.length) items.push(["var(--c-comping2)","moreComping (cuerdas)"]);
+    if(state.bebopEvents.length) items.push(["var(--c-bebop)","bebopMelody (sax)"]);
     items.forEach(function(it){
       var span = document.createElement("span");
       span.innerHTML = '<span class="sw" style="background:'+it[0]+'"></span>'+it[1];
@@ -7399,9 +7578,9 @@ function runAnalysis() {
   // presets deciden qué instrumento usar en armonía/melodía/bajo (los
   // 12 de Instruments.sf2, con sintetizador de siempre como respaldo)
   // y qué muestras usar en batería (kit real o percusión/congas).
-  var mixGains = { drum: 1, bass: 1, chord: 1, melody: 1, melodyDouble: 1, comping2: 1 };
+  var mixGains = { drum: 1, bass: 1, chord: 1, melody: 1, melodyDouble: 1, comping2: 1, bebop: 0 };
   var mixPresets = { harmony: "piano", melody: "flute", melodyDouble: "mute", bass: "synthBass", drum: "kit" };
-  var chordGainNode = null, bassGainNode = null, melodyGainNode = null, drumGainNode = null, melodyDoubleGainNode = null, comping2GainNode = null;
+  var chordGainNode = null, bassGainNode = null, melodyGainNode = null, drumGainNode = null, melodyDoubleGainNode = null, comping2GainNode = null, bebopGainNode = null;
   function ensureInstrumentGains(ctx){
     var master = ensureMasterGain(ctx);
     if(!chordGainNode){
@@ -7434,7 +7613,12 @@ function runAnalysis() {
       comping2GainNode.gain.value = mixGains.comping2;
       comping2GainNode.connect(master);
     }
-    return { chord: chordGainNode, bass: bassGainNode, melody: melodyGainNode, melodyDouble: melodyDoubleGainNode, drum: drumGainNode, comping2: comping2GainNode };
+    if(!bebopGainNode){
+      bebopGainNode = ctx.createGain();
+      bebopGainNode.gain.value = mixGains.bebop;
+      bebopGainNode.connect(master);
+    }
+    return { chord: chordGainNode, bass: bassGainNode, melody: melodyGainNode, melodyDouble: melodyDoubleGainNode, drum: drumGainNode, comping2: comping2GainNode, bebop: bebopGainNode };
   }
   // Cambia el nivel de un canal en caliente (mientras suena o no) — usa
   // setTargetAtTime, igual que el volumen general, para que no haga clic.
@@ -7443,7 +7627,8 @@ function runAnalysis() {
     var node = track === "chord" ? chordGainNode : track === "bass" ? bassGainNode :
                track === "melody" ? melodyGainNode : track === "drum" ? drumGainNode :
                track === "melodyDouble" ? melodyDoubleGainNode :
-               track === "comping2" ? comping2GainNode : null;
+               track === "comping2" ? comping2GainNode :
+               track === "bebop" ? bebopGainNode : null;
     if(node){
       var ctx = getAudioCtx();
       node.gain.setTargetAtTime(value, ctx ? ctx.currentTime : 0, 0.01);
@@ -8212,6 +8397,19 @@ function runAnalysis() {
       if(sm2Active && playSM2Voice(ctx, gains.comping2, "strings", ev.midi, t, dur*0.9, 0.14)) return;
       playStringsVoice(ctx, gains.comping2, ev.midi, t, dur*0.9, {attack: Math.min(0.09, dur*0.25), release: Math.min(0.5, dur*0.5), peakGain:0.1, cutoff:2600});
     });
+    // bebopMelody: sexta pista, línea melódica INDEPENDIENTE (no dobla a
+    // la melodía principal — tiene su propia nota por evento, elegida
+    // por CHORDSCALE) con timbre fijo de saxo (no es parte del mini
+    // mixer de presets, igual que moreComping con cuerdas). Vacía si el
+    // botón #consolaBebopBtn está apagado; y aunque tenga eventos,
+    // #mixBebopVol arranca en 0% (gains.bebop en 0), así que no se
+    // escucha hasta que se suba el fader a mano.
+    state.bebopEvents.forEach(function(ev){
+      var t = loopStartTime + ev.startBeat*spb;
+      var dur = ev.durBeats*spb;
+      if(sm2Active && playSM2Voice(ctx, gains.bebop, "tenorSax", ev.midi, t, dur*0.85, 0.16)) return;
+      playSaxVoice(ctx, gains.bebop, ev.midi, t, dur*0.85, {attack:0.03, release:0.12, peakGain:0.13});
+    });
   }
 
   function tickPlayhead(ctx, loopAnchor, spb, loopDur){
@@ -8301,7 +8499,7 @@ function runAnalysis() {
     // estuviera sonando (release de un pad, del saxo, etc.) en vez de
     // esperar a que cada nota termine su propia envolvente.
     var FADE = 0.015;
-    [chordGainNode, bassGainNode, melodyGainNode, drumGainNode, melodyDoubleGainNode, comping2GainNode, masterGain].forEach(function(g){
+    [chordGainNode, bassGainNode, melodyGainNode, drumGainNode, melodyDoubleGainNode, comping2GainNode, bebopGainNode, masterGain].forEach(function(g){
       if(!g) return;
       g.gain.cancelScheduledValues(now);
       g.gain.setValueAtTime(g.gain.value, now);
@@ -8325,6 +8523,7 @@ function runAnalysis() {
     if(melodyDoubleGainNode) melodyDoubleGainNode.gain.setValueAtTime(mixGains.melodyDouble, restoreAt);
     if(drumGainNode) drumGainNode.gain.setValueAtTime(mixGains.drum, restoreAt);
     if(comping2GainNode) comping2GainNode.gain.setValueAtTime(mixGains.comping2, restoreAt);
+    if(bebopGainNode) bebopGainNode.gain.setValueAtTime(mixGains.bebop, restoreAt);
 
     document.getElementById("consolaPlayBtn").disabled = state.chordEvents.length===0;
     var regenPlayBtnEl2 = document.getElementById("consolaRegenPlayBtn");
@@ -8424,6 +8623,12 @@ function runAnalysis() {
     this.classList.toggle("primary");
     if(state.rootChord.length) regenerateConsola();
   });
+  // bebopMelody: mismo patrón que moreComping — botón "primary"
+  // prendido/apagado, apagado por defecto, regenera de una al togglear.
+  document.getElementById("consolaBebopBtn").addEventListener("click", function(){
+    this.classList.toggle("primary");
+    if(state.rootChord.length) regenerateConsola();
+  });
   document.getElementById("consolaVolume").addEventListener("input", function(){
     currentVolume = this.value/100;
     document.getElementById("consolaVolumeVal").textContent = this.value + "%";
@@ -8439,7 +8644,8 @@ function runAnalysis() {
       { id: "mixDrumVol",   valId: "mixDrumVolVal",   track: "drum"   },
       { id: "mixBassVol",   valId: "mixBassVolVal",   track: "bass"   },
       { id: "mixChordVol",  valId: "mixChordVolVal",  track: "chord"  },
-      { id: "mixMelodyVol", valId: "mixMelodyVolVal", track: "melody" }
+      { id: "mixMelodyVol", valId: "mixMelodyVolVal", track: "melody" },
+      { id: "mixBebopVol",  valId: "mixBebopVolVal",  track: "bebop"  }
     ];
     MIX_SLIDERS.forEach(function(cfg){
       var el = document.getElementById(cfg.id);
