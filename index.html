@@ -8760,6 +8760,20 @@ function runAnalysis() {
           window._consolaStopTimer = setTimeout(stopPlayback, waitMs);
           return;
         }
+        // Si nos atrasamos varias vueltas (pestaña en segundo plano:
+        // el navegador frena este setInterval, pero el reloj del
+        // AudioContext sigue corriendo solo) NO recuperamos vuelta por
+        // vuelta — antes este while agendaba TODAS las vueltas
+        // perdidas de una, y como cada scheduleLoopAt arma decenas de
+        // voces, eso bloqueaba el hilo principal (la música se
+        // "trababa" y ni Detener/Reset respondían hasta refrescar la
+        // página). Si nos atrasamos más de un par de vueltas,
+        // saltamos directo al presente y seguimos desde ahí.
+        var MAX_CATCHUP_LOOPS = 2;
+        var behindLoops = Math.floor((ctx.currentTime - nextLoopTime) / loopDur);
+        if(behindLoops > MAX_CATCHUP_LOOPS){
+          nextLoopTime += behindLoops * loopDur;
+        }
         while(nextLoopTime - ctx.currentTime < SCHEDULE_AHEAD){
           scheduleLoopAt(ctx, dest, nextLoopTime, spb);
           nextLoopTime += loopDur;
