@@ -6440,12 +6440,26 @@ function runAnalysis() {
     });
     return out;
   }
+  // Estado ACUMULATIVO del modo test de intervalos fijos: cada llamada
+  // no vuelve a calcular desde 0 — encadena sobre la anterior, así se
+  // recorre un ciclo real (con "4ta J ↓" tildado solo: C, F, Bb, Eb,
+  // Ab, Db, Gb, B, E, A, D, G, C — el círculo de cuartas/quintas
+  // completo). Se reinicia a 0 al arrancar cada regenerateConsola()
+  // (ver más abajo), así cada variación nueva vuelve a arrancar en C.
+  // "down" = +semitonos (ej. 4ta J ↓ = +5, equivalente a "quinta
+  // descendente" en términos de movimiento de raíz armónica — mismo
+  // resultado de clase de altura que subir una cuarta). "up" = -semitonos.
+  // Sin dirección fija: signo al azar en cada paso (igual se acumula).
+  var fixedIntervalOffset = 0;
   function randomChromaTransposition(){
     var fixed = activeFixedIntervals();
     if (fixed.length){
       var entry = fixed[randomInt(0, fixed.length-1)];
-      var sign = entry.direction === "down" ? -1 : entry.direction === "up" ? 1 : (Math.random() < 0.5 ? 1 : -1);
-      return mod12(entry.semitones * sign);
+      var delta = entry.direction === "down" ? entry.semitones
+                : entry.direction === "up" ? -entry.semitones
+                : (Math.random() < 0.5 ? 1 : -1) * entry.semitones;
+      fixedIntervalOffset = mod12(fixedIntervalOffset + delta);
+      return fixedIntervalOffset;
     }
     var maxDist = Math.round(chromaVariety * 6); // 0..6 semitonos de distancia circular
     if(maxDist <= 0) return 0;
@@ -7159,6 +7173,7 @@ function runAnalysis() {
     var rootChord = pcSetToChord(selected);
     readout.textContent = rootChord.map(noteName).join("  ");
     state.rootChord = rootChord;
+    fixedIntervalOffset = 0; // modo test de intervalos fijos: cada variación nueva arranca el ciclo en C (offset 0)
     var built = buildProgressionRandom(rootChord, NUM_BARS);
     state.progression = built.progression;
     state.roles = built.roles;
