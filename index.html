@@ -1130,8 +1130,8 @@
     </div>
 
     <div class="consola-roll-wrap" id="consolaRollHost"></div>
-    <div id="consolaBebopRollLabel" style="margin-top:10px;margin-bottom:4px;font-size:12px;color:var(--ink-muted);" hidden>🎷 bebopMelody — piano roll separado (aislado del principal)</div>
-    <div class="consola-roll-wrap" id="consolaBebopRollHost" hidden></div>
+    <div id="consolaBebopRollLabel" style="margin-top:28px;margin-bottom:6px;font-size:12px;font-weight:600;color:var(--ink-muted);border-top:1px dashed var(--line);padding-top:16px;">🎷 bebopMelody — piano roll separado (aislado del principal)</div>
+    <div class="consola-roll-wrap" id="consolaBebopRollHost" style="min-height:60px;"></div>
 
     <p class="consola-foot">
       Armonía: cada reataque sortea un subset del set elegido (o el set completo) con su propia transposición e inversión, nunca la misma combinación dos veces seguidas ni una nota ajena al set; el bajo de ese compás cubre lo que ese subset dejó afuera, así acorde+bajo siempre reconstruyen el set completo. Las notas nunca entran en bloque: se escalonan, con más distancia entre ataques cuanto más dura el acorde. &#8634; Normalito toca el set completo sin subsets ni transposición, una sola inversión por compás.
@@ -7676,13 +7676,18 @@ function runAnalysis() {
     var host = document.getElementById("consolaBebopRollHost");
     if(!host) return;
     host.innerHTML = "";
+    // Ya NO se oculta el bloque entero cuando está vacío — antes, con
+    // bebopMelody apagado (su estado por defecto), el label+host
+    // desaparecían del todo y no había ninguna señal de que este roll
+    // separado existiera. Ahora siempre se ve, con un mensaje explicando
+    // por qué está vacío.
     if(!state.bebopEvents.length){
-      if(label) label.hidden = true;
-      host.hidden = true;
+      var empty = document.createElement("div");
+      empty.className = "consola-empty";
+      empty.textContent = "Prendé el botón \"bebopMelody\" (arriba, en Consola) para ver acá su línea melódica — vacío mientras esté apagado.";
+      host.appendChild(empty);
       return;
     }
-    if(label) label.hidden = false;
-    host.hidden = false;
 
     var allMidi = state.bebopEvents.map(function(e){ return e.midi; });
     var minMidi = allMidi.reduce(function(a,b){ return Math.min(a,b); }, allMidi[0]);
