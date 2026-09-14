@@ -1243,7 +1243,7 @@
           <input type="range" id="mixMelodyVol" min="0" max="150" value="100" step="1">
           <span class="mix-val" id="mixMelodyVolVal">100%</span>
         </div>
-        <div class="mix-channel" title="Volumen de la pista bebopMelody (línea melódica independiente, chord-scale). Arranca en 0% — muteada por defecto — aunque el botón bebopMelody esté prendido.">
+        <div class="mix-channel" title="Volumen de la pista bebopMelody (línea melódica independiente, chord-scale). Al prender el botón bebopMelody, este fader sube solo a 100% la primera vez — después queda a mano.">
           <label for="mixBebopVol">&#127929; Bebop</label>
           <input type="range" id="mixBebopVol" min="0" max="150" value="0" step="1">
           <span class="mix-val" id="mixBebopVolVal">0%</span>
@@ -6359,8 +6359,9 @@ function runAnalysis() {
   /* ================================================================
      MÓDULO BEBOP MELODY — botón #consolaBebopBtn (apagado por
      defecto, mismo patrón "primary" que moreComping) + volumen propio
-     #mixBebopVol (0% por defecto — muteada aunque el botón esté
-     prendido). Agrega una SEXTA pista MIDI: a diferencia de
+     #mixBebopVol (0% por defecto; al prender el botón se auto-sube a
+     100% la primera vez — ver su listener más abajo). Agrega una
+     SEXTA pista MIDI: a diferencia de
      moreComping (que DOBLA la melodía), esta es una línea melódica
      INDEPENDIENTE — una nota propia por cada evento de la melodía
      principal (mismo ritmo, mismos silencios), elegida con
@@ -7460,18 +7461,49 @@ function runAnalysis() {
     return best;
   }
 
-  // Cifrado de un reataque de armonía: combina las notas del acorde +
-  // el bajo (que fija la tónica) + la melodía, y reusa el algoritmo del
-  // Generador de Cifrado de Acordes (cifradoPickBestChord) para elegir
-  // la mejor calidad.
-  function cifradoLabelForSlot(chordMidiArr, bassMidi, melodyMidi){
-    var bassPc = mod12(bassMidi != null ? bassMidi : Math.min.apply(null, chordMidiArr));
-    var pcs = {0:true};
-    chordMidiArr.forEach(function(m){ pcs[mod12(m - bassPc)] = true; });
-    if(melodyMidi != null) pcs[mod12(melodyMidi - bassPc)] = true;
-    var relSet = new Set(Object.keys(pcs).map(Number));
-    var acorde = cifradoPickBestChord(relSet);
-    return CIFRADO_ROOT_BY_PC[bassPc] + (acorde.simbolo || "");
+  // Deduce raíz+calidad de un conjunto de clases de tono PROBANDO cada
+  // nota del propio conjunto como raíz candidata (nunca una nota
+  // externa impuesta) y quedándose con la que mejor calce: primero
+  // calce EXACTO (todos los intervalos de la calidad presentes), y
+  // entre esas — o si ninguna calza exacto — la que más intervalos en
+  // común tenga. Corrige el bug reportado: forzar el bajo como raíz
+  // fija mezclaba acordes con bajo ajeno reales (ej. D/F#, tríada de D
+  // con F# abajo) con un acorde de otra familia (F#m) que da la
+  // casualidad de compartir 2 de 3 notas al mirarlo "desde" F#.
+  function bestRootQuality(pcs){
+    var uniq = Array.from(new Set(pcs));
+    var best = null, bestScore = -1;
+    uniq.forEach(function(rootPc){
+      var relSet = new Set(uniq.map(function(pc){ return mod12(pc - rootPc); }));
+      var acorde = cifradoPickBestChord(relSet);
+      var matched = acorde.intervalos.filter(function(iv){ return relSet.has(iv.semitono); }).length;
+      var isSubset = acorde.intervalos.every(function(iv){ return relSet.has(iv.semitono); });
+      // Bonus grande por calce exacto (subconjunto completo) — así una
+      // tríada/7ma real siempre le gana a un "casi" parecido de otra
+      // raíz; a igualdad, prefiere la calidad con más notas explicadas.
+      var score = matched + (isSubset ? 100 : 0) + acorde.intervalos.length * 0.01;
+      if(score > bestScore){ bestScore = score; best = { rootPc: rootPc, acorde: acorde }; }
+    });
+    return best;
+  }
+
+  // Cifrado de un reataque de armonía: la raíz y la calidad se deducen
+  // SOLO de las notas del acorde (vía bestRootQuality) — nunca del
+  // bajo ni de la melodía, que pueden tocar cualquier grado (inversión,
+  // nota de paso) sin que eso cambie qué acorde es. El bajo solo se
+  // usa para el "slash" (ej. "D/F#") cuando toca una nota distinta de
+  // la raíz detectada — nunca reemplaza esa raíz. La melodía ya NO
+  // participa del cifrado (antes sí, y podía producir el mismo tipo de
+  // error que el bajo forzado: una nota de paso desviando la calidad).
+  function cifradoLabelForSlot(chordMidiArr, bassMidi){
+    var chordPCs = chordMidiArr.map(mod12);
+    var result = bestRootQuality(chordPCs);
+    var label = CIFRADO_ROOT_BY_PC[result.rootPc] + (result.acorde.simbolo || "");
+    if(bassMidi != null){
+      var bassPc = mod12(bassMidi);
+      if(bassPc !== result.rootPc) label += "/" + CIFRADO_ROOT_BY_PC[bassPc];
+    }
+    return label;
   }
 
   function renderRoll(){
@@ -7550,9 +7582,8 @@ function runAnalysis() {
             var absBeat = b*BEATS_PER_BAR + slot.startBeat;
             var xs = MARGIN_L + absBeat*PPB;
             var bassEv = findSoundingNote(state.bassEvents, absBeat);
-            var melEv = findSoundingNote(state.melodyEvents, absBeat);
             var cifLab = svgEl("text", {x:xs+4, y:28, class:"consola-cifrado-tag"});
-            cifLab.textContent = cifradoLabelForSlot(slot.chord, bassEv ? bassEv.midi : null, melEv ? melEv.midi : null);
+            cifLab.textContent = cifradoLabelForSlot(slot.chord, bassEv ? bassEv.midi : null);
             svg.appendChild(cifLab);
           });
         }
@@ -8437,9 +8468,9 @@ function runAnalysis() {
     // por CHORDSCALE), con selector de instrumento propio
     // (#bebopPresetSelect, igual patrón que Armonía/Melodía/Bajo —
     // Sax tenor por defecto). Vacía si el botón #consolaBebopBtn está
-    // apagado; y aunque tenga eventos, #mixBebopVol arranca en 0%
-    // (gains.bebop en 0), así que no se escucha hasta que se suba el
-    // fader a mano.
+    // apagado. #mixBebopVol arranca en 0%, pero el listener del botón
+    // lo auto-sube a 100% la primera vez que se prende (ver arriba),
+    // así que se escucha de una sin pasos extra.
     var bebopFam = voiceFamilyFor(mixPresets.bebop, "tenorSax");
     state.bebopEvents.forEach(function(ev){
       var t = loopStartTime + ev.startBeat*spb;
@@ -8670,8 +8701,21 @@ function runAnalysis() {
   });
   // bebopMelody: mismo patrón que moreComping — botón "primary"
   // prendido/apagado, apagado por defecto, regenera de una al togglear.
+  // Auto-unmute: la pista bebop tiene fader propio (#mixBebopVol) que
+  // arranca en 0% — si no se hiciera nada más, prender el botón no se
+  // oiría hasta subir ese fader a mano (causaba "no funciona"). Al
+  // prenderlo, si el fader sigue en su 0% original, lo subimos a un
+  // nivel audible de una — un solo clic ya se escucha, igual que
+  // moreComping. Si el usuario ya lo había subido antes, no lo tocamos.
   document.getElementById("consolaBebopBtn").addEventListener("click", function(){
     this.classList.toggle("primary");
+    if(this.classList.contains("primary") && mixGains.bebop === 0){
+      var bebopVolEl = document.getElementById("mixBebopVol");
+      var bebopVolValEl = document.getElementById("mixBebopVolVal");
+      if(bebopVolEl) bebopVolEl.value = 100;
+      if(bebopVolValEl) bebopVolValEl.textContent = "100%";
+      setMixGain("bebop", 1);
+    }
     if(state.rootChord.length) regenerateConsola();
   });
   document.getElementById("consolaVolume").addEventListener("input", function(){
