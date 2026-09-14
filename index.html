@@ -908,8 +908,13 @@
         <button class="chip" data-ex="0,3,6,10">Semidism. 7</button>
       </div>
     </div>
+  </div>
+<div class="results" id="results">
+      <div class="empty-state">Elegí al menos 2 notas (reloj o piano) para ver el análisis.</div>
+    </div>
+  </div>
 
-    <div class="overlay-card consola-card collapsible-card" id="consolaCard">
+<div class="overlay-card consola-card collapsible-card" id="consolaCard">
     <button class="module-toggle" aria-expanded="false" aria-controls="consolaContent" onclick="toggleModule(this)"></button>
     <button type="button" class="module-fs-toggle fullscreen-btn" data-fs-card="consolaCard" title="Pantalla completa">⛶ Full screen</button>
     <h2>SetMusicBox · Segmento en loop</h2>
@@ -938,8 +943,8 @@
       </div>
       <div class="consola-field" title="Gradúa cuántos compases tienen más de un acorde. 0% = siempre un solo acorde por compás (una redonda, sin reataques extra). 100% = comportamiento de siempre (ritmo armónico variable, con hasta 5 reataques por compás).">
         <label for="consolaChordsSlider">Chords</label>
-        <input type="range" id="consolaChordsSlider" min="0" max="100" value="100" step="1">
-        <span class="consola-val" id="consolaChordsVal">100%</span>
+        <input type="range" id="consolaChordsSlider" min="0" max="100" value="50" step="1">
+        <span class="consola-val" id="consolaChordsVal">50%</span>
       </div>
       <div class="consola-field" title="Probabilidad, en cada decisión del motor (ritmo de armonía/bajo, voicing de cada reataque, orden del arpegio, registro del bajo, patrón de batería), de usar la variante estilo jazz en vez de la del motor base. 0% = nunca (motor base, igual que con el checkbox viejo apagado). 100% = siempre (igual que con el checkbox viejo prendido). En el medio, una mezcla gradual: a mayor %, más decisiones caen del lado jazz, compás a compás y nota a nota.">
         <label for="consolaJazzSlider">&#127927; Jazz</label>
@@ -1146,14 +1151,8 @@
         </div>
       </div>
     </div>
-    </div>
 
-    <div class="results" id="results">
-      <div class="empty-state">Elegí al menos 2 notas (reloj o piano) para ver el análisis.</div>
-    </div>
-  </div>
-
-  <div class="cifrado-card" id="cifradoSection">
+<div class="cifrado-card" id="cifradoSection">
     <button type="button" class="cifrado-toggle" id="cifToggle" aria-expanded="false" aria-controls="cifBody" title="Mostrar el generador">+</button>
     <button type="button" class="cifrado-fs-btn fullscreen-btn" data-fs-card="cifradoSection" title="Pantalla completa">⛶ Full screen</button>
     <h2>Generador de Cifrado de Acordes</h2>
@@ -7354,7 +7353,7 @@ function runAnalysis() {
   var supersetVarietyEnabled = false;
   var alwaysCompleteSet = true; // checkbox #consolaAlwaysCompleteChk (tildado por defecto) — ver buildBassMelodyEventsRandom
   var chromaVariety = 0.25; // 0..1 — slider #consolaChromaSlider (default 25%), ver randomChromaTransposition/currentSubsetGap
-  var chordDensityVariety = 1; // 0..1 — slider #consolaChordsSlider (default 100% = sin cambios), ver buildChordEventsRandom
+  var chordDensityVariety = 0.5; // 0..1 — slider #consolaChordsSlider (default 50%), ver buildChordEventsRandom
 
   // Modo automático (se dispara solo, cada vez que cambian las notas
   // elegidas): ahora es el que antes era "Random" — libre y variado,
@@ -8720,6 +8719,65 @@ function runAnalysis() {
       setMixGain("bebop", 1);
     }
     if(state.rootChord.length) regenerateConsola();
+  });
+
+  // Modo SoloPiano — botón "primary" prendido/apagado (mismo patrón que
+  // moreComping/bebop). A diferencia de esos dos, no agrega ni saca
+  // ninguna pista: solo cambia el TIMBRE de Armonía/Melodía/Bajo a
+  // Piano y muda (gain a 0, no desactiva) Batería/moreComping/
+  // bebopMelody/Doblar melodía — así se escucha el trío bajo+armonía+
+  // melodía solo, sin tocar ningún checkbox/botón/preset de los demás
+  // módulos. Guarda el estado previo (presets + volúmenes) al prender,
+  // y lo restaura tal cual estaba al apagar — nunca pisa un ajuste que
+  // el usuario haya elegido a mano de forma permanente. No dispara
+  // regenerateConsola(): no cambia qué eventos existen, solo con qué
+  // timbre/volumen se reproducen, así que el cambio de mezcla se oye
+  // de inmediato (los gain nodes son compartidos y ya suenan en vivo);
+  // el cambio de preset de Armonía/Melodía/Bajo, como con cualquier
+  // cambio manual de esos mismos selectores, se escucha recién en la
+  // próxima vuelta del loop.
+  var soloPianoPrev = null;
+  document.getElementById("consolaSoloPianoBtn").addEventListener("click", function(){
+    this.classList.toggle("primary");
+    var soloPianoPresetIds = { harmony: "harmonyPresetSelect", melody: "melodyPresetSelect", bass: "bassPresetSelect" };
+    if(this.classList.contains("primary")){
+      soloPianoPrev = {
+        presets: { harmony: mixPresets.harmony, melody: mixPresets.melody, bass: mixPresets.bass },
+        gains: { drum: mixGains.drum, melodyDouble: mixGains.melodyDouble, comping2: mixGains.comping2, bebop: mixGains.bebop }
+      };
+      ["harmony","melody","bass"].forEach(function(track){
+        mixPresets[track] = "piano";
+        var sel = document.getElementById(soloPianoPresetIds[track]);
+        if(sel) sel.value = "piano";
+      });
+      setMixGain("drum", 0);
+      setMixGain("melodyDouble", 0);
+      setMixGain("comping2", 0);
+      setMixGain("bebop", 0);
+      var drumVolEl = document.getElementById("mixDrumVol"), drumVolValEl = document.getElementById("mixDrumVolVal");
+      if(drumVolEl) drumVolEl.value = 0;
+      if(drumVolValEl) drumVolValEl.textContent = "0%";
+      var bebopVolEl2 = document.getElementById("mixBebopVol"), bebopVolValEl2 = document.getElementById("mixBebopVolVal");
+      if(bebopVolEl2) bebopVolEl2.value = 0;
+      if(bebopVolValEl2) bebopVolValEl2.textContent = "0%";
+    } else if(soloPianoPrev){
+      ["harmony","melody","bass"].forEach(function(track){
+        mixPresets[track] = soloPianoPrev.presets[track];
+        var sel = document.getElementById(soloPianoPresetIds[track]);
+        if(sel) sel.value = soloPianoPrev.presets[track];
+      });
+      setMixGain("drum", soloPianoPrev.gains.drum);
+      setMixGain("melodyDouble", soloPianoPrev.gains.melodyDouble);
+      setMixGain("comping2", soloPianoPrev.gains.comping2);
+      setMixGain("bebop", soloPianoPrev.gains.bebop);
+      var drumVolEl2 = document.getElementById("mixDrumVol"), drumVolValEl2 = document.getElementById("mixDrumVolVal");
+      if(drumVolEl2){ drumVolEl2.value = Math.round(soloPianoPrev.gains.drum*100); }
+      if(drumVolValEl2){ drumVolValEl2.textContent = Math.round(soloPianoPrev.gains.drum*100) + "%"; }
+      var bebopVolEl3 = document.getElementById("mixBebopVol"), bebopVolValEl3 = document.getElementById("mixBebopVolVal");
+      if(bebopVolEl3){ bebopVolEl3.value = Math.round(soloPianoPrev.gains.bebop*100); }
+      if(bebopVolValEl3){ bebopVolValEl3.textContent = Math.round(soloPianoPrev.gains.bebop*100) + "%"; }
+      soloPianoPrev = null;
+    }
   });
   document.getElementById("consolaVolume").addEventListener("input", function(){
     currentVolume = this.value/100;
