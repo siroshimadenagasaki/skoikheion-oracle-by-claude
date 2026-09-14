@@ -1104,7 +1104,6 @@
           <label class="mix-preset-label" for="bassPresetSelect">Bajo</label>
           <select class="mix-preset-select" id="bassPresetSelect">
             <option value="synthBass" selected>Bajo original (sintetizado)</option>
-            <option value="superBass" title="Soundfont premium aparte (Soundfonts/Premium/super bass.sf2) — se descarga recién al elegir esta opción, no de arranque.">Super Bass (premium)</option>
             <option value="piano">Piano</option>
             <option value="epiano">Piano eléctrico</option>
             <option value="harpsichord">Clavecín</option>
@@ -3960,11 +3959,6 @@ function synthPluck(freq, { start = 0, duration = 1.6, gain = 0.5 } = {}) {
 const SF2_URL = "Soundfonts/Instruments.sf2";
 const SF2_DRUMS_URL = "Soundfonts/Drums.sf2";
 const SF2_PERC_URL = "Soundfonts/Percussion.sf2";
-// Super Bass: soundfont premium APARTE de los tres de arriba — no se carga
-// con el botón "Sonido real" ni suma peso a esa carga inicial. Se descarga
-// bajo demanda recién cuando el usuario elige "Super Bass (premium)" en el
-// selector de Bajo (ver sf2LoadSuperBassIfNeeded más abajo).
-const SF2_SUPER_BASS_URL = "Soundfonts/Premium/super%20bass.sf2";
 const SF2_DEFAULT_PRESET = { bank: 0, preset: 0 }; // Grand Piano
 
 const SF2_GEN = {
@@ -3987,8 +3981,6 @@ let sf2State = "idle"; // idle | loading | ready | error
 let sf2Font = null;        // Instruments.sf2 (parseado)
 let sf2DrumsFont = null;   // Drums.sf2 (parseado)
 let sf2PercFont = null;    // Percussion.sf2 (parseado)
-let sf2SuperBassState = "idle"; // idle | loading | ready | error — carga aparte, bajo demanda
-let sf2SuperBassFont = null;    // Soundfonts/Premium/super bass.sf2 (parseado); null hasta elegir el preset
 let sf2PresetIdx = -1;
 const sf2BufferCache = new Map();
 
@@ -4315,24 +4307,6 @@ function sf2ShowLoadOverlayError() {
   const label = document.getElementById("sf2LoadLabel");
   if (label) label.textContent = "🎼 Error al cargar sonidos";
   if (overlay) overlay.classList.add("sf2-load-error");
-}
-// Carga (una sola vez) Soundfonts/Premium/super bass.sf2 cuando el
-// usuario elige "Super Bass (premium)" en el selector de Bajo. Mientras
-// no termine (o si falla), playSM2Voice para la key "superBass" no
-// encuentra preset y el bajo suena con el sintetizador de respaldo de
-// siempre — no hay que esperar a que cargue para poder tocar.
-async function sf2LoadSuperBassIfNeeded() {
-  if (sf2SuperBassState === "ready" || sf2SuperBassState === "loading") return;
-  sf2SuperBassState = "loading";
-  try {
-    const buf = await sf2FetchWithProgress(SF2_SUPER_BASS_URL);
-    sf2SuperBassFont = sf2ParseFont(buf);
-    sf2SuperBassState = "ready";
-  } catch (err) {
-    console.error("No se pudo cargar Super Bass:", err);
-    sf2SuperBassState = "error";
-    sf2SuperBassFont = null;
-  }
 }
 async function sf2Activate(btn) {
   sf2State = "loading";
@@ -7776,13 +7750,8 @@ function runAnalysis() {
     SM2_PROGRAMS[it.key] = { font:"instruments", bank:0, program:it.program };
   });
   Object.keys(SM2_DRUM_KITS).forEach(function(k){ SM2_PROGRAMS[k] = SM2_DRUM_KITS[k]; });
-  // "8-String Bass" es el único preset (bank 0, preset 0) de
-  // Soundfonts/Premium/super bass.sf2 — se carga aparte, ver
-  // sf2LoadSuperBassIfNeeded.
-  SM2_PROGRAMS.superBass = { font:"superBass", bank:0, program:0 };
   var sm2PresetCache = {};
   var sm2CacheFontRef = null;
-  var sm2CacheSuperBassRef = null; // Super Bass se carga aparte de los otros tres .sf2
   function sm2UsingSF2(){
     return typeof sf2State !== "undefined" && sf2State === "ready" && !!sf2Font &&
       typeof currentSynth !== "undefined" && currentSynth === "sf2";
@@ -7790,19 +7759,13 @@ function runAnalysis() {
   function sm2FontFor(fontKey){
     if(fontKey === "drums") return (typeof sf2DrumsFont !== "undefined") ? sf2DrumsFont : null;
     if(fontKey === "percussion") return (typeof sf2PercFont !== "undefined") ? sf2PercFont : null;
-    if(fontKey === "superBass") return (typeof sf2SuperBassFont !== "undefined") ? sf2SuperBassFont : null;
     return sf2Font;
   }
   function sm2PresetIdxFor(key){
-    // Los tres .sf2 principales se cargan/recargan siempre juntos (mismo
-    // botón), así que sf2Font alcanza como referencia para saber si hay
-    // que invalidar el cache (cambió de null a cargado, o al revés).
-    // Super Bass se carga aparte (bajo demanda), por eso se chequea su
-    // propia referencia además — si no, el -1 cacheado antes de cargar
-    // quedaría pegado para siempre y el bajo nunca pasaría a sonar real.
-    if(sm2CacheFontRef !== sf2Font || sm2CacheSuperBassRef !== sf2SuperBassFont){
-      sm2PresetCache = {}; sm2CacheFontRef = sf2Font; sm2CacheSuperBassRef = sf2SuperBassFont;
-    }
+    // Los tres .sf2 se cargan/recargan siempre juntos (mismo botón), así
+    // que sf2Font alcanza como referencia para saber si hay que
+    // invalidar el cache (cambió de null a cargado, o al revés).
+    if(sm2CacheFontRef !== sf2Font){ sm2PresetCache = {}; sm2CacheFontRef = sf2Font; }
     if(sm2PresetCache[key] !== undefined) return sm2PresetCache[key];
     var p = SM2_PROGRAMS[key];
     var font = p ? sm2FontFor(p.font) : null;
@@ -8861,13 +8824,8 @@ function runAnalysis() {
       el.value = mixPresets[cfg.key];
       el.addEventListener("change", function(){
         mixPresets[cfg.key] = this.value;
-        if(cfg.key === "bass" && this.value === "superBass") sf2LoadSuperBassIfNeeded();
       });
     });
-    // Por si el preset de Bajo ya arranca en "superBass" (ej. restaurado
-    // desde algún estado guardado a futuro) — hoy el default sigue siendo
-    // "synthBass", así que esto no dispara nada al cargar la página.
-    if(mixPresets.bass === "superBass") sf2LoadSuperBassIfNeeded();
   })();
 
   regenerateConsola();
