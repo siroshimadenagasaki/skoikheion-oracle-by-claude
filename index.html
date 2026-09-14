@@ -828,6 +828,14 @@
     padding:28px 24px 48px !important;
     box-sizing:border-box;
   }
+  /* En pantalla completa, la tarjeta (.fs-active) ya tiene su propio
+     scroll vertical propio — el tope fijo de 2000px que usa
+     .collapsible-content.expanded (pensado solo para animar el
+     colapsar/expandir normal) sobra acá y recorta contenido alto y
+     variable como los piano rolls (SetMusicBox + bebopMelody juntos
+     fácil superan 2000px). Se saca el tope solo en este contexto, sin
+     tocar la animación de colapso en el resto del sitio. */
+  .fs-active .collapsible-content.expanded{max-height:none;overflow:visible;}
 </style>
 </head>
 <body>
