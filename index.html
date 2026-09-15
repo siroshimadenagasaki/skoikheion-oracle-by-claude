@@ -724,8 +724,8 @@
   }
   .nav-modules{
     position:fixed;
-    right:20px;
-    top:164px;
+    right:16px;
+    top:16px;
     display:flex;
     flex-direction:column;
     gap:6px;
@@ -1021,7 +1021,10 @@
           <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;" title="bebopMelody toca en corcheas la escala mayor completa de la tónica del acorde vigente. ÚNICA excepción del motor a &quot;nunca nota ajena al set&quot;: la escala mayor casi siempre trae alguna nota fuera del set de Solomon elegido, y se toca sin filtrar, a pedido explícito. Si Arpeggios también está tildado, alterna por compás (impar=arpegio, par=escala); si ninguno está tildado, bebopMelody no suena.">
             <input type="checkbox" id="consolaBebopScaleChk"> Scales
           </label>
-          <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;" title="Cambia el RITMO de bebopMelody (aplica con Arpeggios, Scales o los dos): en vez de 8 corcheas por compás, toca 16 semicorcheas por compás (100% semicorcheas, sin mezcla). No afecta qué notas suenan, solo su duración.">
+          <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;" title="bebopMelody recorre la escala fija de Barry Harris (Major 6th diminished / Bebop Dominant). SOLO suena si el set completo de 8 notas elegido arriba es exactamente una de esas dos escalas (Forte 8-26 u 8-23) — con cualquier otro set, este checkbox no hace nada. A diferencia de Arpeggios/Scales, la escala no cambia con el acorde: es fija para todo el pasaje.">
+            <input type="checkbox" id="consolaBebopHarrisChk"> 🎼 Harris
+          </label>
+          <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;" title="Cambia el RITMO de bebopMelody (aplica con Arpeggios, Scales, Harris o cualquier combinación): en vez de 8 corcheas por compás, toca 16 semicorcheas por compás (100% semicorcheas, sin mezcla). No afecta qué notas suenan, solo su duración.">
             <input type="checkbox" id="consolaBebopSemiChk"> Semicorcheas
           </label>
           <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;" title="Restringe el registro de bebopMelody a 2 octavas: toda nota que caiga fuera de ese rango se transpone una octava arriba o abajo (la que corresponda) hasta entrar en rango — misma clase de altura, más cerca del resto de la línea. No cambia qué notas ni ritmo, solo evita saltos de octava grandes.">
@@ -6445,18 +6448,92 @@ function runAnalysis() {
   })();
 
   /* ================================================================
+     MOTOR BARRY HARRIS — checkbox #consolaBebopHarrisChk, "🎼 Harris".
+     Reconstruido a partir del doc de diseño guardado en el proyecto
+     (claude/harris-melodic-engine.md): esos 3 patches se probaron una
+     vez con Playwright pero NUNCA se pushearon al repo y el código
+     real no sobrevivió en este archivo — así que esto es una
+     RE-implementación fiel a esa spec + a la teoría real de las
+     escalas de Barry Harris (no un dato inventado: es teoría de jazz
+     verificable), no una recuperación literal de bytes que ya no
+     existen.
+     Solo se activa cuando el set COMPLETO de 8 notas elegido por el
+     usuario es, desde alguna raíz, exactamente:
+       - Major 6th Diminished (Forte 8-26): 1 2 3 4 5 #5 6 7
+         → intervalos desde la raíz: 0,2,4,5,7,8,9,11
+       - Bebop Dominant / Mixolydian 7b-7 (Forte 8-23): 1 2 3 4 5 6 b7 7
+         → intervalos desde la raíz: 0,2,4,5,7,9,10,11
+     Con cualquier otro set (incluso de 8 notas), el checkbox no hace
+     nada — el resto de los modos (Arpeggios/Scales) sigue como si
+     Harris no existiera.
+     LA PROPIEDAD que hace célebre a estas escalas (y por la que NO
+     hace falta decidir aparte "nota fuerte vs. nota de paso", a
+     diferencia del heurístico con empuje aleatorio que describía el
+     doc original y que quedó con un bug conocido de notas repetidas):
+     tocando sus 8 notas seguidas seguidas en corcheas, empezando en
+     CUALQUIER tono de acorde (posición PAR de la escala: raíz-3ª-5ª-6ª
+     en la Major 6 dim, raíz-3ª-5ª-b7 en la Bebop Dominant), todo tiempo
+     fuerte vuelve a caer en un tono de acorde y todo contratiempo en
+     la nota de paso cromática — automático, con solo recorrer la
+     escala en orden. Por eso acá NO hay empuje aleatorio ni rama
+     separada para contratiempo: se resuelve solo, y de paso queda sin
+     el bug de notas repetidas del doc original.
+     A diferencia de Arpeggios/Scales (que recalculan tonos por cada
+     acorde vigente), la escala de Harris es FIJA para todo el pasaje
+     (es el mismo set elegido, no cambia con la armonía) y su índice
+     NUNCA se resetea por cambio de acorde — es una corrida continua a
+     lo largo de los 12 compases, para no perder la alineación
+     fuerte/débil en ningún punto del pasaje.
+     ================================================================ */
+  var HARRIS = (function(){
+    var MAJ6DIM_INTERVALS = [0,2,4,5,7,8,9,11];   // 1 2 3 4 5 #5 6 7
+    var BEBOPDOM_INTERVALS = [0,2,4,5,7,9,10,11]; // 1 2 3 4 5 6 b7 7
+    function intervalsMatch(relSet, pattern){
+      if(relSet.length !== pattern.length) return false;
+      for(var i=0;i<pattern.length;i++) if(relSet[i] !== pattern[i]) return false;
+      return true;
+    }
+    // Prueba cada una de las 8 notas propias como raíz candidata — la
+    // primera que hace calzar EXACTO alguno de los dos patrones gana.
+    // (Más directo que analizar con Forte/getPrimeForm para esto: acá
+    // hace falta la raíz FUNCIONAL real de la escala, que la forma
+    // prima de Forte no garantiza dar — probar cada nota como raíz
+    // contra los intervalos reales de cada escala es exacto y además
+    // ya implica pertenecer a la clase Forte 8-26/8-23 correspondiente,
+    // sin tener que llamar a analyze() aparte.)
+    function detect(pcs8){
+      var uniq = Array.from(new Set(pcs8));
+      if(uniq.length !== 8) return null;
+      for(var i=0;i<uniq.length;i++){
+        var root = uniq[i];
+        var relSet = uniq.map(function(pc){ return mod12(pc - root); }).sort(function(a,b){ return a-b; });
+        if(intervalsMatch(relSet, MAJ6DIM_INTERVALS)) return { rootPc: root, kind: "maj6dim", relIntervals: MAJ6DIM_INTERVALS };
+        if(intervalsMatch(relSet, BEBOPDOM_INTERVALS)) return { rootPc: root, kind: "bebopdom", relIntervals: BEBOPDOM_INTERVALS };
+      }
+      return null;
+    }
+    // Las 8 notas de la escala, en la octava más cercana a anchorMidi.
+    function scaleNear(ctx, anchorMidi){
+      var baseOct = anchorMidi - mod12(anchorMidi - ctx.rootPc);
+      return ctx.relIntervals.map(function(iv){ return baseOct + iv; });
+    }
+    return { detect: detect, scaleNear: scaleNear };
+  })();
+
+  /* ================================================================
      MÓDULO BEBOP MELODY — botón #consolaBebopBtn (apagado por
      defecto, mismo patrón "primary" que moreComping) + volumen propio
      #mixBebopVol (0% por defecto; al prender el botón se auto-sube a
      100% la primera vez — ver su listener más abajo). Agrega una
      SEXTA pista MIDI: a diferencia de moreComping (que DOBLA la
-     melodía), esta es una línea propia, con DOS modos elegibles por
-     checkbox (#consolaBebopArpChk / #consolaBebopScaleChk), corchea
-     fija en ambos por defecto, sin silencios. Un tercer checkbox
+     melodía), esta es una línea propia, con TRES modos elegibles por
+     checkbox (#consolaBebopArpChk / #consolaBebopScaleChk /
+     #consolaBebopHarrisChk, ver MOTOR BARRY HARRIS arriba), corchea
+     fija por defecto, sin silencios. Un cuarto checkbox
      (#consolaBebopSemiChk, "Semicorcheas") cambia el RITMO, y un
-     cuarto (#consolaBebopNarrowChk, "narrowRegister") restringe el
+     quinto (#consolaBebopNarrowChk, "narrowRegister") restringe el
      registro — los dos son ortogonales a los modos de arriba (aplican
-     igual toquen Arpeggios, Scales o los dos alternados):
+     igual toquen cualquier combinación de Arpeggios/Scales/Harris):
        - Arpeggios: SOLO arpegia el acorde vigente en cada instante
          (chordAt) — recorre las notas del voicing en orden (ascendente
          en compases pares, descendente en impares), subiendo de
@@ -6471,10 +6548,17 @@ function runAnalysis() {
          fuera del set elegido" — la escala mayor completa casi siempre
          trae alguna nota ajena al set de Solomon, y se toca así, sin
          filtrar, porque así se pidió.
-       - Si los dos checkboxes de arriba están tildados, alterna por
-         compás (impares en 1-index = bar par en 0-index → Arpeggios;
-         pares → Scales). Si NINGUNO está tildado, bebopMelody no suena
-         aunque el botón esté prendido.
+       - Harris: recorre la escala fija de Barry Harris (ver MOTOR
+         BARRY HARRIS arriba) — solo suena si el checkbox está tildado
+         Y el set completo elegido califica (8-26 u 8-23); si no
+         califica, este modo simplemente no aporta nada, como si no
+         estuviera tildado.
+       - Si hay más de un modo tildado (y aplicable) a la vez, se
+         alterna por compás en orden Arpeggios → Scales → Harris,
+         ciclando entre los que estén activos (ej. con los tres
+         tildados: c1=Arpeggios, c2=Scales, c3=Harris, c4=Arpeggios…).
+         Si NINGUNO está tildado, o el único aplicable es Harris sin
+         calificar, bebopMelody no suena aunque el botón esté prendido.
        - Semicorcheas (desmarcado, por defecto): ritmo fijo, todo en
          corcheas (0.5 tiempo), como antes.
        - Semicorcheas (marcado): ritmo fijo, todo en semicorcheas (0.25
@@ -6507,6 +6591,10 @@ function runAnalysis() {
     }
     function scaleChecked(){
       var el = document.getElementById("consolaBebopScaleChk");
+      return !!(el && el.checked);
+    }
+    function harrisChecked(){
+      var el = document.getElementById("consolaBebopHarrisChk");
       return !!(el && el.checked);
     }
     function semiChecked(){
@@ -6561,12 +6649,22 @@ function runAnalysis() {
       var doScale = scaleChecked();
       var mixedRhythm = semiChecked();
       var doNarrow = narrowChecked();
-      if(!doArp && !doScale) return []; // ningún modo tildado: silencio
+      var harrisCtx = harrisChecked() ? HARRIS.detect(state.rootChord.map(mod12)) : null;
+      var doHarris = !!harrisCtx; // tildado pero el set no califica -> false, como "no hace nada"
+
+      var modes = [];
+      if(doArp) modes.push("arp");
+      if(doScale) modes.push("scale");
+      if(doHarris) modes.push("harris");
+      if(!modes.length) return []; // ningún modo tildado (o aplicable): silencio
+
       var events = [];
       var prevKey = null;
-      var idx = 0;
+      var idx = 0;          // arp/scale: se resetea en cada cambio de acorde
+      var harrisIdx = 0;    // harris: corrida continua, NUNCA se resetea
+      var harrisAnchor = null; // octava de referencia, fijada una sola vez
       for(var bar=0; bar<numBars; bar++){
-        var useScale = doScale && (!doArp || (bar % 2 === 1));
+        var mode = modes[bar % modes.length];
         var arpUp = (bar % 2 === 0);
         var barSteps = buildBarSteps(mixedRhythm);
         for(var si=0; si<barSteps.length; si++){
@@ -6575,25 +6673,36 @@ function runAnalysis() {
           var startBeat = bar*BEATS_PER_BAR + offsetInBar;
           var chordMidi = chordAt(bar, offsetInBar) || [];
           if(!chordMidi.length) continue;
-          var tones;
-          var key;
-          if(useScale){
-            var rootPc = bestRootQuality(chordMidi.map(mod12)).rootPc;
-            var anchorMidi = Math.round(chordMidi.reduce(function(a,b){ return a+b; }, 0) / chordMidi.length);
-            tones = majorScaleNear(rootPc, anchorMidi);
-            key = "scale|" + rootPc;
+          var midi;
+          if(mode === "harris"){
+            if(harrisAnchor === null){
+              harrisAnchor = Math.round(chordMidi.reduce(function(a,b){ return a+b; }, 0) / chordMidi.length);
+            }
+            var hTones = HARRIS.scaleNear(harrisCtx, harrisAnchor);
+            var hn = hTones.length;
+            var hOctLap = Math.floor(harrisIdx / hn);
+            midi = clampMelodyRange(hTones[harrisIdx % hn] + hOctLap*12);
+            harrisIdx++;
           } else {
-            tones = chordMidi.slice().sort(function(a,b){ return a-b; });
-            key = "arp|" + tones.map(mod12).join(",");
+            var tones, key;
+            if(mode === "scale"){
+              var rootPc = bestRootQuality(chordMidi.map(mod12)).rootPc;
+              var anchorMidi = Math.round(chordMidi.reduce(function(a,b){ return a+b; }, 0) / chordMidi.length);
+              tones = majorScaleNear(rootPc, anchorMidi);
+              key = "scale|" + rootPc;
+            } else {
+              tones = chordMidi.slice().sort(function(a,b){ return a-b; });
+              key = "arp|" + tones.map(mod12).join(",");
+            }
+            if(!arpUp) tones = tones.slice().reverse();
+            if(key !== prevKey){ idx = 0; prevKey = key; }
+            var n = tones.length;
+            var octLap = Math.floor(idx / n);
+            midi = clampMelodyRange(tones[idx % n] + octLap*12);
+            idx++;
           }
-          if(!arpUp) tones = tones.slice().reverse();
-          if(key !== prevKey){ idx = 0; prevKey = key; }
-          var n = tones.length;
-          var octLap = Math.floor(idx / n);
-          var midi = clampMelodyRange(tones[idx % n] + octLap*12);
           if(doNarrow) midi = clampNarrowRegister(midi);
           events.push({ midi: midi, startBeat: startBeat, durBeats: stepDur, bar: bar });
-          idx++;
         }
       }
       return events;
@@ -9074,7 +9183,7 @@ function runAnalysis() {
   // Checkboxes de modo de bebopMelody (Arpeggios / Scales, ver BEBOPMELODY
   // arriba) — solo cambian QUÉ notas calcula buildEvents, así que basta
   // con regenerar el segmento cuando cambian (mismo patrón que el botón).
-  ["consolaBebopArpChk", "consolaBebopScaleChk", "consolaBebopSemiChk", "consolaBebopNarrowChk"].forEach(function(id){
+  ["consolaBebopArpChk", "consolaBebopScaleChk", "consolaBebopHarrisChk", "consolaBebopSemiChk", "consolaBebopNarrowChk"].forEach(function(id){
     var el = document.getElementById(id);
     if(el) el.addEventListener("change", function(){
       if(state.rootChord.length) regenerateConsola();
