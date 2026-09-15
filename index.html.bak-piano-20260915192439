@@ -913,7 +913,7 @@
         <button class="chip" id="composeBtn" type="button" title="Toca el segmento de 12 compases de SetMusicBox con las notas actuales">🎹 Compose</button>
         <button class="chip" id="clearBtn">Limpiar</button>
         <button class="chip toggle" id="sf2Btn" type="button" aria-pressed="false" title="Carga bajo demanda tres SoundFonts reales (Instruments+Drums+Percussion, ~29MB) y reemplaza el sintetizador por muestras de instrumento y batería reales (incluye SetMusicBox). Un clic más para volver al sintetizador liviano.">🎼 Sonido real (SoundFont)</button>
-        <label class="hifi-toggle" title="Reemplaza instrumentos puntuales por SoundFonts premium aparte (Soundfonts/HIFI/), uno por uno a medida que se agregan — hoy: Piano (Steinway D, reemplaza el Piano de siempre en cualquier selector), Bajo (Acoustic Bass, Super Bass Electric) y Armonía (Warm Pad). Solo se nota con '🎼 Sonido real' activado; se descargan todos juntos al tildar este checkbox. Al activarlo, si el Bajo está en el default de siempre, pasa a Acoustic Bass.">
+        <label class="hifi-toggle" title="Reemplaza instrumentos puntuales por SoundFonts premium aparte (Soundfonts/HIFI/), uno por uno a medida que se agregan — hoy: Bajo (Acoustic Bass, Super Bass Electric) y Armonía/Melodía (Warm Pad). Solo se nota con '🎼 Sonido real' activado; se descargan todos juntos al tildar este checkbox. Al activarlo, si el Bajo está en el default de siempre, pasa a Acoustic Bass.">
           <input type="checkbox" id="hifiChk"> HIFI
         </label>
       </div>
@@ -4052,15 +4052,14 @@ const SF2_DEFAULT_PRESET = { bank: 0, preset: 0 }; // Grand Piano
 // si es del tipo 2, el <option> a mano) — no hace falta tocar el resto
 // del motor.
 const HIFI_FILES = [
-  { key: "piano",               url: "Soundfonts/HIFI/grand%20piano.sf2",           bank: 0, program: 0,  label: "Steinway D" },
-  { key: "bassAcoustic",        url: "Soundfonts/HIFI/Acoustic%20Bass.sf2",         bank: 0, program: 32, label: "Acoustic Bass" },
-  { key: "bassSuperElectric",   url: "Soundfonts/HIFI/super%20bass%20electric.sf2", bank: 0, program: 0,  label: "Super Bass Electric" },
-  { key: "pad",                 url: "Soundfonts/HIFI/Warm%20Pad.sf2",              bank: 0, program: 0,  label: "Warm Pad" },
+  { key: "bassAcoustic",       url: "Soundfonts/HIFI/Acoustic%20Bass.sf2",         bank: 0, program: 32, label: "Acoustic Bass" },
+  { key: "bassSuperElectric",  url: "Soundfonts/HIFI/super%20bass%20electric.sf2", bank: 0, program: 0,  label: "Super Bass Electric" },
+  { key: "pad",                url: "Soundfonts/HIFI/Warm%20Pad.sf2",              bank: 0, program: 0,  label: "Warm Pad" },
 ];
-// "piano" ya es una key existente de SM2_INSTRUMENTS (program 0 de
-// Instruments.sf2) — este reemplazo es transparente: no hace falta
-// <option> nueva en ningún selector, cualquiera que tenga elegido
-// "Piano" pasa a sonar con el Steinway D en vez del GM al tildar HIFI.
+// Nota: "super bass.sf2" (en la misma carpeta) NO se usa — no tiene
+// ningún preset de bajo adentro (62 presets de piano tipo "Grand",
+// "Classical", "Jazz" — parece el archivo equivocado). Si en algún
+// momento se reemplaza por el .sf2 correcto, agregar una entrada acá.
 const HIFI_FILES_BY_KEY = {};
 HIFI_FILES.forEach((f) => { HIFI_FILES_BY_KEY[f.key] = f; });
 let hifiEnabled = false;
