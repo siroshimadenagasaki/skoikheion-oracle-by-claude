@@ -6536,12 +6536,51 @@ function runAnalysis() {
     // Normalito — el segundo argumento se ignora en ese caso).
     // rootChordMidi: el set completo elegido (state.rootChord).
     function buildEvents(melodyEvents, chordAt, rootChordMidi){
-      var events = [];
-      var prevMidi = null;
       // Se detecta UNA vez por generación (no por nota): si el set
       // completo no es 8-26/8-23, harrisCtx queda null y el resto del
       // loop usa CHORDSCALE exactamente como antes.
       var harrisCtx = harrisModeChecked() ? HARRIS.detect(rootChordMidi) : null;
+
+      if(harrisCtx){
+        // TEST: en modo Harris, en vez de heredar el ritmo (irregular)
+        // de la melodía principal, arma su PROPIA grilla de corcheas
+        // rectas para todo el segmento — así la propiedad estructural
+        // de la escala (chord-tone garantizada en cada tiempo) queda
+        // perfectamente alineada; con ritmos mixtos (silencios, fills,
+        // figuras largas) esa alineación se pierde y la línea suena
+        // mal. Temporal, a pedido, para poder testear la lógica de
+        // Harris aislada del ritmo de la melodía principal.
+        var harrisEvents = [];
+        var harrisPrevMidi = null;
+        var totalBeats = NUM_BARS * BEATS_PER_BAR;
+        var step = 0.5; // corchea
+        for(var beat=0; beat<totalBeats - 1e-9; beat += step){
+          var hBar = Math.floor(beat/BEATS_PER_BAR + 1e-9);
+          var hOffset = beat - hBar*BEATS_PER_BAR;
+          var hChordMidi = chordAt(hBar, hOffset) || [];
+          var hNextBeat = beat + step;
+          var hNextChordMidi = null;
+          if(hNextBeat < totalBeats - 1e-9){
+            var hNextBar = Math.floor(hNextBeat/BEATS_PER_BAR + 1e-9);
+            var hNextOffset = hNextBeat - hNextBar*BEATS_PER_BAR;
+            hNextChordMidi = chordAt(hNextBar, hNextOffset) || null;
+          }
+          var hRegisterCenter = hChordMidi.length ? hChordMidi[0] : (rootChordMidi[0] || 60);
+          var hMidi = HARRIS.pickNote({
+            startBeat: beat,
+            prevMidi: harrisPrevMidi,
+            nextChordMidi: hNextChordMidi,
+            registerCenter: hRegisterCenter
+          }, harrisCtx);
+          hMidi = clampMelodyRange(hMidi);
+          harrisPrevMidi = hMidi;
+          harrisEvents.push({ midi: hMidi, startBeat: beat, durBeats: step, bar: hBar });
+        }
+        return harrisEvents;
+      }
+
+      var events = [];
+      var prevMidi = null;
       melodyEvents.forEach(function(mEv, idx){
         var offsetInBar = mEv.startBeat - mEv.bar*BEATS_PER_BAR;
         var currentChordMidi = chordAt(mEv.bar, offsetInBar) || [];
@@ -6552,14 +6591,7 @@ function runAnalysis() {
           nextChordMidi = chordAt(nextEv.bar, nextOffset) || null;
         }
         var registerCenter = currentChordMidi.length ? currentChordMidi[0] : (rootChordMidi[0] || 60);
-        var midi = harrisCtx
-          ? HARRIS.pickNote({
-              startBeat: mEv.startBeat,
-              prevMidi: prevMidi,
-              nextChordMidi: nextChordMidi,
-              registerCenter: registerCenter
-            }, harrisCtx)
-          : CHORDSCALE.pickNote({
+        var midi = CHORDSCALE.pickNote({
               rootChordMidi: rootChordMidi,
               currentChordMidi: currentChordMidi,
               startBeat: mEv.startBeat,
