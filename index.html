@@ -217,6 +217,12 @@
   .fret-note.fret-open.selected text{opacity:1;fill:#1a1622;}
 
   .clock-actions{display:flex;justify-content:center;gap:10px;margin-top:22px;flex-wrap:wrap;}
+  .hifi-toggle{
+    display:inline-flex;align-items:center;gap:5px;
+    font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.04em;
+    color:var(--ink-muted);cursor:pointer;user-select:none;
+  }
+  .hifi-toggle input{cursor:pointer;}
   button.chip{
     font-family:'JetBrains Mono',monospace;
     font-size:11px;
@@ -803,7 +809,15 @@
   .collapsible-card{position:relative;}
   .collapsible-content{transition:max-height .25s ease, opacity .25s ease;overflow:hidden;}
   .collapsible-content.collapsed{max-height:0;opacity:0;}
-  .collapsible-content.expanded{max-height:2000px;opacity:1;}
+  /* Antes: max-height fijo en 2000px. Con SetMusicBox (controles + mixer +
+     2 piano rolls + pie de texto) el contenido real supera eso, así que el
+     overflow:hidden cortaba lo último (el roll de bebopMelody). El valor
+     grande de acá es solo un piso de seguridad para el primer render; el
+     alto real y exacto lo fija JS más abajo (ver ajustarAltoModuloExpandido),
+     que además se re-ejecuta cada vez que el contenido cambia de tamaño
+     (nuevas notas, roll de bebop que aparece/crece, etc.) — así nunca vuelve
+     a quedar un módulo cortado por más que crezca su contenido. */
+  .collapsible-content.expanded{max-height:20000px;opacity:1;}
 
   /* ---- Full screen por tarjeta ---- */
   button.chip.fullscreen-btn{white-space:nowrap;}
@@ -828,14 +842,6 @@
     padding:28px 24px 48px !important;
     box-sizing:border-box;
   }
-  /* En pantalla completa, la tarjeta (.fs-active) ya tiene su propio
-     scroll vertical propio — el tope fijo de 2000px que usa
-     .collapsible-content.expanded (pensado solo para animar el
-     colapsar/expandir normal) sobra acá y recorta contenido alto y
-     variable como los piano rolls (SetMusicBox + bebopMelody juntos
-     fácil superan 2000px). Se saca el tope solo en este contexto, sin
-     tocar la animación de colapso en el resto del sitio. */
-  .fs-active .collapsible-content.expanded{max-height:none;overflow:visible;}
 </style>
 </head>
 <body>
@@ -907,6 +913,9 @@
         <button class="chip" id="composeBtn" type="button" title="Toca el segmento de 12 compases de SetMusicBox con las notas actuales">🎹 Compose</button>
         <button class="chip" id="clearBtn">Limpiar</button>
         <button class="chip toggle" id="sf2Btn" type="button" aria-pressed="false" title="Carga bajo demanda tres SoundFonts reales (Instruments+Drums+Percussion, ~29MB) y reemplaza el sintetizador por muestras de instrumento y batería reales (incluye SetMusicBox). Un clic más para volver al sintetizador liviano.">🎼 Sonido real (SoundFont)</button>
+        <label class="hifi-toggle" title="Reemplaza instrumentos puntuales de Instruments.sf2 por SoundFonts premium aparte (Soundfonts/Premium/), uno por uno a medida que se agregan — hoy: Piano (Yamaha CFX Grand) y Flauta (Good Flute). Solo se nota con '🎼 Sonido real' activado; se descargan bajo demanda, recién al tildar este checkbox.">
+          <input type="checkbox" id="hifiChk"> HIFI
+        </label>
       </div>
       <div class="examples">
         <span>Ejemplos rápidos</span>
@@ -983,18 +992,14 @@
           <span class="consola-inst-toggle" title="Mezcla figuras largas y cortas DENTRO del mismo compás de melodía, en vez del comportamiento de siempre (un compás entero de figuras largas y, cada tanto, un compás entero de fill de notas cortas). No cambia qué nota suena, solo el ritmo."><input type="checkbox" id="consolaMixDurChk" checked><label for="consolaMixDurChk">&#127925; Mix melody duration</label></span>
         </div>
       </div>
-      <div class="consola-field consola-instruments" title="Modo TEST: si tildás uno o más, la transposición cromática al azar (por compás y por reataque) deja de usar el rango del slider Chromatism y sortea SOLO entre los intervalos tildados acá. Al tildar el primero, el slider Chromatism baja a 0% automáticamente (queda en 0% mientras uses esto). Destildando todos, Chromatism sigue en 0% hasta que lo subas vos a mano. No afecta el achique de subset (eso sigue atado solo a Chromatism).">
+      <div class="consola-field consola-instruments" title="Modo TEST: si tildás uno o más, la transposición cromática al azar (por compás y por reataque) deja de usar el rango del slider Chromatism y sortea SOLO entre los intervalos tildados acá. Por ahora, en test, TODOS transponen siempre descendente (fijo, no al azar) — 2da M, 3ra m, 3ra M, 4ta J y 5ta J. Al tildar el primero, el slider Chromatism baja a 0% automáticamente (queda en 0% mientras uses esto). Destildando todos, Chromatism sigue en 0% hasta que lo subas vos a mano. No afecta el achique de subset (eso sigue atado solo a Chromatism).">
         <label>Transposition intervals (test)</label>
         <div class="consola-inst-row">
-          <span class="consola-inst-toggle"><input type="checkbox" id="consolaInt2M" data-semitones="2"><label for="consolaInt2M">2da M</label></span>
-          <span class="consola-inst-toggle"><input type="checkbox" id="consolaInt3m" data-semitones="3"><label for="consolaInt3m">3ra m</label></span>
-          <span class="consola-inst-toggle"><input type="checkbox" id="consolaInt3M" data-semitones="4"><label for="consolaInt3M">3ra M</label></span>
-          <span class="consola-inst-toggle"><input type="checkbox" id="consolaInt4J" data-semitones="5"><label for="consolaInt4J">4ta J</label></span>
-          <span class="consola-inst-toggle"><input type="checkbox" id="consolaInt5J" data-semitones="7"><label for="consolaInt5J">5ta J</label></span>
-        </div>
-        <div class="consola-inst-row" title="Controla la dirección de la sucesión para los intervalos tildados arriba. Ascendente: siempre sube. Descendente: siempre baja. Ninguno tildado: sube o baja al azar en cada paso. Tildar uno destilda automáticamente el otro.">
-          <span class="consola-inst-toggle"><input type="checkbox" id="consolaIntAsc"><label for="consolaIntAsc">Ascendente &#8593;</label></span>
-          <span class="consola-inst-toggle"><input type="checkbox" id="consolaIntDesc"><label for="consolaIntDesc">Descendente &#8595;</label></span>
+          <span class="consola-inst-toggle"><input type="checkbox" id="consolaInt2M" data-semitones="2" data-direction="down"><label for="consolaInt2M">2da M &#8595;</label></span>
+          <span class="consola-inst-toggle"><input type="checkbox" id="consolaInt3m" data-semitones="3" data-direction="down"><label for="consolaInt3m">3ra m &#8595;</label></span>
+          <span class="consola-inst-toggle"><input type="checkbox" id="consolaInt3M" data-semitones="4" data-direction="down"><label for="consolaInt3M">3ra M &#8595;</label></span>
+          <span class="consola-inst-toggle"><input type="checkbox" id="consolaInt4J" data-semitones="5" data-direction="down"><label for="consolaInt4J">4ta J &#8595;</label></span>
+          <span class="consola-inst-toggle"><input type="checkbox" id="consolaInt5J" data-semitones="7" data-direction="down"><label for="consolaInt5J">5ta J &#8595;</label></span>
         </div>
       </div>
       <div class="consola-field">
@@ -1008,8 +1013,21 @@
         <button type="button" class="chip" id="consolaStopBtn" disabled>&#9632; Detener</button>
         <button type="button" class="chip" id="consolaResetBtn" title="Pánico: corta de golpe cualquier nota que haya quedado sonando (MIDI all notes off) — a diferencia de Detener, funciona aunque no esté reproduciendo.">&#128721; Reset</button>
         <button type="button" class="chip" id="consolaMoreCompingBtn" title="Agrega una QUINTA pista MIDI, con timbre de cuerdas (strings), que dobla cada nota de la melodía junto con 1 o 2 notas más del acorde vigente en ese instante (siempre del mismo set, nunca una nota ajena) — el grupito entero queda siempre pegado a la nota de melodía, a lo sumo a una octava o dos de distancia.">moreComping</button>
-        <button type="button" class="chip" id="consolaBebopBtn" title="Agrega una SEXTA pista MIDI: una línea melódica INDEPENDIENTE (no dobla a la melodía principal, tiene su propia nota en cada instante), elegida por función tonal dentro del mismo set — chord tone (nota del acorde vigente) en los tiempos fuertes, y nota del resto del set (tensión) en los tiempos débiles, aproximando por el paso más chico disponible hacia el próximo acorde. Instrumento elegible abajo en el mini mixer (Sax tenor por defecto). Apagada por defecto — tiene su propio volumen en el mini mixer (🎷 Bebop, en 0% por defecto).">bebopMelody</button>
-        <span class="consola-inst-toggle" title="Versión alternativa de bebopMelody: en vez de la heurística chord-tone/tensión genérica, usa las reglas melódicas de Barry Harris (escala '6th diminished') — chord-tone garantizada en cada tiempo por construcción de la escala, con aproximación cromática. Solo tiene efecto si el set de 8 notas elegido es Forte 8-26 (mayor 6ta disminuida) u 8-23 (dominante/bebop mixolidia) — con cualquier otro set, bebopMelody sigue funcionando igual que siempre (heurística genérica)."><input type="checkbox" id="consolaHarrisBebopChk"><label for="consolaHarrisBebopChk">🎼 Harris</label></span>
+        <button type="button" class="chip" id="consolaBebopBtn" title="Agrega una SEXTA pista MIDI: una línea melódica INDEPENDIENTE (no dobla a la melodía principal, tiene su propia nota en cada instante) en corcheas fijas, en el modo (o modos) que elijas con los checkboxes Arpeggios/Scales de al lado. Instrumento elegible abajo en el mini mixer (Sax tenor por defecto). Apagada por defecto — tiene su propio volumen en el mini mixer (🎷 Bebop, en 0% por defecto).">bebopMelody</button>
+        <span class="consola-bebop-mode" style="display:inline-flex;align-items:center;gap:10px;margin-left:2px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.04em;color:var(--ink-muted);">
+          <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;" title="bebopMelody arpegia en corcheas las notas del acorde vigente (ascendente en compases pares, descendente en impares) — siempre dentro del set elegido, nunca una nota ajena.">
+            <input type="checkbox" id="consolaBebopArpChk" checked> Arpeggios
+          </label>
+          <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;" title="bebopMelody toca en corcheas la escala mayor completa de la tónica del acorde vigente. ÚNICA excepción del motor a &quot;nunca nota ajena al set&quot;: la escala mayor casi siempre trae alguna nota fuera del set de Solomon elegido, y se toca sin filtrar, a pedido explícito. Si Arpeggios también está tildado, alterna por compás (impar=arpegio, par=escala); si ninguno está tildado, bebopMelody no suena.">
+            <input type="checkbox" id="consolaBebopScaleChk"> Scales
+          </label>
+          <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;" title="Cambia el RITMO de bebopMelody (aplica con Arpeggios, Scales o los dos): en vez de 8 corcheas por compás, toca 16 semicorcheas por compás (100% semicorcheas, sin mezcla). No afecta qué notas suenan, solo su duración.">
+            <input type="checkbox" id="consolaBebopSemiChk"> Semicorcheas
+          </label>
+          <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;" title="Restringe el registro de bebopMelody a 2 octavas: toda nota que caiga fuera de ese rango se transpone una octava arriba o abajo (la que corresponda) hasta entrar en rango — misma clase de altura, más cerca del resto de la línea. No cambia qué notas ni ritmo, solo evita saltos de octava grandes.">
+            <input type="checkbox" id="consolaBebopNarrowChk"> narrowRegister
+          </label>
+        </span>
         <button type="button" class="chip" id="consolaSoloPianoBtn" title="Modo solo: pone Armonía, Melodía y Bajo en preset Piano, y muda Batería/moreComping/bebopMelody/Doblar melodía — sin tocar ningún otro ajuste. Volvé a apretarlo para restaurar los presets y volúmenes que tenías antes.">🎹 SoloPiano</button>
       </div>
     </div>
@@ -1142,9 +1160,9 @@
       </div>
     </div>
 
+    <div id="consolaBebopRollLabel" style="margin-bottom:6px;font-size:12px;font-weight:600;color:var(--ink-muted);padding-top:0;">🎷 bebopMelody — piano roll separado (aislado del principal)</div>
+    <div class="consola-roll-wrap" id="consolaBebopRollHost" style="min-height:60px;margin-bottom:20px;"></div>
     <div class="consola-roll-wrap" id="consolaRollHost"></div>
-    <div id="consolaBebopRollLabel" style="margin-top:28px;margin-bottom:6px;font-size:12px;font-weight:600;color:var(--ink-muted);border-top:1px dashed var(--line);padding-top:16px;">🎷 bebopMelody — piano roll separado (aislado del principal)</div>
-    <div class="consola-roll-wrap" id="consolaBebopRollHost" style="min-height:60px;"></div>
 
     <p class="consola-foot">
       Armonía: cada reataque sortea un subset del set elegido (o el set completo) con su propia transposición e inversión, nunca la misma combinación dos veces seguidas ni una nota ajena al set; el bajo de ese compás cubre lo que ese subset dejó afuera, así acorde+bajo siempre reconstruyen el set completo. Las notas nunca entran en bloque: se escalonan, con más distancia entre ataques cuanto más dura el acorde. &#8634; Normalito toca el set completo sin subsets ni transposición, una sola inversión por compás.
@@ -2472,30 +2490,40 @@ function toggleModule(button) {
     if (expanded) {
       contentEl.classList.remove('expanded');
       contentEl.classList.add('collapsed');
-      contentEl.style.maxHeight = '0px';
+      contentEl.style.maxHeight = ""; // deja que .collapsed (max-height:0) mande
     } else {
       contentEl.classList.remove('collapsed');
       contentEl.classList.add('expanded');
-      // Alto real del contenido, no el tope fijo de 2000px que trae la
-      // clase CSS .collapsible-content.expanded — con dos piano rolls
-      // (el principal + el separado de bebopMelody) más el mini mixer,
-      // el contenido puede superar ese tope y quedar cortado por el
-      // overflow:hidden del contenedor. Se recalcula también después
-      // de cada regeneración (ver resizeCollapsible más abajo).
-      contentEl.style.maxHeight = contentEl.scrollHeight + 'px';
+      ajustarAltoModuloExpandido(contentEl);
     }
   }
 }
-// Recalcula el alto máximo de un panel colapsable YA ABIERTO para que
-// siga cubriendo todo su contenido después de que ese contenido cambió
-// de tamaño (p. ej. al regenerar la consola, que puede agrandar o
-// achicar el piano roll principal y/o el de bebopMelody). Si el panel
-// está cerrado, no hace nada.
-function resizeCollapsible(contentEl) {
-  if (contentEl && contentEl.classList.contains('expanded')) {
-    contentEl.style.maxHeight = contentEl.scrollHeight + 'px';
-  }
+
+/* Fija el max-height EXACTO (scrollHeight real) de un módulo colapsable
+   ya expandido, en vez de depender del tope fijo de la clase CSS — ese
+   tope fijo (2000px) fue justo la causa del bug "se ve cortado el piano
+   roll de melodia bebop": el contenido de SetMusicBox lo supera y
+   overflow:hidden se comía lo último. Se llama al expandir y, vía el
+   ResizeObserver de abajo, cada vez que el contenido cambia de alto
+   mientras el módulo sigue expandido (nueva selección de notas, roll de
+   bebop que aparece o crece, etc.) — así el corte no puede volver a pasar
+   aunque el contenido crezca más adelante. */
+function ajustarAltoModuloExpandido(contentEl) {
+  if (!contentEl || !contentEl.classList.contains('expanded')) return;
+  contentEl.style.maxHeight = contentEl.scrollHeight + "px";
 }
+
+(function () {
+  if (typeof ResizeObserver === "undefined") return;
+  var ro = new ResizeObserver(function (entries) {
+    entries.forEach(function (entry) {
+      ajustarAltoModuloExpandido(entry.target);
+    });
+  });
+  document.querySelectorAll(".collapsible-content").forEach(function (el) {
+    ro.observe(el);
+  });
+})();
 
 const NOTE_NAMES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
 const selected = new Set();
@@ -4000,6 +4028,28 @@ const SF2_PERC_URL = "Soundfonts/Percussion.sf2";
 const SF2_SUPER_BASS_URL = "Soundfonts/Premium/super%20bass.sf2";
 const SF2_DEFAULT_PRESET = { bank: 0, preset: 0 }; // Grand Piano
 
+// ---- HIFI: reemplazos premium de instrumentos puntuales de Instruments.sf2
+// ------------------------------------------------------------------------
+// Checkbox "HIFI" (al lado del botón "Sonido real"): cuando está tildado,
+// SetMusicBox usa, para las instrument keys listadas acá, este .sf2 aparte
+// en vez del programa GM correspondiente de Instruments.sf2 — el resto de
+// los instrumentos sigue igual. Cada entrada es un archivo INDEPENDIENTE
+// en Soundfonts/Premium/ (no se cargan con el botón "Sonido real" ni suman
+// peso a esa carga inicial), descargado bajo demanda recién al tildar el
+// checkbox por primera vez. Para sumar un reemplazo nuevo alcanza con
+// agregar una entrada acá (mismo "key" que usa SM2_INSTRUMENTS/SM2_PROGRAMS
+// más abajo) — no hace falta tocar el resto del motor.
+const HIFI_FILES = [
+  { key: "piano", url: "Soundfonts/Premium/Yamaha%20CFX%20Grand.sf2", bank: 0, program: 0, label: "Yamaha CFX Grand" },
+  { key: "flute", url: "Soundfonts/Premium/super%20flute.sf2",        bank: 0, program: 0, label: "Good Flute" },
+];
+const HIFI_FILES_BY_KEY = {};
+HIFI_FILES.forEach((f) => { HIFI_FILES_BY_KEY[f.key] = f; });
+let hifiEnabled = false;
+const hifiFontByKey = {};              // key -> .sf2 parseado (una vez listo)
+const hifiStateByKey = {};             // key -> idle | loading | ready | error
+HIFI_FILES.forEach((f) => { hifiStateByKey[f.key] = "idle"; });
+
 const SF2_GEN = {
   INSTRUMENT: 41, KEYRANGE: 43, VELRANGE: 44, SAMPLEID: 53, SAMPLEMODES: 54,
   OVERRIDE_ROOTKEY: 58, FINETUNE: 52, COARSETUNE: 51,
@@ -4024,6 +4074,67 @@ let sf2SuperBassState = "idle"; // idle | loading | ready | error — carga apar
 let sf2SuperBassFont = null;    // Soundfonts/Premium/super bass.sf2 (parseado); null hasta elegir el preset
 let sf2PresetIdx = -1;
 const sf2BufferCache = new Map();
+
+// ---- Carga local (abriendo el .html directo con doble clic, sin server)
+// ---------------------------------------------------------------------
+// Bajo file:// el navegador bloquea fetch() a archivos locales por CORS
+// (Chrome: "Access to fetch ... has been blocked by CORS policy") — así
+// que ahí no se puede simplemente pedir "Soundfonts/Instruments.sf2".
+// En vez de eso, se le pide al usuario UNA vez que elija la carpeta
+// "Soundfonts" (input file con webkitdirectory: no dispara fetch, lee
+// los archivos directo del disco, sin problema de CORS) y de ahí en más
+// se busca cada archivo por su nombre (sin importar en qué subcarpeta
+// esté dentro de lo elegido) en vez de bajarlo. Sirviendo por http(s)
+// (GitHub Pages, un server local, etc.) nada de esto se activa — sigue
+// yendo todo por fetch como siempre.
+const SF2_IS_LOCAL_FILE = (location.protocol === "file:");
+let sf2LocalFileMap = null; // null hasta elegir carpeta; después: nombre de archivo (minúsculas) -> File
+function sf2BasenameOfUrl(url) {
+  return decodeURIComponent(url.split("/").pop());
+}
+// Pide la carpeta una sola vez (mientras sf2LocalFileMap sea null); si el
+// usuario cancela, rechaza la promesa — el llamador ya tiene try/catch
+// (mismo camino de error que un fetch fallido) y puede reintentar.
+function sf2PromptLocalFolder() {
+  return new Promise((resolve, reject) => {
+    const input = document.getElementById("sf2LocalPicker");
+    let settled = false;
+    function cleanup() {
+      input.removeEventListener("change", onChange);
+      input.removeEventListener("cancel", onCancel);
+    }
+    function onChange() {
+      if (settled) return; settled = true; cleanup();
+      const map = new Map();
+      Array.from(input.files || []).forEach((f) => map.set(f.name.toLowerCase(), f));
+      if (map.size === 0) { reject(new Error("No se eligió ninguna carpeta")); return; }
+      sf2LocalFileMap = map;
+      resolve();
+    }
+    function onCancel() {
+      if (settled) return; settled = true; cleanup();
+      reject(new Error("Se canceló la selección de carpeta"));
+    }
+    input.addEventListener("change", onChange);
+    input.addEventListener("cancel", onCancel);
+    input.value = ""; // permite re-elegir la misma carpeta si hace falta
+    input.click();
+  });
+}
+// Reemplazo de sf2FetchWithProgress cuando estamos en file:// — busca el
+// archivo por nombre entre los que el usuario ya eligió (pide la carpeta
+// primero si todavía no la eligió) y lo lee directo del disco (File.
+// arrayBuffer(), sin red ni CORS de por medio). Sirviendo por http(s) usa
+// fetch como siempre (sf2FetchWithProgress, sin cambios).
+async function sf2GetArrayBuffer(url, onProgress) {
+  if (!SF2_IS_LOCAL_FILE) return sf2FetchWithProgress(url, onProgress);
+  if (!sf2LocalFileMap) await sf2PromptLocalFolder();
+  const basename = sf2BasenameOfUrl(url);
+  const file = sf2LocalFileMap.get(basename.toLowerCase());
+  if (!file) throw new Error("No encontré \"" + basename + "\" en la carpeta elegida");
+  if (onProgress) onProgress(1);
+  return await file.arrayBuffer();
+}
 
 async function sf2FetchWithProgress(url, onProgress) {
   const resp = await fetch(url);
@@ -4367,6 +4478,32 @@ async function sf2LoadSuperBassIfNeeded() {
     sf2SuperBassFont = null;
   }
 }
+// Carga (bajo demanda, una sola vez por archivo) cada .sf2 de HIFI_FILES
+// que todavía no esté listo/cargando — se dispara al tildar el checkbox
+// "HIFI" por primera vez. Un archivo que falla (404, red) no bloquea a
+// los demás: cada uno se resuelve por separado, y ese instrumento en
+// particular sigue sonando con el programa GM de siempre hasta que se
+// pueda cargar (ver sm2ResolveFontAndProgram, que chequea el estado real
+// antes de usarlo).
+async function hifiLoadAllIfNeeded() {
+  await Promise.all(HIFI_FILES.map(async (f) => {
+    if (hifiStateByKey[f.key] === "ready" || hifiStateByKey[f.key] === "loading") return;
+    hifiStateByKey[f.key] = "loading";
+    try {
+      const buf = await sf2FetchWithProgress(f.url);
+      hifiFontByKey[f.key] = sf2ParseFont(buf);
+      hifiStateByKey[f.key] = "ready";
+    } catch (err) {
+      console.error("No se pudo cargar HIFI (" + f.label + "):", err);
+      hifiStateByKey[f.key] = "error";
+      hifiFontByKey[f.key] = null;
+    }
+  }));
+}
+document.getElementById("hifiChk").addEventListener("change", function () {
+  hifiEnabled = this.checked;
+  if (hifiEnabled) hifiLoadAllIfNeeded();
+});
 async function sf2Activate(btn) {
   sf2State = "loading";
   btn.disabled = true;
@@ -6308,301 +6445,157 @@ function runAnalysis() {
   })();
 
   /* ================================================================
-     MÓDULO CHORDSCALE — utilidad pura (sin DOM, sin estado propio) de
-     selección de nota por función tonal, adaptada al principio de
-     Stoikheion Oracle: NUNCA agrega una nota ajena al set elegido.
-
-     La "escala" no es una escala diatónica externa (eso agregaría
-     notas que el set no tiene) — es el SET COMPLETO elegido
-     (rootChord). Dentro de ese set se distinguen dos funciones:
-       - chordTones:   clases de tono presentes en el voicing vigente
-                        de este instante (currentChordAt).
-       - tensionTones: el resto del set — no suena en el voicing de
-                        este instante, pero sigue siendo del mismo set
-                        (mismo concepto que meta[bar].complement, que
-                        ya usa el bajo).
-     Regla que se conserva de chord-scale theory: chordTones en
-     tiempos fuertes (nota "objetivo"), tensionTones permitidas en
-     tiempos débiles, aproximando el próximo target por el paso más
-     chico disponible DENTRO DEL SET (no un semitono cromático
-     externo).
-     ================================================================ */
-  var CHORDSCALE = (function(){
-    function classify(rootChordMidi, currentChordMidi){
-      var chordPCs = {};
-      currentChordMidi.forEach(function(m){ chordPCs[mod12(m)] = true; });
-      var chordTones = [], tensionTones = [], seenPC = {};
-      rootChordMidi.forEach(function(m){
-        var pc = mod12(m);
-        if(seenPC[pc]) return;
-        seenPC[pc] = true;
-        (chordPCs[pc] ? chordTones : tensionTones).push(pc);
-      });
-      return { chordTones: chordTones, tensionTones: tensionTones };
-    }
-    // Fuerza de tiempo dentro del compás (4/4 fijo, igual que el resto
-    // del motor): 2 = tiempo fuerte (beat 1), 1 = medio (beat 3), 0 =
-    // débil. startBeat puede ser absoluto (bar*4+offset): el módulo lo
-    // reduce mod 4, así que da igual.
-    function beatStrength(startBeat){
-      var b = ((startBeat % BEATS_PER_BAR) + BEATS_PER_BAR) % BEATS_PER_BAR;
-      if(Math.abs(b - 0) < 1e-6) return 2;
-      if(Math.abs(b - 2) < 1e-6) return 1;
-      return 0;
-    }
-    // De una lista de clases de tono candidatas, la que registra más
-    // cerca (en semitonos) de refMidi — mismo patrón que ya usa
-    // MORECOMPING.nearestMidiForPc para no saltar de octava de más.
-    function nearestToRef(candidatePCs, refMidi){
-      var best = null, bestDist = Infinity;
-      candidatePCs.forEach(function(pc){
-        for(var oct=-1; oct<=1; oct++){
-          var base = Math.floor(refMidi/12)*12 + pc + oct*12;
-          var dist = Math.abs(base - refMidi);
-          if(dist < bestDist){ bestDist = dist; best = base; }
-        }
-      });
-      return best;
-    }
-    // Aproximación por "paso" dentro del set (no cromático externo): de
-    // tensionTones (o chordTones si no hay tensiones disponibles),
-    // elige la que quede más cerca de cualquier target del PRÓXIMO
-    // voicing (nextChordMidi) — "target note technique" de chord-scale,
-    // con el paso medido en el set elegido.
-    function approachTone(tensionTones, chordTones, nextChordMidi, ref){
-      var nextPCs = {};
-      nextChordMidi.forEach(function(m){ nextPCs[mod12(m)] = true; });
-      var pool = tensionTones.length ? tensionTones : chordTones;
-      var best = null, bestScore = Infinity;
-      pool.forEach(function(pc){
-        var candMidi = nearestToRef([pc], ref);
-        var minDistToTarget = Infinity;
-        Object.keys(nextPCs).forEach(function(tpcStr){
-          var t = nearestToRef([Number(tpcStr)], candMidi);
-          minDistToTarget = Math.min(minDistToTarget, Math.abs(t - candMidi));
-        });
-        if(minDistToTarget < bestScore){ bestScore = minDistToTarget; best = candMidi; }
-      });
-      return best != null ? best : nearestToRef(chordTones, ref);
-    }
-    // Punto central: pide la nota para UN evento de melodía.
-    //  rootChordMidi:    MIDI del set completo elegido.
-    //  currentChordMidi: MIDI del voicing vigente en este instante.
-    //  startBeat:         posición del evento (absoluta o relativa, da igual).
-    //  prevMidi:          última nota elegida (null si es la primera).
-    //  nextChordMidi:      voicing vigente en el SIGUIENTE evento, para
-    //                     look-ahead (null si no hay).
-    //  registerCenter:     referencia de octava si prevMidi es null.
-    // Devuelve MIDI absoluto — siempre una clase de tono del rootChord.
-    function pickNote(opts){
-      var rootChordMidi = opts.rootChordMidi, currentChordMidi = opts.currentChordMidi,
-          startBeat = opts.startBeat, prevMidi = opts.prevMidi,
-          nextChordMidi = opts.nextChordMidi, registerCenter = opts.registerCenter;
-      var cls = classify(rootChordMidi, currentChordMidi);
-      var chordTones = cls.chordTones, tensionTones = cls.tensionTones;
-      var ref = prevMidi != null ? prevMidi : registerCenter;
-      var strength = beatStrength(startBeat);
-
-      if(strength === 2 || tensionTones.length === 0){
-        return nearestToRef(chordTones.length ? chordTones : tensionTones, ref);
-      }
-      if(strength === 1){
-        if(nextChordMidi && Math.random() < 0.35) return approachTone(tensionTones, chordTones, nextChordMidi, ref);
-        return nearestToRef(chordTones, ref);
-      }
-      if(nextChordMidi) return approachTone(tensionTones, chordTones, nextChordMidi, ref);
-      var pool = Math.random() < 0.5 ? tensionTones : chordTones;
-      return nearestToRef(pool.length ? pool : chordTones, ref);
-    }
-    return { classify: classify, beatStrength: beatStrength, pickNote: pickNote };
-  })();
-
-  /* ================================================================
-     MÓDULO HARRIS — versión alternativa de bebopMelody (checkbox
-     #consolaHarrisBebopChk, apagado por defecto), reglas melódicas de
-     Barry Harris. Solo aplica cuando el set completo elegido (8 notas)
-     es Forte 8-26 (mayor 6ta disminuida, tu catálogo ya lo llama
-     "Barry Harris") u 8-23 (dominante/bebop mixolidia — misma clase
-     de set que la escala dominante 6th-dim) — con cualquier otro set
-     no hace nada y BEBOPMELODY sigue usando CHORDSCALE como siempre.
-
-     Regla central: la escala tiene 8 notas alternando chord-tone
-     (grados 1,3,5,6/7 — índices pares) y aux-tone (índices impares).
-     En vez de recorrerla nota-por-corchea con índice fijo (frágil con
-     ritmos irregulares — MIXDUR, fills, etc.), fuerza chord-tone en
-     cada tiempo fuerte/medio (mismo criterio que CHORDSCALE.beatStrength)
-     y en el contratiempo elige la nota de escala vecina a la anterior
-     (movimiento por grado), con aproximación cromática ocasional a la
-     chord-tone que viene.
-     ================================================================ */
-  var HARRIS = (function(){
-    var MAJOR_6DIM_STEPS = [0,2,4,5,7,8,9,11]; // 1,2,3,4,5,b6,6,7
-    var DOM_6DIM_STEPS   = [0,2,4,5,7,9,10,11]; // 1,2,3,4,5,6,b7,7
-
-    function scaleFor(rootPc, type){
-      var steps = type === "dominant" ? DOM_6DIM_STEPS : MAJOR_6DIM_STEPS;
-      return steps.map(function(s){ return mod12(rootPc + s); });
-    }
-
-    // Detecta si rootChordMidi (el set completo, 8 notas) es una de las
-    // dos escalas de Harris y en qué tónica, probando cada nota propia
-    // del set como candidata a raíz hasta que el patrón matchee exacto.
-    // Devuelve null si no aplica (cualquier otro set, o menos/más de 8
-    // notas) — ese null es lo que hace que BEBOPMELODY caiga de vuelta
-    // a CHORDSCALE sin romper nada.
-    function detect(rootChordMidi){
-      if(!rootChordMidi) return null;
-      var pcs = Array.from(new Set(rootChordMidi.map(mod12))).sort(function(a,b){return a-b;});
-      if(pcs.length !== 8) return null;
-      var info = analyze(CHORDS_DATA, pcs);
-      var type = info.forte_code === "8-26" ? "major"
-               : info.forte_code === "8-23" ? "dominant"
-               : null;
-      if(!type) return null;
-      for(var i=0;i<pcs.length;i++){
-        var cand = scaleFor(pcs[i], type).slice().sort(function(a,b){return a-b;});
-        var match = cand.length === pcs.length && cand.every(function(v,idx){ return v===pcs[idx]; });
-        if(match) return { rootPc: pcs[i], type: type };
-      }
-      return null; // no debería pasar si el forte_code dio 8-26/8-23, pero por las dudas
-    }
-
-    function nearestToRef(candidatePCs, refMidi){
-      var best = null, bestDist = Infinity;
-      candidatePCs.forEach(function(pc){
-        for(var oct=-1; oct<=1; oct++){
-          var base = Math.floor(refMidi/12)*12 + pc + oct*12;
-          var dist = Math.abs(base - refMidi);
-          if(dist < bestDist){ bestDist = dist; best = base; }
-        }
-      });
-      return best;
-    }
-
-    // Mismo contrato de entrada que CHORDSCALE.pickNote (menos
-    // rootChordMidi/currentChordMidi, que acá vienen implícitos en ctx)
-    // — reemplazo drop-in para BEBOPMELODY.buildEvents.
-    function pickNote(opts, ctx){
-      var scale = scaleFor(ctx.rootPc, ctx.type);
-      var chordTones = [scale[0], scale[2], scale[4], scale[6]];
-      var ref = opts.prevMidi != null ? opts.prevMidi : opts.registerCenter;
-      var strength = CHORDSCALE.beatStrength(opts.startBeat);
-
-      if(strength >= 1){
-        // Tiempo fuerte/medio: chord-tone garantizada — es la
-        // propiedad estructural de la escala, no una regla aparte.
-        return nearestToRef(chordTones, ref);
-      }
-      // Contratiempo: aproximación cromática ocasional a la próxima
-      // chord-tone esperada...
-      if(opts.nextChordMidi && Math.random() < 0.3){
-        var target = nearestToRef(chordTones, ref);
-        return target - 1;
-      }
-      // ...si no, vecino de escala (movimiento por grado, no salto),
-      // empujando al azar hacia arriba o abajo desde la nota anterior.
-      return nearestToRef(scale, ref + (Math.random() < 0.5 ? 1 : -1));
-    }
-
-    return { detect: detect, pickNote: pickNote, scaleFor: scaleFor };
-  })();
-
-  /* ================================================================
      MÓDULO BEBOP MELODY — botón #consolaBebopBtn (apagado por
      defecto, mismo patrón "primary" que moreComping) + volumen propio
      #mixBebopVol (0% por defecto; al prender el botón se auto-sube a
      100% la primera vez — ver su listener más abajo). Agrega una
-     SEXTA pista MIDI: a diferencia de
-     moreComping (que DOBLA la melodía), esta es una línea melódica
-     INDEPENDIENTE — una nota propia por cada evento de la melodía
-     principal (mismo ritmo, mismos silencios), elegida con
-     CHORDSCALE.pickNote en vez de repetir la nota de la melodía.
-     Sigue siendo, nota a nota, un recorte del mismo set elegido.
+     SEXTA pista MIDI: a diferencia de moreComping (que DOBLA la
+     melodía), esta es una línea propia, con DOS modos elegibles por
+     checkbox (#consolaBebopArpChk / #consolaBebopScaleChk), corchea
+     fija en ambos por defecto, sin silencios. Un tercer checkbox
+     (#consolaBebopSemiChk, "Semicorcheas") cambia el RITMO, y un
+     cuarto (#consolaBebopNarrowChk, "narrowRegister") restringe el
+     registro — los dos son ortogonales a los modos de arriba (aplican
+     igual toquen Arpeggios, Scales o los dos alternados):
+       - Arpeggios: SOLO arpegia el acorde vigente en cada instante
+         (chordAt) — recorre las notas del voicing en orden (ascendente
+         en compases pares, descendente en impares), subiendo de
+         octava si el acorde tiene menos notas que pasos del arpegio.
+         Nunca una nota ajena al acorde/set (usa las mismas notas que
+         ya calculó el motor armónico).
+       - Scales: toca la escala MAYOR de la tónica del acorde vigente
+         (tónica detectada con bestRootQuality, igual que el cifrado),
+         recorriendo sus 7 grados ascendente/descendente igual que el
+         arpegio. ADVERTENCIA EXPLÍCITA, a pedido del usuario: esta es
+         la ÚNICA excepción en todo el motor a la regla "nunca una nota
+         fuera del set elegido" — la escala mayor completa casi siempre
+         trae alguna nota ajena al set de Solomon, y se toca así, sin
+         filtrar, porque así se pidió.
+       - Si los dos checkboxes de arriba están tildados, alterna por
+         compás (impares en 1-index = bar par en 0-index → Arpeggios;
+         pares → Scales). Si NINGUNO está tildado, bebopMelody no suena
+         aunque el botón esté prendido.
+       - Semicorcheas (desmarcado, por defecto): ritmo fijo, todo en
+         corcheas (0.5 tiempo), como antes.
+       - Semicorcheas (marcado): ritmo fijo, todo en semicorcheas (0.25
+         tiempo) — 16 notas por compás en vez de 8, sin mezcla con
+         corcheas.
+       - narrowRegister (desmarcado, por defecto): sin restricción
+         extra — solo el piso/techo de seguridad general del motor
+         (MELODY_MIDI_FLOOR..CEIL, ~3.4 octavas).
+       - narrowRegister (marcado): restringe a un rango fijo de 2
+         octavas (ver NARROW_FLOOR/NARROW_CEIL más abajo) — cualquier
+         nota que caiga fuera de ese rango se transpone una octava
+         arriba o abajo, la que corresponda, hasta entrar (misma clase
+         de altura, nunca cambia qué nota "es"). No afecta qué notas ni
+         ritmo, solo evita saltos de octava grandes entre voicings.
+     En cuanto cambia el acorde vigente (nuevo reataque de armonía,
+     incluso a mitad de compás) o cambia el modo (borde entre un compás
+     de arpegio y uno de escala), la secuencia arranca de nuevo desde
+     el primer grado/nota de ESE tramo nuevo — el ritmo (fijo o mixto)
+     no afecta este reinicio.
      ================================================================ */
   var BEBOPMELODY = (function(){
+    var MAJOR_STEPS = [0,2,4,5,7,9,11];
     function enabled(){
       var btn = document.getElementById("consolaBebopBtn");
       return !!(btn && btn.classList.contains("primary"));
     }
-    function harrisModeChecked(){
-      var chk = document.getElementById("consolaHarrisBebopChk");
-      return !!(chk && chk.checked);
+    function arpChecked(){
+      var el = document.getElementById("consolaBebopArpChk");
+      return !!(el && el.checked);
     }
-    // melodyEvents: eventos de la melodía principal (mismo contrato que
-    // recibe MORECOMPING.buildEvents) — se reusa su ritmo (startBeat/
-    // durBeats/bar), solo cambia la nota.
+    function scaleChecked(){
+      var el = document.getElementById("consolaBebopScaleChk");
+      return !!(el && el.checked);
+    }
+    function semiChecked(){
+      var el = document.getElementById("consolaBebopSemiChk");
+      return !!(el && el.checked);
+    }
+    function narrowChecked(){
+      var el = document.getElementById("consolaBebopNarrowChk");
+      return !!(el && el.checked);
+    }
+    // Escala mayor de rootPc, ubicada en la octava más cercana a
+    // anchorMidi (para que quede en el mismo registro que el acorde
+    // vigente en vez de saltar de octava al azar).
+    function majorScaleNear(rootPc, anchorMidi){
+      var baseOct = anchorMidi - mod12(anchorMidi - rootPc);
+      return MAJOR_STEPS.map(function(s){ return baseOct + s; });
+    }
+    // narrowRegister: restringe a un rango fijo de 2 octavas (24
+    // semitonos) — más angosto que el piso/techo de seguridad general
+    // (MELODY_MIDI_FLOOR..CEIL, ~3.4 octavas). Mismo mecanismo que
+    // clampMelodyRange: transpone una octava para arriba o para abajo
+    // (la que corresponda) hasta entrar en rango, nunca cambia la clase
+    // de altura. Piso elegido = MELODY_MIDI_FLOOR (G3, el mismo piso
+    // general ya usado en todo el motor), techo = piso + 24 (G5).
+    // OJO: MELODY_MIDI_FLOOR se lee DENTRO de la función (no al armar
+    // este IIFE) — a la altura de este IIFE esa variable todavía no fue
+    // asignada (se define más abajo en el mismo scope) y hubiera dado
+    // undefined/NaN, dejando el checkbox sin efecto real.
+    function clampNarrowRegister(midi){
+      var floor = MELODY_MIDI_FLOOR;
+      var ceil = MELODY_MIDI_FLOOR + 24;
+      while(midi > ceil) midi -= 12;
+      while(midi < floor) midi += 12;
+      return midi;
+    }
+    // Pasos rítmicos de UN compás: {offset, dur} desde 0 hasta
+    // BEATS_PER_BAR. Desmarcado = 8 corcheas parejas (0.5). Marcado =
+    // 16 semicorcheas parejas (0.25) — 100% semicorcheas, sin mezcla.
+    function buildBarSteps(allSemi){
+      var out = [];
+      var dur = allSemi ? 0.25 : 0.5;
+      var n = Math.round(BEATS_PER_BAR / dur);
+      for(var k=0;k<n;k++) out.push({ offset: k*dur, dur: dur });
+      return out;
+    }
+    // numBars: NUM_BARS.
     // chordAt(bar, offsetInBar): mismo contrato que ya usa MORECOMPING
     // (currentChordAt en modo libre, o state.progression[bar] en
     // Normalito — el segundo argumento se ignora en ese caso).
-    // rootChordMidi: el set completo elegido (state.rootChord).
-    function buildEvents(melodyEvents, chordAt, rootChordMidi){
-      // Se detecta UNA vez por generación (no por nota): si el set
-      // completo no es 8-26/8-23, harrisCtx queda null y el resto del
-      // loop usa CHORDSCALE exactamente como antes.
-      var harrisCtx = harrisModeChecked() ? HARRIS.detect(rootChordMidi) : null;
-
-      if(harrisCtx){
-        // TEST: en modo Harris, en vez de heredar el ritmo (irregular)
-        // de la melodía principal, arma su PROPIA grilla de corcheas
-        // rectas para todo el segmento — así la propiedad estructural
-        // de la escala (chord-tone garantizada en cada tiempo) queda
-        // perfectamente alineada; con ritmos mixtos (silencios, fills,
-        // figuras largas) esa alineación se pierde y la línea suena
-        // mal. Temporal, a pedido, para poder testear la lógica de
-        // Harris aislada del ritmo de la melodía principal.
-        var harrisEvents = [];
-        var harrisPrevMidi = null;
-        var totalBeats = NUM_BARS * BEATS_PER_BAR;
-        var step = 0.5; // corchea
-        for(var beat=0; beat<totalBeats - 1e-9; beat += step){
-          var hBar = Math.floor(beat/BEATS_PER_BAR + 1e-9);
-          var hOffset = beat - hBar*BEATS_PER_BAR;
-          var hChordMidi = chordAt(hBar, hOffset) || [];
-          var hNextBeat = beat + step;
-          var hNextChordMidi = null;
-          if(hNextBeat < totalBeats - 1e-9){
-            var hNextBar = Math.floor(hNextBeat/BEATS_PER_BAR + 1e-9);
-            var hNextOffset = hNextBeat - hNextBar*BEATS_PER_BAR;
-            hNextChordMidi = chordAt(hNextBar, hNextOffset) || null;
-          }
-          var hRegisterCenter = hChordMidi.length ? hChordMidi[0] : (rootChordMidi[0] || 60);
-          var hMidi = HARRIS.pickNote({
-            startBeat: beat,
-            prevMidi: harrisPrevMidi,
-            nextChordMidi: hNextChordMidi,
-            registerCenter: hRegisterCenter
-          }, harrisCtx);
-          hMidi = clampMelodyRange(hMidi);
-          harrisPrevMidi = hMidi;
-          harrisEvents.push({ midi: hMidi, startBeat: beat, durBeats: step, bar: hBar });
-        }
-        return harrisEvents;
-      }
-
+    function buildEvents(numBars, chordAt){
+      var doArp = arpChecked();
+      var doScale = scaleChecked();
+      var mixedRhythm = semiChecked();
+      var doNarrow = narrowChecked();
+      if(!doArp && !doScale) return []; // ningún modo tildado: silencio
       var events = [];
-      var prevMidi = null;
-      melodyEvents.forEach(function(mEv, idx){
-        var offsetInBar = mEv.startBeat - mEv.bar*BEATS_PER_BAR;
-        var currentChordMidi = chordAt(mEv.bar, offsetInBar) || [];
-        var nextEv = melodyEvents[idx+1];
-        var nextChordMidi = null;
-        if(nextEv){
-          var nextOffset = nextEv.startBeat - nextEv.bar*BEATS_PER_BAR;
-          nextChordMidi = chordAt(nextEv.bar, nextOffset) || null;
+      var prevKey = null;
+      var idx = 0;
+      for(var bar=0; bar<numBars; bar++){
+        var useScale = doScale && (!doArp || (bar % 2 === 1));
+        var arpUp = (bar % 2 === 0);
+        var barSteps = buildBarSteps(mixedRhythm);
+        for(var si=0; si<barSteps.length; si++){
+          var offsetInBar = barSteps[si].offset;
+          var stepDur = barSteps[si].dur;
+          var startBeat = bar*BEATS_PER_BAR + offsetInBar;
+          var chordMidi = chordAt(bar, offsetInBar) || [];
+          if(!chordMidi.length) continue;
+          var tones;
+          var key;
+          if(useScale){
+            var rootPc = bestRootQuality(chordMidi.map(mod12)).rootPc;
+            var anchorMidi = Math.round(chordMidi.reduce(function(a,b){ return a+b; }, 0) / chordMidi.length);
+            tones = majorScaleNear(rootPc, anchorMidi);
+            key = "scale|" + rootPc;
+          } else {
+            tones = chordMidi.slice().sort(function(a,b){ return a-b; });
+            key = "arp|" + tones.map(mod12).join(",");
+          }
+          if(!arpUp) tones = tones.slice().reverse();
+          if(key !== prevKey){ idx = 0; prevKey = key; }
+          var n = tones.length;
+          var octLap = Math.floor(idx / n);
+          var midi = clampMelodyRange(tones[idx % n] + octLap*12);
+          if(doNarrow) midi = clampNarrowRegister(midi);
+          events.push({ midi: midi, startBeat: startBeat, durBeats: stepDur, bar: bar });
+          idx++;
         }
-        var registerCenter = currentChordMidi.length ? currentChordMidi[0] : (rootChordMidi[0] || 60);
-        var midi = CHORDSCALE.pickNote({
-              rootChordMidi: rootChordMidi,
-              currentChordMidi: currentChordMidi,
-              startBeat: mEv.startBeat,
-              prevMidi: prevMidi,
-              nextChordMidi: nextChordMidi,
-              registerCenter: registerCenter
-            });
-        midi = clampMelodyRange(midi);
-        prevMidi = midi;
-        events.push({ midi: midi, startBeat: mEv.startBeat, durBeats: mEv.durBeats, bar: mEv.bar });
-      });
+      }
       return events;
     }
     return { enabled: enabled, buildEvents: buildEvents };
@@ -6812,36 +6805,22 @@ function runAnalysis() {
   // MODO TEST — intervalos de transposición fijos: si hay uno o más
   // checkboxes #consolaInt* tildados, randomChromaTransposition() ya no
   // usa el rango del slider Chromatism — sortea entre esos intervalos
-  // (en semitonos). La dirección (sube/baja) de la sucesión se controla
-  // con los checkboxes globales #consolaIntAsc / #consolaIntDesc (ver
-  // transpositionDirectionOverride): ascendente tildado = siempre sube,
-  // descendente tildado = siempre baja, ninguno tildado = al azar por
-  // paso. Al tildar el primero de #consolaInt*, el listener de más abajo
-  // fuerza el slider Chromatism a 0% (chromaVariety=0) automáticamente —
-  // queda ahí hasta que el usuario lo suba a mano de nuevo. Destildando
-  // todos los checkboxes de intervalo, el comportamiento vuelve a
-  // depender de Chromatism, pero el slider NO se restaura solo (sigue en
-  // 0% hasta que se toque a mano). El achique de subset
-  // (currentSubsetGap) NO se toca acá, sigue atado solo a
-  // chromaVariety/Chromatism siempre.
+  // (en semitonos) y, para cada ocurrencia, si sube o baja al azar.
+  // Al tildar el primero, el listener de más abajo fuerza el slider
+  // Chromatism a 0% (chromaVariety=0) automáticamente — queda ahí
+  // hasta que el usuario lo suba a mano de nuevo. Destildando todos
+  // los checkboxes de intervalo, el comportamiento vuelve a depender
+  // de Chromatism, pero el slider NO se restaura solo (sigue en 0%
+  // hasta que se toque a mano). El achique de subset (currentSubsetGap)
+  // NO se toca acá, sigue atado solo a chromaVariety/Chromatism siempre.
   var FIXED_INTERVAL_CHK_IDS = ["consolaInt2M","consolaInt3m","consolaInt3M","consolaInt4J","consolaInt5J"];
-  function transpositionDirectionOverride(){
-    var asc = document.getElementById("consolaIntAsc");
-    var desc = document.getElementById("consolaIntDesc");
-    var ascOn = !!(asc && asc.checked);
-    var descOn = !!(desc && desc.checked);
-    if (ascOn && !descOn) return "up";
-    if (descOn && !ascOn) return "down";
-    return null; // ninguno tildado (o ambos, no debería pasar): al azar
-  }
   function activeFixedIntervals(){
     var out = [];
-    var dirOverride = transpositionDirectionOverride();
     FIXED_INTERVAL_CHK_IDS.forEach(function(id){
       var el = document.getElementById(id);
       if (el && el.checked) out.push({
         semitones: Number(el.getAttribute("data-semitones")),
-        direction: dirOverride // "up" | "down" | null (null = al azar)
+        direction: el.getAttribute("data-direction") // "up" | "down" | null (null = al azar)
       });
     });
     return out;
@@ -7581,7 +7560,6 @@ function runAnalysis() {
       state.rootChord = []; state.progression = []; state.roles = []; state.chordEvents = []; state.slotChords = []; state.bassEvents = []; state.melodyEvents = []; state.comping2Events = []; state.bebopEvents = [];
       renderRoll();
       renderBebopRoll();
-      resizeCollapsible(document.getElementById("consolaContent"));
       playBtn.disabled = true;
       if(regenPlayBtn) regenPlayBtn.disabled = true;
       if(normalBtn) normalBtn.disabled = true;
@@ -7607,12 +7585,11 @@ function runAnalysis() {
       ? MORECOMPING.buildEvents(bm.melodyEvents, function(bar, offset){ return currentChordAt(chordBuilt.slotChords[bar], offset); })
       : [];
     state.bebopEvents = BEBOPMELODY.enabled()
-      ? BEBOPMELODY.buildEvents(bm.melodyEvents, function(bar, offset){ return currentChordAt(chordBuilt.slotChords[bar], offset); }, rootChord)
+      ? BEBOPMELODY.buildEvents(NUM_BARS, function(bar, offset){ return currentChordAt(chordBuilt.slotChords[bar], offset); })
       : [];
     drumEvents = buildDrumEvents(NUM_BARS);
     renderRoll();
     renderBebopRoll();
-    resizeCollapsible(document.getElementById("consolaContent"));
   }
 
   // ↺ Normalito (con botón): vuelve a la versión simple de siempre — el
@@ -7635,12 +7612,11 @@ function runAnalysis() {
       ? MORECOMPING.buildEvents(state.melodyEvents, function(bar){ return state.progression[bar]; })
       : [];
     state.bebopEvents = BEBOPMELODY.enabled()
-      ? BEBOPMELODY.buildEvents(state.melodyEvents, function(bar){ return state.progression[bar]; }, state.rootChord)
+      ? BEBOPMELODY.buildEvents(NUM_BARS, function(bar){ return state.progression[bar]; })
       : [];
     drumEvents = buildDrumEvents(NUM_BARS);
     renderRoll();
     renderBebopRoll();
-    resizeCollapsible(document.getElementById("consolaContent"));
   }
   window.regenerateConsola = regenerateConsola;
 
@@ -8057,6 +8033,8 @@ function runAnalysis() {
   var sm2PresetCache = {};
   var sm2CacheFontRef = null;
   var sm2CacheSuperBassRef = null; // Super Bass se carga aparte de los otros tres .sf2
+  var sm2CacheHifiEnabled = false;
+  var sm2CacheHifiRefs = {};       // key -> referencia de hifiFontByKey[key] al momento de cachear
   function sm2UsingSF2(){
     return typeof sf2State !== "undefined" && sf2State === "ready" && !!sf2Font &&
       typeof currentSynth !== "undefined" && currentSynth === "sf2";
@@ -8067,6 +8045,26 @@ function runAnalysis() {
     if(fontKey === "superBass") return (typeof sf2SuperBassFont !== "undefined") ? sf2SuperBassFont : null;
     return sf2Font;
   }
+  // Resuelve, para una instrument key (ej. "piano", "flute"), qué .sf2 +
+  // banco/programa usar en ESTE momento: si el checkbox HIFI está
+  // tildado y ese reemplazo ya terminó de cargar, el .sf2 premium
+  // aparte (HIFI_FILES); si no, el programa GM de siempre dentro de
+  // Instruments.sf2/Drums.sf2/Percussion.sf2/Super Bass (SM2_PROGRAMS).
+  // Único punto de decisión HIFI — tanto el cache de índices como
+  // playSM2Voice pasan siempre por acá, así nunca quedan desalineados.
+  function sm2ResolveFontAndProgram(key){
+    if(hifiEnabled){
+      var hf = (typeof HIFI_FILES_BY_KEY !== "undefined") ? HIFI_FILES_BY_KEY[key] : null;
+      if(hf && hifiStateByKey[key] === "ready" && hifiFontByKey[key]){
+        return { font: hifiFontByKey[key], bank: hf.bank, program: hf.program, tag: "hifi_" + key };
+      }
+    }
+    var p = SM2_PROGRAMS[key];
+    if(!p) return null;
+    var font = sm2FontFor(p.font);
+    if(!font) return null;
+    return { font: font, bank: p.bank, program: p.program, tag: p.font };
+  }
   function sm2PresetIdxFor(key){
     // Los tres .sf2 principales se cargan/recargan siempre juntos (mismo
     // botón), así que sf2Font alcanza como referencia para saber si hay
@@ -8074,13 +8072,23 @@ function runAnalysis() {
     // Super Bass se carga aparte (bajo demanda), por eso se chequea su
     // propia referencia además — si no, el -1 cacheado antes de cargar
     // quedaría pegado para siempre y el bajo nunca pasaría a sonar real.
-    if(sm2CacheFontRef !== sf2Font || sm2CacheSuperBassRef !== sf2SuperBassFont){
+    // Lo mismo para HIFI: se chequea el flag del checkbox y la
+    // referencia de cada .sf2 premium (cada uno carga por separado).
+    var hifiChanged = (sm2CacheHifiEnabled !== hifiEnabled);
+    if(!hifiChanged && typeof HIFI_FILES !== "undefined"){
+      for(var hi=0; hi<HIFI_FILES.length; hi++){
+        var hk = HIFI_FILES[hi].key;
+        if(sm2CacheHifiRefs[hk] !== hifiFontByKey[hk]){ hifiChanged = true; break; }
+      }
+    }
+    if(sm2CacheFontRef !== sf2Font || sm2CacheSuperBassRef !== sf2SuperBassFont || hifiChanged){
       sm2PresetCache = {}; sm2CacheFontRef = sf2Font; sm2CacheSuperBassRef = sf2SuperBassFont;
+      sm2CacheHifiEnabled = hifiEnabled;
+      if(typeof HIFI_FILES !== "undefined") HIFI_FILES.forEach(function(f){ sm2CacheHifiRefs[f.key] = hifiFontByKey[f.key]; });
     }
     if(sm2PresetCache[key] !== undefined) return sm2PresetCache[key];
-    var p = SM2_PROGRAMS[key];
-    var font = p ? sm2FontFor(p.font) : null;
-    var idx = (p && font) ? sf2FindPresetIdx(font, p.bank, p.program) : -1;
+    var resolved = sm2ResolveFontAndProgram(key);
+    var idx = resolved ? sf2FindPresetIdx(resolved.font, resolved.bank, resolved.program) : -1;
     sm2PresetCache[key] = idx;
     return idx;
   }
@@ -8092,9 +8100,10 @@ function runAnalysis() {
   function playSM2Voice(ctx, dest, presetKey, midi, startTime, duration, gain){
     var presetIdx = sm2PresetIdxFor(presetKey);
     if(presetIdx < 0) return false;
-    var progInfo = SM2_PROGRAMS[presetKey];
-    var font = sm2FontFor(progInfo.font);
-    var fontTag = progInfo.font;
+    var resolved = sm2ResolveFontAndProgram(presetKey);
+    if(!resolved) return false;
+    var font = resolved.font;
+    var fontTag = resolved.tag;
     if(!font) return false;
     var hits = sf2ResolveNote(font, presetIdx, midi, 100);
     if(!hits.length) return false;
@@ -8870,6 +8879,20 @@ function runAnalysis() {
           window._consolaStopTimer = setTimeout(stopPlayback, waitMs);
           return;
         }
+        // Si nos atrasamos varias vueltas (pestaña en segundo plano:
+        // el navegador frena este setInterval, pero el reloj del
+        // AudioContext sigue corriendo solo) NO recuperamos vuelta por
+        // vuelta — antes este while agendaba TODAS las vueltas
+        // perdidas de una, y como cada scheduleLoopAt arma decenas de
+        // voces, eso bloqueaba el hilo principal (la música se
+        // "trababa" y ni Detener/Reset respondían hasta refrescar la
+        // página). Si nos atrasamos más de un par de vueltas,
+        // saltamos directo al presente y seguimos desde ahí.
+        var MAX_CATCHUP_LOOPS = 2;
+        var behindLoops = Math.floor((ctx.currentTime - nextLoopTime) / loopDur);
+        if(behindLoops > MAX_CATCHUP_LOOPS){
+          nextLoopTime += behindLoops * loopDur;
+        }
         while(nextLoopTime - ctx.currentTime < SCHEDULE_AHEAD){
           scheduleLoopAt(ctx, dest, nextLoopTime, spb);
           nextLoopTime += loopDur;
@@ -9010,14 +9033,6 @@ function runAnalysis() {
       if(state.rootChord.length) regenerateConsola();
     });
   });
-  document.getElementById("consolaIntAsc").addEventListener("change", function(){
-    if (this.checked) document.getElementById("consolaIntDesc").checked = false;
-    if(state.rootChord.length) regenerateConsola();
-  });
-  document.getElementById("consolaIntDesc").addEventListener("change", function(){
-    if (this.checked) document.getElementById("consolaIntAsc").checked = false;
-    if(state.rootChord.length) regenerateConsola();
-  });
   document.getElementById("consolaMoreRepChk").addEventListener("change", function(){
     if(state.rootChord.length) regenerateConsola();
   });
@@ -9025,9 +9040,6 @@ function runAnalysis() {
     if(state.rootChord.length) regenerateConsola();
   });
   document.getElementById("consolaMixDurChk").addEventListener("change", function(){
-    if(state.rootChord.length) regenerateConsola();
-  });
-  document.getElementById("consolaHarrisBebopChk").addEventListener("change", function(){
     if(state.rootChord.length) regenerateConsola();
   });
   // moreComping: botón, no checkbox — queda prendido/apagado (clase
@@ -9057,6 +9069,16 @@ function runAnalysis() {
       setMixGain("bebop", 1);
     }
     if(state.rootChord.length) regenerateConsola();
+  });
+
+  // Checkboxes de modo de bebopMelody (Arpeggios / Scales, ver BEBOPMELODY
+  // arriba) — solo cambian QUÉ notas calcula buildEvents, así que basta
+  // con regenerar el segmento cuando cambian (mismo patrón que el botón).
+  ["consolaBebopArpChk", "consolaBebopScaleChk", "consolaBebopSemiChk", "consolaBebopNarrowChk"].forEach(function(id){
+    var el = document.getElementById(id);
+    if(el) el.addEventListener("change", function(){
+      if(state.rootChord.length) regenerateConsola();
+    });
   });
 
   // Modo SoloPiano — botón "primary" prendido/apagado (mismo patrón que
