@@ -913,7 +913,7 @@
         <button class="chip" id="composeBtn" type="button" title="Toca el segmento de 12 compases de SetMusicBox con las notas actuales">🎹 Compose</button>
         <button class="chip" id="clearBtn">Limpiar</button>
         <button class="chip toggle" id="sf2Btn" type="button" aria-pressed="false" title="Carga bajo demanda tres SoundFonts reales (Instruments+Drums+Percussion, ~29MB) y reemplaza el sintetizador por muestras de instrumento y batería reales (incluye SetMusicBox). Un clic más para volver al sintetizador liviano.">🎼 Sonido real (SoundFont)</button>
-        <label class="hifi-toggle" title="Reemplaza instrumentos puntuales por SoundFonts premium aparte (Soundfonts/HIFI/), uno por uno a medida que se agregan — hoy: Bajo (Acoustic Bass, Super Bass Electric) y Armonía/Melodía (Warm Pad). Solo se nota con '🎼 Sonido real' activado; se descargan todos juntos al tildar este checkbox. Al activarlo, si el Bajo está en el default de siempre, pasa a Acoustic Bass.">
+        <label class="hifi-toggle" title="Reemplaza instrumentos puntuales de Instruments.sf2 por SoundFonts premium aparte (Soundfonts/Premium/), uno por uno a medida que se agregan — hoy: Piano (Yamaha CFX Grand) y Flauta (Good Flute). Solo se nota con '🎼 Sonido real' activado; se descargan bajo demanda, recién al tildar este checkbox.">
           <input type="checkbox" id="hifiChk"> HIFI
         </label>
       </div>
@@ -1069,7 +1069,6 @@
           <label class="mix-preset-label" for="harmonyPresetSelect">Armonía</label>
           <select class="mix-preset-select" id="harmonyPresetSelect">
             <option value="piano" selected>Piano</option>
-            <option value="pad" title="Soundfont HIFI aparte (Soundfonts/HIFI/Warm Pad.sf2) — requiere el checkbox HIFI tildado, se carga junto con el resto de HIFI.">Warm Pad (HIFI)</option>
             <option value="epiano">Piano eléctrico</option>
             <option value="harpsichord">Clavecín</option>
             <option value="celesta">Celesta</option>
@@ -1139,8 +1138,7 @@
           <label class="mix-preset-label" for="bassPresetSelect">Bajo</label>
           <select class="mix-preset-select" id="bassPresetSelect">
             <option value="synthBass" selected>Bajo original (sintetizado)</option>
-            <option value="bassAcoustic" title="Soundfont HIFI aparte (Soundfonts/HIFI/Acoustic Bass.sf2) — requiere el checkbox HIFI tildado, se carga junto con el resto de HIFI.">Acoustic Bass (HIFI)</option>
-            <option value="bassSuperElectric" title="Soundfont HIFI aparte (Soundfonts/HIFI/super bass electric.sf2) — requiere el checkbox HIFI tildado, se carga junto con el resto de HIFI.">Super Bass Electric (HIFI)</option>
+            <option value="superBass" title="Soundfont premium aparte (Soundfonts/Premium/super bass.sf2) — se descarga recién al elegir esta opción, no de arranque.">Super Bass (premium)</option>
             <option value="piano">Piano</option>
             <option value="epiano">Piano eléctrico</option>
             <option value="harpsichord">Clavecín</option>
@@ -4026,40 +4024,28 @@ function synthPluck(freq, { start = 0, duration = 1.6, gain = 0.5 } = {}) {
 const SF2_URL = "Soundfonts/Instruments.sf2";
 const SF2_DRUMS_URL = "Soundfonts/Drums.sf2";
 const SF2_PERC_URL = "Soundfonts/Percussion.sf2";
+// Super Bass: soundfont premium APARTE de los tres de arriba — no se carga
+// con el botón "Sonido real" ni suma peso a esa carga inicial. Se descarga
+// bajo demanda recién cuando el usuario elige "Super Bass (premium)" en el
+// selector de Bajo (ver sf2LoadSuperBassIfNeeded más abajo).
+const SF2_SUPER_BASS_URL = "Soundfonts/Premium/super%20bass.sf2";
 const SF2_DEFAULT_PRESET = { bank: 0, preset: 0 }; // Grand Piano
 
-// ---- HIFI: SoundFonts premium aparte, uno por instrumento -------------
+// ---- HIFI: reemplazos premium de instrumentos puntuales de Instruments.sf2
 // ------------------------------------------------------------------------
 // Checkbox "HIFI" (al lado del botón "Sonido real"): cuando está tildado,
-// SetMusicBox usa, para las "key" listadas acá, este .sf2 aparte en vez
-// del sintetizador/GM de siempre. Cada entrada es un archivo INDEPENDIENTE
-// en Soundfonts/HIFI/ (no se carga con el botón "Sonido real" ni suma
-// peso a esa carga inicial) — los 3 (o los que haya) se descargan juntos
-// recién al tildar el checkbox por primera vez (ver hifiLoadAllIfNeeded).
-// Dos formas de usar una entrada:
-//   1) "key" == una key ya existente de SM2_INSTRUMENTS (ej. "piano"):
-//      reemplaza ese instrumento de forma transparente en cualquier
-//      selector que lo tenga elegido, sin agregar opción nueva al <select>.
-//   2) "key" nueva sin equivalente en SM2_INSTRUMENTS (ej. "bassAcoustic",
-//      "pad" acá abajo): no tiene reemplazo/fallback GM propio — hace
-//      falta agregarle a mano un <option value="esaKey"> en el <select>
-//      correspondiente (ver bassPresetSelect/harmonyPresetSelect en el
-//      HTML) para que se pueda elegir. Sin HIFI tildado, sm2ResolveFontAndProgram
-//      no encuentra nada para esa key y la pista cae al sintetizador de
-//      respaldo (voiceFamilyFor usa el "fallbackKey" que le pasa cada
-//      pista — ver scheduleLoopAt), no queda muda.
-// Para sumar un reemplazo nuevo alcanza con agregar una entrada acá (y,
-// si es del tipo 2, el <option> a mano) — no hace falta tocar el resto
-// del motor.
+// SetMusicBox usa, para las instrument keys listadas acá, este .sf2 aparte
+// en vez del programa GM correspondiente de Instruments.sf2 — el resto de
+// los instrumentos sigue igual. Cada entrada es un archivo INDEPENDIENTE
+// en Soundfonts/Premium/ (no se cargan con el botón "Sonido real" ni suman
+// peso a esa carga inicial), descargado bajo demanda recién al tildar el
+// checkbox por primera vez. Para sumar un reemplazo nuevo alcanza con
+// agregar una entrada acá (mismo "key" que usa SM2_INSTRUMENTS/SM2_PROGRAMS
+// más abajo) — no hace falta tocar el resto del motor.
 const HIFI_FILES = [
-  { key: "bassAcoustic",       url: "Soundfonts/HIFI/Acoustic%20Bass.sf2",         bank: 0, program: 32, label: "Acoustic Bass" },
-  { key: "bassSuperElectric",  url: "Soundfonts/HIFI/super%20bass%20electric.sf2", bank: 0, program: 0,  label: "Super Bass Electric" },
-  { key: "pad",                url: "Soundfonts/HIFI/Warm%20Pad.sf2",              bank: 0, program: 0,  label: "Warm Pad" },
+  { key: "piano", url: "Soundfonts/Premium/Yamaha%20CFX%20Grand.sf2", bank: 0, program: 0, label: "Yamaha CFX Grand" },
+  { key: "flute", url: "Soundfonts/Premium/super%20flute.sf2",        bank: 0, program: 0, label: "Good Flute" },
 ];
-// Nota: "super bass.sf2" (en la misma carpeta) NO se usa — no tiene
-// ningún preset de bajo adentro (62 presets de piano tipo "Grand",
-// "Classical", "Jazz" — parece el archivo equivocado). Si en algún
-// momento se reemplaza por el .sf2 correcto, agregar una entrada acá.
 const HIFI_FILES_BY_KEY = {};
 HIFI_FILES.forEach((f) => { HIFI_FILES_BY_KEY[f.key] = f; });
 let hifiEnabled = false;
@@ -4087,6 +4073,8 @@ let sf2State = "idle"; // idle | loading | ready | error
 let sf2Font = null;        // Instruments.sf2 (parseado)
 let sf2DrumsFont = null;   // Drums.sf2 (parseado)
 let sf2PercFont = null;    // Percussion.sf2 (parseado)
+let sf2SuperBassState = "idle"; // idle | loading | ready | error — carga aparte, bajo demanda
+let sf2SuperBassFont = null;    // Soundfonts/Premium/super bass.sf2 (parseado); null hasta elegir el preset
 let sf2PresetIdx = -1;
 const sf2BufferCache = new Map();
 
@@ -4474,6 +4462,24 @@ function sf2ShowLoadOverlayError() {
   const label = document.getElementById("sf2LoadLabel");
   if (label) label.textContent = "🎼 Error al cargar sonidos";
   if (overlay) overlay.classList.add("sf2-load-error");
+}
+// Carga (una sola vez) Soundfonts/Premium/super bass.sf2 cuando el
+// usuario elige "Super Bass (premium)" en el selector de Bajo. Mientras
+// no termine (o si falla), playSM2Voice para la key "superBass" no
+// encuentra preset y el bajo suena con el sintetizador de respaldo de
+// siempre — no hay que esperar a que cargue para poder tocar.
+async function sf2LoadSuperBassIfNeeded() {
+  if (sf2SuperBassState === "ready" || sf2SuperBassState === "loading") return;
+  sf2SuperBassState = "loading";
+  try {
+    const buf = await sf2FetchWithProgress(SF2_SUPER_BASS_URL);
+    sf2SuperBassFont = sf2ParseFont(buf);
+    sf2SuperBassState = "ready";
+  } catch (err) {
+    console.error("No se pudo cargar Super Bass:", err);
+    sf2SuperBassState = "error";
+    sf2SuperBassFont = null;
+  }
 }
 // Carga (bajo demanda, una sola vez por archivo) cada .sf2 de HIFI_FILES
 // que todavía no esté listo/cargando — se dispara al tildar el checkbox
@@ -8129,8 +8135,13 @@ function runAnalysis() {
     SM2_PROGRAMS[it.key] = { font:"instruments", bank:0, program:it.program };
   });
   Object.keys(SM2_DRUM_KITS).forEach(function(k){ SM2_PROGRAMS[k] = SM2_DRUM_KITS[k]; });
+  // "8-String Bass" es el único preset (bank 0, preset 0) de
+  // Soundfonts/Premium/super bass.sf2 — se carga aparte, ver
+  // sf2LoadSuperBassIfNeeded.
+  SM2_PROGRAMS.superBass = { font:"superBass", bank:0, program:0 };
   var sm2PresetCache = {};
   var sm2CacheFontRef = null;
+  var sm2CacheSuperBassRef = null; // Super Bass se carga aparte de los otros tres .sf2
   var sm2CacheHifiEnabled = false;
   var sm2CacheHifiRefs = {};       // key -> referencia de hifiFontByKey[key] al momento de cachear
   function sm2UsingSF2(){
@@ -8140,6 +8151,7 @@ function runAnalysis() {
   function sm2FontFor(fontKey){
     if(fontKey === "drums") return (typeof sf2DrumsFont !== "undefined") ? sf2DrumsFont : null;
     if(fontKey === "percussion") return (typeof sf2PercFont !== "undefined") ? sf2PercFont : null;
+    if(fontKey === "superBass") return (typeof sf2SuperBassFont !== "undefined") ? sf2SuperBassFont : null;
     return sf2Font;
   }
   // Resuelve, para una instrument key (ej. "piano", "flute"), qué .sf2 +
@@ -8178,8 +8190,8 @@ function runAnalysis() {
         if(sm2CacheHifiRefs[hk] !== hifiFontByKey[hk]){ hifiChanged = true; break; }
       }
     }
-    if(sm2CacheFontRef !== sf2Font || hifiChanged){
-      sm2PresetCache = {}; sm2CacheFontRef = sf2Font;
+    if(sm2CacheFontRef !== sf2Font || sm2CacheSuperBassRef !== sf2SuperBassFont || hifiChanged){
+      sm2PresetCache = {}; sm2CacheFontRef = sf2Font; sm2CacheSuperBassRef = sf2SuperBassFont;
       sm2CacheHifiEnabled = hifiEnabled;
       if(typeof HIFI_FILES !== "undefined") HIFI_FILES.forEach(function(f){ sm2CacheHifiRefs[f.key] = hifiFontByKey[f.key]; });
     }
@@ -9281,24 +9293,13 @@ function runAnalysis() {
       el.value = mixPresets[cfg.key];
       el.addEventListener("change", function(){
         mixPresets[cfg.key] = this.value;
+        if(cfg.key === "bass" && this.value === "superBass") sf2LoadSuperBassIfNeeded();
       });
     });
-    // HIFI: al tildar el checkbox, si el Bajo sigue en su default de
-    // siempre ("synthBass", sin elegir manual), lo cambia a Acoustic
-    // Bass (HIFI) — no pisa una elección manual del usuario. Al
-    // destildar HIFI no revierte el selector (el usuario puede volver
-    // a mano si quiere) — sí deja de sonar en HIFI porque
-    // sm2ResolveFontAndProgram ya chequea hifiEnabled.
-    var hifiChkEl = document.getElementById("hifiChk");
-    if(hifiChkEl){
-      hifiChkEl.addEventListener("change", function(){
-        if(this.checked && mixPresets.bass === "synthBass"){
-          mixPresets.bass = "bassAcoustic";
-          var bassEl = document.getElementById("bassPresetSelect");
-          if(bassEl) bassEl.value = "bassAcoustic";
-        }
-      });
-    }
+    // Por si el preset de Bajo ya arranca en "superBass" (ej. restaurado
+    // desde algún estado guardado a futuro) — hoy el default sigue siendo
+    // "synthBass", así que esto no dispara nada al cargar la página.
+    if(mixPresets.bass === "superBass") sf2LoadSuperBassIfNeeded();
   })();
 
   regenerateConsola();
