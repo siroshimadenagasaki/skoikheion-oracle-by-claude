@@ -9407,7 +9407,7 @@ function runAnalysis() {
     // a PRESET_SETS y un botón en el HTML con
     // data-preset-set="esaKey" (o cablearlo a mano como acá abajo).
     var PRESET_SETS = {
-      baroque: { harmony: "harpsichord", bass: "bassAcoustic", melody: "flute",  melodyDouble: "bassoon", gains: { drum: 0 } },
+      baroque: { harmony: "harpsichord", bass: "epiano", melody: "flute",  melodyDouble: "bassoon", gains: { drum: 0 } },
       jazz:    { harmony: "harpsichord", bass: "epiano", melody: "piano", melodyDouble: "harpsichord" }
     };
     function applyPresetSet(setKey){
