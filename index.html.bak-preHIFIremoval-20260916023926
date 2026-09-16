@@ -217,6 +217,12 @@
   .fret-note.fret-open.selected text{opacity:1;fill:#1a1622;}
 
   .clock-actions{display:flex;justify-content:center;gap:10px;margin-top:22px;flex-wrap:wrap;}
+  .hifi-toggle{
+    display:inline-flex;align-items:center;gap:5px;
+    font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.04em;
+    color:var(--ink-muted);cursor:pointer;user-select:none;
+  }
+  .hifi-toggle input{cursor:pointer;}
   button.chip{
     font-family:'JetBrains Mono',monospace;
     font-size:11px;
@@ -907,7 +913,9 @@
         <button class="chip" id="composeBtn" type="button" title="Toca el segmento de 12 compases de SetMusicBox con las notas actuales">🎹 Compose</button>
         <button class="chip" id="clearBtn">Limpiar</button>
         <button class="chip toggle" id="sf2Btn" type="button" aria-pressed="false" title="Carga bajo demanda tres SoundFonts reales (Instruments+Drums+Percussion, ~29MB) y reemplaza el sintetizador por muestras de instrumento y batería reales (incluye SetMusicBox). Un clic más para volver al sintetizador liviano.">🎼 Sonido real (SoundFont)</button>
-        <button class="chip" id="presetBaroqueBtn" type="button" title="Set de presets: Armonía → Clavecín, Bajo → Piano eléctrico, Melodía → Flauta, Melodía doblada → Clavecín (prende el doblaje).">Baroque</button>
+        <label class="hifi-toggle" title="Reemplaza instrumentos puntuales por SoundFonts premium aparte (Soundfonts/HIFI/), uno por uno a medida que se agregan — hoy: Piano (Steinway D, reemplaza el Piano de siempre en cualquier selector) y Armonía (Warm Pad). Solo se nota con '🎼 Sonido real' activado; se descargan todos juntos al tildar este checkbox.">
+          <input type="checkbox" id="hifiChk"> HIFI
+        </label>
       </div>
       <div class="examples">
         <span>Ejemplos rápidos</span>
@@ -1061,6 +1069,7 @@
           <label class="mix-preset-label" for="harmonyPresetSelect">Armonía</label>
           <select class="mix-preset-select" id="harmonyPresetSelect">
             <option value="piano" selected>Piano</option>
+            <option value="pad" title="Soundfont HIFI aparte (Soundfonts/HIFI/Warm Pad.sf2) — requiere el checkbox HIFI tildado, se carga junto con el resto de HIFI.">Warm Pad (HIFI)</option>
             <option value="epiano">Piano eléctrico</option>
             <option value="harpsichord">Clavecín</option>
             <option value="celesta">Celesta</option>
@@ -4017,6 +4026,44 @@ const SF2_DRUMS_URL = "Soundfonts/Drums.sf2";
 const SF2_PERC_URL = "Soundfonts/Percussion.sf2";
 const SF2_DEFAULT_PRESET = { bank: 0, preset: 0 }; // Grand Piano
 
+// ---- HIFI: SoundFonts premium aparte, uno por instrumento -------------
+// ------------------------------------------------------------------------
+// Checkbox "HIFI" (al lado del botón "Sonido real"): cuando está tildado,
+// SetMusicBox usa, para las "key" listadas acá, este .sf2 aparte en vez
+// del sintetizador/GM de siempre. Cada entrada es un archivo INDEPENDIENTE
+// en Soundfonts/HIFI/ (no se carga con el botón "Sonido real" ni suma
+// peso a esa carga inicial) — los 3 (o los que haya) se descargan juntos
+// recién al tildar el checkbox por primera vez (ver hifiLoadAllIfNeeded).
+// Dos formas de usar una entrada:
+//   1) "key" == una key ya existente de SM2_INSTRUMENTS (ej. "piano"):
+//      reemplaza ese instrumento de forma transparente en cualquier
+//      selector que lo tenga elegido, sin agregar opción nueva al <select>.
+//   2) "key" nueva sin equivalente en SM2_INSTRUMENTS (ej. "pad" acá
+//      abajo): no tiene reemplazo/fallback GM propio — hace
+//      falta agregarle a mano un <option value="esaKey"> en el <select>
+//      correspondiente (ver bassPresetSelect/harmonyPresetSelect en el
+//      HTML) para que se pueda elegir. Sin HIFI tildado, sm2ResolveFontAndProgram
+//      no encuentra nada para esa key y la pista cae al sintetizador de
+//      respaldo (voiceFamilyFor usa el "fallbackKey" que le pasa cada
+//      pista — ver scheduleLoopAt), no queda muda.
+// Para sumar un reemplazo nuevo alcanza con agregar una entrada acá (y,
+// si es del tipo 2, el <option> a mano) — no hace falta tocar el resto
+// del motor.
+const HIFI_FILES = [
+  { key: "piano",               url: "Soundfonts/HIFI/grand%20piano.sf2",           bank: 0, program: 0,  label: "Steinway D" },
+  { key: "pad",                 url: "Soundfonts/HIFI/Warm%20Pad.sf2",              bank: 0, program: 0,  label: "Warm Pad" },
+];
+// "piano" ya es una key existente de SM2_INSTRUMENTS (program 0 de
+// Instruments.sf2) — este reemplazo es transparente: no hace falta
+// <option> nueva en ningún selector, cualquiera que tenga elegido
+// "Piano" pasa a sonar con el Steinway D en vez del GM al tildar HIFI.
+const HIFI_FILES_BY_KEY = {};
+HIFI_FILES.forEach((f) => { HIFI_FILES_BY_KEY[f.key] = f; });
+let hifiEnabled = false;
+const hifiFontByKey = {};              // key -> .sf2 parseado (una vez listo)
+const hifiStateByKey = {};             // key -> idle | loading | ready | error
+HIFI_FILES.forEach((f) => { hifiStateByKey[f.key] = "idle"; });
+
 const SF2_GEN = {
   INSTRUMENT: 41, KEYRANGE: 43, VELRANGE: 44, SAMPLEID: 53, SAMPLEMODES: 54,
   OVERRIDE_ROOTKEY: 58, FINETUNE: 52, COARSETUNE: 51,
@@ -4425,6 +4472,32 @@ function sf2ShowLoadOverlayError() {
   if (label) label.textContent = "🎼 Error al cargar sonidos";
   if (overlay) overlay.classList.add("sf2-load-error");
 }
+// Carga (bajo demanda, una sola vez por archivo) cada .sf2 de HIFI_FILES
+// que todavía no esté listo/cargando — se dispara al tildar el checkbox
+// "HIFI" por primera vez. Un archivo que falla (404, red) no bloquea a
+// los demás: cada uno se resuelve por separado, y ese instrumento en
+// particular sigue sonando con el programa GM de siempre hasta que se
+// pueda cargar (ver sm2ResolveFontAndProgram, que chequea el estado real
+// antes de usarlo).
+async function hifiLoadAllIfNeeded() {
+  await Promise.all(HIFI_FILES.map(async (f) => {
+    if (hifiStateByKey[f.key] === "ready" || hifiStateByKey[f.key] === "loading") return;
+    hifiStateByKey[f.key] = "loading";
+    try {
+      const buf = await sf2FetchWithProgress(f.url);
+      hifiFontByKey[f.key] = sf2ParseFont(buf);
+      hifiStateByKey[f.key] = "ready";
+    } catch (err) {
+      console.error("No se pudo cargar HIFI (" + f.label + "):", err);
+      hifiStateByKey[f.key] = "error";
+      hifiFontByKey[f.key] = null;
+    }
+  }));
+}
+document.getElementById("hifiChk").addEventListener("change", function () {
+  hifiEnabled = this.checked;
+  if (hifiEnabled) hifiLoadAllIfNeeded();
+});
 async function sf2Activate(btn) {
   sf2State = "loading";
   btn.disabled = true;
@@ -8055,6 +8128,8 @@ function runAnalysis() {
   Object.keys(SM2_DRUM_KITS).forEach(function(k){ SM2_PROGRAMS[k] = SM2_DRUM_KITS[k]; });
   var sm2PresetCache = {};
   var sm2CacheFontRef = null;
+  var sm2CacheHifiEnabled = false;
+  var sm2CacheHifiRefs = {};       // key -> referencia de hifiFontByKey[key] al momento de cachear
   function sm2UsingSF2(){
     return typeof sf2State !== "undefined" && sf2State === "ready" && !!sf2Font &&
       typeof currentSynth !== "undefined" && currentSynth === "sf2";
@@ -8065,9 +8140,19 @@ function runAnalysis() {
     return sf2Font;
   }
   // Resuelve, para una instrument key (ej. "piano", "flute"), qué .sf2 +
-  // banco/programa usar en ESTE momento — el programa GM de siempre
-  // dentro de Instruments.sf2/Drums.sf2/Percussion.sf2 (SM2_PROGRAMS).
+  // banco/programa usar en ESTE momento: si el checkbox HIFI está
+  // tildado y ese reemplazo ya terminó de cargar, el .sf2 premium
+  // aparte (HIFI_FILES); si no, el programa GM de siempre dentro de
+  // Instruments.sf2/Drums.sf2/Percussion.sf2/Super Bass (SM2_PROGRAMS).
+  // Único punto de decisión HIFI — tanto el cache de índices como
+  // playSM2Voice pasan siempre por acá, así nunca quedan desalineados.
   function sm2ResolveFontAndProgram(key){
+    if(hifiEnabled){
+      var hf = (typeof HIFI_FILES_BY_KEY !== "undefined") ? HIFI_FILES_BY_KEY[key] : null;
+      if(hf && hifiStateByKey[key] === "ready" && hifiFontByKey[key]){
+        return { font: hifiFontByKey[key], bank: hf.bank, program: hf.program, tag: "hifi_" + key };
+      }
+    }
     var p = SM2_PROGRAMS[key];
     if(!p) return null;
     var font = sm2FontFor(p.font);
@@ -8078,8 +8163,22 @@ function runAnalysis() {
     // Los tres .sf2 principales se cargan/recargan siempre juntos (mismo
     // botón), así que sf2Font alcanza como referencia para saber si hay
     // que invalidar el cache (cambió de null a cargado, o al revés).
-    if(sm2CacheFontRef !== sf2Font){
+    // Super Bass se carga aparte (bajo demanda), por eso se chequea su
+    // propia referencia además — si no, el -1 cacheado antes de cargar
+    // quedaría pegado para siempre y el bajo nunca pasaría a sonar real.
+    // Lo mismo para HIFI: se chequea el flag del checkbox y la
+    // referencia de cada .sf2 premium (cada uno carga por separado).
+    var hifiChanged = (sm2CacheHifiEnabled !== hifiEnabled);
+    if(!hifiChanged && typeof HIFI_FILES !== "undefined"){
+      for(var hi=0; hi<HIFI_FILES.length; hi++){
+        var hk = HIFI_FILES[hi].key;
+        if(sm2CacheHifiRefs[hk] !== hifiFontByKey[hk]){ hifiChanged = true; break; }
+      }
+    }
+    if(sm2CacheFontRef !== sf2Font || hifiChanged){
       sm2PresetCache = {}; sm2CacheFontRef = sf2Font;
+      sm2CacheHifiEnabled = hifiEnabled;
+      if(typeof HIFI_FILES !== "undefined") HIFI_FILES.forEach(function(f){ sm2CacheHifiRefs[f.key] = hifiFontByKey[f.key]; });
     }
     if(sm2PresetCache[key] !== undefined) return sm2PresetCache[key];
     var resolved = sm2ResolveFontAndProgram(key);
@@ -9181,29 +9280,6 @@ function runAnalysis() {
         mixPresets[cfg.key] = this.value;
       });
     });
-
-    // ---- Sets de presets con nombre (ej. "Baroque") ----------------------
-    // Un botón por set: aplica de una varios selectores del mini mixer
-    // juntos (mismo mecanismo que si el usuario los cambiara a mano, uno
-    // por uno — dispara los mismos <select>, así mixPresets y la UI
-    // quedan sincronizados). Para sumar un set nuevo: agregar una entrada
-    // a PRESET_SETS y un botón en el HTML con
-    // data-preset-set="esaKey" (o cablearlo a mano como acá abajo).
-    var PRESET_SETS = {
-      baroque: { harmony: "harpsichord", bass: "epiano", melody: "flute", melodyDouble: "harpsichord" }
-    };
-    function applyPresetSet(setKey){
-      var set = PRESET_SETS[setKey];
-      if(!set) return;
-      SELECTS.forEach(function(cfg){
-        if(!(cfg.key in set)) return;
-        var el = document.getElementById(cfg.id);
-        mixPresets[cfg.key] = set[cfg.key];
-        if(el) el.value = set[cfg.key];
-      });
-    }
-    var baroqueBtn = document.getElementById("presetBaroqueBtn");
-    if(baroqueBtn) baroqueBtn.addEventListener("click", function(){ applyPresetSet("baroque"); });
   })();
 
   regenerateConsola();
