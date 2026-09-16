@@ -907,11 +907,7 @@
         <button class="chip" id="composeBtn" type="button" title="Toca el segmento de 12 compases de SetMusicBox con las notas actuales">🎹 Compose</button>
         <button class="chip" id="clearBtn">Limpiar</button>
         <button class="chip toggle" id="sf2Btn" type="button" aria-pressed="false" title="Carga bajo demanda tres SoundFonts reales (Instruments+Drums+Percussion, ~29MB) y reemplaza el sintetizador por muestras de instrumento y batería reales (incluye SetMusicBox). Un clic más para volver al sintetizador liviano.">🎼 Sonido real (SoundFont)</button>
-      </div>
-      <div class="examples style-presets">
-        <span>Estilos (set de presets)</span>
         <button class="chip" id="presetBaroqueBtn" type="button" title="Set de presets: Armonía → Clavecín, Bajo → Piano eléctrico, Melodía → Flauta, Melodía doblada → Clavecín (prende el doblaje).">Baroque</button>
-        <button class="chip" id="presetJazzBtn" type="button" title="Set de presets: igual que Baroque (Armonía → Clavecín, Bajo → Piano eléctrico, Melodía doblada → Clavecín) pero Melodía → Piano en vez de Flauta.">Jazz</button>
       </div>
       <div class="examples">
         <span>Ejemplos rápidos</span>
@@ -9271,8 +9267,7 @@ function runAnalysis() {
     // a PRESET_SETS y un botón en el HTML con
     // data-preset-set="esaKey" (o cablearlo a mano como acá abajo).
     var PRESET_SETS = {
-      baroque: { harmony: "harpsichord", bass: "epiano", melody: "flute",  melodyDouble: "harpsichord" },
-      jazz:    { harmony: "harpsichord", bass: "epiano", melody: "piano", melodyDouble: "harpsichord" }
+      baroque: { harmony: "harpsichord", bass: "epiano", melody: "flute", melodyDouble: "harpsichord" }
     };
     function applyPresetSet(setKey){
       var set = PRESET_SETS[setKey];
@@ -9286,8 +9281,6 @@ function runAnalysis() {
     }
     var baroqueBtn = document.getElementById("presetBaroqueBtn");
     if(baroqueBtn) baroqueBtn.addEventListener("click", function(){ applyPresetSet("baroque"); });
-    var jazzBtn = document.getElementById("presetJazzBtn");
-    if(jazzBtn) jazzBtn.addEventListener("click", function(){ applyPresetSet("jazz"); });
 
     // Swing Drums: toggle simple (mismo patrón que sf2Btn/aria-pressed).
     // Reconstruye drumEvents al toque para que, si ya está sonando el
