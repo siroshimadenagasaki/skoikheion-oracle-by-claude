@@ -1110,6 +1110,11 @@
           </div>
         </div>
       </div>
+      <div class="consola-field" title="Nivel general del reverb — envío compartido, con un impulso sintético generado en el navegador (no carga ningún archivo). Cada pista tiene además su propio nivel de envío en el mini mixer, más abajo (&quot;Reverb (envío por pista)&quot;); este slider escala a todas juntas.">
+        <label for="consolaReverbAmount">Reverb</label>
+        <input type="range" id="consolaReverbAmount" min="0" max="100" value="25" step="1">
+        <span class="consola-val" id="consolaReverbAmountVal">25%</span>
+      </div>
       <div class="consola-field">
         <label for="consolaVolume">Volumen</label>
         <input type="range" id="consolaVolume" min="0" max="100" value="70" step="1">
@@ -1175,6 +1180,39 @@
           <label for="mixMelodyDoubleVol">Doblar melodía</label>
           <input type="range" id="mixMelodyDoubleVol" min="0" max="150" value="100" step="1">
           <span class="mix-val" id="mixMelodyDoubleVolVal">100%</span>
+        </div>
+      </div>
+      <div class="mix-preset-label" style="width:100%;text-align:center;margin:2px 0 -6px;">Reverb (envío por pista)</div>
+      <div class="mix-grid" title="Multiplicador de esta pista sobre el slider maestro Reverb (arriba, junto a Volumen). 100% = usa el nivel general tal cual; 0% = esta pista nunca llega al reverb.">
+        <div class="mix-channel">
+          <label for="mixDrumRev">&#129345; Batería</label>
+          <input type="range" id="mixDrumRev" min="0" max="150" value="100" step="1">
+          <span class="mix-val" id="mixDrumRevVal">100%</span>
+        </div>
+        <div class="mix-channel">
+          <label for="mixBassRev">Bajo</label>
+          <input type="range" id="mixBassRev" min="0" max="150" value="100" step="1">
+          <span class="mix-val" id="mixBassRevVal">100%</span>
+        </div>
+        <div class="mix-channel">
+          <label for="mixChordRev">Armonía</label>
+          <input type="range" id="mixChordRev" min="0" max="150" value="100" step="1">
+          <span class="mix-val" id="mixChordRevVal">100%</span>
+        </div>
+        <div class="mix-channel">
+          <label for="mixMelodyRev">Melodía</label>
+          <input type="range" id="mixMelodyRev" min="0" max="150" value="100" step="1">
+          <span class="mix-val" id="mixMelodyRevVal">100%</span>
+        </div>
+        <div class="mix-channel">
+          <label for="mixBebopRev">&#127929; Bebop</label>
+          <input type="range" id="mixBebopRev" min="0" max="150" value="100" step="1">
+          <span class="mix-val" id="mixBebopRevVal">100%</span>
+        </div>
+        <div class="mix-channel">
+          <label for="mixMelodyDoubleRev">Doblar melodía</label>
+          <input type="range" id="mixMelodyDoubleRev" min="0" max="150" value="100" step="1">
+          <span class="mix-val" id="mixMelodyDoubleRevVal">100%</span>
         </div>
       </div>
       <div class="mix-presets">
@@ -8288,6 +8326,55 @@ function runAnalysis() {
   var mixGains = { drum: 1, bass: 1, chord: 1, melody: 1, melodyDouble: 1, chordDouble: 1, comping2: 1, bebop: 0 };
   var mixPresets = { harmony: "piano", melody: "flute", melodyDouble: "mute", chordDouble: "mute", bass: "synthBass", drum: "kit", bebop: "tenorSax" };
   var chordGainNode = null, bassGainNode = null, melodyGainNode = null, drumGainNode = null, melodyDoubleGainNode = null, chordDoubleGainNode = null, comping2GainNode = null, bebopGainNode = null;
+
+  // ---------- Reverb: bus de envío compartido ----------
+  // reverbSendLevel = nivel general (slider "Reverb", 25% por defecto,
+  // mismo default que Chromatism). reverbMix[track] = multiplicador
+  // relativo de CADA pista (100% por defecto = todas parejas; se ajusta
+  // con los faders "Reverb (envío por pista)" del mini mixer). El envío
+  // real de cada pista es reverbSendLevel * reverbMix[track].
+  var reverbSendLevel = 0.25;
+  var reverbMix = { chord: 1, bass: 1, melody: 1, melodyDouble: 1, chordDouble: 1, drum: 1, comping2: 1, bebop: 1 };
+  var reverbBusGain = null, reverbConvolver = null, reverbReturnGain = null;
+  var reverbSendGains = { chord: null, bass: null, melody: null, melodyDouble: null, chordDouble: null, drum: null, comping2: null, bebop: null };
+
+  // Impulso sintético (ruido blanco con decaimiento exponencial),
+  // generado en el navegador — mismo criterio que el resto del sitio
+  // ("sin conexión a internet necesaria"), no carga ningún .wav externo.
+  function createReverbImpulse(ctx, duration, decay){
+    var rate = ctx.sampleRate;
+    var length = Math.max(1, Math.floor(rate * duration));
+    var impulse = ctx.createBuffer(2, length, rate);
+    for(var ch=0; ch<2; ch++){
+      var data = impulse.getChannelData(ch);
+      for(var i=0; i<length; i++){
+        data[i] = (Math.random()*2-1) * Math.pow(1 - i/length, decay);
+      }
+    }
+    return impulse;
+  }
+  // Un solo ConvolverNode compartido por todo el sitio (uno por
+  // instrumento sería carísimo en CPU). Cada pista manda una COPIA de
+  // su señal acá (ver el bloque de "envíos" en ensureInstrumentGains,
+  // abajo) sin alterar su canal seco de siempre; el retorno pasa por
+  // masterGain como cualquier otra pista, así el volumen general
+  // también escala el reverb.
+  function ensureReverbBus(ctx){
+    var master = ensureMasterGain(ctx);
+    if(!reverbBusGain){
+      reverbBusGain = ctx.createGain();
+      reverbBusGain.gain.value = 1;
+      reverbConvolver = ctx.createConvolver();
+      reverbConvolver.buffer = createReverbImpulse(ctx, 2.4, 2.2);
+      reverbReturnGain = ctx.createGain();
+      reverbReturnGain.gain.value = 1;
+      reverbBusGain.connect(reverbConvolver);
+      reverbConvolver.connect(reverbReturnGain);
+      reverbReturnGain.connect(master);
+    }
+    return reverbBusGain;
+  }
+
   function ensureInstrumentGains(ctx){
     var master = ensureMasterGain(ctx);
     if(!chordGainNode){
@@ -8330,6 +8417,20 @@ function runAnalysis() {
       bebopGainNode.gain.value = mixGains.bebop;
       bebopGainNode.connect(master);
     }
+    // Envíos de reverb: una copia en paralelo de cada canal seco de
+    // arriba, hacia el bus compartido — no reemplaza ninguna conexión
+    // existente, sólo agrega una segunda salida.
+    var reverbBus = ensureReverbBus(ctx);
+    var dryNodes = { chord: chordGainNode, bass: bassGainNode, melody: melodyGainNode, melodyDouble: melodyDoubleGainNode, chordDouble: chordDoubleGainNode, drum: drumGainNode, comping2: comping2GainNode, bebop: bebopGainNode };
+    Object.keys(dryNodes).forEach(function(track){
+      if(!reverbSendGains[track]){
+        var send = ctx.createGain();
+        send.gain.value = reverbSendLevel * reverbMix[track];
+        dryNodes[track].connect(send);
+        send.connect(reverbBus);
+        reverbSendGains[track] = send;
+      }
+    });
     return { chord: chordGainNode, bass: bassGainNode, melody: melodyGainNode, melodyDouble: melodyDoubleGainNode, chordDouble: chordDoubleGainNode, drum: drumGainNode, comping2: comping2GainNode, bebop: bebopGainNode };
   }
   // Cambia el nivel de un canal en caliente (mientras suena o no) — usa
@@ -8346,6 +8447,25 @@ function runAnalysis() {
       var ctx = getAudioCtx();
       node.gain.setTargetAtTime(value, ctx ? ctx.currentTime : 0, 0.01);
     }
+  }
+  // Reverb: mismo patrón que setMixGain de arriba (setTargetAtTime, sin
+  // clicks). applyReverbSend recalcula el envío real de una pista
+  // (reverbSendLevel * reverbMix[track]); setReverbAmount mueve el
+  // slider maestro y recalcula las 8 pistas juntas; setReverbMix ajusta
+  // solo una pista (fader individual del mini mixer).
+  function applyReverbSend(track){
+    var node = reverbSendGains[track];
+    if(!node) return;
+    var ctx = getAudioCtx();
+    node.gain.setTargetAtTime(reverbSendLevel * reverbMix[track], ctx ? ctx.currentTime : 0, 0.01);
+  }
+  function setReverbAmount(value){
+    reverbSendLevel = value;
+    Object.keys(reverbSendGains).forEach(applyReverbSend);
+  }
+  function setReverbMix(track, value){
+    reverbMix[track] = value;
+    applyReverbSend(track);
   }
 
   /* ================================================================
@@ -9466,7 +9586,7 @@ function runAnalysis() {
     // estuviera sonando (release de un pad, del saxo, etc.) en vez de
     // esperar a que cada nota termine su propia envolvente.
     var FADE = 0.015;
-    [chordGainNode, bassGainNode, melodyGainNode, drumGainNode, melodyDoubleGainNode, comping2GainNode, bebopGainNode, masterGain].forEach(function(g){
+    [chordGainNode, bassGainNode, melodyGainNode, drumGainNode, melodyDoubleGainNode, comping2GainNode, bebopGainNode, reverbReturnGain, masterGain].forEach(function(g){
       if(!g) return;
       g.gain.cancelScheduledValues(now);
       g.gain.setValueAtTime(g.gain.value, now);
@@ -9484,6 +9604,7 @@ function runAnalysis() {
     // suene igual que antes de detener.
     var restoreAt = now + FADE + 0.005;
     if(masterGain) masterGain.gain.setValueAtTime(currentVolume, restoreAt);
+    if(reverbReturnGain) reverbReturnGain.gain.setValueAtTime(1, restoreAt);
     if(chordGainNode) chordGainNode.gain.setValueAtTime(mixGains.chord, restoreAt);
     if(bassGainNode) bassGainNode.gain.setValueAtTime(mixGains.bass, restoreAt);
     if(melodyGainNode) melodyGainNode.gain.setValueAtTime(mixGains.melody, restoreAt);
@@ -9814,6 +9935,10 @@ function runAnalysis() {
       masterGain.gain.setTargetAtTime(currentVolume, ctx ? ctx.currentTime : 0, 0.01);
     }
   });
+  document.getElementById("consolaReverbAmount").addEventListener("input", function(){
+    document.getElementById("consolaReverbAmountVal").textContent = this.value + "%";
+    setReverbAmount(this.value/100);
+  });
 
   // ---- Mini mixer: volúmenes independientes por pista ----
   (function(){
@@ -9831,6 +9956,26 @@ function runAnalysis() {
       el.addEventListener("input", function(){
         document.getElementById(cfg.valId).textContent = this.value + "%";
         setMixGain(cfg.track, this.value/100);
+      });
+    });
+  })();
+
+  // ---- Mini mixer: envío de reverb independiente por pista ----
+  (function(){
+    var REVERB_SLIDERS = [
+      { id: "mixDrumRev",         valId: "mixDrumRevVal",         track: "drum"         },
+      { id: "mixBassRev",         valId: "mixBassRevVal",         track: "bass"         },
+      { id: "mixChordRev",        valId: "mixChordRevVal",        track: "chord"        },
+      { id: "mixMelodyRev",       valId: "mixMelodyRevVal",       track: "melody"       },
+      { id: "mixBebopRev",        valId: "mixBebopRevVal",        track: "bebop"        },
+      { id: "mixMelodyDoubleRev", valId: "mixMelodyDoubleRevVal", track: "melodyDouble" }
+    ];
+    REVERB_SLIDERS.forEach(function(cfg){
+      var el = document.getElementById(cfg.id);
+      if(!el) return;
+      el.addEventListener("input", function(){
+        document.getElementById(cfg.valId).textContent = this.value + "%";
+        setReverbMix(cfg.track, this.value/100);
       });
     });
   })();
