@@ -545,6 +545,24 @@
     font-family:'JetBrains Mono',monospace;font-size:11.5px;letter-spacing:.03em;
     text-transform:none;color:var(--ink);cursor:pointer;
   }
+  /* ---- Subsecciones contraíbles dentro de un .consola-field (Cycles,
+     Transposition intervals) — mismo mecanismo que .module-toggle +
+     .collapsible-content (toggleModule() en JS, sin duplicar lógica),
+     pero como botón chico en línea en vez de esquina absoluta: acá el
+     contenedor es un campo angosto dentro de SetMusicBox, no una tarjeta
+     entera. Contraído por defecto: simplifica la vista sin sacar nada,
+     el contenido sigue en el mismo lugar, sólo oculto hasta tocar +. */
+  .consola-subfield-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .subfield-toggle{
+    display:inline-flex;align-items:center;justify-content:center;flex:none;
+    width:20px;height:20px;
+    background:var(--surface-2);border:1px solid var(--line);color:var(--gold);
+    border-radius:5px;font-size:13px;line-height:1;font-weight:700;
+    cursor:pointer;transition:.15s;padding:0;
+  }
+  .subfield-toggle:hover{background:var(--surface);border-color:var(--gold);}
+  .subfield-toggle[aria-expanded="true"]::after{content:"−";}
+  .subfield-toggle[aria-expanded="false"]::after{content:"+";}
   .consola-cycles-body{display:flex;flex-direction:column;gap:7px;margin-top:8px;}
   .consola-cycles-body.is-disabled{opacity:.4;pointer-events:none;}
   .consola-cycles-line{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
@@ -986,6 +1004,12 @@
     </div>
 
     <div class="consola-controls">
+      <div class="consola-field consola-instruments" title="Tempo y los sliders de complejidad armónica/rítmica del motor libre, agrupados y contraídos por defecto para simplificar la vista — mismos controles de siempre, en el mismo lugar.">
+        <div class="consola-subfield-head">
+          <label>How to play</label>
+          <button type="button" class="subfield-toggle" aria-expanded="false" aria-controls="howToPlayBody" onclick="toggleModule(this)" title="Mostrar/ocultar Tempo y los sliders de complejidad"></button>
+        </div>
+        <div class="collapsible-content collapsed" id="howToPlayBody" style="display:flex;flex-wrap:wrap;gap:20px 30px;">
       <div class="consola-field">
         <label for="consolaTempo">Tempo</label>
         <input type="range" id="consolaTempo" min="60" max="140" value="84" step="1">
@@ -1021,6 +1045,8 @@
         <input type="range" id="consolaRhythmComplexitySlider" min="0" max="100" value="50" step="1">
         <span class="consola-val" id="consolaRhythmComplexityVal">50%</span>
       </div>
+        </div>
+      </div>
       <div class="consola-field consola-loop">
         <input type="checkbox" id="consolaLoopChk" checked>
         <label for="consolaLoopChk">Loop</label>
@@ -1041,7 +1067,11 @@
         </div>
       </div>
       <div class="consola-field consola-instruments" title="Modo TEST: si tildás uno o más, la transposición cromática al azar (por compás y por reataque) deja de usar el rango del slider Chromatism y sortea SOLO entre los intervalos tildados acá. La dirección (Ascendente/Descendente) es global para todos — 2da m, 2da M, 3ra m, 3ra M, 4ta J y 5ta J transponen todos para el mismo lado a la vez; Descendente está tildado por defecto. Al tildar el primer intervalo, el slider Chromatism baja a 0% automáticamente (queda en 0% mientras uses esto). Destildando todos, Chromatism sigue en 0% hasta que lo subas vos a mano. No afecta el achique de subset (eso sigue atado solo a Chromatism).">
-        <label>Transposition intervals (test)</label>
+        <div class="consola-subfield-head">
+          <label>Transposition intervals (test)</label>
+          <button type="button" class="subfield-toggle" aria-expanded="false" aria-controls="testIntervalsBody" onclick="toggleModule(this)" title="Mostrar/ocultar los intervalos de prueba"></button>
+        </div>
+        <div class="collapsible-content collapsed" id="testIntervalsBody">
         <div class="consola-inst-row">
           <span class="consola-inst-toggle"><input type="checkbox" id="consolaInt2m" data-semitones="1"><label for="consolaInt2m">2da m</label></span>
           <span class="consola-inst-toggle"><input type="checkbox" id="consolaInt2M" data-semitones="2"><label for="consolaInt2M">2da M</label></span>
@@ -1054,9 +1084,14 @@
           <span class="consola-inst-toggle"><input type="checkbox" id="consolaIntDirUp"><label for="consolaIntDirUp">Ascendente &#8593;</label></span>
           <span class="consola-inst-toggle"><input type="checkbox" id="consolaIntDirDown" checked><label for="consolaIntDirDown">Descendente &#8595;</label></span>
         </div>
+        </div>
       </div>
       <div class="consola-field consola-instruments" title="Módulo aparte del modo TEST de arriba: mientras el checkbox 'Cycles' esté tildado, cada transposición cromática al azar (por compás y por reataque) se sortea por lotería ponderada entre este set de intervalos + la línea 'Chromatism (enlazado)' (que reserva su propio % del sorteo, y está enlazada con el slider Chromatism de más arriba — mover uno mueve el otro). El resto del sorteo (100% - Chromatism%) se reparte proporcionalmente entre los sliders de intervalo con valor mayor a 0. Si en 'Transposition intervals (test)' de arriba hay algún checkbox tildado, ESE modo manda (misma prioridad que ya tiene hoy sobre Chromatism) y Cycles no se aplica. Con Cycles destildado, la página se comporta exactamente igual que hoy.">
-        <span class="consola-inst-toggle"><input type="checkbox" id="consolaCyclesChk"><label for="consolaCyclesChk">Cycles</label></span>
+        <div class="consola-subfield-head">
+          <span class="consola-inst-toggle"><input type="checkbox" id="consolaCyclesChk"><label for="consolaCyclesChk">Cycles</label></span>
+          <button type="button" class="subfield-toggle" aria-expanded="false" aria-controls="cyclesDetailBody" onclick="toggleModule(this)" title="Mostrar/ocultar Modo A/B y los sliders de intervalo de Cycles"></button>
+        </div>
+        <div class="collapsible-content collapsed" id="cyclesDetailBody">
         <div class="consola-inst-row consola-cycles-mode" title="Modo A: cada sorteo se acumula sobre el offset anterior (mismo mecanismo que el modo TEST de arriba — un recorrido continuo, tipo ciclo de quintas). Modo B: cada sorteo transpone siempre desde la tónica original del set, sin memoria del sorteo anterior. Mutuamente excluyentes. Modo A por defecto.">
           <span class="consola-inst-toggle"><input type="checkbox" id="consolaCyclesModeA" checked><label for="consolaCyclesModeA">Modo A (acumula)</label></span>
           <span class="consola-inst-toggle"><input type="checkbox" id="consolaCyclesModeB"><label for="consolaCyclesModeB">Modo B (sin acumular)</label></span>
@@ -1123,6 +1158,7 @@
             <span class="consola-val" id="consolaCycle5JUpVal">10%</span>
           </div>
         </div>
+        </div>
       </div>
       <div class="consola-field" title="Nivel general del reverb — envío compartido, con un impulso sintético generado en el navegador (no carga ningún archivo). Cada pista tiene además su propio nivel de envío en el mini mixer, más abajo (&quot;Reverb (envío por pista)&quot;); este slider escala a todas juntas.">
         <label for="consolaReverbAmount">Reverb</label>
@@ -1134,14 +1170,23 @@
         <input type="range" id="consolaVolume" min="0" max="100" value="70" step="1">
         <span class="consola-val" id="consolaVolumeVal">70%</span>
       </div>
-      <div class="consola-field" style="flex-direction:row;gap:8px;">
+      <div class="consola-field" style="flex-direction:row;flex-wrap:wrap;gap:8px;">
         <button type="button" class="chip primary" id="consolaPlayBtn" title="Reproduce el segmento en loop — repite siempre la misma secuencia (la última generada) hasta que la cambies con 🔀 o elijas otras notas.">&#9658; Reproducir</button>
         <button type="button" class="chip chip-small" id="consolaRegenPlayBtn" disabled title="Sortea una variación nueva del segmento (mismo set de notas elegido) y la reproduce de una — equivalente al viejo botón Regenerar, fusionado con Reproducir.">&#128256;</button>
         <button type="button" class="chip" id="consolaStopBtn" disabled>&#9632; Detener</button>
         <button type="button" class="chip" id="consolaResetBtn" title="Pánico: corta de golpe cualquier nota que haya quedado sonando (MIDI all notes off) — a diferencia de Detener, funciona aunque no esté reproduciendo.">&#128721; Reset</button>
         <button type="button" class="chip" id="consolaMoreCompingBtn" title="Agrega una QUINTA pista MIDI, con timbre de cuerdas (strings), que dobla cada nota de la melodía junto con 1 o 2 notas más del acorde vigente en ese instante (siempre del mismo set, nunca una nota ajena) — el grupito entero queda siempre pegado a la nota de melodía, a lo sumo a una octava o dos de distancia.">moreComping</button>
+        <button type="button" class="chip" id="consolaSoloPianoBtn" title="Modo solo: pone Armonía, Melodía y Bajo en preset Piano, y muda Batería/moreComping/bebopMelody/Doblar melodía/Doblar armonía — sin tocar ningún otro ajuste. Volvé a apretarlo para restaurar los presets y volúmenes que tenías antes.">🎹 SoloPiano</button>
+      </div>
+      <div class="consola-field consola-instruments" title="Línea melódica independiente (bebopMelody) y sus modos — agrupados y contraídos por defecto, mismo lugar de siempre.">
+        <div class="consola-subfield-head">
+          <label>bebopMelody</label>
+          <button type="button" class="subfield-toggle" aria-expanded="false" aria-controls="bebopModeBody" onclick="toggleModule(this)" title="Mostrar/ocultar bebopMelody y sus modos"></button>
+        </div>
+        <div class="collapsible-content collapsed" id="bebopModeBody">
+        <div class="consola-inst-row" style="align-items:center;">
         <button type="button" class="chip" id="consolaBebopBtn" title="Agrega una SEXTA pista MIDI: una línea melódica INDEPENDIENTE (no dobla a la melodía principal, tiene su propia nota en cada instante) en corcheas fijas, en el modo (o modos) que elijas con los checkboxes Arpeggios/Scales de al lado. Instrumento elegible abajo en el mini mixer (Sax tenor por defecto). Apagada por defecto — tiene su propio volumen en el mini mixer (🎷 Bebop, en 0% por defecto).">bebopMelody</button>
-        <span class="consola-bebop-mode" style="display:inline-flex;align-items:center;gap:10px;margin-left:2px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.04em;color:var(--ink-muted);">
+        <span class="consola-bebop-mode" style="display:inline-flex;flex-wrap:wrap;align-items:center;gap:10px;margin-left:2px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.04em;color:var(--ink-muted);">
           <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;" title="bebopMelody arpegia en corcheas las notas del acorde vigente (ascendente en compases pares, descendente en impares) — siempre dentro del set elegido, nunca una nota ajena.">
             <input type="checkbox" id="consolaBebopArpChk" checked> Arpeggios
           </label>
@@ -1158,12 +1203,17 @@
             <input type="checkbox" id="consolaBebopNarrowChk"> narrowRegister
           </label>
         </span>
-        <button type="button" class="chip" id="consolaSoloPianoBtn" title="Modo solo: pone Armonía, Melodía y Bajo en preset Piano, y muda Batería/moreComping/bebopMelody/Doblar melodía/Doblar armonía — sin tocar ningún otro ajuste. Volvé a apretarlo para restaurar los presets y volúmenes que tenías antes.">🎹 SoloPiano</button>
+        </div>
+        </div>
       </div>
     </div>
 
     <div class="mini-mixer" id="miniMixer">
-      <h3>Mini mixer</h3>
+      <div class="consola-subfield-head" style="justify-content:center;margin-bottom:12px;">
+        <h3 style="margin:0;">Mini mixer</h3>
+        <button type="button" class="subfield-toggle" aria-expanded="false" aria-controls="miniMixerBody" onclick="toggleModule(this)" title="Mostrar/ocultar el mini mixer"></button>
+      </div>
+      <div class="collapsible-content collapsed" id="miniMixerBody">
       <div class="mix-grid">
         <div class="mix-channel">
           <label for="mixDrumVol">&#129345; Batería</label>
@@ -1234,6 +1284,7 @@
           <label class="mix-preset-label" for="harmonyPresetSelect">Armonía</label>
           <select class="mix-preset-select" id="harmonyPresetSelect">
             <option value="piano" selected>Piano</option>
+            <option value="pianoHifi" title="Soundfont HIFI aparte (Soundfonts/HIFI/Grand piano.sf2, Steinway D) — requiere el checkbox HIFI tildado. Sin HIFI, esta opción cae directo al sintetizador (a diferencia de 'Piano', que de todos modos ya usa HIFI en forma transparente si está tildado, y si no, el SoundFont base Instruments.sf2).">Piano (HIFI)</option>
             <option value="pad" title="Soundfont HIFI aparte (Soundfonts/HIFI/Warm Pad.sf2) — requiere el checkbox HIFI tildado, se carga junto con el resto de HIFI.">Warm Pad (HIFI)</option>
             <option value="epiano">Piano eléctrico</option>
             <option value="harpsichord">Clavecín</option>
@@ -1253,6 +1304,7 @@
           <select class="mix-preset-select" id="chordDoublePresetSelect">
             <option value="mute" selected>Mute (apagado)</option>
             <option value="piano">Piano</option>
+            <option value="pianoHifi" title="Soundfont HIFI aparte (Soundfonts/HIFI/Grand piano.sf2, Steinway D) — requiere el checkbox HIFI tildado. Sin HIFI, cae directo al sintetizador.">Piano (HIFI)</option>
             <option value="epiano">Piano eléctrico</option>
             <option value="harpsichord">Clavecín</option>
             <option value="celesta">Celesta</option>
@@ -1270,6 +1322,7 @@
           <label class="mix-preset-label" for="melodyPresetSelect">Melodía</label>
           <select class="mix-preset-select" id="melodyPresetSelect">
             <option value="piano">Piano</option>
+            <option value="pianoHifi" title="Soundfont HIFI aparte (Soundfonts/HIFI/Grand piano.sf2, Steinway D) — requiere el checkbox HIFI tildado. Sin HIFI, cae directo al sintetizador.">Piano (HIFI)</option>
             <option value="epiano">Piano eléctrico</option>
             <option value="harpsichord">Clavecín</option>
             <option value="celesta">Celesta</option>
@@ -1288,6 +1341,7 @@
           <select class="mix-preset-select" id="melodyDoublePresetSelect">
             <option value="mute" selected>Mute (apagado)</option>
             <option value="piano">Piano</option>
+            <option value="pianoHifi" title="Soundfont HIFI aparte (Soundfonts/HIFI/Grand piano.sf2, Steinway D) — requiere el checkbox HIFI tildado. Sin HIFI, cae directo al sintetizador.">Piano (HIFI)</option>
             <option value="epiano">Piano eléctrico</option>
             <option value="harpsichord">Clavecín</option>
             <option value="celesta">Celesta</option>
@@ -1308,6 +1362,7 @@
           <label class="mix-preset-label" for="bebopPresetSelect">Bebop</label>
           <select class="mix-preset-select" id="bebopPresetSelect">
             <option value="piano">Piano</option>
+            <option value="pianoHifi" title="Soundfont HIFI aparte (Soundfonts/HIFI/Grand piano.sf2, Steinway D) — requiere el checkbox HIFI tildado. Sin HIFI, cae directo al sintetizador.">Piano (HIFI)</option>
             <option value="epiano">Piano eléctrico</option>
             <option value="harpsichord">Clavecín</option>
             <option value="celesta">Celesta</option>
@@ -1328,6 +1383,7 @@
             <option value="bassAcoustic" title="Soundfont HIFI aparte (Soundfonts/HIFI/Acoustic Bass.sf2) — requiere el checkbox HIFI tildado, se carga junto con el resto de HIFI.">Acoustic Bass (HIFI)</option>
             <option value="bassSuperElectric" title="Soundfont HIFI aparte (Soundfonts/HIFI/super bass electric.sf2) — requiere el checkbox HIFI tildado, se carga junto con el resto de HIFI.">Super Bass Electric (HIFI)</option>
             <option value="piano">Piano</option>
+            <option value="pianoHifi" title="Soundfont HIFI aparte (Soundfonts/HIFI/Grand piano.sf2, Steinway D) — requiere el checkbox HIFI tildado. Sin HIFI, cae directo al sintetizador.">Piano (HIFI)</option>
             <option value="epiano">Piano eléctrico</option>
             <option value="harpsichord">Clavecín</option>
             <option value="celesta">Celesta</option>
@@ -1345,10 +1401,12 @@
           <label class="mix-preset-label" for="drumPresetSelect">Batería</label>
           <select class="mix-preset-select" id="drumPresetSelect">
             <option value="kit" selected>Kit (batería real)</option>
+            <option value="kitHifi" title="Soundfont HIFI aparte (Soundfonts/HIFI/Jazz Kit.sf2) — requiere el checkbox HIFI tildado. Sin HIFI, cae directo al sintetizador de batería (a diferencia de 'Kit', que usa el SoundFont base Drums.sf2 como paso intermedio).">Kit (HIFI)</option>
             <option value="percussion">Percusión (congas)</option>
           </select>
           <button type="button" class="chip toggle" id="swingDrumsBtn" aria-pressed="false" title="Reemplaza el patrón de batería generado por el groove real de un MIDI (JBB NmlMedSwg, swing 4/4) — 4 compases que se repiten para llenar el loop. Toca &quot;Reproducir&quot; de nuevo (o esperá al próximo loop) para que se note.">Swing Drums</button>
         </div>
+      </div>
       </div>
     </div>
 
@@ -8572,6 +8630,21 @@ function runAnalysis() {
   ];
   var SM2_INSTRUMENTS_BY_KEY = {};
   SM2_INSTRUMENTS.forEach(function(it){ SM2_INSTRUMENTS_BY_KEY[it.key] = it; });
+  // "Piano (HIFI)" y "Kit (HIFI)": opciones DEDICADAS, separadas de las
+  // planas "Piano"/"Kit" (a pedido explícito — antes "Piano" ya sonaba
+  // con HIFI en forma transparente al tildar el checkbox, sin una
+  // segunda opción aparte). Alias por nombre: reusan el MISMO .sf2 ya
+  // cargado bajo la key "piano"/"kit" en HIFI_FILES (no bajan un
+  // archivo aparte) pero, a diferencia de la key plana, si HIFI no está
+  // tildado o el archivo no terminó de cargar, van derecho al
+  // sintetizador — nunca caen al SoundFont base de Instruments.sf2/
+  // Drums.sf2 (ver el corte temprano en sm2ResolveFontAndProgram). Para
+  // el sintetizador de respaldo, se alían también acá contra la entrada
+  // real de SM2_INSTRUMENTS_BY_KEY, así voiceFamilyFor les da la
+  // familia tímbrica correcta (piano), no la del fallback genérico de
+  // cada pista (strings1/flute/etc. según dónde se elija).
+  var HIFI_ALIAS_KEY = { pianoHifi: "piano", kitHifi: "kit" };
+  SM2_INSTRUMENTS_BY_KEY.pianoHifi = SM2_INSTRUMENTS_BY_KEY.piano;
   // Presets de la pista de batería: "kit" son muestras reales de batería
   // (Drums.sf2, banco GM 128) y "percussion" son congas cromáticas
   // (Percussion.sf2, banco 0) tocadas con las mismas notas MIDI de
@@ -8607,12 +8680,18 @@ function runAnalysis() {
   // de decisión HIFI — tanto el cache de índices como playSM2Voice pasan
   // siempre por acá, así nunca quedan desalineados.
   function sm2ResolveFontAndProgram(key){
+    var hifiKey = HIFI_ALIAS_KEY[key] || key;
     if(hifiEnabled){
-      var hf = (typeof HIFI_FILES_BY_KEY !== "undefined") ? HIFI_FILES_BY_KEY[key] : null;
-      if(hf && hifiStateByKey[key] === "ready" && hifiFontByKey[key]){
-        return { font: hifiFontByKey[key], bank: hf.bank, program: hf.program, tag: "hifi_" + key };
+      var hf = (typeof HIFI_FILES_BY_KEY !== "undefined") ? HIFI_FILES_BY_KEY[hifiKey] : null;
+      if(hf && hifiStateByKey[hifiKey] === "ready" && hifiFontByKey[hifiKey]){
+        return { font: hifiFontByKey[hifiKey], bank: hf.bank, program: hf.program, tag: "hifi_" + hifiKey };
       }
     }
+    // "Piano (HIFI)"/"Kit (HIFI)": sin HIFI listo, van derecho al
+    // sintetizador — a propósito NO caen al SoundFont base (eso es lo
+    // que ya hace la opción plana "Piano"/"Kit", que sigue existiendo
+    // sin cambios).
+    if(HIFI_ALIAS_KEY[key]) return null;
     var p = SM2_PROGRAMS[key];
     if(!p) return null;
     var font = sm2FontFor(p.font);
@@ -9495,7 +9574,7 @@ function runAnalysis() {
       }
     }
     if(instEnabled("consolaDrumChk")){
-      var drumKitKey = (mixPresets.drum === "percussion") ? "percussion" : "kit";
+      var drumKitKey = (mixPresets.drum === "percussion") ? "percussion" : (mixPresets.drum === "kitHifi" ? "kitHifi" : "kit");
       drumEvents.forEach(function(ev){
         var t = loopStartTime + ev.startBeat*spb;
         // Swing Drums trae velocidad real (ev.vel, 0-127) — escala la
@@ -10488,7 +10567,16 @@ function runAnalysis() {
     if (navToggleBtn) {
       const navList = document.getElementById('navModulesList');
       try {
-        if (localStorage.getItem('navModulesCollapsed') === '1' && navList) {
+        const storedPref = localStorage.getItem('navModulesCollapsed');
+        // Sin preferencia guardada todavía: en pantallas angostas (mismo
+        // breakpoint de 760px que ya usa .stage para pasar a una columna)
+        // arranca contraído — expandido de entrada ocupaba casi toda la
+        // altura visible de un iPhone (panel fixed, tapando el contenido
+        // real hasta que el usuario lo tocara). No toca la preferencia ya
+        // guardada de una visita anterior, ni el comportamiento en desktop.
+        const shouldStartCollapsed = storedPref === '1' ||
+          (storedPref === null && window.innerWidth <= 760);
+        if (shouldStartCollapsed && navList) {
           navToggleBtn.setAttribute('aria-expanded', 'false');
           navList.classList.remove('expanded');
           navList.classList.add('collapsed');
