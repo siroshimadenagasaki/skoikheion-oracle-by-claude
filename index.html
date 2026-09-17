@@ -997,6 +997,16 @@
         <input type="range" id="consolaChordSimulSlider" min="0" max="100" value="50" step="1">
         <span class="consola-val" id="consolaChordSimulVal">50%</span>
       </div>
+      <div class="consola-field" title="Slider maestro: no tiene lógica propia, solo mueve estos 4 sliders juntos al mismo %: Chromatism, Chords, Jazz y Chord simultaneity (uno de ida — mover Notes complexity los mueve a ellos, pero moverlos a ellos a mano no mueve de vuelta a Notes complexity). Útil para subir o bajar la complejidad armónica/rítmica de la armonía en un solo gesto en vez de tocar los 4 por separado.">
+        <label for="consolaNotesComplexitySlider">Notes complexity</label>
+        <input type="range" id="consolaNotesComplexitySlider" min="0" max="100" value="50" step="1">
+        <span class="consola-val" id="consolaNotesComplexityVal">50%</span>
+      </div>
+      <div class="consola-field" title="Complejidad de la pista de Batería (motor libre/aleatorio — no afecta a Swing Drums, que es un groove fijo). A más %: más probabilidad de compases con patrones densos (ghostSnare/synKick/fill en vez de breath/sparse), hi-hat con subdivisión más rápida (llega hasta semicorcheas en vez de negras/corcheas), y de que se sumen más 'cuerpos' del kit encima del patrón de siempre — fill de toms sobre el último tiempo del compás, platillo crash en el primer tiempo, y el hi-hat cerrado reemplazado por ride/campana del ride en compases enteros. 50% por defecto (comportamiento intermedio); 0% = siempre lo más quieto/simple, sin toms/crash/ride extra.">
+        <label for="consolaRhythmComplexitySlider">Rhythm complexity</label>
+        <input type="range" id="consolaRhythmComplexitySlider" min="0" max="100" value="50" step="1">
+        <span class="consola-val" id="consolaRhythmComplexityVal">50%</span>
+      </div>
       <div class="consola-field consola-loop">
         <input type="checkbox" id="consolaLoopChk" checked>
         <label for="consolaLoopChk">Loop</label>
@@ -6399,11 +6409,16 @@ function runAnalysis() {
       {b:2,   open:false}, {b:2+L,   open:true},
       {b:3,   open:false}, {b:3+L,   open:true}
     ];
+    // "density" (0..1, sparso a denso): usado por el slider Rhythm
+    // complexity (#consolaRhythmComplexitySlider) para re-pesar este pool
+    // en tiempo real — ver complexityReweight() más abajo, junto a
+    // buildDrumEvents. No cambia nada del pool en sí, solo cuánto pesa
+    // cada tier según qué tan lejos esté su density del % elegido.
     var DRUM_STYLE_POOL = [
-      { val:{ tier:"ride",      kick:[0],         snare:[],                    hihatHits: RIDE_HITS }, w:5 },
-      { val:{ tier:"rideBomb",  kick:[0,2.75],    snare:[1.75],                hihatHits: RIDE_HITS }, w:2 },
-      { val:{ tier:"rideComp",  kick:[],          snare:[2],                   hihatHits: RIDE_HITS }, w:2 },
-      { val:{ tier:"rideFours", kick:[0,1,2,3],   snare:[0.75,1.5,2.75,3.5],   hihatHits: RIDE_HITS }, w:1 }
+      { val:{ tier:"ride",      kick:[0],         snare:[],                    hihatHits: RIDE_HITS }, w:5, density:0.4 },
+      { val:{ tier:"rideBomb",  kick:[0,2.75],    snare:[1.75],                hihatHits: RIDE_HITS }, w:2, density:0.65 },
+      { val:{ tier:"rideComp",  kick:[],          snare:[2],                   hihatHits: RIDE_HITS }, w:2, density:0.15 },
+      { val:{ tier:"rideFours", kick:[0,1,2,3],   snare:[0.75,1.5,2.75,3.5],   hihatHits: RIDE_HITS }, w:1, density:0.95 }
     ];
 
     return {
@@ -8950,13 +8965,18 @@ function runAnalysis() {
   // movidos, "fill" es un compás lleno de golpes y "breath" casi vacío).
   // No dependen del set de notas elegido — siempre suenan igual mientras
   // la batería esté encendida, solo cambia CUÁNDO le toca a cada uno.
+  // "density" (0..1, sparso a denso): usado por el slider Rhythm
+  // complexity (#consolaRhythmComplexitySlider) para re-pesar este pool en
+  // tiempo real — ver complexityReweight()/rhythmComplexity más abajo,
+  // junto a buildDrumEvents. No cambia nada del pool en sí, solo cuánto
+  // pesa cada tier según qué tan lejos esté su density del % elegido.
   var DRUM_STYLE_POOL = [
-    { val:{ tier:"basic",      kick:[0,2],       snare:[1,3],                        hihat:{step:0.5, open:[7]} }, w:5 },
-    { val:{ tier:"synKick",    kick:[0,1.5,2],   snare:[1,3],                        hihat:{step:0.5, open:[7]} }, w:2 },
-    { val:{ tier:"ghostSnare", kick:[0,2],       snare:[0.75,1,3],                   hihat:{step:0.5, open:[7]} }, w:2 },
-    { val:{ tier:"sparse",     kick:[0,2],       snare:[1,3],                        hihat:{step:1,   open:[]} },  w:2 },
-    { val:{ tier:"fill",       kick:[0,1,2,3],   snare:[1,1.75,2.5,3,3.5,3.75],      hihat:{step:0.5, open:[3,7]} }, w:1 },
-    { val:{ tier:"breath",     kick:[0],         snare:[2],                          hihat:{step:2,   open:[]} },  w:1 }
+    { val:{ tier:"basic",      kick:[0,2],       snare:[1,3],                        hihat:{step:0.5, open:[7]} }, w:5, density:0.35 },
+    { val:{ tier:"synKick",    kick:[0,1.5,2],   snare:[1,3],                        hihat:{step:0.5, open:[7]} }, w:2, density:0.6 },
+    { val:{ tier:"ghostSnare", kick:[0,2],       snare:[0.75,1,3],                   hihat:{step:0.5, open:[7]} }, w:2, density:0.55 },
+    { val:{ tier:"sparse",     kick:[0,2],       snare:[1,3],                        hihat:{step:1,   open:[]} },  w:2, density:0.15 },
+    { val:{ tier:"fill",       kick:[0,1,2,3],   snare:[1,1.75,2.5,3,3.5,3.75],      hihat:{step:0.5, open:[3,7]} }, w:1, density:1.0 },
+    { val:{ tier:"breath",     kick:[0],         snare:[2],                          hihat:{step:2,   open:[]} },  w:1, density:0.0 }
   ];
   // Reparte los estilos entre los N compases con el mismo mecanismo que
   // armonía/bajo: cantidad exacta por peso + posiciones equiespaciadas
@@ -8973,11 +8993,51 @@ function runAnalysis() {
   // como el contraste quieto) y "fill"/"breath" (patrones fijos con
   // sentido rítmico propio) no entran en este sorteo.
   var HIHAT_RHYTHM_POOL = [
-    { val:{ feel:"eighths",      dur:[0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5],         accents:[7] }, w:4 },
-    { val:{ feel:"dottedEighth", dur:[0.75,0.25,0.75,0.25,0.75,0.25,0.75,0.25], accents:[7] }, w:3 },
-    { val:{ feel:"quarters",     dur:[1,1,1,1],                                 accents:[3] }, w:2 }
+    { val:{ feel:"eighths",      dur:[0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5],         accents:[7] }, w:4, density:0.5 },
+    { val:{ feel:"dottedEighth", dur:[0.75,0.25,0.75,0.25,0.75,0.25,0.75,0.25], accents:[7] }, w:3, density:0.65 },
+    { val:{ feel:"quarters",     dur:[1,1,1,1],                                 accents:[3] }, w:2, density:0.0 },
+    // "sixteenths": agregada junto con Rhythm complexity — notas más
+    // cortas y más cantidad (16 por compás en vez de 4-8), el extremo
+    // denso del rango. Peso base bajo a propósito: sin tocar el slider
+    // (rhythmComplexity=0.5 default) casi no debería salir; a partir de
+    // ahí complexityReweight() la va favoreciendo cuanto más alto el %.
+    { val:{ feel:"sixteenths",   dur:[0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25], accents:[7,15] }, w:1, density:1.0 }
   ];
   var HIHAT_VARIETY_TIERS = { basic:true, synKick:true, ghostSnare:true };
+
+  // ---- Rhythm complexity (#consolaRhythmComplexitySlider, 0-100%, 50%
+  // por defecto) — complejidad de la pista de Batería del motor
+  // aleatorio (no afecta a Swing Drums, que es un groove fijo, ver
+  // buildDrumEvents). Dos mecanismos:
+  // 1) Re-pesa DRUM_STYLE_POOL/JAZZ.DRUM_STYLE_POOL y HIHAT_RHYTHM_POOL
+  //    (todos con una propiedad "density" 0..1 agregada junto a "w") vía
+  //    complexityReweight(): favorece los tiers/feels con density cerca
+  //    del % elegido, sin descartar el resto (nunca 0, siempre queda algo
+  //    de variedad) — mismo espíritu que chromaVariety/chordDensityVariety
+  //    más arriba, aplicado a batería.
+  // 2) Capa aditiva de "cuerpos" extra del kit (toms/crash/ride), ver el
+  //    bloque final de buildDrumEvents — se suma ENCIMA del patrón de
+  //    siempre, nunca lo reemplaza, con probabilidad por compás que crece
+  //    con el %.
+  var rhythmComplexity = 0.5;
+  // Neutro en complexity=0.5 (bias=1 para cualquier density) — así el
+  // default del slider (50%) reproduce EXACTO el reparto de pesos
+  // original de antes de que existiera Rhythm complexity, sin cambiar el
+  // comportamiento de siempre. A partir de ahí escala LINEAL hacia arriba
+  // los tiers con density > 0.5 y hacia abajo los de density < 0.5 (al
+  // subir el %), o al revés al bajarlo. STRENGTH=3.2 deja el extremo más
+  // lejos en bias 1.8 (peso +80%) sin que ningún tier baje nunca de 0.2
+  // (20% de su peso original — nunca desaparece del todo, mismo espíritu
+  // de "siempre algo de variedad" que chromaVariety/chordDensityVariety).
+  var RHYTHM_COMPLEXITY_STRENGTH = 3.2;
+  function complexityBias(density, complexity){
+    return 1 + (complexity - 0.5) * RHYTHM_COMPLEXITY_STRENGTH * (density - 0.5);
+  }
+  function complexityReweight(pool, complexity){
+    return pool.map(function(p){
+      return { val:p.val, w: p.w * complexityBias(p.density, complexity) };
+    });
+  }
 
   // ---- Swing Drums: groove real, tomado de un MIDI subido por el
   // usuario (JBB_4-4_NmlMedSwg_T008_FullKit_107.mid — swing 4/4,
@@ -9047,17 +9107,59 @@ function runAnalysis() {
     return events;
   }
 
+  // "Cuerpos" extra del kit, capa aditiva de Rhythm complexity — se
+  // agregan ENCIMA del patrón de siempre de ese compás, nunca lo
+  // reemplazan. Notas GM reales para cuando el SoundFont está activo
+  // (drumMidiFor las usa directo, ver `ev.midi != null`); el `type`/`open`
+  // quedan en la misma familia de respaldo sintetizado que ya usa Swing
+  // Drums para estas mismas notas (tom->kick, crash/ride->hihat), así
+  // nunca suenan mudas con el SoundFont apagado.
+  function addRhythmComplexityLayer(events, base, complexity){
+    // Fill de toms sobre el último tiempo del compás (3 golpes
+    // descendentes en corcheas: tom agudo, medio-grave, grave — notas GM
+    // 50/47/45). Probabilidad crece con el %, tope 50% de los compases.
+    if (Math.random() < complexity * 0.5){
+      events.push({type:"kick", startBeat: base+3.0,  midi:50});
+      events.push({type:"kick", startBeat: base+3.5,  midi:47});
+      events.push({type:"kick", startBeat: base+3.75, midi:45});
+    }
+    // Platillo crash (GM 49) en el primer tiempo del compás, además del
+    // bombo de siempre. Tope 35% de los compases incluso al 100%.
+    if (Math.random() < complexity * 0.35){
+      events.push({type:"hihat", startBeat: base, open:true, midi:49});
+    }
+    // Ride en vez de hi-hat cerrado para TODO el compás (recorre los
+    // eventos de hi-hat que este mismo compás ya empujó y les pisa el
+    // midi — cuerpo del ride GM 51 en los golpes normales, campana GM 53
+    // en los acentuados/abiertos, conserva el mismo patrón de acentos de
+    // siempre). Solo entra en juego pasado el 50%, tope 30% de los
+    // compases al 100%.
+    var rideChance = Math.max(0, (complexity - 0.5) * 0.6);
+    if (Math.random() < rideChance){
+      for (var q=events.length-1; q>=0 && events[q].startBeat >= base; q--){
+        if (events[q].type === "hihat" && events[q].midi == null){
+          events[q].midi = events[q].open ? 53 : 51;
+        }
+      }
+    }
+  }
   function buildDrumEvents(numBars){
     if(swingDrumsEnabled) return buildSwingDrumEvents(numBars);
     // JAZZ: patrón de ride "spang-a-lang" en vez del hi-hat parejo —
     // la batería no tiene altura definida, así que acá no hay ninguna
     // restricción de set que respetar, es variedad rítmica pura.
-    var pool = JAZZ.roll() ? JAZZ.DRUM_STYLE_POOL : DRUM_STYLE_POOL;
+    var basePool = JAZZ.roll() ? JAZZ.DRUM_STYLE_POOL : DRUM_STYLE_POOL;
+    // Rhythm complexity re-pesa el pool de estilos y el de subdivisión de
+    // hi-hat (favorece tiers/feels densos a mayor %, sin descartar el
+    // resto) — ver complexityReweight() más arriba, junto a
+    // rhythmComplexity.
+    var pool = complexityReweight(basePool, rhythmComplexity);
     var styleByBar = avoidAdjacentDuplicates(
       distributeWeighted(pool, numBars, function(style){ return style.tier; })
     );
+    var hihatPool = complexityReweight(HIHAT_RHYTHM_POOL, rhythmComplexity);
     var hihatVarietyByBar = avoidAdjacentDuplicates(
-      distributeWeighted(HIHAT_RHYTHM_POOL, numBars, function(v){ return v.feel; })
+      distributeWeighted(hihatPool, numBars, function(v){ return v.feel; })
     );
     // MÁS REPETICIÓN: 40% extra de probabilidad, compás a compás, de
     // repetir el patrón de batería del compás anterior.
@@ -9086,6 +9188,7 @@ function runAnalysis() {
           events.push({type:"hihat", startBeat: base+e*step, open: !!openSet[e]});
         }
       }
+      addRhythmComplexityLayer(events, base, rhythmComplexity);
     }
     return events;
   }
@@ -9448,6 +9551,39 @@ function runAnalysis() {
   });
   document.getElementById("consolaChordSimulSlider").addEventListener("change", function(){
     if(state.rootChord.length) regenerateConsola();
+  });
+  // Notes complexity — slider maestro sin lógica propia: al moverlo,
+  // pisa el value de Chromatism/Chords/Jazz/Chord simultaneity con el
+  // mismo % y les dispara su propio evento "input" (reusa la lógica que
+  // cada uno ya tiene — actualiza su variable interna, su etiqueta de %,
+  // y de paso el duplicado enlazado de Chromatism del módulo Cycles). De
+  // ida solamente: mover esos 4 sliders a mano después no mueve de vuelta
+  // a Notes complexity. Un solo regenerateConsola() al soltar, no uno por
+  // cada slider que mueve.
+  document.getElementById("consolaNotesComplexitySlider").addEventListener("input", function(){
+    var v = this.value;
+    document.getElementById("consolaNotesComplexityVal").textContent = v + "%";
+    ["consolaChromaSlider","consolaChordsSlider","consolaJazzSlider","consolaChordSimulSlider"].forEach(function(id){
+      var el = document.getElementById(id);
+      if(!el) return;
+      el.value = v;
+      el.dispatchEvent(new Event("input"));
+    });
+  });
+  document.getElementById("consolaNotesComplexitySlider").addEventListener("change", function(){
+    if(state.rootChord.length) regenerateConsola();
+  });
+  // Rhythm complexity — solo afecta a buildDrumEvents (ver
+  // rhythmComplexity/complexityReweight/addRhythmComplexityLayer más
+  // arriba). No hace falta regenerateConsola() completo (no toca
+  // armonía/bajo/melodía) — alcanza con reconstruir drumEvents, mismo
+  // patrón que ya usa el toggle Swing Drums.
+  document.getElementById("consolaRhythmComplexitySlider").addEventListener("input", function(){
+    rhythmComplexity = this.value / 100;
+    document.getElementById("consolaRhythmComplexityVal").textContent = this.value + "%";
+  });
+  document.getElementById("consolaRhythmComplexitySlider").addEventListener("change", function(){
+    drumEvents = buildDrumEvents(NUM_BARS);
   });
   FIXED_INTERVAL_CHK_IDS.forEach(function(id){
     document.getElementById(id).addEventListener("change", function(){
