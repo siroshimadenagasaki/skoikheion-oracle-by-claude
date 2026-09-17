@@ -1005,9 +1005,10 @@
           <span class="consola-inst-toggle" title="Mezcla figuras largas y cortas DENTRO del mismo compás de melodía, en vez del comportamiento de siempre (un compás entero de figuras largas y, cada tanto, un compás entero de fill de notas cortas). No cambia qué nota suena, solo el ritmo."><input type="checkbox" id="consolaMixDurChk" checked><label for="consolaMixDurChk">&#127925; Mix melody duration</label></span>
         </div>
       </div>
-      <div class="consola-field consola-instruments" title="Modo TEST: si tildás uno o más, la transposición cromática al azar (por compás y por reataque) deja de usar el rango del slider Chromatism y sortea SOLO entre los intervalos tildados acá. La dirección (Ascendente/Descendente) es global para todos — 2da M, 3ra m, 3ra M, 4ta J y 5ta J transponen todos para el mismo lado a la vez; Descendente está tildado por defecto. Al tildar el primer intervalo, el slider Chromatism baja a 0% automáticamente (queda en 0% mientras uses esto). Destildando todos, Chromatism sigue en 0% hasta que lo subas vos a mano. No afecta el achique de subset (eso sigue atado solo a Chromatism).">
+      <div class="consola-field consola-instruments" title="Modo TEST: si tildás uno o más, la transposición cromática al azar (por compás y por reataque) deja de usar el rango del slider Chromatism y sortea SOLO entre los intervalos tildados acá. La dirección (Ascendente/Descendente) es global para todos — 2da m, 2da M, 3ra m, 3ra M, 4ta J y 5ta J transponen todos para el mismo lado a la vez; Descendente está tildado por defecto. Al tildar el primer intervalo, el slider Chromatism baja a 0% automáticamente (queda en 0% mientras uses esto). Destildando todos, Chromatism sigue en 0% hasta que lo subas vos a mano. No afecta el achique de subset (eso sigue atado solo a Chromatism).">
         <label>Transposition intervals (test)</label>
         <div class="consola-inst-row">
+          <span class="consola-inst-toggle"><input type="checkbox" id="consolaInt2m" data-semitones="1"><label for="consolaInt2m">2da m</label></span>
           <span class="consola-inst-toggle"><input type="checkbox" id="consolaInt2M" data-semitones="2"><label for="consolaInt2M">2da M</label></span>
           <span class="consola-inst-toggle"><input type="checkbox" id="consolaInt3m" data-semitones="3"><label for="consolaInt3m">3ra m</label></span>
           <span class="consola-inst-toggle"><input type="checkbox" id="consolaInt3M" data-semitones="4"><label for="consolaInt3M">3ra M</label></span>
@@ -1048,7 +1049,7 @@
             <input type="checkbox" id="consolaBebopNarrowChk"> narrowRegister
           </label>
         </span>
-        <button type="button" class="chip" id="consolaSoloPianoBtn" title="Modo solo: pone Armonía, Melodía y Bajo en preset Piano, y muda Batería/moreComping/bebopMelody/Doblar melodía — sin tocar ningún otro ajuste. Volvé a apretarlo para restaurar los presets y volúmenes que tenías antes.">🎹 SoloPiano</button>
+        <button type="button" class="chip" id="consolaSoloPianoBtn" title="Modo solo: pone Armonía, Melodía y Bajo en preset Piano, y muda Batería/moreComping/bebopMelody/Doblar melodía/Doblar armonía — sin tocar ningún otro ajuste. Volvé a apretarlo para restaurar los presets y volúmenes que tenías antes.">🎹 SoloPiano</button>
       </div>
     </div>
 
@@ -1087,6 +1088,24 @@
           <select class="mix-preset-select" id="harmonyPresetSelect">
             <option value="piano" selected>Piano</option>
             <option value="pad" title="Soundfont HIFI aparte (Soundfonts/HIFI/Warm Pad.sf2) — requiere el checkbox HIFI tildado, se carga junto con el resto de HIFI.">Warm Pad (HIFI)</option>
+            <option value="epiano">Piano eléctrico</option>
+            <option value="harpsichord">Clavecín</option>
+            <option value="celesta">Celesta</option>
+            <option value="strings1">Cuerdas (pad)</option>
+            <option value="brass1">Metales</option>
+            <option value="sopranoSax">Sax soprano</option>
+            <option value="tenorSax">Sax tenor</option>
+            <option value="bassoon">Fagot</option>
+            <option value="flute">Flauta</option>
+            <option value="contrabass">Contrabajo</option>
+            <option value="jazzGuitar">Guitarra jazz</option>
+          </select>
+        </div>
+        <div class="mix-preset-group" id="chordDoublePresetGroup" data-mix-group="chordDouble" title="Repite exactamente las mismas notas y el mismo ritmo de la Armonía, con un segundo timbre — para doblarla. En Mute (default) no genera ningún sonido nuevo ni dobla nada.">
+          <label class="mix-preset-label" for="chordDoublePresetSelect">Doblar armonía</label>
+          <select class="mix-preset-select" id="chordDoublePresetSelect">
+            <option value="mute" selected>Mute (apagado)</option>
+            <option value="piano">Piano</option>
             <option value="epiano">Piano eléctrico</option>
             <option value="harpsichord">Clavecín</option>
             <option value="celesta">Celesta</option>
@@ -6945,7 +6964,7 @@ function runAnalysis() {
   // de Chromatism, pero el slider NO se restaura solo (sigue en 0%
   // hasta que se toque a mano). El achique de subset (currentSubsetGap)
   // NO se toca acá, sigue atado solo a chromaVariety/Chromatism siempre.
-  var FIXED_INTERVAL_CHK_IDS = ["consolaInt2M","consolaInt3m","consolaInt3M","consolaInt4J","consolaInt5J"];
+  var FIXED_INTERVAL_CHK_IDS = ["consolaInt2m","consolaInt2M","consolaInt3m","consolaInt3M","consolaInt4J","consolaInt5J"];
   // Dirección global de los intervalos fijos: dos checkboxes mutuamente
   // excluyentes (Ascendente/Descendente, ver listeners más abajo) en vez
   // de un data-direction fijo por checkbox de intervalo — así los 5
@@ -8065,9 +8084,9 @@ function runAnalysis() {
   // presets deciden qué instrumento usar en armonía/melodía/bajo (los
   // 12 de Instruments.sf2, con sintetizador de siempre como respaldo)
   // y qué muestras usar en batería (kit real o percusión/congas).
-  var mixGains = { drum: 1, bass: 1, chord: 1, melody: 1, melodyDouble: 1, comping2: 1, bebop: 0 };
-  var mixPresets = { harmony: "piano", melody: "flute", melodyDouble: "mute", bass: "synthBass", drum: "kit", bebop: "tenorSax" };
-  var chordGainNode = null, bassGainNode = null, melodyGainNode = null, drumGainNode = null, melodyDoubleGainNode = null, comping2GainNode = null, bebopGainNode = null;
+  var mixGains = { drum: 1, bass: 1, chord: 1, melody: 1, melodyDouble: 1, chordDouble: 1, comping2: 1, bebop: 0 };
+  var mixPresets = { harmony: "piano", melody: "flute", melodyDouble: "mute", chordDouble: "mute", bass: "synthBass", drum: "kit", bebop: "tenorSax" };
+  var chordGainNode = null, bassGainNode = null, melodyGainNode = null, drumGainNode = null, melodyDoubleGainNode = null, chordDoubleGainNode = null, comping2GainNode = null, bebopGainNode = null;
   function ensureInstrumentGains(ctx){
     var master = ensureMasterGain(ctx);
     if(!chordGainNode){
@@ -8090,6 +8109,11 @@ function runAnalysis() {
       melodyDoubleGainNode.gain.value = mixGains.melodyDouble;
       melodyDoubleGainNode.connect(master);
     }
+    if(!chordDoubleGainNode){
+      chordDoubleGainNode = ctx.createGain();
+      chordDoubleGainNode.gain.value = mixGains.chordDouble;
+      chordDoubleGainNode.connect(master);
+    }
     if(!drumGainNode){
       drumGainNode = ctx.createGain();
       drumGainNode.gain.value = mixGains.drum;
@@ -8105,7 +8129,7 @@ function runAnalysis() {
       bebopGainNode.gain.value = mixGains.bebop;
       bebopGainNode.connect(master);
     }
-    return { chord: chordGainNode, bass: bassGainNode, melody: melodyGainNode, melodyDouble: melodyDoubleGainNode, drum: drumGainNode, comping2: comping2GainNode, bebop: bebopGainNode };
+    return { chord: chordGainNode, bass: bassGainNode, melody: melodyGainNode, melodyDouble: melodyDoubleGainNode, chordDouble: chordDoubleGainNode, drum: drumGainNode, comping2: comping2GainNode, bebop: bebopGainNode };
   }
   // Cambia el nivel de un canal en caliente (mientras suena o no) — usa
   // setTargetAtTime, igual que el volumen general, para que no haga clic.
@@ -8114,6 +8138,7 @@ function runAnalysis() {
     var node = track === "chord" ? chordGainNode : track === "bass" ? bassGainNode :
                track === "melody" ? melodyGainNode : track === "drum" ? drumGainNode :
                track === "melodyDouble" ? melodyDoubleGainNode :
+               track === "chordDouble" ? chordDoubleGainNode :
                track === "comping2" ? comping2GainNode :
                track === "bebop" ? bebopGainNode : null;
     if(node){
@@ -8935,6 +8960,19 @@ function runAnalysis() {
         if(sm2Active && playSM2Voice(ctx, gains.chord, mixPresets.harmony, ev.midi, t, dur*0.93, 0.2)) return;
         chordFam.fn(ctx, gains.chord, ev.midi, t, dur*0.93, chordFam.mk(dur*0.93));
       });
+      // Doblar armonía: selector aparte (#chordDoublePresetSelect, "Mute"
+      // por defecto) — repite exactamente las mismas notas y el mismo
+      // ritmo de la Armonía, con un segundo timbre. En Mute (default) no
+      // entra a este bloque: no genera ningún sonido nuevo ni dobla nada.
+      if(mixPresets.chordDouble !== "mute"){
+        var chordDoubleFam = voiceFamilyFor(mixPresets.chordDouble, "strings1");
+        state.chordEvents.forEach(function(ev){
+          var t = loopStartTime + ev.startBeat*spb;
+          var dur = ev.durBeats*spb;
+          if(sm2Active && playSM2Voice(ctx, gains.chordDouble, mixPresets.chordDouble, ev.midi, t, dur*0.93, 0.2)) return;
+          chordDoubleFam.fn(ctx, gains.chordDouble, ev.midi, t, dur*0.93, chordDoubleFam.mk(dur*0.93));
+        });
+      }
     }
     if(instEnabled("consolaBassChk")){
       var bassFam = voiceFamilyFor(mixPresets.bass, "contrabass");
@@ -9335,7 +9373,7 @@ function runAnalysis() {
     if(this.classList.contains("primary")){
       soloPianoPrev = {
         presets: { harmony: mixPresets.harmony, melody: mixPresets.melody, bass: mixPresets.bass },
-        gains: { drum: mixGains.drum, melodyDouble: mixGains.melodyDouble, comping2: mixGains.comping2, bebop: mixGains.bebop }
+        gains: { drum: mixGains.drum, melodyDouble: mixGains.melodyDouble, chordDouble: mixGains.chordDouble, comping2: mixGains.comping2, bebop: mixGains.bebop }
       };
       ["harmony","melody","bass"].forEach(function(track){
         mixPresets[track] = "piano";
@@ -9344,6 +9382,7 @@ function runAnalysis() {
       });
       setMixGain("drum", 0);
       setMixGain("melodyDouble", 0);
+      setMixGain("chordDouble", 0);
       setMixGain("comping2", 0);
       setMixGain("bebop", 0);
       var drumVolEl = document.getElementById("mixDrumVol"), drumVolValEl = document.getElementById("mixDrumVolVal");
@@ -9360,6 +9399,7 @@ function runAnalysis() {
       });
       setMixGain("drum", soloPianoPrev.gains.drum);
       setMixGain("melodyDouble", soloPianoPrev.gains.melodyDouble);
+      setMixGain("chordDouble", soloPianoPrev.gains.chordDouble);
       setMixGain("comping2", soloPianoPrev.gains.comping2);
       setMixGain("bebop", soloPianoPrev.gains.bebop);
       var drumVolEl2 = document.getElementById("mixDrumVol"), drumVolValEl2 = document.getElementById("mixDrumVolVal");
@@ -9404,6 +9444,7 @@ function runAnalysis() {
   (function(){
     var SELECTS = [
       { id: "harmonyPresetSelect",      key: "harmony"      },
+      { id: "chordDoublePresetSelect",  key: "chordDouble"  },
       { id: "melodyPresetSelect",       key: "melody"       },
       { id: "melodyDoublePresetSelect", key: "melodyDouble" },
       { id: "bebopPresetSelect",        key: "bebop"        },
