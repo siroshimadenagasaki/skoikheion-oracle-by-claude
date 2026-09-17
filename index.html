@@ -921,6 +921,7 @@
         <button class="chip" id="composeBtn" type="button" title="Toca el segmento de 12 compases de SetMusicBox con las notas actuales">🎹 Compose</button>
         <button class="chip" id="clearBtn">Limpiar</button>
         <button class="chip toggle" id="sf2Btn" type="button" aria-pressed="false" title="Carga bajo demanda tres SoundFonts reales (Instruments+Drums+Percussion, ~29MB) y reemplaza el sintetizador por muestras de instrumento y batería reales (incluye SetMusicBox). Un clic más para volver al sintetizador liviano.">🎼 Sonido real (SoundFont)</button>
+        <input type="file" id="sf2LocalPicker" webkitdirectory directory multiple hidden aria-hidden="true">
         <label class="hifi-toggle" title="Reemplaza instrumentos puntuales por SoundFonts premium aparte (Soundfonts/HIFI/), uno por uno a medida que se agregan — hoy: Piano (Steinway D), Armonía (Warm Pad), Bajo (Acoustic Bass / Super Bass Electric — opciones nuevas en el selector de Bajo) y Batería (Jazz Kit). Solo se nota con '🎼 Sonido real' activado; se descargan todos juntos al tildar este checkbox. Al activarlo, si el Bajo está en el default de siempre, pasa a Acoustic Bass.">
           <input type="checkbox" id="hifiChk"> HIFI
         </label>
@@ -4145,6 +4146,14 @@ const sf2BufferCache = new Map();
 // yendo todo por fetch como siempre.
 const SF2_IS_LOCAL_FILE = (location.protocol === "file:");
 let sf2LocalFileMap = null; // null hasta elegir carpeta; después: nombre de archivo (minúsculas) -> File
+let sf2LocalFolderPromise = null; // promesa compartida mientras el picker está abierto (evita 2 diálogos a la vez si varias cargas piden la carpeta en paralelo, ej. HIFI con Promise.all)
+function sf2EnsureLocalFolder() {
+  if (sf2LocalFileMap) return Promise.resolve();
+  if (!sf2LocalFolderPromise) {
+    sf2LocalFolderPromise = sf2PromptLocalFolder().finally(() => { sf2LocalFolderPromise = null; });
+  }
+  return sf2LocalFolderPromise;
+}
 function sf2BasenameOfUrl(url) {
   return decodeURIComponent(url.split("/").pop());
 }
@@ -4184,7 +4193,7 @@ function sf2PromptLocalFolder() {
 // fetch como siempre (sf2FetchWithProgress, sin cambios).
 async function sf2GetArrayBuffer(url, onProgress) {
   if (!SF2_IS_LOCAL_FILE) return sf2FetchWithProgress(url, onProgress);
-  if (!sf2LocalFileMap) await sf2PromptLocalFolder();
+  if (!sf2LocalFileMap) await sf2EnsureLocalFolder();
   const basename = sf2BasenameOfUrl(url);
   const file = sf2LocalFileMap.get(basename.toLowerCase());
   if (!file) throw new Error("No encontré \"" + basename + "\" en la carpeta elegida");
@@ -4528,7 +4537,7 @@ async function hifiLoadAllIfNeeded() {
     if (hifiStateByKey[f.key] === "ready" || hifiStateByKey[f.key] === "loading") return;
     hifiStateByKey[f.key] = "loading";
     try {
-      const buf = await sf2FetchWithProgress(f.url);
+      const buf = await sf2GetArrayBuffer(f.url);
       hifiFontByKey[f.key] = sf2ParseFont(buf);
       hifiStateByKey[f.key] = "ready";
     } catch (err) {
@@ -4550,7 +4559,7 @@ async function sf2Activate(btn) {
     let doneWeight = 0;
     const parsed = {};
     for (const f of SF2_FILES) {
-      const buf = await sf2FetchWithProgress(f.url, (frac) => {
+      const buf = await sf2GetArrayBuffer(f.url, (frac) => {
         const overall = (doneWeight + frac * f.weight) / totalWeight;
         const pct = Math.round(overall * 100);
         btn.textContent = "🎼 Cargando " + pct + "%…";
@@ -4606,7 +4615,20 @@ document.getElementById("sf2Btn").addEventListener("click", sf2ToggleBtnClick);
 // de la página. Un clic en el botón mientras carga no hace nada
 // (sf2ToggleBtnClick ya ignora clics con sf2State === "loading"); un
 // clic después de cargado alterna a sintetizador liviano, como siempre.
-sf2Activate(document.getElementById("sf2Btn"));
+// EXCEPCIÓN — archivo local (file://): acá la primera carga necesita
+// abrir el picker de carpeta (sf2PromptLocalFolder), y los navegadores
+// bloquean ese diálogo si no hay un gesto de usuario real en curso (la
+// carga de página no cuenta). Así que en file:// NO se dispara sola:
+// queda esperando el primer clic del usuario en el botón, que sí es un
+// gesto válido y deja abrir el picker sin problema — de ahí en más
+// (loading/ready/reintentar) se comporta exactamente igual que servido
+// por http(s).
+if (SF2_IS_LOCAL_FILE) {
+  var sf2BtnLocalEl = document.getElementById("sf2Btn");
+  if (sf2BtnLocalEl) sf2BtnLocalEl.title += " — Abierto como archivo local: al hacer clic te va a pedir elegir la carpeta \"Soundfonts\" del proyecto (se lee del disco, sin internet ni servidor). Se pide una sola vez.";
+} else {
+  sf2Activate(document.getElementById("sf2Btn"));
+}
 
 // Sonido breve al activar una nota de entrada (reloj, piano o diapasón).
 function playInputNote(pc) {
