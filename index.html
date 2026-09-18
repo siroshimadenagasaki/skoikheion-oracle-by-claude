@@ -1064,6 +1064,7 @@
           <span class="consola-inst-toggle" title="Cada compás de armonía, bajo, melodía y batería tiene un 40% extra de probabilidad de repetir exactamente el patrón del compás anterior; además, bajo y melodía tienen un 40% de probabilidad por compás de acoplar sus ataques a los de la armonía en vez de llevar su propio ritmo."><input type="checkbox" id="consolaMoreRepChk"><label for="consolaMoreRepChk">&#128257; More repetition</label></span>
           <span class="consola-inst-toggle" title="En cada reataque de armonía se sortean varias combinaciones válidas de subconjunto/transposición/inversión dentro del MISMO acorde/grado elegido (nunca de otro) y se elige la que comparte más notas con el acorde anterior — el doble de notas comunes en promedio que al azar puro, con la misma restricción de conjunto de siempre."><input type="checkbox" id="consolaCommonNotesChk"><label for="consolaCommonNotesChk">&#128279; Notas comunes</label></span>
           <span class="consola-inst-toggle" title="Mezcla figuras largas y cortas DENTRO del mismo compás de melodía, en vez del comportamiento de siempre (un compás entero de figuras largas y, cada tanto, un compás entero de fill de notas cortas). No cambia qué nota suena, solo el ritmo."><input type="checkbox" id="consolaMixDurChk" checked><label for="consolaMixDurChk">&#127925; Mix melody duration</label></span>
+          <span class="consola-inst-toggle" title="Reemplaza la selección de nota de la melodía (y de bebopMelody, si está prendido) por un CONTORNO fijo — un patrón de saltos tipo '2 arriba, 1 abajo' repetido, en vez de arpegio lineal en los compases densos o nota al azar en el resto. El patrón se sortea de un pool variado (ciclos de 2 a 4 movimientos) una vez por cada Reproducir/Regenerar, y siempre indexa dentro del acorde vigente (nunca una nota ajena al set) — si el salto se pasa del tamaño del acorde, sigue contando en la octava de al lado, igual que una 9na es un 2 una octava arriba."><input type="checkbox" id="consolaMelodicPatternsChk"><label for="consolaMelodicPatternsChk">&#127925; melodicPatterns</label></span>
         </div>
       </div>
       <div class="consola-field consola-instruments" title="Modo TEST: si tildás uno o más, la transposición cromática al azar (por compás y por reataque) deja de usar el rango del slider Chromatism y sortea SOLO entre los intervalos tildados acá. La dirección (Ascendente/Descendente) es global para todos — 2da m, 2da M, 3ra m, 3ra M, 4ta J y 5ta J transponen todos para el mismo lado a la vez; Descendente está tildado por defecto. Al tildar el primer intervalo, el slider Chromatism baja a 0% automáticamente (queda en 0% mientras uses esto). Destildando todos, Chromatism sigue en 0% hasta que lo subas vos a mano. No afecta el achique de subset (eso sigue atado solo a Chromatism).">
@@ -6897,6 +6898,78 @@ function runAnalysis() {
   })();
 
   /* ================================================================
+     MÓDULO PATRONES MELÓDICOS — checkbox #consolaMelodicPatternsChk,
+     "melodicPatterns". Reemplaza la elección de nota de la melodía
+     principal (buildBassMelodyEventsRandom) y de bebopMelody
+     (BEBOPMELODY, modos Arpeggios/Scales/Harris) por un CONTORNO fijo:
+     un patrón de movimientos tipo "2 arriba, 1 abajo" (magnitud 1-4,
+     dirección ↑/↓, repetido en loop) en vez de arpegio lineal o nota al
+     azar. Nunca elige una nota fuera del acorde/escala vigente — solo
+     cambia el ÍNDICE que se visita dentro de ese conjunto de notas,
+     exactamente el mismo mecanismo que ya usan Arpeggios/Harris (índice
+     % cantidad de notas, con vuelta de octava), generalizado de "7
+     grados de escala" a "n notas del acorde (o de la escala) en curso".
+     El patrón se sortea UNA VEZ por cada Reproducir/Regenerar/Normalito
+     (ver reset(), llamado desde regenerateConsola/normalizeConsola) —
+     mismo patrón para toda la pasada, tanto en la melodía principal
+     como en bebopMelody si está prendido, para que ambas líneas
+     compartan el mismo contorno.
+     Pool curado a partir de las combinaciones documentadas en el
+     proyecto (magnitudes 1-3, ciclos de 2 a 4 movimientos) — no
+     magnitudes de 4 para no forzar saltos mayores al tamaño típico de
+     un acorde chico (una tríada tiene 3 notas).
+     ================================================================ */
+  var MELODICPATTERNS = (function(){
+    var POOL = [
+      [[2,1],[1,-1]],
+      [[1,1],[1,1],[1,-1]],
+      [[3,1],[1,-1]],
+      [[1,-1],[1,-1],[1,1],[2,1]],
+      [[1,1],[2,1],[1,-1]],
+      [[2,-1],[1,1]],
+      [[1,1],[1,-1],[1,1],[1,-1]],
+      [[2,1],[2,-1],[1,1]],
+      [[1,1],[1,1],[1,1],[1,-1]],
+      [[3,-1],[1,1],[1,1]]
+    ];
+    var current = null;
+    function enabled(){
+      var chk = document.getElementById("consolaMelodicPatternsChk");
+      return !!(chk && chk.checked);
+    }
+    // Sortea un patrón nuevo del pool — llamar una sola vez por cada
+    // regeneración (regenerateConsola/normalizeConsola), nunca desde
+    // adentro de buildBassMelodyEventsRandom/BEBOPMELODY.buildEvents
+    // (si no, cada llamada tendría su propio patrón y la melodía
+    // principal y bebopMelody sonarían con contornos distintos).
+    function reset(){
+      current = POOL[randomInt(0, POOL.length-1)];
+    }
+    function pattern(){
+      if(!current) reset();
+      return current;
+    }
+    // Siguiente posición de la secuencia (puede ser negativa o mayor
+    // al tamaño del conjunto vigente — lo resuelve indexWithOctave).
+    // `step` es el número de movimiento dentro del patrón (0-based),
+    // no el número de nota tocada, así una pausa/silencio no lo altera.
+    function nextPos(prevPos, step){
+      var mv = pattern()[((step % pattern().length) + pattern().length) % pattern().length];
+      return prevPos + mv[0]*mv[1];
+    }
+    // Traduce una posición entera a {idx, octLap} dentro de un
+    // conjunto de `n` notas — misma fórmula grado/octava documentada
+    // (((pos % n)+n)%n, floor(pos/n)), generalizada de "7 grados de
+    // escala" a "n notas del acorde o escala en curso".
+    function indexWithOctave(pos, n){
+      var idx = ((pos % n) + n) % n;
+      var octLap = Math.floor(pos / n);
+      return { idx: idx, octLap: octLap };
+    }
+    return { enabled: enabled, reset: reset, nextPos: nextPos, indexWithOctave: indexWithOctave };
+  })();
+
+  /* ================================================================
      MÓDULO BEBOP MELODY — botón #consolaBebopBtn (apagado por
      defecto, mismo patrón "primary" que moreComping) + volumen propio
      #mixBebopVol (0% por defecto; al prender el botón se auto-sube a
@@ -7034,10 +7107,15 @@ function runAnalysis() {
       if(doHarris) modes.push("harris");
       if(!modes.length) return []; // ningún modo tildado (o aplicable): silencio
 
+      var patOn = MELODICPATTERNS.enabled();
       var events = [];
       var prevKey = null;
       var idx = 0;          // arp/scale: se resetea en cada cambio de acorde
+      var idxPos = 0;        // arp/scale con patrón: posición del contorno, se resetea junto con idx
+      var idxStep = 0;       // arp/scale con patrón: número de movimiento dentro del patrón
       var harrisIdx = 0;    // harris: corrida continua, NUNCA se resetea
+      var harrisPos = 0;     // harris con patrón: posición del contorno, tampoco se resetea nunca
+      var harrisStep = 0;    // harris con patrón: número de movimiento
       var harrisAnchor = null; // octava de referencia, fijada una sola vez
       for(var bar=0; bar<numBars; bar++){
         var mode = modes[bar % modes.length];
@@ -7056,9 +7134,16 @@ function runAnalysis() {
             }
             var hTones = HARRIS.scaleNear(harrisCtx, harrisAnchor);
             var hn = hTones.length;
-            var hOctLap = Math.floor(harrisIdx / hn);
-            midi = clampMelodyRange(hTones[harrisIdx % hn] + hOctLap*12);
-            harrisIdx++;
+            if(patOn){
+              if(harrisStep>0) harrisPos = MELODICPATTERNS.nextPos(harrisPos, harrisStep-1);
+              harrisStep++;
+              var hPos = MELODICPATTERNS.indexWithOctave(harrisPos, hn);
+              midi = clampMelodyRange(hTones[hPos.idx] + hPos.octLap*12);
+            } else {
+              var hOctLap = Math.floor(harrisIdx / hn);
+              midi = clampMelodyRange(hTones[harrisIdx % hn] + hOctLap*12);
+              harrisIdx++;
+            }
           } else {
             var tones, key;
             if(mode === "scale"){
@@ -7071,11 +7156,18 @@ function runAnalysis() {
               key = "arp|" + tones.map(mod12).join(",");
             }
             if(!arpUp) tones = tones.slice().reverse();
-            if(key !== prevKey){ idx = 0; prevKey = key; }
+            if(key !== prevKey){ idx = 0; idxPos = 0; idxStep = 0; prevKey = key; }
             var n = tones.length;
-            var octLap = Math.floor(idx / n);
-            midi = clampMelodyRange(tones[idx % n] + octLap*12);
-            idx++;
+            if(patOn){
+              if(idxStep>0) idxPos = MELODICPATTERNS.nextPos(idxPos, idxStep-1);
+              idxStep++;
+              var iPos = MELODICPATTERNS.indexWithOctave(idxPos, n);
+              midi = clampMelodyRange(tones[iPos.idx] + iPos.octLap*12);
+            } else {
+              var octLap = Math.floor(idx / n);
+              midi = clampMelodyRange(tones[idx % n] + octLap*12);
+              idx++;
+            }
           }
           if(doNarrow) midi = clampNarrowRegister(midi);
           events.push({ midi: midi, startBeat: startBeat, durBeats: stepDur, bar: bar });
@@ -7992,6 +8084,7 @@ function runAnalysis() {
     }
     var bassEvents = [], melodyEvents = [];
     var jazzPrevBass = null; // JAZZ: nota anterior del bajo, para caminar por grados conjuntos
+    var patPos = 0, patStep = 0; // melodicPatterns: posición del contorno, persiste a lo largo de TODO el pasaje (nunca se resetea por compás/acorde)
     progression.forEach(function(chord, bar){
       // Con "Always complete set" tildado (default): el bajo arranca con
       // la cola del complemento y va cubriendo esas notas primero (lo
@@ -8056,7 +8149,18 @@ function runAnalysis() {
         }
         var currentSlotChord = currentChordAt(slotChords[bar], mOffset);
         var base, octAdd, midi;
-        if(isDense){
+        if(MELODICPATTERNS.enabled()){
+          // melodicPatterns: contorno fijo en vez de arpegio lineal
+          // (denso) o nota al azar (disperso) — misma restricción de
+          // siempre, solo notas de currentSlotChord, indexadas con el
+          // patrón sorteado en MELODICPATTERNS.reset() (una vez por
+          // Reproducir/Regenerar, compartido con bebopMelody).
+          var pn = currentSlotChord.length;
+          if(patStep>0) patPos = MELODICPATTERNS.nextPos(patPos, patStep-1);
+          patStep++;
+          var pPos = MELODICPATTERNS.indexWithOctave(patPos, pn);
+          midi = clampMelodyRange(currentSlotChord[pPos.idx] + pPos.octLap*12);
+        } else if(isDense){
           var n = currentSlotChord.length;
           var idxInChord, octLap;
           // JAZZ: en vez de recorrer el acorde en línea recta
@@ -8145,6 +8249,7 @@ function runAnalysis() {
     state.rootChord = rootChord;
     fixedIntervalOffset = 0; // modo test de intervalos fijos: cada variación nueva arranca el ciclo en C (offset 0)
     cyclesOffset = 0; // módulo Cycles (Modo A acumulativo): cada variación nueva arranca el ciclo en C también
+    MELODICPATTERNS.reset(); // melodicPatterns: un contorno nuevo por variación, compartido por melodía principal y bebopMelody
     var built = buildProgressionRandom(rootChord, NUM_BARS);
     state.progression = built.progression;
     state.roles = built.roles;
@@ -8172,6 +8277,7 @@ function runAnalysis() {
   // el próximo cambio de notas vuelve automáticamente al modo libre.
   function normalizeConsola(){
     if(state.rootChord.length === 0) return;
+    MELODICPATTERNS.reset(); // melodicPatterns: también sortea contorno nuevo en Normalito
     var invSeq = defaultInversionSeq(state.rootChord.length, NUM_BARS);
     var built = buildProgression(state.rootChord, invSeq);
     state.progression = built.progression;
@@ -10064,6 +10170,9 @@ function runAnalysis() {
     if(state.rootChord.length) regenerateConsola();
   });
   document.getElementById("consolaMixDurChk").addEventListener("change", function(){
+    if(state.rootChord.length) regenerateConsola();
+  });
+  document.getElementById("consolaMelodicPatternsChk").addEventListener("change", function(){
     if(state.rootChord.length) regenerateConsola();
   });
   // moreComping: botón, no checkbox — queda prendido/apagado (clase
