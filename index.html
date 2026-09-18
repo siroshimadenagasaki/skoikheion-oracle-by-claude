@@ -8594,11 +8594,34 @@ function runAnalysis() {
 
   // ---------- audio: sintetizador PAD (comparte el AudioContext del Oráculo) ----------
   var currentVolume = 0.7;
+  var masterBoost = null, masterLimiter = null;
   function ensureMasterGain(ctx){
     if(!masterGain){
       masterGain = ctx.createGain();
       masterGain.gain.value = currentVolume;
-      masterGain.connect(ctx.destination);
+
+      // Boost + limiter: sube el volumen percibido sin clipear y sin
+      // gastar CPU extra — DynamicsCompressorNode es nativo del motor
+      // de audio del navegador (procesado fuera de JS), mucho más
+      // barato que un ConvolverNode (reverb) o cualquier nodo custom.
+      // El slider "Volumen" (currentVolume, 0-100%) sigue mandando
+      // igual que siempre en masterGain; masterBoost aplica un empuje
+      // fijo por encima, y masterLimiter (casi brickwall) absorbe los
+      // picos cuando suenan varias pistas juntas (armonía+bajo+
+      // melodía+batería+comping2+bebop) para que no distorsione.
+      masterBoost = ctx.createGain();
+      masterBoost.gain.value = 1.8;
+
+      masterLimiter = ctx.createDynamicsCompressor();
+      masterLimiter.threshold.value = -8;
+      masterLimiter.knee.value = 0;
+      masterLimiter.ratio.value = 20;
+      masterLimiter.attack.value = 0.002;
+      masterLimiter.release.value = 0.15;
+
+      masterGain.connect(masterBoost);
+      masterBoost.connect(masterLimiter);
+      masterLimiter.connect(ctx.destination);
     }
     return masterGain;
   }
