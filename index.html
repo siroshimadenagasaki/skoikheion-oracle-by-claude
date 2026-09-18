@@ -1047,6 +1047,15 @@
       </div>
         </div>
       </div>
+      <div class="consola-field consola-instruments" title="Variaciones adicionales sobre el patrón de batería aleatorio (no afectan a Swing Drums, que es un groove fijo). Son ortogonales a Rhythm complexity: la modulan compás a compás, no la reemplazan.">
+        <label>Variaciones de ritmo</label>
+        <div class="consola-inst-row">
+          <span class="consola-inst-toggle" title="Cada golpe (bombo/caja/hi-hat/rimshot) recibe una variación aleatoria de volumen (±12) más un acento fijo en los tiempos 1 y 3 del compás, en vez del volumen fijo de siempre."><input type="checkbox" id="consolaVelocityHumanizeChk" checked><label for="consolaVelocityHumanizeChk">Velocity humanizada</label></span>
+          <span class="consola-inst-toggle" title="Corre levemente el hi-hat y la caja unos milisegundos antes o después del grid exacto (push-pull), golpe a golpe. No toca el bombo (ancla el pulso) ni Swing Drums (ese groove ya trae su propio timing real del MIDI)."><input type="checkbox" id="consolaMicroTimingChk" checked><label for="consolaMicroTimingChk">Micro-timing</label></span>
+          <span class="consola-inst-toggle" title="Ata la densidad efectiva del compás a su posición dentro de la frase de 4: más probabilidad de fill/platillo/ride en el último compás de cada frase (4, 8, 12) y un poco más de respiro en el resto, en vez de la misma probabilidad pareja en los 12 compases."><input type="checkbox" id="consolaSectionVariationChk" checked><label for="consolaSectionVariationChk">Variación por sección</label></span>
+          <span class="consola-inst-toggle" title="Agrupa variaciones extra: ghost notes de caja entre los golpes principales, síncopa ocasional del bombo fuera del grid, y cross-stick/rimshot en vez de caja en los compases más quietos."><input type="checkbox" id="consolaOtherRhythmVarChk" checked><label for="consolaOtherRhythmVarChk">other-rhythm-variations</label></span>
+        </div>
+      </div>
       <div class="consola-field consola-loop">
         <input type="checkbox" id="consolaLoopChk" checked>
         <label for="consolaLoopChk">Loop</label>
@@ -9345,8 +9354,9 @@ function runAnalysis() {
     return sharedNoiseBuffer;
   }
 
-  function playKickDrum(ctx, dest, startTime){
-    var peakGain = 0.9;
+  function playKickDrum(ctx, dest, startTime, velScale){
+    var vs = velScale != null ? velScale : 1;
+    var peakGain = 0.9 * vs;
     var osc = ctx.createOscillator();
     osc.type = "sine";
     osc.frequency.setValueAtTime(150, startTime);
@@ -9369,7 +9379,7 @@ function runAnalysis() {
     clickFilter.type = "highpass";
     clickFilter.frequency.value = 1200;
     var clickGain = ctx.createGain();
-    clickGain.gain.setValueAtTime(0.25, startTime);
+    clickGain.gain.setValueAtTime(0.25 * vs, startTime);
     clickGain.gain.exponentialRampToValueAtTime(0.001, startTime+0.02);
     click.connect(clickFilter);
     clickFilter.connect(clickGain);
@@ -9379,7 +9389,8 @@ function runAnalysis() {
     voices.push(click);
   }
 
-  function playSnareDrum(ctx, dest, startTime){
+  function playSnareDrum(ctx, dest, startTime, velScale){
+    var vs = velScale != null ? velScale : 1;
     var noise = ctx.createBufferSource();
     noise.buffer = getNoiseBuffer(ctx);
     var noiseFilter = ctx.createBiquadFilter();
@@ -9387,7 +9398,7 @@ function runAnalysis() {
     noiseFilter.frequency.value = 1800;
     noiseFilter.Q.value = 0.7;
     var noiseGain = ctx.createGain();
-    noiseGain.gain.setValueAtTime(0.55, startTime);
+    noiseGain.gain.setValueAtTime(0.55 * vs, startTime);
     noiseGain.gain.exponentialRampToValueAtTime(0.001, startTime+0.16);
     noise.connect(noiseFilter);
     noiseFilter.connect(noiseGain);
@@ -9400,7 +9411,7 @@ function runAnalysis() {
     tone.type = "triangle";
     tone.frequency.value = 180;
     var toneGain = ctx.createGain();
-    toneGain.gain.setValueAtTime(0.3, startTime);
+    toneGain.gain.setValueAtTime(0.3 * vs, startTime);
     toneGain.gain.exponentialRampToValueAtTime(0.001, startTime+0.1);
     tone.connect(toneGain);
     toneGain.connect(dest);
@@ -9409,7 +9420,43 @@ function runAnalysis() {
     voices.push(tone);
   }
 
-  function playHihat(ctx, dest, startTime, open){
+  // Cross-stick / rimshot — usado por "other-rhythm-variations" en
+  // compases quietos, en vez de la caja normal: click más corto y
+  // agudo (banda angosta 2800Hz + blip cuadrado breve), sin el cuerpo
+  // grave de playSnareDrum.
+  function playRimShot(ctx, dest, startTime, velScale){
+    var vs = velScale != null ? velScale : 1;
+    var noise = ctx.createBufferSource();
+    noise.buffer = getNoiseBuffer(ctx);
+    var bp = ctx.createBiquadFilter();
+    bp.type = "bandpass";
+    bp.frequency.value = 2800;
+    bp.Q.value = 3;
+    var gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.32 * vs, startTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, startTime+0.05);
+    noise.connect(bp);
+    bp.connect(gain);
+    gain.connect(dest);
+    noise.start(startTime);
+    noise.stop(startTime+0.06);
+    voices.push(noise);
+
+    var click = ctx.createOscillator();
+    click.type = "square";
+    click.frequency.value = 850;
+    var clickGain = ctx.createGain();
+    clickGain.gain.setValueAtTime(0.18 * vs, startTime);
+    clickGain.gain.exponentialRampToValueAtTime(0.001, startTime+0.025);
+    click.connect(clickGain);
+    clickGain.connect(dest);
+    click.start(startTime);
+    click.stop(startTime+0.03);
+    voices.push(click);
+  }
+
+  function playHihat(ctx, dest, startTime, open, velScale){
+    var vs = velScale != null ? velScale : 1;
     var noise = ctx.createBufferSource();
     noise.buffer = getNoiseBuffer(ctx);
     var hp = ctx.createBiquadFilter();
@@ -9417,7 +9464,7 @@ function runAnalysis() {
     hp.frequency.value = 7500;
     var dur = open ? 0.28 : 0.055;
     var gain = ctx.createGain();
-    gain.gain.setValueAtTime(open ? 0.22 : 0.18, startTime);
+    gain.gain.setValueAtTime((open ? 0.22 : 0.18) * vs, startTime);
     gain.gain.exponentialRampToValueAtTime(0.001, startTime+dur);
     noise.connect(hp);
     hp.connect(gain);
@@ -9507,6 +9554,80 @@ function runAnalysis() {
     });
   }
 
+  // ---- Variaciones de ritmo adicionales (4 checkboxes, todos ON por
+  // defecto: #consolaVelocityHumanizeChk/#consolaMicroTimingChk/
+  // #consolaSectionVariationChk/#consolaOtherRhythmVarChk) — igual
+  // convención que Subsets/Supersets/MixDur: se leen en vivo del DOM en
+  // cada llamada, sin variable mirror, así no hay riesgo de desincronía.
+  // Ortogonales entre sí y a Rhythm complexity (la modulan, no la
+  // reemplazan). Ninguna aplica con Swing Drums activo (buildDrumEvents
+  // devuelve el patrón MIDI fijo antes de llegar a nada de esto).
+  function velocityHumanizeEnabled(){
+    var c = document.getElementById("consolaVelocityHumanizeChk");
+    return !!(c && c.checked);
+  }
+  function microTimingEnabled(){
+    var c = document.getElementById("consolaMicroTimingChk");
+    return !!(c && c.checked);
+  }
+  function sectionVariationEnabled(){
+    var c = document.getElementById("consolaSectionVariationChk");
+    return !!(c && c.checked);
+  }
+  function otherRhythmVariationsEnabled(){
+    var c = document.getElementById("consolaOtherRhythmVarChk");
+    return !!(c && c.checked);
+  }
+
+  // Velocity humanizada: variación aleatoria ±12 sobre una base por tipo
+  // de golpe, más acento fijo (+14) en los tiempos 1 y 3 del compás.
+  // Guarda el resultado en ev.vel (0-127, mismo campo que ya usa Swing
+  // Drums) — scheduleLoopAt ya sabe leer ev.vel si está presente (ver
+  // velScale ahí), así que no hizo falta tocar la reproducción del lado
+  // SoundFont para que esto suene; sí hubo que sumarle un parámetro de
+  // volumen a los sintetizadores de respaldo (ver playKickDrum/
+  // playSnareDrum/playHihat/playRimShot más abajo).
+  var DEFAULT_DRUM_VEL = { kick:100, snare:92, hihat:80, rimshot:70 };
+  function humanizeVelocity(startBeat, base){
+    var beatInBar = startBeat % BEATS_PER_BAR;
+    var accent = (Math.abs(beatInBar - 0) < 0.01 || Math.abs(beatInBar - 2) < 0.01) ? 14 : 0;
+    var jitter = Math.round((Math.random()*2 - 1) * 12); // ±12
+    return Math.max(1, Math.min(127, base + accent + jitter));
+  }
+  // Recorre los eventos de ESTE compás (startBeat >= base) al final de
+  // armarlo y les asigna vel si todavía no tienen una (ghost notes y
+  // Swing Drums ya traen la propia — nunca se las pisa).
+  function applyVelocityHumanize(events, base){
+    if (!velocityHumanizeEnabled()) return;
+    for (var i=events.length-1; i>=0 && events[i].startBeat >= base; i--){
+      var ev = events[i];
+      if (ev.vel != null) continue;
+      ev.vel = humanizeVelocity(ev.startBeat, DEFAULT_DRUM_VEL[ev.type] || 90);
+    }
+  }
+
+  // Micro-timing: corre hi-hat y caja (no el bombo, que ancla el pulso)
+  // unos milisegundos antes o después del grid — expresado en beats para
+  // no depender del tempo elegido. ±0.035 beats ~ ±25ms a 84 BPM.
+  var MICRO_TIMING_MAX_BEATS = 0.035;
+  function microTimingOffset(){
+    return microTimingEnabled() ? (Math.random()*2 - 1) * MICRO_TIMING_MAX_BEATS : 0;
+  }
+
+  // Variación por sección: sube la complejidad efectiva del último
+  // compás de cada frase de 4 (bar 3, 7, 11 — 0-indexed, o sea los
+  // compases 4/8/12 vistos por el usuario) y la baja un poco en el
+  // resto — redistribución, no aumento neto, del mismo rhythmComplexity
+  // de siempre. Alimenta únicamente addRhythmComplexityLayer (la capa
+  // aditiva); no toca distributeWeighted/styleByBar, que reparte los
+  // tiers de compás con cuotas exactas sobre los 12 compases y no
+  // conviene desbalancear compás a compás.
+  function sectionComplexity(bar, base){
+    if (!sectionVariationEnabled()) return base;
+    var isSectionEnd = (bar % 4 === 3);
+    return isSectionEnd ? Math.min(1, base + 0.35) : Math.max(0, base - 0.15);
+  }
+
   // ---- Swing Drums: groove real, tomado de un MIDI subido por el
   // usuario (JBB_4-4_NmlMedSwg_T008_FullKit_107.mid — swing 4/4,
   // "normal medium swing") ----------------------------------------------
@@ -9582,7 +9703,7 @@ function runAnalysis() {
   // quedan en la misma familia de respaldo sintetizado que ya usa Swing
   // Drums para estas mismas notas (tom->kick, crash/ride->hihat), así
   // nunca suenan mudas con el SoundFont apagado.
-  function addRhythmComplexityLayer(events, base, complexity){
+  function addRhythmComplexityLayer(events, base, complexity, otherVariations){
     // Fill de toms sobre el último tiempo del compás (3 golpes
     // descendentes en corcheas: tom agudo, medio-grave, grave — notas GM
     // 50/47/45). Probabilidad crece con el %, tope 50% de los compases.
@@ -9607,6 +9728,37 @@ function runAnalysis() {
       for (var q=events.length-1; q>=0 && events[q].startBeat >= base; q--){
         if (events[q].type === "hihat" && events[q].midi == null){
           events[q].midi = events[q].open ? 53 : 51;
+        }
+      }
+    }
+
+    // ---- other-rhythm-variations (checkbox #consolaOtherRhythmVarChk,
+    // ON por defecto) — agrupa 3 variaciones más, todas escaladas por
+    // `complexity` (que ya viene modulada por sectionComplexity si ese
+    // checkbox está activo, así que se combinan solas sin código extra).
+    if (otherVariations){
+      // Ghost notes de caja: golpes muy suaves (vel baja, no pasa por
+      // humanizeVelocity — su volumen bajo ES la variación) en las
+      // corcheas "and" de los tiempos 1 y 3. Se suman, no reemplazan
+      // nada.
+      [0.5, 2.5].forEach(function(gb){
+        if (Math.random() < 0.25 + complexity*0.35){
+          events.push({type:"snare", startBeat: base+gb, vel: 28 + Math.round(Math.random()*10)});
+        }
+      });
+      // Síncopa de bombo: golpe extra en la corchea antes del tiempo 3,
+      // fuera del patrón fijo de siempre. Probabilidad crece con la
+      // complejidad, tope 30%.
+      if (Math.random() < complexity*0.3){
+        events.push({type:"kick", startBeat: base+2.5});
+      }
+      // Cross-stick/rimshot: en compases quietos (complexity efectivo
+      // < 0.3) cambia el timbre de los golpes de caja de ESTE compás
+      // (incluidas las ghost notes recién agregadas) a rimshot, en vez
+      // de agregar golpes nuevos — variación de timbre, no de cantidad.
+      if (complexity < 0.3){
+        for (var rs=events.length-1; rs>=0 && events[rs].startBeat >= base; rs--){
+          if (events[rs].type === "snare") events[rs].type = "rimshot";
         }
       }
     }
@@ -9637,14 +9789,14 @@ function runAnalysis() {
       var base = bar*BEATS_PER_BAR;
       var style = styleByBar[bar];
       style.kick.forEach(function(b){ events.push({type:"kick", startBeat: base+b}); });
-      style.snare.forEach(function(b){ events.push({type:"snare", startBeat: base+b}); });
+      style.snare.forEach(function(b){ events.push({type:"snare", startBeat: base+b+microTimingOffset()}); });
       if (style.hihatHits){
-        style.hihatHits.forEach(function(h){ events.push({type:"hihat", startBeat: base+h.b, open: !!h.open}); });
+        style.hihatHits.forEach(function(h){ events.push({type:"hihat", startBeat: base+h.b+microTimingOffset(), open: !!h.open}); });
       } else if (!JAZZ.roll() && HIHAT_VARIETY_TIERS[style.tier]){
         var cell = hihatVarietyByBar[bar];
         var tOff = 0;
         cell.dur.forEach(function(d, idx){
-          events.push({type:"hihat", startBeat: base+tOff, open: cell.accents.indexOf(idx) !== -1});
+          events.push({type:"hihat", startBeat: base+tOff+microTimingOffset(), open: cell.accents.indexOf(idx) !== -1});
           tOff += d;
         });
       } else {
@@ -9653,10 +9805,16 @@ function runAnalysis() {
         style.hihat.open.forEach(function(idx){ openSet[idx] = true; });
         var n = Math.round(BEATS_PER_BAR/step);
         for(var e=0; e<n; e++){
-          events.push({type:"hihat", startBeat: base+e*step, open: !!openSet[e]});
+          events.push({type:"hihat", startBeat: base+e*step+microTimingOffset(), open: !!openSet[e]});
         }
       }
-      addRhythmComplexityLayer(events, base, rhythmComplexity);
+      // Variación por sección: modula el % que ve la capa aditiva, no el
+      // styleByBar de arriba (ver sectionComplexity()).
+      var barComplexity = sectionComplexity(bar, rhythmComplexity);
+      addRhythmComplexityLayer(events, base, barComplexity, otherRhythmVariationsEnabled());
+      // Velocity humanizada: última pasada del compás, así ve todos los
+      // eventos que se hayan sumado arriba (patrón base + capa aditiva).
+      applyVelocityHumanize(events, base);
     }
     return events;
   }
@@ -9690,9 +9848,10 @@ function runAnalysis() {
   // de batería o el de percusión (ver SM2_DRUM_KITS): mismo ritmo, timbre
   // distinto según el preset elegido en el selector "Batería".
   function drumMidiFor(ev){
-    if(ev.midi != null) return ev.midi; // Swing Drums: nota real del MIDI
+    if(ev.midi != null) return ev.midi; // Swing Drums / fill-layer: nota real
     if(ev.type === "kick") return 36;
     if(ev.type === "snare") return 38;
+    if(ev.type === "rimshot") return 37; // cross-stick GM
     return ev.open ? 46 : 42; // hihat abierto / cerrado
   }
   function scheduleLoopAt(ctx, dest, loopStartTime, spb){
@@ -9771,17 +9930,20 @@ function runAnalysis() {
       var drumKitKey = mixPresets.drum || "kit";
       drumEvents.forEach(function(ev){
         var t = loopStartTime + ev.startBeat*spb;
-        // Swing Drums trae velocidad real (ev.vel, 0-127) — escala la
-        // ganancia de siempre en vez de reemplazarla. El patrón
-        // aleatorio de siempre no tiene ev.vel, así que acá no cambia
-        // nada (velScale queda en 1).
+        // Swing Drums trae velocidad real (ev.vel, 0-127); Velocity
+        // humanizada y las ghost notes de other-rhythm-variations
+        // también la traen ahora (ver humanizeVelocity/
+        // addRhythmComplexityLayer) — todo pasa por el mismo velScale,
+        // que escala la ganancia de siempre en vez de reemplazarla. Sin
+        // ev.vel (checkboxes apagados) queda en 1, igual que siempre.
         var velScale = ev.vel != null ? ev.vel/96 : 1;
-        var sm2Gain = (ev.type === "kick" ? 0.34 : ev.type === "snare" ? 0.26 : (ev.open ? 0.2 : 0.15)) * velScale;
-        var sm2Dur = ev.type === "kick" ? 0.3 : ev.type === "snare" ? 0.25 : (ev.open ? 0.5 : 0.15);
+        var sm2Gain = (ev.type === "kick" ? 0.34 : ev.type === "snare" ? 0.26 : ev.type === "rimshot" ? 0.2 : (ev.open ? 0.2 : 0.15)) * velScale;
+        var sm2Dur = ev.type === "kick" ? 0.3 : ev.type === "snare" ? 0.25 : ev.type === "rimshot" ? 0.12 : (ev.open ? 0.5 : 0.15);
         if(sm2Active && playSM2Voice(ctx, gains.drum, drumKitKey, drumMidiFor(ev), t, sm2Dur, sm2Gain)) return;
-        if(ev.type === "kick") playKickDrum(ctx, gains.drum, t);
-        else if(ev.type === "snare") playSnareDrum(ctx, gains.drum, t);
-        else if(ev.type === "hihat") playHihat(ctx, gains.drum, t, ev.open);
+        if(ev.type === "kick") playKickDrum(ctx, gains.drum, t, velScale);
+        else if(ev.type === "snare") playSnareDrum(ctx, gains.drum, t, velScale);
+        else if(ev.type === "rimshot") playRimShot(ctx, gains.drum, t, velScale);
+        else if(ev.type === "hihat") playHihat(ctx, gains.drum, t, ev.open, velScale);
       });
     }
     // moreComping: quinta pista, timbre de cuerdas fijo (no es parte del
@@ -10066,6 +10228,16 @@ function runAnalysis() {
   });
   document.getElementById("consolaRhythmComplexitySlider").addEventListener("change", function(){
     drumEvents = buildDrumEvents(NUM_BARS);
+  });
+  // Variaciones de ritmo (Velocity humanizada/Micro-timing/Variación por
+  // sección/other-rhythm-variations) — se leen en vivo del DOM (ver
+  // velocityHumanizeEnabled()/etc. junto a buildDrumEvents), así que acá
+  // solo hace falta reconstruir drumEvents al toggle, mismo patrón que
+  // Rhythm complexity y Swing Drums.
+  ["consolaVelocityHumanizeChk","consolaMicroTimingChk","consolaSectionVariationChk","consolaOtherRhythmVarChk"].forEach(function(id){
+    document.getElementById(id).addEventListener("change", function(){
+      drumEvents = buildDrumEvents(NUM_BARS);
+    });
   });
   FIXED_INTERVAL_CHK_IDS.forEach(function(id){
     document.getElementById(id).addEventListener("change", function(){
