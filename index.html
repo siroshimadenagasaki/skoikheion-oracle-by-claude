@@ -1211,7 +1211,7 @@
       </div>
       <div class="consola-field" style="flex-direction:row;flex-wrap:wrap;gap:8px;">
         <button type="button" class="chip primary" id="consolaPlayBtn" title="Reproduce el segmento en loop — repite siempre la misma secuencia (la última generada) hasta que la cambies con 🔀 o elijas otras notas.">&#9658; Reproducir</button>
-        <button type="button" class="chip chip-small" id="consolaRegenPlayBtn" disabled title="Sortea una variación nueva del segmento (mismo set de notas elegido) y la reproduce de una — equivalente al viejo botón Regenerar, fusionado con Reproducir.">&#128256;</button>
+        <button type="button" class="chip chip-small" id="consolaRegenPlayBtn" disabled title="Atajo: tecla G. Detiene lo que suene, sortea una variación nueva del segmento (mismo set de notas elegido) y la reproduce de una — funciona también mientras está sonando.">&#128256;</button>
         <button type="button" class="chip" id="consolaStopBtn" disabled>&#9632; Detener</button>
         <button type="button" class="chip" id="consolaResetBtn" title="Pánico: corta de golpe cualquier nota que haya quedado sonando (MIDI all notes off) — a diferencia de Detener, funciona aunque no esté reproduciendo.">&#128721; Reset</button>
         <button type="button" class="chip" id="consolaMoreCompingBtn" title="Agrega una QUINTA pista MIDI, con timbre de cuerdas (strings), que dobla cada nota de la melodía junto con 1 o 2 notas más del acorde vigente en ese instante (siempre del mismo set, nunca una nota ajena) — el grupito entero queda siempre pegado a la nota de melodía, a lo sumo a una octava o dos de distancia.">moreComping</button>
@@ -10451,8 +10451,8 @@ function runAnalysis() {
     var loopDur = TOTAL_BEATS*spb;
     playing = true;
     document.getElementById("consolaPlayBtn").disabled = true;
-    var regenPlayBtnEl = document.getElementById("consolaRegenPlayBtn");
-    if(regenPlayBtnEl) regenPlayBtnEl.disabled = true;
+    // 🔀 (consolaRegenPlayBtn) queda HABILITADO mientras suena: al pulsarlo
+    // (o con la tecla G) corta lo que suena, regenera y reproduce de nuevo.
     document.getElementById("consolaStopBtn").disabled = false;
     tempoEl.disabled = true;
     var rollHost = document.getElementById("consolaRollHost");
@@ -10565,10 +10565,32 @@ function runAnalysis() {
   document.getElementById("consolaPlayBtn").addEventListener("click", function(){
     startPlayback();
   });
-  document.getElementById("consolaRegenPlayBtn").addEventListener("click", function(){
+  // 🔀 y tecla G: detener → regenerar → reproducir la variación nueva.
+  // Sirve igual esté sonando o no (el botón ya no se deshabilita al
+  // reproducir). Sin set elegido no hace nada.
+  function regenerarYReproducir(){
+    if(!state.rootChord.length) return;
     if(playing) stopPlayback();
-    if(state.rootChord.length) regenerateConsola();
+    regenerateConsola();
     startPlayback();
+  }
+  document.getElementById("consolaRegenPlayBtn").addEventListener("click", regenerarYReproducir);
+  // Atajo G (mayúscula o minúscula, sin Ctrl/Cmd/Alt, sin autorepetición).
+  // No se dispara mientras se escribe en un campo de texto/número/textarea
+  // (p. ej. el numerador de Time signature). Checkboxes y sliders no
+  // cuentan como "escribir", así que G funciona aunque hayas tocado uno.
+  // En un <select> se corta el type-ahead del navegador (la G no salta
+  // a "Guitarra jazz") y dispara el atajo.
+  document.addEventListener("keydown", function(e){
+    if(e.key !== "g" && e.key !== "G") return;
+    if(e.ctrlKey || e.metaKey || e.altKey || e.repeat || e.isComposing) return;
+    var t = e.target, tag = t && t.tagName;
+    if(tag === "TEXTAREA" || (t && t.isContentEditable)) return;
+    if(tag === "INPUT" && ["checkbox","radio","range","button","submit","reset","color","file"].indexOf(t.type) === -1) return;
+    var btn = document.getElementById("consolaRegenPlayBtn");
+    if(!btn || btn.disabled) return;
+    e.preventDefault();
+    regenerarYReproducir();
   });
   document.getElementById("consolaStopBtn").addEventListener("click", stopPlayback);
   document.getElementById("consolaResetBtn").addEventListener("click", stopPlayback);
