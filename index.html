@@ -1056,6 +1056,14 @@
           <span class="consola-inst-toggle" title="Agrupa variaciones extra: ghost notes de caja entre los golpes principales, síncopa ocasional del bombo fuera del grid, y cross-stick/rimshot en vez de caja en los compases más quietos."><input type="checkbox" id="consolaOtherRhythmVarChk" checked><label for="consolaOtherRhythmVarChk">other-rhythm-variations</label></span>
         </div>
       </div>
+      <div class="consola-field consola-instruments" title="Compás (time signature) de cada uno de los 12 compases del segmento. Campo de texto: numerador/denominador (3/4, 6/8, 12/8, 5/4, 7/4, 9/8...) — se aplica a los 12 compases por igual. 4/4 por defecto, igual que siempre. Un compás compuesto (denominador 8, numerador múltiplo de 3 mayor a 3: 6/8, 9/8, 12/8) se siente subdividido de a 3 en vez de a 2 — armonía, bajo y melodía lo respetan. Mix time signatures: sortea entre 2 y 4 compases distintos (el tipeado siempre es uno de ellos) y los reparte al azar entre los 12 compases del segmento — un compás distinto en cada Reproducir/Regenerar.">
+        <label for="consolaTimeSigInput">Rhythm — Time signature</label>
+        <div class="consola-inst-row">
+          <input type="text" id="consolaTimeSigInput" value="4/4" inputmode="numeric" pattern="[0-9]{1,2}/[0-9]{1,2}" size="6" style="width:64px;">
+          <span class="consola-inst-toggle" title="Sortea entre 2 y 4 compases distintos (incluido el tipeado arriba) y los reparte al azar entre los 12 compases — algunos quedan en uno, otros en otro."><input type="checkbox" id="consolaMixTimeSigChk"><label for="consolaMixTimeSigChk">Mix time signatures</label></span>
+        </div>
+        <span class="consola-val" id="consolaTimeSigStatus"></span>
+      </div>
       <div class="consola-field consola-loop">
         <input type="checkbox" id="consolaLoopChk" checked>
         <label for="consolaLoopChk">Loop</label>
@@ -6279,7 +6287,138 @@ function runAnalysis() {
 
   var BEATS_PER_BAR = 4;
   var NUM_BARS = 12;
-  var TOTAL_BEATS = NUM_BARS * BEATS_PER_BAR;
+
+  /* ------------------------------------------------------------
+     RHYTHM — sección "Rhythm" del SetMusicBox. Elige el compás
+     (time signature) de cada uno de los NUM_BARS compases del
+     segmento. Por defecto, los 12 compases quedan en 4/4 (mismo
+     comportamiento de siempre). El campo de texto
+     #consolaTimeSigInput acepta "N/D" (3/4, 6/8, 12/8, 5/4, 7/4,
+     9/8, etc.); el checkbox #consolaMixTimeSigChk sortea entre 2 y
+     4 compases distintos (el tipeado siempre es uno de ellos) y los
+     reparte al azar entre los 12 compases.
+     Cada compás se traduce a una duración en NEGRAS (numerador*4/
+     denominador) — es la misma unidad "beat" que ya usa todo el
+     motor (STEP_DUR/spb multiplica esta unidad por los segundos de
+     una negra al tempo elegido), así que un compás de 3/4 dura 3
+     negras, uno de 7/4 dura 7, uno de 6/8 dura 3 (dos grupos de
+     corchea con puntillo) pero SUBDIVIDE de a 3 en vez de a 2
+     (compound=true) — eso es lo que usa genericBarCell más abajo
+     para que la frase se sienta realmente en 6/8 y no en 3/4.
+     ------------------------------------------------------------ */
+  var RHYTHM = (function(){
+    var MIX_POOL = ["3/4","4/4","5/4","6/8","7/4","9/8","12/8","2/4"];
+    var barBeatsArr = [], barStartArr = [], barCompoundArr = [], barLabelArr = [];
+    var total = NUM_BARS * BEATS_PER_BAR;
+    function parseSig(str){
+      var m = /^\s*(\d{1,2})\s*\/\s*(\d{1,2})\s*$/.exec(String(str||""));
+      if(!m) return null;
+      var num = parseInt(m[1],10), den = parseInt(m[2],10);
+      if(!num || num<1 || num>32 || [1,2,4,8,16].indexOf(den)===-1) return null;
+      var beats = num*4/den;
+      var compound = (den===8 && num>3 && num%3===0); // 6/8, 9/8, 12/8...
+      return { num:num, den:den, beats:beats, compound:compound, label:num+"/"+den };
+    }
+    function inputSig(){
+      var el = document.getElementById("consolaTimeSigInput");
+      return parseSig(el && el.value) || { num:4, den:4, beats:4, compound:false, label:"4/4" };
+    }
+    function mixEnabled(){
+      var chk = document.getElementById("consolaMixTimeSigChk");
+      return !!(chk && chk.checked);
+    }
+    // Vuelve a calcular el compás de cada uno de los NUM_BARS
+    // compases — se llama una vez por generación (regenerateConsola),
+    // así que cada Reproducir/Regenerar puede sortear una mezcla
+    // distinta cuando "Mix time signatures" está tildado.
+    function recompute(){
+      barBeatsArr = []; barStartArr = []; barCompoundArr = []; barLabelArr = [];
+      var sigs;
+      if (mixEnabled()){
+        var custom = inputSig();
+        var pool = MIX_POOL.filter(function(s){ return s !== custom.label; });
+        for(var i=pool.length-1;i>0;i--){ var j=randomInt(0,i); var t=pool[i]; pool[i]=pool[j]; pool[j]=t; }
+        var howMany = randomInt(2,4); // entre 2 y 4 compases distintos, el tipeado incluido
+        sigs = [custom].concat(pool.slice(0, Math.max(0, howMany-1)).map(parseSig));
+      } else {
+        sigs = [inputSig()];
+      }
+      var start = 0;
+      for(var bar=0; bar<NUM_BARS; bar++){
+        var sig = sigs.length===1 ? sigs[0] : sigs[randomInt(0, sigs.length-1)];
+        barBeatsArr.push(sig.beats);
+        barCompoundArr.push(sig.compound);
+        barLabelArr.push(sig.label);
+        barStartArr.push(start);
+        start += sig.beats;
+      }
+      total = start;
+      var statusEl = document.getElementById("consolaTimeSigStatus");
+      if (statusEl){
+        statusEl.textContent = sigs.length>1
+          ? ("Mezclando: " + sigs.map(function(s){ return s.label; }).join(", "))
+          : "";
+      }
+    }
+    return {
+      recompute: recompute,
+      beats: function(bar){ return barBeatsArr[bar] != null ? barBeatsArr[bar] : BEATS_PER_BAR; },
+      start: function(bar){
+        if (bar >= NUM_BARS) return total;
+        return barStartArr[bar] != null ? barStartArr[bar] : bar*BEATS_PER_BAR;
+      },
+      compound: function(bar){ return !!barCompoundArr[bar]; },
+      label: function(bar){ return barLabelArr[bar] || "4/4"; },
+      isDefault4_4: function(bar){
+        return Math.abs((barBeatsArr[bar]!=null?barBeatsArr[bar]:4) - 4) < 1e-9 && !barCompoundArr[bar];
+      },
+      total: function(){ return total; }
+    };
+  })();
+
+  // Genera una célula rítmica (array de duraciones en negras) que
+  // llena exactamente `beats` tiempos — usada para cualquier compás
+  // cuyo compás (RHYTHM) no sea el 4/4 llano, donde los pools
+  // curados de siempre (pensados para sumar justo 4) no aplican.
+  // En compases COMPUESTOS la unidad "larga" es la negra con
+  // puntillo (1.5, subdivisión de a 3) en vez de la blanca (de a 2),
+  // así la frase se siente realmente en 6/8, 9/8 o 12/8.
+  function genericBarCell(beats, compound, longProb){
+    var LONG_SIMPLE = [2, 1.5, 3, 4];
+    var SHORT_SIMPLE = [1, 0.5];
+    var LONG_COMPOUND = [1.5, 3, 4.5];
+    var SHORT_COMPOUND = [0.75, 0.5];
+    var longPool = compound ? LONG_COMPOUND : LONG_SIMPLE;
+    var shortPool = compound ? SHORT_COMPOUND : SHORT_SIMPLE;
+    var cell = [];
+    var remaining = beats;
+    var guard = 0;
+    var prob = longProb == null ? 0.6 : longProb;
+    while(remaining > 1e-6 && guard < 60){
+      guard++;
+      var useLong = Math.random() < prob;
+      var pool = useLong ? longPool : shortPool;
+      var fits = pool.filter(function(d){ return d <= remaining + 1e-6; });
+      var dur;
+      if (fits.length) dur = fits[randomInt(0, fits.length-1)];
+      else {
+        var otherFits = (useLong ? shortPool : longPool).filter(function(d){ return d <= remaining + 1e-6; });
+        dur = otherFits.length ? otherFits[randomInt(0, otherFits.length-1)] : remaining;
+      }
+      cell.push(dur);
+      remaining = Math.round((remaining - dur)*1000)/1000;
+    }
+    return cell;
+  }
+  // Devuelve la célula del compás `bar`: la del pool curado (cíclico
+  // u obtenido por distribuceWeighted) si ese compás está en 4/4
+  // llano, o una célula genérica ajustada a su compás real si no.
+  function cellForBar(pool, bar, longProb){
+    if (RHYTHM.isDefault4_4(bar)) return pool[bar % pool.length];
+    return genericBarCell(RHYTHM.beats(bar), RHYTHM.compound(bar), longProb);
+  }
+
+  var TOTAL_BEATS = NUM_BARS * BEATS_PER_BAR; // se recalcula en cada regenerateConsola() vía RHYTHM.total()
   var BASE_MIDI = 60; // C4
   var BAR_COLORS = ["var(--c-bar1)","var(--c-bar2)","var(--c-bar3)","var(--c-bar4)"];
   // Melodía: predominan las notas largas (redondas, blancas, blanca con
@@ -6812,7 +6951,7 @@ function runAnalysis() {
     function buildEvents(melodyEvents, chordAt){
       var events = [];
       melodyEvents.forEach(function(mEv){
-        var offsetInBar = mEv.startBeat - mEv.bar*BEATS_PER_BAR;
+        var offsetInBar = mEv.startBeat - RHYTHM.start(mEv.bar);
         var chordNow = chordAt(mEv.bar, offsetInBar) || [];
         var melodyPc = mod12(mEv.midi);
         var pool = Array.from(new Set(chordNow.map(function(m){ return mod12(m); })))
@@ -7661,7 +7800,8 @@ function runAnalysis() {
     var slotChords = [];
     progression.forEach(function(chordRaw, bar){
       var chord = chordRaw.slice().sort(function(a,b){return a-b;});
-      var cell = cells[bar % cells.length];
+      var cell = cellForBar(cells, bar, 0.75);
+      var barStart = RHYTHM.start(bar);
       var offset = 0;
       var slots = [];
       cell.forEach(function(dur){
@@ -7672,7 +7812,7 @@ function runAnalysis() {
         var brokenOffsets = BROKENCHORD.offsetsFor(chord, dur);
         chord.forEach(function(note, ni){
           var noteOff = brokenOffsets[ni];
-          events.push({midi:note, startBeat:bar*BEATS_PER_BAR+offset+noteOff, durBeats:Math.max(0.05,dur-noteOff), bar:bar});
+          events.push({midi:note, startBeat:barStart+offset+noteOff, durBeats:Math.max(0.05,dur-noteOff), bar:bar});
         });
         slots.push({chord:chord, startBeat:offset, durBeats:dur});
         offset += dur;
@@ -7817,6 +7957,12 @@ function runAnalysis() {
     var cellsByBar = avoidAdjacentDuplicates(
       distributeWeighted(chordPool, numBars, function(cell){ return cell.length; })
     );
+    // Rhythm: los compases que no estén en 4/4 llano (ver RHYTHM más
+    // arriba) descartan la celda del pool de siempre — pensada para
+    // sumar justo 4 — y arman la suya propia a la medida de su compás.
+    cellsByBar = cellsByBar.map(function(cell, bar){
+      return RHYTHM.isDefault4_4(bar) ? cell : genericBarCell(RHYTHM.beats(bar), RHYTHM.compound(bar), 0.7);
+    });
     // MÁS REPETICIÓN: 40% extra de probabilidad, compás a compás, de
     // repetir el patrón rítmico del compás anterior de armonía.
     if (MOREREP.enabled()) cellsByBar = MOREREP.applyRepetitionBias(cellsByBar);
@@ -7836,6 +7982,7 @@ function runAnalysis() {
     var prevCombo = null;
     var jazzPrevVoiced = null; // JAZZ: voicing del reataque anterior, para conducción de voces suave
     for(var bar=0; bar<numBars; bar++){
+      var barStart = RHYTHM.start(bar);
       var offset = 0;
       var slots = [];
       cellsByBar[bar].forEach(function(dur){
@@ -7883,7 +8030,7 @@ function runAnalysis() {
           // rítmica ligada al voicing, nunca cambia qué nota suena).
           var strumOff = strum ? vi*0.02 : 0;
           var noteOff = strumOff + (brokenOffsets ? brokenOffsets[vi] : 0);
-          events.push({midi:note, startBeat:bar*BEATS_PER_BAR+offset+noteOff, durBeats:Math.max(0.05,dur-noteOff), bar:bar});
+          events.push({midi:note, startBeat:barStart+offset+noteOff, durBeats:Math.max(0.05,dur-noteOff), bar:bar});
         });
         slots.push({chord:voiced, startBeat:offset, durBeats:dur});
         prevCombo = combo;
@@ -7917,11 +8064,12 @@ function runAnalysis() {
     var events = [];
     progression.forEach(function(chord, bar){
       var sorted = chord.slice().sort(function(a,b){return a-b;});
-      var cell = BASS_CELLS[bar % BASS_CELLS.length];
+      var cell = cellForBar(BASS_CELLS, bar, 0.8);
+      var barStart = RHYTHM.start(bar);
       var offset = 0;
       cell.forEach(function(dur, i){
         var tone = sorted[i % sorted.length];
-        events.push({midi: tone-24, startBeat:bar*BEATS_PER_BAR+offset, durBeats:dur, bar:bar});
+        events.push({midi: tone-24, startBeat:barStart+offset, durBeats:dur, bar:bar});
         offset += dur;
       });
     });
@@ -7935,9 +8083,12 @@ function runAnalysis() {
   // mismo promedio general de siempre.
   function buildBassRhythmRandom(numBars){
     var bassPool = JAZZ.roll() ? JAZZ.BASS_RHYTHM_POOL : BASS_RHYTHM_POOL;
-    return avoidAdjacentDuplicates(
+    var cellsByBar = avoidAdjacentDuplicates(
       distributeWeighted(bassPool, numBars, function(cell){ return cell.length; })
     );
+    return cellsByBar.map(function(cell, bar){
+      return RHYTHM.isDefault4_4(bar) ? cell : genericBarCell(RHYTHM.beats(bar), RHYTHM.compound(bar), 0.8);
+    });
   }
   // Melodía: célula rítmica distinta por compás, arpegiando el acorde +8va.
   function buildMelodyEvents(progression){
@@ -7945,11 +8096,12 @@ function runAnalysis() {
     progression.forEach(function(chord, bar){
       var tones = chord.map(function(n){return n+12;}).sort(function(a,b){return a-b;});
       if(bar % 2 === 1) tones = tones.slice().reverse();
-      var cell = MELODY_CELLS[bar % MELODY_CELLS.length];
+      var cell = cellForBar(MELODY_CELLS, bar, 0.55);
+      var barStart = RHYTHM.start(bar);
       var offset = 0;
       cell.forEach(function(dur, k){
         var midi = tones[k % tones.length];
-        events.push({midi:midi, startBeat: bar*BEATS_PER_BAR + offset, durBeats:dur, bar:bar});
+        events.push({midi:midi, startBeat: barStart + offset, durBeats:dur, bar:bar});
         offset += dur;
       });
     });
@@ -8001,7 +8153,9 @@ function runAnalysis() {
     }
     function buildMixedCells(numBars){
       var cells = [];
-      for(var bar=0; bar<numBars; bar++) cells.push(buildBarCell());
+      for(var bar=0; bar<numBars; bar++){
+        cells.push(RHYTHM.isDefault4_4(bar) ? buildBarCell() : genericBarCell(RHYTHM.beats(bar), RHYTHM.compound(bar), 0.55));
+      }
       return cells;
     }
     return { enabled: enabled, buildMixedCells: buildMixedCells };
@@ -8036,6 +8190,10 @@ function runAnalysis() {
     var cells = [];
     var halfPtr = 0;
     for(var bar=0; bar<numBars; bar++){
+      if(!RHYTHM.isDefault4_4(bar)){
+        cells.push(genericBarCell(RHYTHM.beats(bar), RHYTHM.compound(bar), 0.6));
+        continue;
+      }
       if(barOrder[bar].flourish){
         // JAZZ: fill swingueado (corcheas largo-corto) en vez de las
         // 10 notas parejas del fill original.
@@ -8103,6 +8261,7 @@ function runAnalysis() {
       // "queue.length ? ... : chord[randomInt(...)]" de más abajo, que
       // ya existe para cuando la cola se agota sola).
       var queue = alwaysCompleteSet ? meta[bar].complement.slice() : []; // notas del set que el bajo de este compás debe recuperar (si corresponde)
+      var barStart = RHYTHM.start(bar);
 
       var bOffset = 0;
       bassCells[bar].forEach(function(dur){
@@ -8117,7 +8276,7 @@ function runAnalysis() {
         } else {
           bassMidi = pick-24;
         }
-        bassEvents.push({midi: bassMidi, startBeat:bar*BEATS_PER_BAR+bOffset, durBeats:dur, bar:bar});
+        bassEvents.push({midi: bassMidi, startBeat:barStart+bOffset, durBeats:dur, bar:bar});
         bOffset += dur;
       });
 
@@ -8211,7 +8370,7 @@ function runAnalysis() {
           // acota de forma independiente, de a octavas enteras.
           midi = clampMelodyRange(base + octAdd);
         }
-        melodyEvents.push({midi: midi, startBeat: bar*BEATS_PER_BAR+mOffset, durBeats:dur, bar:bar});
+        melodyEvents.push({midi: midi, startBeat: barStart+mOffset, durBeats:dur, bar:bar});
         mOffset += dur;
       });
     });
@@ -8235,6 +8394,8 @@ function runAnalysis() {
   // compás, y pitch libre en bajo/melodía. Siempre dentro del mismo set
   // de Forte/Solomon, nunca notas ajenas.
   function regenerateConsola(){
+    RHYTHM.recompute();
+    TOTAL_BEATS = RHYTHM.total();
     var playBtn = document.getElementById("consolaPlayBtn");
     var regenPlayBtn = document.getElementById("consolaRegenPlayBtn");
     var normalBtn = document.getElementById("consolaNormalBtn");
@@ -8452,19 +8613,21 @@ function runAnalysis() {
       svg.appendChild(t);
     });
 
+    var barStartsSet = {};
+    for(var bmark=0; bmark<=NUM_BARS; bmark++) barStartsSet[Math.round(RHYTHM.start(bmark)*1000)] = true;
     for(var b=0;b<=NUM_BARS;b++){
-      var x = MARGIN_L + b*BEATS_PER_BAR*PPB;
+      var x = MARGIN_L + RHYTHM.start(b)*PPB;
       svg.appendChild(svgEl("line", {x1:x, x2:x, y1:MARGIN_T, y2:height-MARGIN_B, stroke:"var(--ink-muted)", "stroke-width":1.1}));
       if(b < NUM_BARS){
         var lab = svgEl("text", {x:x+8, y:16, class:"consola-bar-tag"});
-        lab.textContent = "C" + (b+1) + " — " + state.roles[b];
+        lab.textContent = "C" + (b+1) + " — " + state.roles[b] + (RHYTHM.isDefault4_4(b) ? "" : " (" + RHYTHM.label(b) + ")");
         svg.appendChild(lab);
         // Cifrado por reataque de armonía (uno por cada slot de
         // state.slotChords[b]), en una segunda fila de etiquetas.
         var slots = state.slotChords && state.slotChords[b];
         if(slots && slots.length){
           slots.forEach(function(slot){
-            var absBeat = b*BEATS_PER_BAR + slot.startBeat;
+            var absBeat = RHYTHM.start(b) + slot.startBeat;
             var xs = MARGIN_L + absBeat*PPB;
             var bassEv = findSoundingNote(state.bassEvents, absBeat);
             var cifLab = svgEl("text", {x:xs+4, y:28, class:"consola-cifrado-tag"});
@@ -8475,7 +8638,7 @@ function runAnalysis() {
       }
     }
     for(var beat=0; beat<TOTAL_BEATS; beat++){
-      if(beat % BEATS_PER_BAR === 0) continue;
+      if(barStartsSet[Math.round(beat*1000)]) continue;
       var xb = MARGIN_L + beat*PPB;
       svg.appendChild(svgEl("line", {x1:xb, x2:xb, y1:MARGIN_T, y2:height-MARGIN_B, stroke:"var(--line)", "stroke-width":0.6, "stroke-dasharray":"2,3"}));
     }
@@ -8569,8 +8732,10 @@ function runAnalysis() {
       svg.appendChild(t);
     });
 
+    var barStartsSetBebop = {};
+    for(var bmark2=0; bmark2<=NUM_BARS; bmark2++) barStartsSetBebop[Math.round(RHYTHM.start(bmark2)*1000)] = true;
     for(var b=0;b<=NUM_BARS;b++){
-      var x = MARGIN_L + b*BEATS_PER_BAR*PPB;
+      var x = MARGIN_L + RHYTHM.start(b)*PPB;
       svg.appendChild(svgEl("line", {x1:x, x2:x, y1:MARGIN_T, y2:height-MARGIN_B, stroke:"var(--ink-muted)", "stroke-width":1.1}));
       if(b < NUM_BARS){
         var lab = svgEl("text", {x:x+8, y:16, class:"consola-bar-tag"});
@@ -8579,7 +8744,7 @@ function runAnalysis() {
       }
     }
     for(var beat=0; beat<TOTAL_BEATS; beat++){
-      if(beat % BEATS_PER_BAR === 0) continue;
+      if(barStartsSetBebop[Math.round(beat*1000)]) continue;
       var xb = MARGIN_L + beat*PPB;
       svg.appendChild(svgEl("line", {x1:xb, x2:xb, y1:MARGIN_T, y2:height-MARGIN_B, stroke:"var(--line)", "stroke-width":0.6, "stroke-dasharray":"2,3"}));
     }
@@ -9786,6 +9951,24 @@ function runAnalysis() {
       }
     }
   }
+  // Patrón de batería genérico para un compás fuera de 4/4 llano:
+  // bombo en el primer tiempo (y, si el compás alcanza, uno de apoyo
+  // más adelante), caja/backbeat a mitad de camino, hi-hat marcando
+  // cada pulso — de a negra con puntillo (1.5) si el compás es
+  // COMPUESTO, de a negra (1) si es simple. No intenta reproducir los
+  // fills/variedad de estilo de los patrones curados de 4/4 — es un
+  // acompañamiento estable que respeta la métrica elegida.
+  function genericDrumPattern(beats, compound){
+    var pulse = compound ? 1.5 : 1;
+    var kick = [0];
+    var snare = [];
+    var hihatHits = [];
+    for(var p=0; p<beats-1e-6; p+=pulse) hihatHits.push({b:Math.round(p*1000)/1000, open:false});
+    var mid = Math.round((beats/2)/pulse)*pulse;
+    if(mid > 1e-6 && mid < beats-1e-6) snare.push(mid);
+    if(beats > (compound ? 4.5 : 4)+1e-6) kick.push(Math.floor(beats*0.6/pulse)*pulse);
+    return { kick:kick, snare:snare, hihatHits:hihatHits };
+  }
   function buildDrumEvents(numBars){
     if(swingDrumsEnabled) return buildSwingDrumEvents(numBars);
     // JAZZ: patrón de ride "spang-a-lang" en vez del hi-hat parejo —
@@ -9809,8 +9992,13 @@ function runAnalysis() {
     if (MOREREP.enabled()) styleByBar = MOREREP.applyRepetitionBias(styleByBar);
     var events = [];
     for(var bar=0; bar<numBars; bar++){
-      var base = bar*BEATS_PER_BAR;
-      var style = styleByBar[bar];
+      var base = RHYTHM.start(bar);
+      // Rhythm: los compases fuera de 4/4 llano no usan los patrones
+      // curados (kick/snare/hihat pensados para 4 tiempos) — arman un
+      // pulso genérico a la medida de su compás (de a 3 si es
+      // compuesto, de a 2 si es simple) en vez de forzar un patrón de
+      // 4/4 dentro de un compás de otra duración.
+      var style = RHYTHM.isDefault4_4(bar) ? styleByBar[bar] : genericDrumPattern(RHYTHM.beats(bar), RHYTHM.compound(bar));
       style.kick.forEach(function(b){ events.push({type:"kick", startBeat: base+b}); });
       style.snare.forEach(function(b){ events.push({type:"snare", startBeat: base+b+microTimingOffset()}); });
       if (style.hihatHits){
@@ -10251,6 +10439,17 @@ function runAnalysis() {
   });
   document.getElementById("consolaRhythmComplexitySlider").addEventListener("change", function(){
     drumEvents = buildDrumEvents(NUM_BARS);
+  });
+  // Rhythm — Time signature: cambia la duración real de los compases
+  // (ver RHYTHM más arriba), así que hace falta un regenerateConsola()
+  // completo — arma de nuevo armonía/bajo/melodía/batería a la medida
+  // de la nueva métrica — no alcanza con reconstruir solo drumEvents
+  // como con Rhythm complexity arriba.
+  document.getElementById("consolaTimeSigInput").addEventListener("change", function(){
+    if(state.rootChord.length) regenerateConsola();
+  });
+  document.getElementById("consolaMixTimeSigChk").addEventListener("change", function(){
+    if(state.rootChord.length) regenerateConsola();
   });
   // Variaciones de ritmo (Velocity humanizada/Micro-timing/Variación por
   // sección/other-rhythm-variations) — se leen en vivo del DOM (ver
