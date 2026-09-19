@@ -608,6 +608,8 @@
   }
   .mix-channel input[type=range]{width:110px;accent-color:var(--gold);}
   .mix-val{font-family:'JetBrains Mono',monospace;color:var(--ink-muted);font-size:11px;}
+  .mix-val-row{display:flex;align-items:center;gap:6px;}
+  .mix-focus{width:11px;height:11px;margin:0;accent-color:var(--gold);cursor:pointer;}
   .mix-presets{
     display:flex;flex-wrap:wrap;gap:20px 32px;justify-content:center;
     padding-top:14px;border-top:1px solid var(--line);
@@ -1257,32 +1259,50 @@
         <div class="mix-channel">
           <label for="mixDrumVol">&#129345; Batería</label>
           <input type="range" id="mixDrumVol" min="0" max="150" value="100" step="1">
-          <span class="mix-val" id="mixDrumVolVal">100%</span>
+          <div class="mix-val-row">
+            <span class="mix-val" id="mixDrumVolVal">100%</span>
+            <input type="checkbox" class="mix-focus" data-track="drum" title="Foco: si lo tildás, baja el volumen de todas las demás pistas (este fader no cambia)" aria-label="Foco en Batería">
+          </div>
         </div>
         <div class="mix-channel">
           <label for="mixBassVol">Bajo</label>
           <input type="range" id="mixBassVol" min="0" max="150" value="100" step="1">
-          <span class="mix-val" id="mixBassVolVal">100%</span>
+          <div class="mix-val-row">
+            <span class="mix-val" id="mixBassVolVal">100%</span>
+            <input type="checkbox" class="mix-focus" data-track="bass" title="Foco: si lo tildás, baja el volumen de todas las demás pistas (este fader no cambia)" aria-label="Foco en Bajo">
+          </div>
         </div>
         <div class="mix-channel">
           <label for="mixChordVol">Armonía</label>
           <input type="range" id="mixChordVol" min="0" max="150" value="100" step="1">
-          <span class="mix-val" id="mixChordVolVal">100%</span>
+          <div class="mix-val-row">
+            <span class="mix-val" id="mixChordVolVal">100%</span>
+            <input type="checkbox" class="mix-focus" data-track="chord" title="Foco: si lo tildás, baja el volumen de todas las demás pistas (este fader no cambia)" aria-label="Foco en Armonía">
+          </div>
         </div>
         <div class="mix-channel">
           <label for="mixMelodyVol">Melodía</label>
           <input type="range" id="mixMelodyVol" min="0" max="150" value="100" step="1">
-          <span class="mix-val" id="mixMelodyVolVal">100%</span>
+          <div class="mix-val-row">
+            <span class="mix-val" id="mixMelodyVolVal">100%</span>
+            <input type="checkbox" class="mix-focus" data-track="melody" title="Foco: si lo tildás, baja el volumen de todas las demás pistas (este fader no cambia)" aria-label="Foco en Melodía">
+          </div>
         </div>
         <div class="mix-channel" title="Volumen de la pista bebopMelody (línea melódica independiente, chord-scale). Al prender el botón bebopMelody, este fader sube solo a 100% la primera vez — después queda a mano.">
           <label for="mixBebopVol">&#127929; Bebop</label>
           <input type="range" id="mixBebopVol" min="0" max="150" value="0" step="1">
-          <span class="mix-val" id="mixBebopVolVal">0%</span>
+          <div class="mix-val-row">
+            <span class="mix-val" id="mixBebopVolVal">0%</span>
+            <input type="checkbox" class="mix-focus" data-track="bebop" title="Foco: si lo tildás, baja el volumen de todas las demás pistas (este fader no cambia)" aria-label="Foco en Bebop">
+          </div>
         </div>
         <div class="mix-channel" title="Volumen de Doblar melodía (repite la Melodía una octava — o una quinta con 'alt-melody' — abajo, con su propio timbre). Sin efecto mientras el selector 'Doblar melodía' esté en Mute.">
           <label for="mixMelodyDoubleVol">Doblar melodía</label>
           <input type="range" id="mixMelodyDoubleVol" min="0" max="150" value="100" step="1">
-          <span class="mix-val" id="mixMelodyDoubleVolVal">100%</span>
+          <div class="mix-val-row">
+            <span class="mix-val" id="mixMelodyDoubleVolVal">100%</span>
+            <input type="checkbox" class="mix-focus" data-track="melodyDouble" title="Foco: si lo tildás, baja el volumen de todas las demás pistas (este fader no cambia)" aria-label="Foco en Doblar melodía">
+          </div>
         </div>
       </div>
       <div class="mix-preset-label" style="width:100%;text-align:center;margin:2px 0 -6px;">Reverb (envío por pista)</div>
@@ -8886,6 +8906,19 @@ function runAnalysis() {
   // 12 de Instruments.sf2, con sintetizador de siempre como respaldo)
   // y qué muestras usar en batería (kit real o percusión/congas).
   var mixGains = { drum: 1, bass: 1, chord: 1, melody: 1, melodyDouble: 1, chordDouble: 1, comping2: 1, bebop: 0 };
+  // ---------- Foco: checkbox chico junto a cada fader del mini mixer ----------
+  // mixGains sigue guardando SIEMPRE el valor crudo del fader. El nivel real
+  // que llega al gain node es mixGains * focusFactor: 1 para las pistas
+  // tildadas (o para todas si no hay ninguna tildada), FOCUS_DUCK para el
+  // resto — incluidas Doblar armonía y moreComping, que no tienen fader.
+  var FOCUS_DUCK = 0.35;
+  var focusTracks = {};
+  function focusActive(){
+    for(var k in focusTracks){ if(focusTracks[k]) return true; }
+    return false;
+  }
+  function focusFactor(track){ return (!focusActive() || focusTracks[track]) ? 1 : FOCUS_DUCK; }
+  function mixEffective(track){ return mixGains[track] * focusFactor(track); }
   var mixPresets = { harmony: "piano", melody: "flute", melodyDouble: "mute", chordDouble: "mute", bass: "synthBass", drum: "kit", bebop: "tenorSax" };
   var chordGainNode = null, bassGainNode = null, melodyGainNode = null, drumGainNode = null, melodyDoubleGainNode = null, chordDoubleGainNode = null, comping2GainNode = null, bebopGainNode = null;
 
@@ -8941,42 +8974,42 @@ function runAnalysis() {
     var master = ensureMasterGain(ctx);
     if(!chordGainNode){
       chordGainNode = ctx.createGain();
-      chordGainNode.gain.value = mixGains.chord;
+      chordGainNode.gain.value = mixEffective("chord");
       chordGainNode.connect(master);
     }
     if(!bassGainNode){
       bassGainNode = ctx.createGain();
-      bassGainNode.gain.value = mixGains.bass;
+      bassGainNode.gain.value = mixEffective("bass");
       bassGainNode.connect(master);
     }
     if(!melodyGainNode){
       melodyGainNode = ctx.createGain();
-      melodyGainNode.gain.value = mixGains.melody;
+      melodyGainNode.gain.value = mixEffective("melody");
       melodyGainNode.connect(master);
     }
     if(!melodyDoubleGainNode){
       melodyDoubleGainNode = ctx.createGain();
-      melodyDoubleGainNode.gain.value = mixGains.melodyDouble;
+      melodyDoubleGainNode.gain.value = mixEffective("melodyDouble");
       melodyDoubleGainNode.connect(master);
     }
     if(!chordDoubleGainNode){
       chordDoubleGainNode = ctx.createGain();
-      chordDoubleGainNode.gain.value = mixGains.chordDouble;
+      chordDoubleGainNode.gain.value = mixEffective("chordDouble");
       chordDoubleGainNode.connect(master);
     }
     if(!drumGainNode){
       drumGainNode = ctx.createGain();
-      drumGainNode.gain.value = mixGains.drum;
+      drumGainNode.gain.value = mixEffective("drum");
       drumGainNode.connect(master);
     }
     if(!comping2GainNode){
       comping2GainNode = ctx.createGain();
-      comping2GainNode.gain.value = mixGains.comping2;
+      comping2GainNode.gain.value = mixEffective("comping2");
       comping2GainNode.connect(master);
     }
     if(!bebopGainNode){
       bebopGainNode = ctx.createGain();
-      bebopGainNode.gain.value = mixGains.bebop;
+      bebopGainNode.gain.value = mixEffective("bebop");
       bebopGainNode.connect(master);
     }
     // Envíos de reverb: una copia en paralelo de cada canal seco de
@@ -8999,6 +9032,10 @@ function runAnalysis() {
   // setTargetAtTime, igual que el volumen general, para que no haga clic.
   function setMixGain(track, value){
     mixGains[track] = value;
+    applyMixGain(track);
+  }
+  function applyAllMixGains(){ Object.keys(mixGains).forEach(applyMixGain); }
+  function applyMixGain(track){
     var node = track === "chord" ? chordGainNode : track === "bass" ? bassGainNode :
                track === "melody" ? melodyGainNode : track === "drum" ? drumGainNode :
                track === "melodyDouble" ? melodyDoubleGainNode :
@@ -9007,7 +9044,7 @@ function runAnalysis() {
                track === "bebop" ? bebopGainNode : null;
     if(node){
       var ctx = getAudioCtx();
-      node.gain.setTargetAtTime(value, ctx ? ctx.currentTime : 0, 0.01);
+      node.gain.setTargetAtTime(mixEffective(track), ctx ? ctx.currentTime : 0, 0.01);
     }
   }
   // Reverb: mismo patrón que setMixGain de arriba (setTargetAtTime, sin
@@ -10532,13 +10569,13 @@ function runAnalysis() {
     var restoreAt = now + FADE + 0.005;
     if(masterGain) masterGain.gain.setValueAtTime(currentVolume, restoreAt);
     if(reverbReturnGain) reverbReturnGain.gain.setValueAtTime(1, restoreAt);
-    if(chordGainNode) chordGainNode.gain.setValueAtTime(mixGains.chord, restoreAt);
-    if(bassGainNode) bassGainNode.gain.setValueAtTime(mixGains.bass, restoreAt);
-    if(melodyGainNode) melodyGainNode.gain.setValueAtTime(mixGains.melody, restoreAt);
-    if(melodyDoubleGainNode) melodyDoubleGainNode.gain.setValueAtTime(mixGains.melodyDouble, restoreAt);
-    if(drumGainNode) drumGainNode.gain.setValueAtTime(mixGains.drum, restoreAt);
-    if(comping2GainNode) comping2GainNode.gain.setValueAtTime(mixGains.comping2, restoreAt);
-    if(bebopGainNode) bebopGainNode.gain.setValueAtTime(mixGains.bebop, restoreAt);
+    if(chordGainNode) chordGainNode.gain.setValueAtTime(mixEffective("chord"), restoreAt);
+    if(bassGainNode) bassGainNode.gain.setValueAtTime(mixEffective("bass"), restoreAt);
+    if(melodyGainNode) melodyGainNode.gain.setValueAtTime(mixEffective("melody"), restoreAt);
+    if(melodyDoubleGainNode) melodyDoubleGainNode.gain.setValueAtTime(mixEffective("melodyDouble"), restoreAt);
+    if(drumGainNode) drumGainNode.gain.setValueAtTime(mixEffective("drum"), restoreAt);
+    if(comping2GainNode) comping2GainNode.gain.setValueAtTime(mixEffective("comping2"), restoreAt);
+    if(bebopGainNode) bebopGainNode.gain.setValueAtTime(mixEffective("bebop"), restoreAt);
 
     document.getElementById("consolaPlayBtn").disabled = state.chordEvents.length===0;
     var regenPlayBtnEl2 = document.getElementById("consolaRegenPlayBtn");
@@ -10929,6 +10966,16 @@ function runAnalysis() {
       el.addEventListener("input", function(){
         document.getElementById(cfg.valId).textContent = this.value + "%";
         setMixGain(cfg.track, this.value/100);
+      });
+    });
+  })();
+
+  // ---- Mini mixer: "Foco" — checkbox chico junto a cada fader ----
+  (function(){
+    document.querySelectorAll(".mix-focus").forEach(function(cb){
+      cb.addEventListener("change", function(){
+        focusTracks[cb.getAttribute("data-track")] = cb.checked;
+        applyAllMixGains();
       });
     });
   })();
