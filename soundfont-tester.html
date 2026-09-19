@@ -114,6 +114,9 @@
     letter-spacing:.08em;
     color:var(--text-dim);
     padding:10px 14px 6px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
   }
   #presetList{
     flex:1;
@@ -186,6 +189,10 @@
   }
   .btn:hover{border-color:var(--amber-dim);}
   .btn:active{background:var(--amber-dim);}
+  .btn.sm{padding:3px 9px; font-size:11.5px; font-family:var(--mono);}
+  .btn:disabled{opacity:.4; cursor:default;}
+  .btn:disabled:hover{border-color:var(--line);}
+  .btn:disabled:active{background:var(--panel-raised);}
   #octaveLabel{font-family:var(--mono); font-size:13px; color:var(--amber); min-width:56px; text-align:center;}
 
   /* ---- piano ---- */
@@ -270,7 +277,10 @@
 
 <main>
   <div id="presetPane">
-    <div class="label">PRESETS</div>
+    <div class="label">
+      <span>PRESETS</span>
+      <button class="btn sm" id="extractBtn" disabled title="Guardar cada preset como un .sf2 individual">⬇ extract</button>
+    </div>
     <div id="presetList">
       <div id="emptyState">Cargá un SoundFont para ver sus presets acá.</div>
     </div>
@@ -489,12 +499,215 @@
       presets.push({
         name: phdr[i].name || "(sin nombre)",
         bank: phdr[i].bank, program: phdr[i].preset,
+        hdrIdx: i, // index in the raw phdr table (used by the extractor)
         zones: resolved
       });
     }
     presets.sort((a, b) => a.bank - b.bank || a.program - b.program);
 
-    return { sfName, presets, instruments, shdr, smplOffset: smpl.offset, smplSize: smpl.size, buffer };
+    return {
+      sfName, presets, instruments, shdr,
+      smplOffset: smpl.offset, smplSize: smpl.size,
+      sm24: findChunk(sdtaChunks, "sm24") || null, // optional 24-bit extension
+      pdtaChunks, buffer
+    };
+  }
+
+  // ---------------------------------------------------------------
+  // Extract ONE preset into a standalone .sf2 (returns a Uint8Array).
+  // Works on the raw pdta tables, so envelopes, filters, modulators and
+  // every other generator are copied untouched. Only the indices are
+  // remapped (preset -> instrument -> sample) and the sample data is
+  // repacked so the new file contains just what that preset uses.
+  // ---------------------------------------------------------------
+  const enc = new TextEncoder();
+
+  function concatBytes(parts) {
+    let n = 0;
+    for (const p of parts) n += p.length;
+    const out = new Uint8Array(n);
+    let o = 0;
+    for (const p of parts) { out.set(p, o); o += p.length; }
+    return out;
+  }
+
+  function riffChunk(id, data) { // pads to even length as RIFF requires
+    const out = new Uint8Array(8 + data.length + (data.length & 1));
+    out.set(enc.encode(id), 0);
+    new DataView(out.buffer).setUint32(4, data.length, true);
+    out.set(data, 8);
+    return out;
+  }
+
+  function riffList(type, parts) {
+    return riffChunk("LIST", concatBytes([enc.encode(type), ...parts]));
+  }
+
+  function zstr(s) { // null-terminated ASCII, even length
+    const b = enc.encode(s.replace(/[^\x20-\x7e]/g, "?"));
+    return Uint8Array.from({ length: b.length + 1 + ((b.length + 1) & 1) }, (_, i) => b[i] || 0);
+  }
+
+  function extractPresetSF2(sf, preset) {
+    const v = new DataView(sf.buffer);
+    const src = new Uint8Array(sf.buffer);
+    const u16 = o => v.getUint16(o, true);
+    const u32 = o => v.getUint32(o, true);
+    const base = id => findChunk(sf.pdtaChunks, id).offset;
+    const P = {
+      phdr: base("phdr"), pbag: base("pbag"), pmod: base("pmod"), pgen: base("pgen"),
+      inst: base("inst"), ibag: base("ibag"), imod: base("imod"), igen: base("igen"),
+      shdr: base("shdr")
+    };
+    const nShdr = findChunk(sf.pdtaChunks, "shdr").size / 46;
+
+    // record helpers (all copies, never views of the source)
+    const rec = (o, size) => src.slice(o, o + size);
+    const named = (name, size) => { const r = new Uint8Array(size); r.set(enc.encode(name), 0); return r; };
+    const setU16 = (r, at, val) => new DataView(r.buffer).setUint16(at, val, true);
+    const oper = r => r[0] | (r[1] << 8);
+    const amount = r => r[2] | (r[3] << 8);
+    const table = () => { const parts = []; return { parts, add: r => parts.push(r), get n() { return parts.length; } }; };
+    const bagRec = (genNdx, modNdx) => { const r = new Uint8Array(4); setU16(r, 0, genNdx); setU16(r, 2, modNdx); return r; };
+
+    // zones of a header entry = bag range [b0, b1) with their gen/mod ranges
+    const zonesOf = (bagO, b0, b1) => {
+      const z = [];
+      for (let b = b0; b < b1; b++) {
+        z.push({
+          g0: u16(bagO + b * 4), g1: u16(bagO + (b + 1) * 4),
+          m0: u16(bagO + b * 4 + 2), m1: u16(bagO + (b + 1) * 4 + 2)
+        });
+      }
+      return z;
+    };
+
+    // copy zones into new bag/gen/mod tables; patchGen may rewrite a generator record
+    function emitZones(zones, bag, gen, mod, genOff, modOff, patchGen) {
+      for (const z of zones) {
+        bag.add(bagRec(gen.n, mod.n));
+        for (let m = z.m0; m < z.m1; m++) mod.add(rec(modOff + m * 10, 10));
+        for (let g = z.g0; g < z.g1; g++) {
+          const r = rec(genOff + g * 4, 4);
+          patchGen(r);
+          gen.add(r);
+        }
+      }
+    }
+    function closeZones(bag, gen, mod) { // terminal records required by the format
+      bag.add(bagRec(gen.n, mod.n));
+      gen.add(new Uint8Array(4));
+      mod.add(new Uint8Array(10));
+    }
+
+    // 1) preset zones -> instruments actually used (new index = order of first use)
+    const hi = preset.hdrIdx;
+    const pZones = zonesOf(P.pbag, u16(P.phdr + hi * 38 + 24), u16(P.phdr + (hi + 1) * 38 + 24));
+    const instMap = new Map();
+    for (const z of pZones) for (let g = z.g0; g < z.g1; g++) {
+      const o = P.pgen + g * 4;
+      if (u16(o) === GEN.instrument && !instMap.has(u16(o + 2))) instMap.set(u16(o + 2), instMap.size);
+    }
+    const instZones = [...instMap.keys()].map(old => ({
+      old, zones: zonesOf(P.ibag, u16(P.inst + old * 22 + 20), u16(P.inst + (old + 1) * 22 + 20))
+    }));
+
+    // 2) instrument zones -> samples used (+ their stereo/linked partners)
+    const smpMap = new Map(), smpQueue = [];
+    const useSample = id => {
+      if (id >= nShdr - 1) throw new Error(`sampleID ${id} fuera de rango en el archivo original.`);
+      if (!smpMap.has(id)) { smpMap.set(id, smpQueue.length); smpQueue.push(id); }
+    };
+    for (const { zones } of instZones) for (const z of zones) for (let g = z.g0; g < z.g1; g++) {
+      const o = P.igen + g * 4;
+      if (u16(o) === GEN.sampleID) useSample(u16(o + 2));
+    }
+    for (let q = 0; q < smpQueue.length; q++) { // sampleType 2/4/8 = right/left/linked
+      const o = P.shdr + smpQueue[q] * 46;
+      if (u16(o + 44) & 0x000e) useSample(u16(o + 42));
+    }
+
+    // 3) repack sample data: each sample followed by the 46 zero points the spec requires
+    const PAD = 46;
+    let total = 0;
+    const smp = smpQueue.map(old => {
+      const o = P.shdr + old * 46;
+      const start = u32(o + 20), end = u32(o + 24);
+      const len = Math.max(0, end - start);
+      if ((start + len) * 2 > sf.smplSize) throw new Error(`Muestra "${cString(v, o, 20)}" excede el bloque smpl.`);
+      const s = { o, start, len, at: total };
+      total += len + PAD;
+      return s;
+    });
+    const smpl = new Uint8Array(total * 2);
+    const sm24 = sf.sm24 ? new Uint8Array(total + (total & 1)) : null;
+    for (const s of smp) {
+      smpl.set(src.subarray(sf.smplOffset + s.start * 2, sf.smplOffset + (s.start + s.len) * 2), s.at * 2);
+      if (sm24) sm24.set(src.subarray(sf.sm24.offset + s.start, sf.sm24.offset + s.start + s.len), s.at);
+    }
+
+    const shdr = smp.map(s => {
+      const r = rec(s.o, 46);
+      const end = s.at + s.len;
+      const moveLoop = x => Math.min(Math.max(s.at + (x - s.start), s.at), end);
+      const d = new DataView(r.buffer);
+      d.setUint32(20, s.at, true);
+      d.setUint32(24, end, true);
+      d.setUint32(28, moveLoop(u32(s.o + 28)), true);
+      d.setUint32(32, moveLoop(u32(s.o + 32)), true);
+      const link = u16(s.o + 42);
+      d.setUint16(42, (u16(s.o + 44) & 0x000e) && smpMap.has(link) ? smpMap.get(link) : 0, true);
+      return r;
+    });
+    shdr.push(named("EOS", 46));
+
+    // 4) new preset / instrument tables
+    const pBag = table(), pGen = table(), pMod = table();
+    emitZones(pZones, pBag, pGen, pMod, P.pgen, P.pmod, r => {
+      if (oper(r) === GEN.instrument) setU16(r, 2, instMap.get(amount(r)));
+    });
+    const nPBag = pBag.n;
+    closeZones(pBag, pGen, pMod);
+
+    const inst = table(), iBag = table(), iGen = table(), iMod = table();
+    for (const { old, zones } of instZones) {
+      const r = rec(P.inst + old * 22, 22);
+      setU16(r, 20, iBag.n);
+      inst.add(r);
+      emitZones(zones, iBag, iGen, iMod, P.igen, P.imod, g => {
+        if (oper(g) === GEN.sampleID) setU16(g, 2, smpMap.get(amount(g)));
+      });
+    }
+    const eoi = named("EOI", 22);
+    setU16(eoi, 20, iBag.n);
+    inst.add(eoi);
+    closeZones(iBag, iGen, iMod);
+
+    const phdr = rec(P.phdr + hi * 38, 38);
+    setU16(phdr, 24, 0);
+    const eop = named("EOP", 38);
+    setU16(eop, 24, nPBag);
+
+    // 5) assemble the RIFF
+    const info = riffList("INFO", [
+      riffChunk("ifil", Uint8Array.of(2, 0, sm24 ? 4 : 1, 0)), // 2.04 if 24-bit data, else 2.01
+      riffChunk("isng", zstr("EMU8000")),
+      riffChunk("INAM", zstr(preset.name)),
+      riffChunk("ICMT", zstr("Extracted from " + (sf.fileName || sf.sfName)))
+    ]);
+    const sdta = riffList("sdta", [riffChunk("smpl", smpl), ...(sm24 ? [riffChunk("sm24", sm24)] : [])]);
+    const pdta = riffList("pdta", [
+      riffChunk("phdr", concatBytes([phdr, eop])),
+      riffChunk("pbag", concatBytes(pBag.parts)),
+      riffChunk("pmod", concatBytes(pMod.parts)),
+      riffChunk("pgen", concatBytes(pGen.parts)),
+      riffChunk("inst", concatBytes(inst.parts)),
+      riffChunk("ibag", concatBytes(iBag.parts)),
+      riffChunk("imod", concatBytes(iMod.parts)),
+      riffChunk("igen", concatBytes(iGen.parts)),
+      riffChunk("shdr", concatBytes(shdr))
+    ]);
+    return riffChunk("RIFF", concatBytes([enc.encode("sfbk"), info, sdta, pdta]));
   }
 
   // ---------------------------------------------------------------
@@ -633,6 +846,7 @@
   const hintEl = document.getElementById("hint");
   const pianoEl = document.getElementById("piano");
   const octaveLabel = document.getElementById("octaveLabel");
+  const extractBtn = document.getElementById("extractBtn");
 
   const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
   function noteName(n) { return NOTE_NAMES[n % 12] + (Math.floor(n / 12) - 1); }
@@ -645,6 +859,8 @@
     reader.onload = () => {
       try {
         sf = parseSF2(reader.result);
+        sf.fileName = file.name;
+        extractBtn.disabled = false;
         renderPresetList();
         metaEl.textContent = `${sf.presets.length} presets · ${sf.instruments.length} instrumentos`;
         dzText.textContent = "Cargado:";
@@ -694,6 +910,71 @@
       setTimeout(() => stopVoice(note, false), 500);
     }
   }
+
+  // ---- extract every preset into its own .sf2 ----
+  // Chrome/Edge: asks for a folder once and writes all files there.
+  // Other browsers: falls back to one download per file.
+  const tick = () => new Promise(r => setTimeout(r, 0));
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+  function extractFileName(p, used) {
+    const clean = s => s.replace(/[\\/:*?"<>|\u0000-\u001f]/g, "_");
+    const base = clean((sf.fileName || sf.sfName).replace(/\.sf[23]$/i, ""));
+    const stem = `${base} - ${String(p.bank).padStart(3, "0")}-${String(p.program).padStart(3, "0")} ${clean(p.name)}`;
+    let out = stem + ".sf2", i = 2;
+    while (used.has(out)) out = `${stem} (${i++}).sf2`;
+    used.add(out);
+    return out;
+  }
+
+  function downloadBytes(name, bytes) {
+    const url = URL.createObjectURL(new Blob([bytes], { type: "application/octet-stream" }));
+    const a = document.createElement("a");
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  }
+
+  async function extractAll() {
+    if (!sf || !sf.presets.length) { setStatus("Primero cargá un SoundFont.", true); return; }
+    if (/\.sf3$/i.test(sf.fileName || "")) { setStatus("SF3 (comprimido) no está soportado para extraer.", true); return; }
+
+    let dir = null;
+    if (window.showDirectoryPicker) {
+      try { dir = await window.showDirectoryPicker({ mode: "readwrite" }); }
+      catch (e) { if (e.name === "AbortError") return; /* otro error: usa descargas */ }
+    }
+
+    extractBtn.disabled = true;
+    const used = new Set();
+    const n = sf.presets.length;
+    try {
+      for (let i = 0; i < n; i++) {
+        const p = sf.presets[i];
+        setStatus(`Extrayendo ${i + 1}/${n}: ${p.name}`, false);
+        await tick(); // let the status repaint
+        const bytes = extractPresetSF2(sf, p);
+        const name = extractFileName(p, used);
+        if (dir) {
+          const w = await (await dir.getFileHandle(name, { create: true })).createWritable();
+          await w.write(bytes);
+          await w.close();
+        } else {
+          downloadBytes(name, bytes);
+          await sleep(300); // browsers drop downloads fired back-to-back
+        }
+      }
+      setStatus(dir
+        ? `Listo: ${n} archivos guardados en "${dir.name}".`
+        : `Listo: ${n} descargas iniciadas (si faltan, permití descargas múltiples para esta página).`, false);
+    } catch (err) {
+      setStatus("Error al extraer: " + err.message, true);
+      console.error(err);
+    } finally {
+      extractBtn.disabled = false;
+    }
+  }
+  extractBtn.addEventListener("click", extractAll);
 
   // ---- drop / file picking ----
   // The whole window is a drop target (not just the small header bar), and we
