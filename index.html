@@ -540,6 +540,13 @@
   .consola-instruments{gap:8px;}
   .consola-inst-row{display:flex;flex-wrap:wrap;gap:4px 12px;}
   .consola-inst-toggle{display:flex;align-items:center;gap:6px;}
+  .consola-timesig{display:flex;align-items:center;gap:6px;}
+  .consola-timesig input[type=number], .consola-timesig select{
+    font-family:'JetBrains Mono',monospace;font-size:12.5px;
+    background:var(--surface);border:1px solid var(--line);color:var(--ink);
+    border-radius:8px;padding:7px 10px;width:66px;box-sizing:border-box;
+  }
+  .consola-timesig-sep{font-family:'JetBrains Mono',monospace;font-size:18px;color:var(--gold);}
   .consola-inst-toggle input[type=checkbox]{width:15px;height:15px;accent-color:var(--gold);cursor:pointer;}
   .consola-inst-toggle label{
     font-family:'JetBrains Mono',monospace;font-size:11.5px;letter-spacing:.03em;
@@ -1047,22 +1054,40 @@
       </div>
         </div>
       </div>
-      <div class="consola-field consola-instruments" title="Variaciones adicionales sobre el patrón de batería aleatorio (no afectan a Swing Drums, que es un groove fijo). Son ortogonales a Rhythm complexity: la modulan compás a compás, no la reemplazan.">
-        <label>Variaciones de ritmo</label>
-        <div class="consola-inst-row">
-          <span class="consola-inst-toggle" title="Cada golpe (bombo/caja/hi-hat/rimshot) recibe una variación aleatoria de volumen (±12) más un acento fijo en los tiempos 1 y 3 del compás, en vez del volumen fijo de siempre."><input type="checkbox" id="consolaVelocityHumanizeChk" checked><label for="consolaVelocityHumanizeChk">Velocity humanizada</label></span>
-          <span class="consola-inst-toggle" title="Corre levemente el hi-hat y la caja unos milisegundos antes o después del grid exacto (push-pull), golpe a golpe. No toca el bombo (ancla el pulso) ni Swing Drums (ese groove ya trae su propio timing real del MIDI)."><input type="checkbox" id="consolaMicroTimingChk" checked><label for="consolaMicroTimingChk">Micro-timing</label></span>
-          <span class="consola-inst-toggle" title="Ata la densidad efectiva del compás a su posición dentro de la frase de 4: más probabilidad de fill/platillo/ride en el último compás de cada frase (4, 8, 12) y un poco más de respiro en el resto, en vez de la misma probabilidad pareja en los 12 compases."><input type="checkbox" id="consolaSectionVariationChk" checked><label for="consolaSectionVariationChk">Variación por sección</label></span>
-          <span class="consola-inst-toggle" title="Agrupa variaciones extra: ghost notes de caja entre los golpes principales, síncopa ocasional del bombo fuera del grid, y cross-stick/rimshot en vez de caja en los compases más quietos."><input type="checkbox" id="consolaOtherRhythmVarChk" checked><label for="consolaOtherRhythmVarChk">other-rhythm-variations</label></span>
+      <div class="consola-field consola-instruments" title="Todo lo rítmico agrupado y contraído por defecto, igual que How to play: Variaciones de ritmo (batería) y Rhythm — Time signature (compás). Mismos controles de siempre, en el mismo lugar.">
+        <div class="consola-subfield-head">
+          <label>Rhythm</label>
+          <button type="button" class="subfield-toggle" aria-expanded="false" aria-controls="rhythmBody" onclick="toggleModule(this)" title="Mostrar/ocultar Variaciones de ritmo y Time signature"></button>
         </div>
-      </div>
-      <div class="consola-field consola-instruments" title="Compás (time signature) de cada uno de los 12 compases del segmento. Campo de texto: numerador/denominador (3/4, 6/8, 12/8, 5/4, 7/4, 9/8...) — se aplica a los 12 compases por igual. 4/4 por defecto, igual que siempre. Un compás compuesto (denominador 8, numerador múltiplo de 3 mayor a 3: 6/8, 9/8, 12/8) se siente subdividido de a 3 en vez de a 2 — armonía, bajo y melodía lo respetan. Mix time signatures: sortea entre 2 y 4 compases distintos (el tipeado siempre es uno de ellos) y los reparte al azar entre los 12 compases del segmento — un compás distinto en cada Reproducir/Regenerar.">
-        <label for="consolaTimeSigInput">Rhythm — Time signature</label>
-        <div class="consola-inst-row">
-          <input type="text" id="consolaTimeSigInput" value="4/4" inputmode="numeric" pattern="[0-9]{1,2}/[0-9]{1,2}" size="6" style="width:64px;">
-          <span class="consola-inst-toggle" title="Sortea entre 2 y 4 compases distintos (incluido el tipeado arriba) y los reparte al azar entre los 12 compases — algunos quedan en uno, otros en otro."><input type="checkbox" id="consolaMixTimeSigChk"><label for="consolaMixTimeSigChk">Mix time signatures</label></span>
+        <div class="collapsible-content collapsed" id="rhythmBody" style="display:flex;flex-wrap:wrap;gap:20px 30px;">
+          <div class="consola-field consola-instruments" title="Variaciones adicionales sobre el patrón de batería aleatorio (no afectan a Swing Drums, que es un groove fijo). Son ortogonales a Rhythm complexity: la modulan compás a compás, no la reemplazan.">
+            <label>Variaciones de ritmo</label>
+            <div class="consola-inst-row">
+              <span class="consola-inst-toggle" title="Cada golpe (bombo/caja/hi-hat/rimshot) recibe una variación aleatoria de volumen (±12) más un acento fijo en los tiempos 1 y 3 del compás, en vez del volumen fijo de siempre."><input type="checkbox" id="consolaVelocityHumanizeChk" checked><label for="consolaVelocityHumanizeChk">Velocity humanizada</label></span>
+              <span class="consola-inst-toggle" title="Corre levemente el hi-hat y la caja unos milisegundos antes o después del grid exacto (push-pull), golpe a golpe. No toca el bombo (ancla el pulso) ni Swing Drums (ese groove ya trae su propio timing real del MIDI)."><input type="checkbox" id="consolaMicroTimingChk" checked><label for="consolaMicroTimingChk">Micro-timing</label></span>
+              <span class="consola-inst-toggle" title="Ata la densidad efectiva del compás a su posición dentro de la frase de 4: más probabilidad de fill/platillo/ride en el último compás de cada frase (4, 8, 12) y un poco más de respiro en el resto, en vez de la misma probabilidad pareja en los 12 compases."><input type="checkbox" id="consolaSectionVariationChk" checked><label for="consolaSectionVariationChk">Variación por sección</label></span>
+              <span class="consola-inst-toggle" title="Agrupa variaciones extra: ghost notes de caja entre los golpes principales, síncopa ocasional del bombo fuera del grid, y cross-stick/rimshot en vez de caja en los compases más quietos."><input type="checkbox" id="consolaOtherRhythmVarChk" checked><label for="consolaOtherRhythmVarChk">other-rhythm-variations</label></span>
+            </div>
+          </div>
+          <div class="consola-field consola-instruments" title="Compás (time signature) de cada uno de los 12 compases del segmento. Dos campos, numerador / denominador (cambiá el primero para 3/4, 5/4, 7/4...; el segundo es 1, 2, 4, 8 o 16, p. ej. 6/8, 9/8, 12/8) — se aplica a los 12 compases por igual. 4/4 por defecto, igual que siempre. Un compás compuesto (denominador 8, numerador múltiplo de 3 mayor a 3: 6/8, 9/8, 12/8) se siente subdividido de a 3 en vez de a 2 — armonía, bajo y melodía lo respetan. Mix time signatures: sortea entre 2 y 4 compases distintos (el tipeado siempre es uno de ellos) y los reparte al azar entre los 12 compases del segmento — un compás distinto en cada Reproducir/Regenerar.">
+            <label for="consolaTimeSigNum">Rhythm — Time signature</label>
+            <div class="consola-inst-row">
+              <span class="consola-timesig">
+                <input type="number" id="consolaTimeSigNum" value="4" min="1" max="32" step="1" inputmode="numeric" aria-label="Time signature: numerador (tiempos por compás)" title="Numerador: cuántos tiempos tiene el compás (1 a 32)">
+                <span class="consola-timesig-sep" aria-hidden="true">/</span>
+                <select id="consolaTimeSigDen" aria-label="Time signature: denominador (figura que vale un tiempo)" title="Denominador: qué figura vale un tiempo (1, 2, 4, 8 o 16)">
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="4" selected>4</option>
+                  <option value="8">8</option>
+                  <option value="16">16</option>
+                </select>
+              </span>
+              <span class="consola-inst-toggle" title="Sortea entre 2 y 4 compases distintos (incluido el elegido arriba) y los reparte al azar entre los 12 compases — algunos quedan en uno, otros en otro."><input type="checkbox" id="consolaMixTimeSigChk"><label for="consolaMixTimeSigChk">Mix time signatures</label></span>
+            </div>
+            <span class="consola-val" id="consolaTimeSigStatus"></span>
+          </div>
         </div>
-        <span class="consola-val" id="consolaTimeSigStatus"></span>
       </div>
       <div class="consola-field consola-loop">
         <input type="checkbox" id="consolaLoopChk" checked>
@@ -6359,8 +6384,8 @@ function runAnalysis() {
      (time signature) de cada uno de los NUM_BARS compases del
      segmento. Por defecto, los 12 compases quedan en 4/4 (mismo
      comportamiento de siempre). El campo de texto
-     #consolaTimeSigInput acepta "N/D" (3/4, 6/8, 12/8, 5/4, 7/4,
-     9/8, etc.); el checkbox #consolaMixTimeSigChk sortea entre 2 y
+     #consolaTimeSigNum (numerador) y #consolaTimeSigDen (denominador)
+     arman "N/D" (3/4, 6/8, 12/8, 5/4, 7/4, 9/8, etc.); el checkbox #consolaMixTimeSigChk sortea entre 2 y
      4 compases distintos (el tipeado siempre es uno de ellos) y los
      reparte al azar entre los 12 compases.
      Cada compás se traduce a una duración en NEGRAS (numerador*4/
@@ -6386,8 +6411,9 @@ function runAnalysis() {
       return { num:num, den:den, beats:beats, compound:compound, label:num+"/"+den };
     }
     function inputSig(){
-      var el = document.getElementById("consolaTimeSigInput");
-      return parseSig(el && el.value) || { num:4, den:4, beats:4, compound:false, label:"4/4" };
+      var n = document.getElementById("consolaTimeSigNum");
+      var d = document.getElementById("consolaTimeSigDen");
+      return parseSig((n ? n.value : "") + "/" + (d ? d.value : "")) || { num:4, den:4, beats:4, compound:false, label:"4/4" };
     }
     function mixEnabled(){
       var chk = document.getElementById("consolaMixTimeSigChk");
@@ -10634,7 +10660,15 @@ function runAnalysis() {
   // completo — arma de nuevo armonía/bajo/melodía/batería a la medida
   // de la nueva métrica — no alcanza con reconstruir solo drumEvents
   // como con Rhythm complexity arriba.
-  document.getElementById("consolaTimeSigInput").addEventListener("change", function(){
+  // El numerador se normaliza (entero 1..32, vacío = 4) antes de regenerar;
+  // el denominador es un <select> (1/2/4/8/16), ya no puede quedar inválido.
+  document.getElementById("consolaTimeSigNum").addEventListener("change", function(){
+    var v = parseInt(this.value, 10);
+    if(isNaN(v)) v = 4;
+    this.value = Math.min(32, Math.max(1, v));
+    if(state.rootChord.length) regenerateConsola();
+  });
+  document.getElementById("consolaTimeSigDen").addEventListener("change", function(){
     if(state.rootChord.length) regenerateConsola();
   });
   document.getElementById("consolaMixTimeSigChk").addEventListener("change", function(){
