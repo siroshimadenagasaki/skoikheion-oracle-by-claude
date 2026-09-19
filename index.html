@@ -540,13 +540,6 @@
   .consola-instruments{gap:8px;}
   .consola-inst-row{display:flex;flex-wrap:wrap;gap:4px 12px;}
   .consola-inst-toggle{display:flex;align-items:center;gap:6px;}
-  .consola-timesig{display:flex;align-items:center;gap:6px;}
-  .consola-timesig input[type=number], .consola-timesig select{
-    font-family:'JetBrains Mono',monospace;font-size:12.5px;
-    background:var(--surface);border:1px solid var(--line);color:var(--ink);
-    border-radius:8px;padding:7px 10px;width:66px;box-sizing:border-box;
-  }
-  .consola-timesig-sep{font-family:'JetBrains Mono',monospace;font-size:18px;color:var(--gold);}
   .consola-inst-toggle input[type=checkbox]{width:15px;height:15px;accent-color:var(--gold);cursor:pointer;}
   .consola-inst-toggle label{
     font-family:'JetBrains Mono',monospace;font-size:11.5px;letter-spacing:.03em;
@@ -780,8 +773,8 @@
   }
   .nav-modules{
     position:fixed;
-    right:16px;
-    top:16px;
+    right:env(safe-area-inset-right, 0px);
+    top:env(safe-area-inset-top, 0px);
     display:flex;
     flex-direction:column;
     gap:6px;
@@ -789,7 +782,28 @@
     background:var(--surface);
     padding:12px;
     border:1px solid var(--line);
-    border-radius:8px;
+    border-top:0;
+    border-right:0;
+    border-radius:0 0 0 8px;
+  }
+  /* Contraída (estado por defecto): solo se ve el botón "+", pegado a la
+     esquina superior derecha — sin marco, sin "Ir a:", sin espacio vacío. */
+  .nav-modules.is-collapsed{
+    gap:0;
+    padding:0;
+    width:32px;          /* solo el botón: sin esto la lista oculta (nowrap) seguía ensanchando el contenedor y bloqueando clics */
+    overflow:hidden;
+    background:transparent;
+    border:0;
+  }
+  .nav-modules.is-collapsed .nav-modules-label{display:none;}
+  .nav-modules.is-collapsed .nav-modules-toggle{
+    width:32px;height:32px;
+    font-size:18px;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-top:0;border-right:0;
+    border-radius:0 0 0 8px;
   }
   .nav-modules button{
     font-family:'JetBrains Mono',monospace;
@@ -912,12 +926,12 @@
 <div class="page-bg-avatar"></div>
 
 <!-- Botonera de Navegación "Ir a:" -->
-<div class="nav-modules" id="navModules">
+<div class="nav-modules is-collapsed" id="navModules">
   <div class="nav-modules-header">
     <span class="nav-modules-label">Ir a:</span>
-    <button type="button" class="nav-modules-toggle" id="navModulesToggle" aria-expanded="true" aria-controls="navModulesList" title="Contraer/expandir esta botonera" onclick="toggleModule(this)"></button>
+    <button type="button" class="nav-modules-toggle" id="navModulesToggle" aria-expanded="false" aria-controls="navModulesList" title="Contraer/expandir esta botonera" onclick="toggleModule(this)"></button>
   </div>
-  <div class="nav-modules-list collapsible-content expanded" id="navModulesList">
+  <div class="nav-modules-list collapsible-content collapsed" id="navModulesList">
     <button data-target="diapasonSection" title="Ir a Diapasón">Diapasón</button>
     <button data-target="cifradoSection" title="Ir a Generador de Cifrado">Generador de Cifrado</button>
     <button data-target="superposicionSection" title="Ir a Superposición cromática">Superposición cromática</button>
@@ -1054,40 +1068,22 @@
       </div>
         </div>
       </div>
-      <div class="consola-field consola-instruments" title="Todo lo rítmico agrupado y contraído por defecto, igual que How to play: Variaciones de ritmo (batería) y Rhythm — Time signature (compás). Mismos controles de siempre, en el mismo lugar.">
-        <div class="consola-subfield-head">
-          <label>Rhythm</label>
-          <button type="button" class="subfield-toggle" aria-expanded="false" aria-controls="rhythmBody" onclick="toggleModule(this)" title="Mostrar/ocultar Variaciones de ritmo y Time signature"></button>
+      <div class="consola-field consola-instruments" title="Variaciones adicionales sobre el patrón de batería aleatorio (no afectan a Swing Drums, que es un groove fijo). Son ortogonales a Rhythm complexity: la modulan compás a compás, no la reemplazan.">
+        <label>Variaciones de ritmo</label>
+        <div class="consola-inst-row">
+          <span class="consola-inst-toggle" title="Cada golpe (bombo/caja/hi-hat/rimshot) recibe una variación aleatoria de volumen (±12) más un acento fijo en los tiempos 1 y 3 del compás, en vez del volumen fijo de siempre."><input type="checkbox" id="consolaVelocityHumanizeChk" checked><label for="consolaVelocityHumanizeChk">Velocity humanizada</label></span>
+          <span class="consola-inst-toggle" title="Corre levemente el hi-hat y la caja unos milisegundos antes o después del grid exacto (push-pull), golpe a golpe. No toca el bombo (ancla el pulso) ni Swing Drums (ese groove ya trae su propio timing real del MIDI)."><input type="checkbox" id="consolaMicroTimingChk" checked><label for="consolaMicroTimingChk">Micro-timing</label></span>
+          <span class="consola-inst-toggle" title="Ata la densidad efectiva del compás a su posición dentro de la frase de 4: más probabilidad de fill/platillo/ride en el último compás de cada frase (4, 8, 12) y un poco más de respiro en el resto, en vez de la misma probabilidad pareja en los 12 compases."><input type="checkbox" id="consolaSectionVariationChk" checked><label for="consolaSectionVariationChk">Variación por sección</label></span>
+          <span class="consola-inst-toggle" title="Agrupa variaciones extra: ghost notes de caja entre los golpes principales, síncopa ocasional del bombo fuera del grid, y cross-stick/rimshot en vez de caja en los compases más quietos."><input type="checkbox" id="consolaOtherRhythmVarChk" checked><label for="consolaOtherRhythmVarChk">other-rhythm-variations</label></span>
         </div>
-        <div class="collapsible-content collapsed" id="rhythmBody" style="display:flex;flex-wrap:wrap;gap:20px 30px;">
-          <div class="consola-field consola-instruments" title="Variaciones adicionales sobre el patrón de batería aleatorio (no afectan a Swing Drums, que es un groove fijo). Son ortogonales a Rhythm complexity: la modulan compás a compás, no la reemplazan.">
-            <label>Variaciones de ritmo</label>
-            <div class="consola-inst-row">
-              <span class="consola-inst-toggle" title="Cada golpe (bombo/caja/hi-hat/rimshot) recibe una variación aleatoria de volumen (±12) más un acento fijo en los tiempos 1 y 3 del compás, en vez del volumen fijo de siempre."><input type="checkbox" id="consolaVelocityHumanizeChk" checked><label for="consolaVelocityHumanizeChk">Velocity humanizada</label></span>
-              <span class="consola-inst-toggle" title="Corre levemente el hi-hat y la caja unos milisegundos antes o después del grid exacto (push-pull), golpe a golpe. No toca el bombo (ancla el pulso) ni Swing Drums (ese groove ya trae su propio timing real del MIDI)."><input type="checkbox" id="consolaMicroTimingChk" checked><label for="consolaMicroTimingChk">Micro-timing</label></span>
-              <span class="consola-inst-toggle" title="Ata la densidad efectiva del compás a su posición dentro de la frase de 4: más probabilidad de fill/platillo/ride en el último compás de cada frase (4, 8, 12) y un poco más de respiro en el resto, en vez de la misma probabilidad pareja en los 12 compases."><input type="checkbox" id="consolaSectionVariationChk" checked><label for="consolaSectionVariationChk">Variación por sección</label></span>
-              <span class="consola-inst-toggle" title="Agrupa variaciones extra: ghost notes de caja entre los golpes principales, síncopa ocasional del bombo fuera del grid, y cross-stick/rimshot en vez de caja en los compases más quietos."><input type="checkbox" id="consolaOtherRhythmVarChk" checked><label for="consolaOtherRhythmVarChk">other-rhythm-variations</label></span>
-            </div>
-          </div>
-          <div class="consola-field consola-instruments" title="Compás (time signature) de cada uno de los 12 compases del segmento. Dos campos, numerador / denominador (cambiá el primero para 3/4, 5/4, 7/4...; el segundo es 1, 2, 4, 8 o 16, p. ej. 6/8, 9/8, 12/8) — se aplica a los 12 compases por igual. 4/4 por defecto, igual que siempre. Un compás compuesto (denominador 8, numerador múltiplo de 3 mayor a 3: 6/8, 9/8, 12/8) se siente subdividido de a 3 en vez de a 2 — armonía, bajo y melodía lo respetan. Mix time signatures: sortea entre 2 y 4 compases distintos (el tipeado siempre es uno de ellos) y los reparte al azar entre los 12 compases del segmento — un compás distinto en cada Reproducir/Regenerar.">
-            <label for="consolaTimeSigNum">Rhythm — Time signature</label>
-            <div class="consola-inst-row">
-              <span class="consola-timesig">
-                <input type="number" id="consolaTimeSigNum" value="4" min="1" max="32" step="1" inputmode="numeric" aria-label="Time signature: numerador (tiempos por compás)" title="Numerador: cuántos tiempos tiene el compás (1 a 32)">
-                <span class="consola-timesig-sep" aria-hidden="true">/</span>
-                <select id="consolaTimeSigDen" aria-label="Time signature: denominador (figura que vale un tiempo)" title="Denominador: qué figura vale un tiempo (1, 2, 4, 8 o 16)">
-                  <option value="1">1</option>
-                  <option value="2">2</option>
-                  <option value="4" selected>4</option>
-                  <option value="8">8</option>
-                  <option value="16">16</option>
-                </select>
-              </span>
-              <span class="consola-inst-toggle" title="Sortea entre 2 y 4 compases distintos (incluido el elegido arriba) y los reparte al azar entre los 12 compases — algunos quedan en uno, otros en otro."><input type="checkbox" id="consolaMixTimeSigChk"><label for="consolaMixTimeSigChk">Mix time signatures</label></span>
-            </div>
-            <span class="consola-val" id="consolaTimeSigStatus"></span>
-          </div>
+      </div>
+      <div class="consola-field consola-instruments" title="Compás (time signature) de cada uno de los 12 compases del segmento. Campo de texto: numerador/denominador (3/4, 6/8, 12/8, 5/4, 7/4, 9/8...) — se aplica a los 12 compases por igual. 4/4 por defecto, igual que siempre. Un compás compuesto (denominador 8, numerador múltiplo de 3 mayor a 3: 6/8, 9/8, 12/8) se siente subdividido de a 3 en vez de a 2 — armonía, bajo y melodía lo respetan. Mix time signatures: sortea entre 2 y 4 compases distintos (el tipeado siempre es uno de ellos) y los reparte al azar entre los 12 compases del segmento — un compás distinto en cada Reproducir/Regenerar.">
+        <label for="consolaTimeSigInput">Rhythm — Time signature</label>
+        <div class="consola-inst-row">
+          <input type="text" id="consolaTimeSigInput" value="4/4" inputmode="numeric" pattern="[0-9]{1,2}/[0-9]{1,2}" size="6" style="width:64px;">
+          <span class="consola-inst-toggle" title="Sortea entre 2 y 4 compases distintos (incluido el tipeado arriba) y los reparte al azar entre los 12 compases — algunos quedan en uno, otros en otro."><input type="checkbox" id="consolaMixTimeSigChk"><label for="consolaMixTimeSigChk">Mix time signatures</label></span>
         </div>
+        <span class="consola-val" id="consolaTimeSigStatus"></span>
       </div>
       <div class="consola-field consola-loop">
         <input type="checkbox" id="consolaLoopChk" checked>
@@ -6384,8 +6380,8 @@ function runAnalysis() {
      (time signature) de cada uno de los NUM_BARS compases del
      segmento. Por defecto, los 12 compases quedan en 4/4 (mismo
      comportamiento de siempre). El campo de texto
-     #consolaTimeSigNum (numerador) y #consolaTimeSigDen (denominador)
-     arman "N/D" (3/4, 6/8, 12/8, 5/4, 7/4, 9/8, etc.); el checkbox #consolaMixTimeSigChk sortea entre 2 y
+     #consolaTimeSigInput acepta "N/D" (3/4, 6/8, 12/8, 5/4, 7/4,
+     9/8, etc.); el checkbox #consolaMixTimeSigChk sortea entre 2 y
      4 compases distintos (el tipeado siempre es uno de ellos) y los
      reparte al azar entre los 12 compases.
      Cada compás se traduce a una duración en NEGRAS (numerador*4/
@@ -6411,9 +6407,8 @@ function runAnalysis() {
       return { num:num, den:den, beats:beats, compound:compound, label:num+"/"+den };
     }
     function inputSig(){
-      var n = document.getElementById("consolaTimeSigNum");
-      var d = document.getElementById("consolaTimeSigDen");
-      return parseSig((n ? n.value : "") + "/" + (d ? d.value : "")) || { num:4, den:4, beats:4, compound:false, label:"4/4" };
+      var el = document.getElementById("consolaTimeSigInput");
+      return parseSig(el && el.value) || { num:4, den:4, beats:4, compound:false, label:"4/4" };
     }
     function mixEnabled(){
       var chk = document.getElementById("consolaMixTimeSigChk");
@@ -10660,15 +10655,7 @@ function runAnalysis() {
   // completo — arma de nuevo armonía/bajo/melodía/batería a la medida
   // de la nueva métrica — no alcanza con reconstruir solo drumEvents
   // como con Rhythm complexity arriba.
-  // El numerador se normaliza (entero 1..32, vacío = 4) antes de regenerar;
-  // el denominador es un <select> (1/2/4/8/16), ya no puede quedar inválido.
-  document.getElementById("consolaTimeSigNum").addEventListener("change", function(){
-    var v = parseInt(this.value, 10);
-    if(isNaN(v)) v = 4;
-    this.value = Math.min(32, Math.max(1, v));
-    if(state.rootChord.length) regenerateConsola();
-  });
-  document.getElementById("consolaTimeSigDen").addEventListener("change", function(){
+  document.getElementById("consolaTimeSigInput").addEventListener("change", function(){
     if(state.rootChord.length) regenerateConsola();
   });
   document.getElementById("consolaMixTimeSigChk").addEventListener("change", function(){
@@ -11374,35 +11361,16 @@ function runAnalysis() {
     const buttons = navModules.querySelectorAll('#navModulesList button');
 
     // Contraer/expandir la botonera completa: reusa toggleModule (mismo
-    // mecanismo que ya usan las tarjetas colapsables) y recuerda la
-    // preferencia entre visitas — así, una vez colapsada, no vuelve a
-    // molestar mientras se explora la página.
+    // mecanismo que ya usan las tarjetas colapsables). Arranca SIEMPRE
+    // contraída (el HTML ya trae aria-expanded="false" + .collapsed +
+    // .is-collapsed): solo se ve el "+" en la esquina. Ya no se guarda
+    // la preferencia entre visitas.
     const navToggleBtn = document.getElementById('navModulesToggle');
     if (navToggleBtn) {
-      const navList = document.getElementById('navModulesList');
-      try {
-        const storedPref = localStorage.getItem('navModulesCollapsed');
-        // Sin preferencia guardada todavía: en pantallas angostas (mismo
-        // breakpoint de 760px que ya usa .stage para pasar a una columna)
-        // arranca contraído — expandido de entrada ocupaba casi toda la
-        // altura visible de un iPhone (panel fixed, tapando el contenido
-        // real hasta que el usuario lo tocara). No toca la preferencia ya
-        // guardada de una visita anterior, ni el comportamiento en desktop.
-        const shouldStartCollapsed = storedPref === '1' ||
-          (storedPref === null && window.innerWidth <= 760);
-        if (shouldStartCollapsed && navList) {
-          navToggleBtn.setAttribute('aria-expanded', 'false');
-          navList.classList.remove('expanded');
-          navList.classList.add('collapsed');
-        }
-      } catch (e) { /* almacenamiento no disponible (modo privado, etc.) */ }
       navToggleBtn.addEventListener('click', function(){
-        // toggleModule(this) ya corrió (onclick inline) antes de este
-        // listener, así que aria-expanded acá ya refleja el estado NUEVO.
-        try {
-          const nowExpanded = this.getAttribute('aria-expanded') === 'true';
-          localStorage.setItem('navModulesCollapsed', nowExpanded ? '0' : '1');
-        } catch (e) { /* almacenamiento no disponible */ }
+        // toggleModule(this) (onclick inline) ya corrió antes de este
+        // listener, así que aria-expanded acá refleja el estado NUEVO.
+        navModules.classList.toggle('is-collapsed', this.getAttribute('aria-expanded') !== 'true');
       });
     }
 
