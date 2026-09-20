@@ -235,12 +235,6 @@
   .fret-note.fret-open.selected text{opacity:1;fill:#1a1622;}
 
   .clock-actions{display:flex;justify-content:center;gap:10px;margin-top:22px;flex-wrap:wrap;}
-  .hifi-toggle{
-    display:inline-flex;align-items:center;gap:5px;
-    font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.04em;
-    color:var(--ink-muted);cursor:pointer;user-select:none;
-  }
-  .hifi-toggle input{cursor:pointer;}
   button.chip{
     font-family:'JetBrains Mono',monospace;
     font-size:11px;
@@ -267,6 +261,22 @@
     font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-muted);
     width:100%;text-align:center;letter-spacing:.14em;text-transform:uppercase;margin-bottom:2px;
   }
+
+  /* EJEMPLOS RÁPIDOS: módulo contraíble (toggleModule), contraído por defecto */
+  .examples-module{display:block;}
+  .examples-head{display:flex;align-items:center;justify-content:center;gap:10px;}
+  .examples .examples-title{width:auto;margin-bottom:0;}
+  .examples-chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;padding-top:12px;}
+  /* ESTILOS (set de presets): ahora vive en el Mini mixer, arriba de los selectores */
+  .mix-styles{
+    display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center;
+    padding-top:14px;border-top:1px solid var(--line);margin-bottom:14px;
+  }
+  .mix-styles span{
+    font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--ink-muted);width:100%;text-align:center;margin-bottom:2px;
+  }
+  #multiSetsMemBtn2:disabled{opacity:.4;cursor:not-allowed;}
 
   /* ---- MULTI SETS INPUT (debajo del reloj de entrada principal) ----
      Contraído por defecto, se expande con el + (toggleModule, mismo
@@ -1003,23 +1013,24 @@
         <button class="chip primary" id="playChordBtn" type="button">▶ Acorde</button>
         <button class="chip" id="composeBtn" type="button" title="Toca el segmento de 12 compases de SetMusicBox con las notas actuales">🎹 Compose</button>
         <button class="chip" id="clearBtn">Limpiar</button>
+        <button class="chip" id="multiSetsMemBtn2" type="button" disabled title="Mismo botón que To Memory de Multi Sets Input (copia acá para no tener que abrir esa tarjeta): guarda el set actual del reloj/piano en el próximo casillero libre y resetea el reloj. Entre paréntesis, cuántos sets van guardados.">To Memory (0/5)</button>
         <button class="chip toggle" id="sf2Btn" type="button" aria-pressed="false" title="Carga bajo demanda tres SoundFonts reales (Instruments+Drums+Percussion, ~29MB) y reemplaza el sintetizador por muestras de instrumento y batería reales (incluye SetMusicBox). Un clic más para volver al sintetizador liviano.">🎼 Sonido real (SoundFont)</button>
         <input type="file" id="sf2LocalPicker" webkitdirectory directory multiple hidden aria-hidden="true">
-        <label class="hifi-toggle" title="Reemplaza instrumentos puntuales por SoundFonts premium aparte (Soundfonts/EXTRA/), uno por uno a medida que se agregan — hoy: Piano (Steinway D), Armonía (Warm Pad), Bajo (Super Bass Electric — opción nueva en el selector de Bajo) y Batería (Jazz Kit). Solo se nota con '🎼 Sonido real' activado; se descargan todos juntos al tildar este checkbox.">
-          <input type="checkbox" id="hifiChk"> HIFI
-        </label>
+        <button class="chip" id="loadExtraBtn" type="button" title="Carga los SoundFonts de la carpeta Soundfonts/EXTRA/ (Piano Steinway D, Warm Pad, Super Bass Electric, Jazz Kit… y cualquier .sf2 que subas ahí) y activa sus opciones (HIFI) en los selectores del mini mixer. Solo se nota con '🎼 Sonido real' activado. Si alguno falla, volvé a apretarlo para reintentar.">loadExtra</button>
       </div>
-      <div class="examples style-presets">
-        <span>Estilos (set de presets)</span>
-        <button class="chip" id="presetBaroqueBtn" type="button" title="Set de presets: Armonía → Clavecín, Bajo → Piano eléctrico, Melodía → Flauta, Melodía doblada → Clavecín (prende el doblaje).">Baroque</button>
-        <button class="chip" id="presetJazzBtn" type="button" title="Set de presets: Armonía → Piano, Doblar armonía → Mute, Melodía → Sax soprano, Doblar melodía → Mute, Bajo → Bajo original (sintetizado). Además prende Swing Drums (groove real de jazz, en vez del patrón de batería aleatorio).">Jazz</button>
-      </div>
-      <div class="examples">
-        <span>Ejemplos rápidos</span>
-        <button class="chip" data-ex="0,4,7">Tríada mayor</button>
-        <button class="chip" data-ex="0,3,7">Tríada menor</button>
-        <button class="chip" data-ex="0,4,7,10">Dominante 7</button>
-        <button class="chip" data-ex="0,3,6,10">Semidism. 7</button>
+      <div class="examples examples-module" id="examplesModule">
+        <div class="examples-head">
+          <span class="examples-title">Ejemplos rápidos</span>
+          <button type="button" class="subfield-toggle" aria-expanded="false" aria-controls="examplesBody" onclick="toggleModule(this)" title="Mostrar/ocultar EJEMPLOS RÁPIDOS"></button>
+        </div>
+        <div class="collapsible-content collapsed" id="examplesBody">
+          <div class="examples-chips">
+          <button class="chip" data-ex="0,4,7">Tríada mayor</button>
+          <button class="chip" data-ex="0,3,7">Tríada menor</button>
+          <button class="chip" data-ex="0,4,7,10">Dominante 7</button>
+          <button class="chip" data-ex="0,3,6,10">Semidism. 7</button>
+          </div>
+        </div>
       </div>
     </div>
     <div class="clock-card multiset-card" id="multiSetsCard">
@@ -1042,9 +1053,9 @@
           <button type="button" class="chip" id="multiSetsClearBtn" disabled title="Vacía los 5 casilleros">Borrar memoria</button>
         </div>
         <div class="consola-inst-row multiset-modes" title="Cómo se reparten los sets guardados. Por compás: cada compás sortea UN set y todo ese compás (armonía, bajo, melodía) usa solo sus notas. Por reataque: cada reataque de armonía sortea su propio set, dentro del mismo compás. Mezcla: cada compás sortea al azar si se comporta como 'Por compás' o como 'Por reataque'. Se elige uno a la vez.">
-          <span class="consola-inst-toggle"><input type="checkbox" id="multiSetsModeBar" checked><label for="multiSetsModeBar">Por compás</label></span>
+          <span class="consola-inst-toggle"><input type="checkbox" id="multiSetsModeBar"><label for="multiSetsModeBar">Por compás</label></span>
           <span class="consola-inst-toggle"><input type="checkbox" id="multiSetsModeAttack"><label for="multiSetsModeAttack">Por reataque</label></span>
-          <span class="consola-inst-toggle"><input type="checkbox" id="multiSetsModeMixed"><label for="multiSetsModeMixed">Mezcla</label></span>
+          <span class="consola-inst-toggle"><input type="checkbox" id="multiSetsModeMixed" checked><label for="multiSetsModeMixed">Mezcla</label></span>
         </div>
         <div class="multiset-status" id="multiSetsStatus"></div>
       </div>
@@ -1401,6 +1412,11 @@
           <input type="range" id="mixMelodyDoubleRev" min="0" max="150" value="100" step="1">
           <span class="mix-val" id="mixMelodyDoubleRevVal">100%</span>
         </div>
+      </div>
+      <div class="mix-styles">
+        <span>Estilos (set de presets)</span>
+        <button class="chip" id="presetBaroqueBtn" type="button" title="Set de presets: Armonía → Clavecín, Bajo → Piano eléctrico, Melodía → Flauta, Melodía doblada → Clavecín (prende el doblaje).">Baroque</button>
+        <button class="chip" id="presetJazzBtn" type="button" title="Set de presets: Armonía → Piano, Doblar armonía → Mute, Melodía → Sax soprano, Doblar melodía → Mute, Bajo → Bajo original (sintetizado). Además prende Swing Drums (groove real de jazz, en vez del patrón de batería aleatorio).">Jazz</button>
       </div>
       <div class="mix-presets">
         <div class="mix-preset-group" id="harmonyPresetGroup" data-mix-group="harmony">
@@ -4999,12 +5015,12 @@ const sfDiscoverReady = (async function sfDiscover() {
   // (GitHub Pages distingue mayúsculas de minúsculas).
   try { (await sfDiscoverPaths()).forEach(addPath); }
   catch (err) { console.warn("No se pudo listar Soundfonts/ con la API de GitHub — solo se usan los archivos del manifest:", err); }
-  manifest.forEach((m) => addPath(SF_ROOT_DIR + "/HIFI/" + m.file));
+  manifest.forEach((m) => addPath(SF_ROOT_DIR + "/EXTRA/" + m.file));
   SF_DEFAULT_FILES.forEach((d) => addPath(SF_ROOT_DIR + "/" + d.file)); // defaults: nunca dependen de la API
   const files = [];
   found.forEach((f) => {
     const rel = f.path.slice(SF_ROOT_DIR.length + 1);
-    const mans = manifest.filter((m) => sfUrlForPath(SF_ROOT_DIR + "/HIFI/" + m.file).toLowerCase() === f.url.toLowerCase());
+    const mans = manifest.filter((m) => sfUrlForPath(SF_ROOT_DIR + "/EXTRA/" + m.file).toLowerCase() === f.url.toLowerCase());
     files.push({ id: "x_" + encodeURIComponent(rel), url: f.url, path: f.path, label: rel.split("/").join(" / "), kind: sfKindFor(f.path, mans) });
   });
   sfExtraFiles = files;
@@ -5069,9 +5085,26 @@ async function hifiLoadAllIfNeeded() {
     sfExtraFiles.map((e) => sfLoadFontOnce(e.url))
   ));
 }
-document.getElementById("hifiChk").addEventListener("change", function () {
-  hifiEnabled = this.checked;
-  if (hifiEnabled) hifiLoadAllIfNeeded();
+// Botón "loadExtra" (reemplaza al checkbox HIFI): baja de una vez todos los
+// .sf2 de Soundfonts/EXTRA/ y deja activas sus opciones (HIFI) — mismo
+// efecto que tenía tildar el checkbox. Se puede apretar de nuevo para
+// reintentar los que fallaron (hifiLoadAllIfNeeded salta los ya cargados).
+const loadExtraBtn = document.getElementById("loadExtraBtn");
+function loadExtraSummary() {
+  const files = sfExtraFiles.filter((e) => !sfIsDefaultId(e.id));
+  return { ok: files.filter((e) => sfStateByUrl[e.url] === "ready").length, total: files.length };
+}
+loadExtraBtn.addEventListener("click", async function () {
+  if (loadExtraBtn.disabled) return;
+  hifiEnabled = true;
+  loadExtraBtn.disabled = true;
+  loadExtraBtn.textContent = "loadExtra … cargando";
+  sfNotifyCatalogChange(false); // los avisos de los selectores pasan a "cargando"
+  try { await hifiLoadAllIfNeeded(); } catch (err) { console.error("loadExtra:", err); }
+  const r = loadExtraSummary();
+  loadExtraBtn.disabled = false;
+  loadExtraBtn.textContent = (r.total > 0 && r.ok === r.total) ? "loadExtra ✓ (" + r.ok + ")" : "loadExtra ⚠ " + r.ok + "/" + r.total + " — reintentar";
+  sfNotifyCatalogChange(false);
 });
 async function sf2Activate(btn) {
   sf2State = "loading";
@@ -7641,7 +7674,10 @@ function runAnalysis() {
         boxes[i].classList.toggle("filled", filled);
         boxes[i].querySelector("span").textContent = filled ? setName(slots[i]) : "\u2014";
       }
-      el("multiSetsMemBtn").disabled = !(selected.size >= 2 && slots.length < MAX_SLOTS);
+      var canSave = selected.size >= 2 && slots.length < MAX_SLOTS;
+      el("multiSetsMemBtn").disabled = !canSave;
+      var mem2 = el("multiSetsMemBtn2"); // copia de To Memory junto al reloj (con contador, porque la tarjeta Multi Sets está contraída)
+      if(mem2){ mem2.disabled = !canSave; mem2.textContent = "To Memory (" + slots.length + "/" + MAX_SLOTS + ")"; }
       el("multiSetsComposeBtn").disabled = slots.length === 0;
       el("multiSetsClearBtn").disabled = slots.length === 0;
     }
@@ -7650,6 +7686,10 @@ function runAnalysis() {
       if(slots.length >= MAX_SLOTS){ status("Los 5 casilleros están llenos. Borrá la memoria para empezar de nuevo."); return; }
       slots.push(Array.from(selected).sort(function(a,b){return a-b;}));
       status("Set " + slots.length + " guardado: " + setName(slots[slots.length-1]) + (slots.length >= MAX_SLOTS ? " — memoria llena (5/5)." : ""));
+      // Desde el primer set guardado, SetMusicBox compone desde la memoria: sin esto, el
+      // reset del reloj dejaba `selected` vacío -> piano roll vacío y 🔀/G deshabilitados
+      // hasta apretar Compose. Tocar el reloj a mano sigue volviendo al modo de un solo set.
+      active = true;
       resetting = true;
       try{ clearNotes(); }finally{ resetting = false; } // resetea el reloj (y corta lo que suene, como Limpiar)
       refreshUI();
@@ -7678,6 +7718,7 @@ function runAnalysis() {
     }
     function init(){
       el("multiSetsMemBtn").addEventListener("click", toMemory);
+      if(el("multiSetsMemBtn2")) el("multiSetsMemBtn2").addEventListener("click", toMemory);
       el("multiSetsComposeBtn").addEventListener("click", compose);
       el("multiSetsClearBtn").addEventListener("click", clearMemory);
       // Tres checkboxes excluyentes (mismo patrón que Modo A/Modo B de
@@ -9432,8 +9473,8 @@ function runAnalysis() {
     return "pad";
   }
   var SF_HIFI_DEDICATED = {
-    piano: { key:"pianoHifi", label:"Piano (HIFI)", title:"Soundfont HIFI aparte (Soundfonts/EXTRA/Keys/Steinway Grand Piano 1.2 - 000-000 Steinway Grand.sf2, Steinway D) — requiere el checkbox HIFI tildado. Sin HIFI, esta opción cae directo al sintetizador (a diferencia de 'Piano', que de todos modos ya usa HIFI en forma transparente si está tildado, y si no, el SoundFont base Instruments.sf2)." },
-    kit:   { key:"kitHifi",   label:"Kit (HIFI)",   title:"Soundfont HIFI aparte (Soundfonts/EXTRA/Drums/Jazz Kit - 000-000 Jazz Traps.sf2) — requiere el checkbox HIFI tildado. Sin HIFI, cae directo al sintetizador de batería (a diferencia de 'Kit', que usa el SoundFont base Drums.sf2 como paso intermedio)." }
+    piano: { key:"pianoHifi", label:"Piano (HIFI)", title:"Soundfont HIFI aparte (Soundfonts/EXTRA/Keys/Steinway Grand Piano 1.2 - 000-000 Steinway Grand.sf2, Steinway D) — requiere apretar loadExtra. Sin loadExtra, esta opción cae directo al sintetizador (a diferencia de 'Piano', que de todos modos ya usa HIFI en forma transparente si está tildado, y si no, el SoundFont base Instruments.sf2)." },
+    kit:   { key:"kitHifi",   label:"Kit (HIFI)",   title:"Soundfont HIFI aparte (Soundfonts/EXTRA/Drums/Jazz Kit - 000-000 Jazz Traps.sf2) — requiere apretar loadExtra. Sin loadExtra, cae directo al sintetizador de batería (a diferencia de 'Kit', que usa el SoundFont base Drums.sf2 como paso intermedio)." }
   };
   function sfBaseFileRecords(){
     var instCurated = SM2_INSTRUMENTS.map(function(it){
@@ -9453,7 +9494,7 @@ function runAnalysis() {
         if(m.mode === "new"){
           curated.push({ key:m.key, label:(m.label || m.key) + " (HIFI)", bank:m.bank || 0, program:m.program || 0,
             family:m.fallbackFamily || "pad",
-            title:"Soundfont HIFI aparte (Soundfonts/EXTRA/" + m.file + ") — requiere el checkbox HIFI tildado, se carga junto con el resto de HIFI." });
+            title:"Soundfont HIFI aparte (Soundfonts/EXTRA/" + m.file + ") — requiere apretar loadExtra (se carga junto con el resto de Soundfonts/EXTRA/)." });
         } else if(SF_HIFI_DEDICATED[m.key]){
           var d = SF_HIFI_DEDICATED[m.key];
           curated.push({ key:d.key, label:d.label, bank:m.bank || 0, program:m.program || 0, title:d.title });
@@ -9494,9 +9535,9 @@ function runAnalysis() {
   }
   function sfPlaceholderText(file){
     var st = sfStateByUrl[file.url];
-    if(st === "error") return "… no se pudo cargar (destildá y tildá HIFI para reintentar)";
+    if(st === "error") return "… no se pudo cargar (apretá loadExtra para reintentar)";
     if(st === "loading" || hifiEnabled) return "… cargando presets de este archivo";
-    return "… tildá HIFI para ver todos sus presets";
+    return "… apretá loadExtra para ver todos sus presets";
   }
   function sfFillSelect(cfg, files, kind){
     var sel = document.getElementById(cfg.id);
@@ -9540,10 +9581,6 @@ function runAnalysis() {
   }
   sfOnCatalogChange = sfBuildPresetSelects;
   sfBuildPresetSelects();
-  (function(){
-    var hifiChkCatalog = document.getElementById("hifiChk");
-    if(hifiChkCatalog) hifiChkCatalog.addEventListener("change", sfBuildPresetSelects); // cambia el aviso de los archivos sin cargar
-  })();
   var sm2PresetCache = {};
   var sm2CacheFontRef = null;
   var sm2CacheHifiEnabled = false;
@@ -11320,11 +11357,11 @@ function runAnalysis() {
     // destildar HIFI no revierte el selector (el usuario puede volver
     // a mano si quiere) — sí deja de sonar en HIFI porque
     // sm2ResolveFontAndProgram ya chequea hifiEnabled.
-    var hifiChkEl = document.getElementById("hifiChk");
+    var hifiChkEl = document.getElementById("loadExtraBtn");
     if(hifiChkEl){
-      hifiChkEl.addEventListener("change", function(){
+      hifiChkEl.addEventListener("click", function(){
         var bassEl = document.getElementById("bassPresetSelect");
-        if(this.checked && mixPresets.bass === "synthBass" && bassEl && bassEl.querySelector('option[value="bassAcoustic"]')){
+        if(mixPresets.bass === "synthBass" && bassEl && bassEl.querySelector('option[value="bassAcoustic"]')){
           mixPresets.bass = "bassAcoustic";
           bassEl.value = "bassAcoustic";
         }
