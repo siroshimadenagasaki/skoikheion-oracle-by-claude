@@ -1150,7 +1150,7 @@
         <label>Bass function</label>
         <div class="consola-inst-row">
           <span class="consola-inst-toggle" title="Current set (default): el bajo toca SOLO notas del acorde en curso — el voicing de armonía que está sonando en ese instante exacto (mismo criterio que la melodía). Nunca una nota ajena al set elegido."><input type="checkbox" id="consolaBassFnCurrentChk" checked><label for="consolaBassFnCurrentChk">Current set</label></span>
-          <span class="consola-inst-toggle" title="Complement: el bajo de cada compás arranca recuperando, en orden, las notas que el subset de armonía de ese compás dejó afuera (cuando se le acaban, sigue con notas del acorde de ese compás) — así armonía+bajo+melodía reconstruyen entre todos el set completo transportado."><input type="checkbox" id="consolaBassFnComplementChk"><label for="consolaBassFnComplementChk">Complement</label></span>
+          <span class="consola-inst-toggle" title="Superset: en cada ataque del bajo, 50% de las veces toca una nota del acorde en curso y el otro 50% una nota de AFUERA del set de ese reataque (una clase de tono que no pertenece al set transportado). Es el único modo del motor que sale del set elegido."><input type="checkbox" id="consolaBassFnSupersetChk"><label for="consolaBassFnSupersetChk">Superset</label></span>
         </div>
       </div>
         </div>
@@ -1494,7 +1494,7 @@
     <div class="consola-roll-wrap" id="consolaRollHost"></div>
 
     <p class="consola-foot">
-      Armonía: cada reataque sortea un subset del set elegido (o el set completo) con su propia transposición e inversión, nunca la misma combinación dos veces seguidas ni una nota ajena al set; el bajo depende de Bass function (en How to play): con Current set (default) toca solo notas del acorde en curso; con Complement recupera lo que ese subset dejó afuera, así acorde+bajo reconstruyen el set completo. Las notas nunca entran en bloque: se escalonan, con más distancia entre ataques cuanto más dura el acorde. &#8634; Normalito toca el set completo sin subsets ni transposición, una sola inversión por compás.
+      Armonía: cada reataque sortea un subset del set elegido (o el set completo) con su propia transposición e inversión, nunca la misma combinación dos veces seguidas ni una nota ajena al set; el bajo depende de Bass function (en How to play): con Current set (default) toca solo notas del acorde en curso; con Superset toca, la mitad de las veces, una nota de afuera del set (es el único modo que sale del set elegido). Las notas nunca entran en bloque: se escalonan, con más distancia entre ataques cuanto más dura el acorde. &#8634; Normalito toca el set completo sin subsets ni transposición, una sola inversión por compás.
       Bajo: recorre grados del acorde vigente, ritmo variable (blancas, negras, alguna síncopa). Melodía en flauta: toca solo notas del acorde vigente, con fills cortos arpegiados en ~30% de los compases.
       Batería opcional: bombo/caja/hi-hat con patrón variable por compás; el hi-hat además alterna corcheas parejas, negras y corcheas con puntillo. Se repite en loop hasta Detener &mdash; podés cambiar el set o tocar Normalito mientras suena.
     </p>
@@ -8477,7 +8477,7 @@ function runAnalysis() {
           var noteOff = strumOff + (brokenOffsets ? brokenOffsets[vi] : 0);
           events.push({midi:note, startBeat:barStart+offset+noteOff, durBeats:Math.max(0.05,dur-noteOff), bar:bar});
         });
-        slots.push({chord:voiced, startBeat:offset, durBeats:dur});
+        slots.push({chord:voiced, startBeat:offset, durBeats:dur, setNotes:transposeChord(rcAtk, t)}); // setNotes: el set completo de ESTE reataque, transportado por su t — lo usa Bass function "superset" para saber qué queda afuera del set
         prevCombo = combo;
         offset += dur;
       });
@@ -8498,6 +8498,37 @@ function runAnalysis() {
       }
     }
     return slots[slots.length-1].chord;
+  }
+  // Igual que currentChordAt pero devuelve el reataque entero
+  // ({chord, startBeat, durBeats, setNotes}), no solo el voicing.
+  function currentSlotAt(slots, offset){
+    for(var i=0;i<slots.length;i++){
+      var s = slots[i];
+      if(offset >= s.startBeat - 1e-9 && offset < s.startBeat + s.durBeats - 1e-9){
+        return s;
+      }
+    }
+    return slots[slots.length-1];
+  }
+  // BASS FUNCTION "superset": nota del bajo = acorde en curso + otras.
+  // Con probabilidad BASS_SUPERSET_OUTSIDE_PROB elige una clase de tono
+  // que NO está en el set (transportado) de ese reataque; si no, una
+  // nota del acorde en curso. Es el único punto del motor que puede
+  // salirse del set elegido, y solo con este modo tildado.
+  var BASS_SUPERSET_OUTSIDE_PROB = 0.5;
+  function bassSupersetPick(slot){
+    var chord = slot.chord;
+    var setNotes = slot.setNotes || chord; // sin setNotes (no debería pasar en modo libre): el propio acorde
+    var inSet = {};
+    setNotes.forEach(function(m){ inSet[mod12(m)] = true; });
+    var outside = [];
+    for(var pc=0; pc<12; pc++){
+      if(!inSet[pc]) outside.push(BASE_MIDI + pc);
+    }
+    if(outside.length && Math.random() < BASS_SUPERSET_OUTSIDE_PROB){
+      return outside[randomInt(0, outside.length-1)];
+    }
+    return chord[randomInt(0, chord.length-1)];
   }
 
   // Bajo: recorre distintos grados del acorde EN CURSO de ese compás
@@ -8702,21 +8733,18 @@ function runAnalysis() {
       //  - "current" (default): el bajo toca SOLO notas del acorde EN
       //    CURSO — el voicing de slotChords[bar] vigente en el instante
       //    exacto de cada ataque del bajo (currentChordAt, el mismo
-      //    criterio que ya usa la melodía). Sin cola de complemento.
-      //  - "complement": el bajo arranca con la cola del complemento
-      //    (meta[bar].complement) y va cubriendo esas notas primero, lo
-      //    que garantiza que armonía+bajo+melodía reconstruyan el set
-      //    completo; cuando la cola se agota cae a una nota al azar del
-      //    acorde de referencia del compás (chord).
-      var complementMode = (bassFunction === "complement");
-      var queue = complementMode ? meta[bar].complement.slice() : []; // notas del set que el bajo de este compás debe recuperar (solo modo complement)
+      //    criterio que ya usa la melodía).
+      //  - "superset": acorde en curso + otras — ver bassSupersetPick
+      //    (50% nota del acorde en curso, 50% nota de afuera del set de
+      //    ese reataque). Único modo que sale del set elegido.
+      var supersetMode = (bassFunction === "superset");
       var barStart = RHYTHM.start(bar);
 
       var bOffset = 0;
       bassCells[bar].forEach(function(dur){
         var pick;
-        if (complementMode){
-          pick = queue.length ? queue.shift() : chord[randomInt(0, chord.length-1)];
+        if (supersetMode){
+          pick = bassSupersetPick(currentSlotAt(slotChords[bar], bOffset));
         } else {
           var bassCurChord = currentChordAt(slotChords[bar], bOffset); // acorde sonando en este instante
           pick = bassCurChord[randomInt(0, bassCurChord.length-1)];
@@ -8839,7 +8867,7 @@ function runAnalysis() {
   // Opciones de variedad armónica
   var subsetVarietyEnabled = false;
   var supersetVarietyEnabled = false;
-  var bassFunction = "current"; // "current" (default: notas del acorde en curso) | "complement" (recupera el complemento del subset) — checkboxes excluyentes #consolaBassFnCurrentChk / #consolaBassFnComplementChk (How to play) — ver buildBassMelodyEventsRandom
+  var bassFunction = "current"; // "current" (default: notas del acorde en curso) | "superset" (acorde en curso + notas de afuera del set) — checkboxes excluyentes #consolaBassFnCurrentChk / #consolaBassFnSupersetChk (How to play) — ver buildBassMelodyEventsRandom
   var chromaVariety = 0.25; // 0..1 — slider #consolaChromaSlider (default 25%), ver randomChromaTransposition/currentSubsetGap
   var chordDensityVariety = 0.5; // 0..1 — slider #consolaChordsSlider (default 50%), ver buildChordEventsRandom
 
@@ -10999,14 +11027,14 @@ function runAnalysis() {
   });
   document.getElementById("consolaNormalBtn").addEventListener("click", normalizeConsola);
   MULTISETS.init(); // MULTI SETS INPUT (debajo del reloj principal)
-  // Bass function (How to play): Current set / Complement, mutuamente
+  // Bass function (How to play): Current set / Superset, mutuamente
   // excluyentes, mismo patrón que Modo A/Modo B de Cycles. Current set
   // tildado por defecto; nunca quedan los dos destildados.
   (function(){
     var curChk = document.getElementById("consolaBassFnCurrentChk");
-    var cmpChk = document.getElementById("consolaBassFnComplementChk");
+    var cmpChk = document.getElementById("consolaBassFnSupersetChk");
     function onBassFnChange(){
-      bassFunction = cmpChk.checked ? "complement" : "current";
+      bassFunction = cmpChk.checked ? "superset" : "current";
       if(state.rootChord.length) regenerateConsola();
     }
     curChk.addEventListener("change", function(){
