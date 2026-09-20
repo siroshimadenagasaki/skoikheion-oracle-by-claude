@@ -4851,9 +4851,30 @@ const SF_GH_OWNER = "siroshimadenagasaki";
 const SF_GH_REPO = "skoikheion-oracle-by-claude";
 const SF_ROOT_DIR = "Soundfonts";
 const SF_BASE_URLS = [SF2_URL, SF2_DRUMS_URL, SF2_PERC_URL];
+// ---- Defaults del mini mixer (Soundfonts/*.sf2 subidos como "default") ----
+// Un archivo por selector. bank/program/label salen del phdr real de cada
+// .sf2 (leídos con HIFI tildado en el sitio en vivo, 2026-09-19). Estos 6
+// archivos se bajan solos al abrir la página y suenan SIN necesitar el
+// checkbox HIFI (ver sfIsDefaultId en sm2ResolveFontAndProgram). Para
+// cambiar un default: reemplazá el archivo en Soundfonts/ o editá su fila.
+const SF_DEFAULT_FILES = [
+  { mix: "harmony",      file: "Piano default.sf2", bank: 0, program: 0,  label: "Grand Piano",          kind: "melodic", family: "piano" },
+  { mix: "chordDouble",  file: "Nord Pad.sf2",      bank: 0, program: 0,  label: "Warm Pad Pro",         kind: "melodic", family: "pad"   },
+  { mix: "melody",       file: "Flute default.sf2", bank: 0, program: 73, label: "Flute",                kind: "melodic", family: "flute" },
+  { mix: "melodyDouble", file: "Armonica.sf2",      bank: 0, program: 0,  label: "Hohner C Harmonica",   kind: "melodic", family: "flute" },
+  { mix: "bass",         file: "Bass default.sf2",  bank: 0, program: 32, label: "Acoust. Bass (Solar)", kind: "melodic", family: "bass"  },
+  { mix: "drum",         file: "Drums default.sf2", bank: 0, program: 0,  label: "JDRockKit",            kind: "drum" }
+];
+function sfDefaultId(d) { return "x_" + encodeURIComponent(d.file); }
+function sfDefaultKey(d) { return "sf:" + sfDefaultId(d) + ":" + d.bank + ":" + d.program; }
+function sfDefaultKeyFor(mix, fallback) {
+  for (const d of SF_DEFAULT_FILES) if (d.mix === mix) return sfDefaultKey(d);
+  return fallback;
+}
+function sfIsDefaultId(id) { return SF_DEFAULT_FILES.some((d) => sfDefaultId(d) === id); }
 const SF_DISCOVER_CACHE_KEY = "sfDiscoverCacheV1";
 const SF_DISCOVER_CACHE_TTL_MS = 5 * 60 * 1000; // la API sin token da 60 pedidos/hora por IP
-let sfExtraFiles = [];       // [{ id, url, path, label, kind }] — todo .sf2 que NO es uno de los 3 base
+let sfExtraFiles = SF_DEFAULT_FILES.map((d) => ({ id: sfDefaultId(d), url: sfUrlForPath(SF_ROOT_DIR + "/" + d.file), path: SF_ROOT_DIR + "/" + d.file, label: d.file, kind: d.kind }));       // [{ id, url, path, label, kind }] — todo .sf2 que NO es uno de los 3 base
 let sfExtraVersion = 0;      // sube cada vez que termina de cargar un .sf2 extra (invalida el caché de índices de preset)
 const sfFontByUrl = {};      // url -> .sf2 parseado
 const sfStateByUrl = {};     // url -> loading | ready | error
@@ -4920,6 +4941,7 @@ const sfDiscoverReady = (async function sfDiscover() {
   try { (await sfDiscoverPaths()).forEach(addPath); }
   catch (err) { console.warn("No se pudo listar Soundfonts/ con la API de GitHub — solo se usan los archivos del manifest:", err); }
   manifest.forEach((m) => addPath(SF_ROOT_DIR + "/HIFI/" + m.file));
+  SF_DEFAULT_FILES.forEach((d) => addPath(SF_ROOT_DIR + "/" + d.file)); // defaults: nunca dependen de la API
   const files = [];
   found.forEach((f) => {
     const rel = f.path.slice(SF_ROOT_DIR.length + 1);
@@ -4956,6 +4978,11 @@ function sfLoadFontOnce(url) {
   }
   return sfLoadPromiseByUrl[url];
 }
+// Los 6 .sf2 default se bajan solos al abrir la página (sin HIFI). Espera
+// al descubrimiento solo para asegurarse de que todo el script ya corrió.
+Promise.resolve(sfDiscoverReady).catch(() => {}).then(() => {
+  SF_DEFAULT_FILES.forEach((d) => sfLoadFontOnce(sfUrlForPath(SF_ROOT_DIR + "/" + d.file)));
+});
 // Carga (bajo demanda, una sola vez por archivo) cada .sf2 de HIFI_FILES
 // Y cada .sf2 extra descubierto en Soundfonts/ — se dispara al tildar el
 // checkbox "HIFI" por primera vez. Un archivo que falla (404, red) no
@@ -8924,7 +8951,7 @@ function runAnalysis() {
   }
   function focusFactor(track){ return (!focusActive() || focusTracks[track]) ? 1 : FOCUS_DUCK; }
   function mixEffective(track){ return mixGains[track] * focusFactor(track); }
-  var mixPresets = { harmony: "piano", melody: "flute", melodyDouble: "mute", chordDouble: "mute", bass: "synthBass", drum: "kit", bebop: "tenorSax" };
+  var mixPresets = { harmony: sfDefaultKeyFor("harmony", "piano"), melody: sfDefaultKeyFor("melody", "flute"), melodyDouble: sfDefaultKeyFor("melodyDouble", "mute"), chordDouble: sfDefaultKeyFor("chordDouble", "mute"), bass: sfDefaultKeyFor("bass", "synthBass"), drum: sfDefaultKeyFor("drum", "kit"), bebop: "tenorSax" };
   var chordGainNode = null, bassGainNode = null, melodyGainNode = null, drumGainNode = null, melodyDoubleGainNode = null, chordDoubleGainNode = null, comping2GainNode = null, bebopGainNode = null;
 
   // ---------- Reverb: bus de envío compartido ----------
@@ -9198,6 +9225,11 @@ function runAnalysis() {
           curated.push({ key:d.key, label:d.label, bank:m.bank || 0, program:m.program || 0, title:d.title });
         }
       });
+      SF_DEFAULT_FILES.forEach(function(d){
+        if(sfDefaultId(d) !== e.id) return;
+        curated.push({ key:sfDefaultKey(d), label:d.label, bank:d.bank, program:d.program, family:d.family,
+          title:"Default de este selector · Soundfonts/" + d.file + " · banco " + d.bank + " · programa " + d.program });
+      });
       return { id:e.id, label:e.label, kind:e.kind, font:sfFontByUrl[e.url] || null, extra:true, url:e.url, curated:curated };
     });
   }
@@ -9311,7 +9343,7 @@ function runAnalysis() {
         var baseFont = sm2FontFor(sfId);
         return baseFont ? { font: baseFont, bank: sfBank, program: sfProg, tag: sfId } : null;
       }
-      if(!hifiEnabled) return null;
+      if(!hifiEnabled && !sfIsDefaultId(sfId)) return null; // los defaults (SF_DEFAULT_FILES) no piden HIFI
       for(var xi = 0; xi < sfExtraFiles.length; xi++){
         if(sfExtraFiles[xi].id !== sfId) continue;
         var xFont = sfFontByUrl[sfExtraFiles[xi].url];
