@@ -268,6 +268,24 @@
     width:100%;text-align:center;letter-spacing:.14em;text-transform:uppercase;margin-bottom:2px;
   }
 
+  /* ---- MULTI SETS INPUT (debajo del reloj de entrada principal) ----
+     Contraído por defecto, se expande con el + (toggleModule, mismo
+     mecanismo que el resto de las tarjetas). */
+  .multiset-card{padding:14px 20px;}
+  .multiset-head{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .multiset-title{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);}
+  .multiset-help{font-family:'JetBrains Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--ink-muted);margin:14px 0 12px;}
+  .multiset-slots{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;}
+  .multiset-slot{background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:8px 4px;min-height:58px;text-align:center;display:flex;flex-direction:column;justify-content:center;gap:3px;}
+  .multiset-slot b{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.1em;color:var(--ink-muted);}
+  .multiset-slot span{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-muted);word-break:break-word;}
+  .multiset-slot.filled{border-color:var(--gold-dim);}
+  .multiset-slot.filled b{color:var(--gold);}
+  .multiset-slot.filled span{color:var(--ink);}
+  .multiset-card .clock-actions{margin-top:14px;}
+  .multiset-card button.chip:disabled{opacity:.4;cursor:not-allowed;}
+  .multiset-modes{justify-content:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--line);}
+  .multiset-status{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--ink-muted);text-align:center;margin-top:8px;min-height:14px;}
   .results{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:8px 0;}
   .row{
     display:grid;grid-template-columns:150px 1fr;gap:18px;padding:16px 26px;
@@ -1002,6 +1020,33 @@
         <button class="chip" data-ex="0,3,7">Tríada menor</button>
         <button class="chip" data-ex="0,4,7,10">Dominante 7</button>
         <button class="chip" data-ex="0,3,6,10">Semidism. 7</button>
+      </div>
+    </div>
+    <div class="clock-card multiset-card" id="multiSetsCard">
+      <div class="multiset-head">
+        <span class="multiset-title">Multi Sets Input</span>
+        <button type="button" class="subfield-toggle" aria-expanded="false" aria-controls="multiSetsBody" onclick="toggleModule(this)" title="Mostrar/ocultar MULTI SETS INPUT"></button>
+      </div>
+      <div class="collapsible-content collapsed" id="multiSetsBody">
+        <p class="multiset-help">Elegí un set en el reloj (o el piano) y apretá To Memory: se guarda en el próximo casillero y el reloj se resetea. Repetí hasta 5 sets (mínimo 1). Compose arma el segmento de 12 compases de SetMusicBox con una combinación al azar de esos sets y lo reproduce.</p>
+        <div class="multiset-slots" id="multiSetSlots">
+          <div class="multiset-slot"><b>1</b><span>&mdash;</span></div>
+          <div class="multiset-slot"><b>2</b><span>&mdash;</span></div>
+          <div class="multiset-slot"><b>3</b><span>&mdash;</span></div>
+          <div class="multiset-slot"><b>4</b><span>&mdash;</span></div>
+          <div class="multiset-slot"><b>5</b><span>&mdash;</span></div>
+        </div>
+        <div class="clock-actions">
+          <button type="button" class="chip" id="multiSetsMemBtn" disabled title="Guarda el set actual del reloj/piano en el próximo casillero libre y resetea el reloj">To Memory</button>
+          <button type="button" class="chip primary" id="multiSetsComposeBtn" disabled title="Combina al azar los sets guardados en los 12 compases de SetMusicBox y lo reproduce">&#127922; Compose</button>
+          <button type="button" class="chip" id="multiSetsClearBtn" disabled title="Vacía los 5 casilleros">Borrar memoria</button>
+        </div>
+        <div class="consola-inst-row multiset-modes" title="Cómo se reparten los sets guardados. Por compás: cada compás sortea UN set y todo ese compás (armonía, bajo, melodía) usa solo sus notas. Por reataque: cada reataque de armonía sortea su propio set, dentro del mismo compás. Mezcla: cada compás sortea al azar si se comporta como 'Por compás' o como 'Por reataque'. Se elige uno a la vez.">
+          <span class="consola-inst-toggle"><input type="checkbox" id="multiSetsModeBar" checked><label for="multiSetsModeBar">Por compás</label></span>
+          <span class="consola-inst-toggle"><input type="checkbox" id="multiSetsModeAttack"><label for="multiSetsModeAttack">Por reataque</label></span>
+          <span class="consola-inst-toggle"><input type="checkbox" id="multiSetsModeMixed"><label for="multiSetsModeMixed">Mezcla</label></span>
+        </div>
+        <div class="multiset-status" id="multiSetsStatus"></div>
       </div>
     </div>
   </div>
@@ -5424,6 +5469,8 @@ document.querySelectorAll("[data-ex]").forEach(btn => {
 });
 
 function runAnalysis() {
+  // MULTI SETS INPUT: tocar el reloj/piano a mano vuelve al modo de un solo set.
+  if (typeof window.__multiSetsOnClockChange === "function") window.__multiSetsOnClockChange();
   if (typeof window.regenerateConsola === "function") window.regenerateConsola();
   if (typeof window.regenerateGradosTerceras === "function") window.regenerateGradosTerceras();
   const pcs = Array.from(selected);
@@ -7393,7 +7440,7 @@ function runAnalysis() {
       var doScale = scaleChecked();
       var mixedRhythm = semiChecked();
       var doNarrow = narrowChecked();
-      var harrisCtx = harrisChecked() ? HARRIS.detect(state.rootChord.map(mod12)) : null;
+      var harrisCtx = (harrisChecked() && !MULTISETS.isActive()) ? HARRIS.detect(state.rootChord.map(mod12)) : null; // con MULTI SETS no hay UN set fijo para toda la pasada: Harris no aplica
       var doHarris = !!harrisCtx; // tildado pero el set no califica -> false, como "no hace nada"
 
       var modes = [];
@@ -7502,6 +7549,155 @@ function runAnalysis() {
   }
   function mod12(n){ return ((n % 12) + 12) % 12; }
   function randomInt(min, max){ return Math.floor(Math.random()*(max-min+1)) + min; }
+
+  /* ================================================================
+     MÓDULO MULTI SETS INPUT — de 1 a 5 sets guardados con "To Memory"
+     (reloj/piano -> casillero, y el reloj se resetea). "Compose"
+     activa este modo y arma los 12 compases con una combinación al
+     azar de esos sets. Tres modos, uno a la vez (checkboxes):
+       - "bar":    cada compás sortea UN set; armonía, bajo y melodía
+                   de ese compás usan solo sus notas (el motor libre
+                   de siempre, pero con el set de ese compás).
+       - "attack": cada reataque de armonía sortea SU set, dentro del
+                   mismo compás (la melodía sigue el acorde vigente;
+                   el bajo NO se tocó: sigue leyendo meta[bar] de
+                   buildProgressionRandom, que usa el set de
+                   referencia del compás — ver barSlot).
+       - "mixed":  cada compás sortea al azar si se comporta como
+                   "bar" o como "attack".
+     Mientras esté activo (después de Compose), regenerateConsola()
+     compone desde la memoria en vez de desde `selected`. Se desactiva
+     apenas se toca el reloj/piano a mano (runAnalysis ->
+     window.__multiSetsOnClockChange), salvo el reset que hace el
+     propio To Memory. Con el modo inactivo, todas las funciones de
+     abajo devuelven el rootChord de siempre: el comportamiento del
+     resto del sitio no cambia.
+     ================================================================ */
+  var MULTISETS = (function(){
+    var MAX_SLOTS = 5;
+    var slots = [];        // sets guardados: arrays de pitch classes 0-11, en orden de guardado
+    var active = false;    // true tras Compose, hasta que se toque el reloj/piano a mano
+    var resetting = false; // el reset del reloj que hace To Memory no cuenta como "tocar a mano"
+    var chords = [];       // slots -> rootChord (notas MIDI), calculado en assign()
+    var barSlot = [];      // por compás: índice del set (de referencia) sorteado
+    var barKind = [];      // por compás: "bar" | "attack"
+
+    function el(id){ return document.getElementById(id); }
+    function isActive(){ return active && slots.length > 0; }
+    function mode(){
+      if(el("multiSetsModeAttack") && el("multiSetsModeAttack").checked) return "attack";
+      if(el("multiSetsModeMixed") && el("multiSetsModeMixed").checked) return "mixed";
+      return "bar";
+    }
+    function setName(pcs){
+      return pcs.slice().sort(function(a,b){return a-b;}).map(function(pc){ return spellPitchClass(pc); }).join(" ");
+    }
+    // Sorteo de sets para los 12 compases. Se llama una vez por
+    // regenerateConsola(), ANTES de buildProgressionRandom y
+    // buildChordEventsRandom, que leen el resultado con rootForBar /
+    // rootForAttack. Sorteo puro: con pocos compases puede quedar un
+    // set sin usar por azar.
+    function assign(numBars){
+      var m = mode();
+      chords = slots.map(function(pcs){ return pcSetToChord(pcs); });
+      barSlot = []; barKind = [];
+      for(var b=0; b<numBars; b++){
+        barSlot.push(randomInt(0, slots.length-1));
+        barKind.push(m === "mixed" ? (Math.random() < 0.5 ? "bar" : "attack") : m);
+      }
+    }
+    // rootChord del set de referencia del compás (progresión / bajo).
+    function rootForBar(bar, fallback){
+      return isActive() ? chords[barSlot[bar]] : fallback;
+    }
+    // rootChord para UN reataque de armonía de ese compás.
+    function rootForAttack(bar, fallback){
+      if(!isActive()) return fallback;
+      return barKind[bar] === "attack" ? chords[randomInt(0, chords.length-1)] : chords[barSlot[bar]];
+    }
+    // Etiqueta que se ve arriba de cada compás en el piano roll:
+    // "S2" (set 2 guardado) o "mix" (reataques de sets distintos).
+    function tagFor(bar){
+      if(!isActive()) return "";
+      return barKind[bar] === "attack" ? "mix" : ("S" + (barSlot[bar]+1));
+    }
+    function firstRoot(){ return pcSetToChord(slots[0]); }
+    function readoutText(){
+      return slots.map(function(pcs, i){ return (i+1) + ": " + setName(pcs); }).join("   |   ");
+    }
+
+    // ---------- UI ----------
+    function status(msg){ var st = el("multiSetsStatus"); if(st) st.textContent = msg || ""; }
+    function refreshUI(){
+      var boxes = document.querySelectorAll("#multiSetSlots .multiset-slot");
+      for(var i=0; i<boxes.length; i++){
+        var filled = i < slots.length;
+        boxes[i].classList.toggle("filled", filled);
+        boxes[i].querySelector("span").textContent = filled ? setName(slots[i]) : "\u2014";
+      }
+      el("multiSetsMemBtn").disabled = !(selected.size >= 2 && slots.length < MAX_SLOTS);
+      el("multiSetsComposeBtn").disabled = slots.length === 0;
+      el("multiSetsClearBtn").disabled = slots.length === 0;
+    }
+    function toMemory(){
+      if(selected.size < 2){ status("Elegí al menos 2 notas en el reloj o el piano."); return; }
+      if(slots.length >= MAX_SLOTS){ status("Los 5 casilleros están llenos. Borrá la memoria para empezar de nuevo."); return; }
+      slots.push(Array.from(selected).sort(function(a,b){return a-b;}));
+      status("Set " + slots.length + " guardado: " + setName(slots[slots.length-1]) + (slots.length >= MAX_SLOTS ? " — memoria llena (5/5)." : ""));
+      resetting = true;
+      try{ clearNotes(); }finally{ resetting = false; } // resetea el reloj (y corta lo que suene, como Limpiar)
+      refreshUI();
+    }
+    function clearMemory(){
+      var wasActive = isActive();
+      slots = []; active = false;
+      status("Memoria vacía.");
+      refreshUI();
+      if(wasActive){ stopPlayback(); regenerateConsola(); } // deja de componer desde la memoria: vuelve al set del reloj (o queda vacío)
+    }
+    function compose(){
+      if(!slots.length){ status("Guardá al menos un set con To Memory."); return; }
+      status("");
+      active = true;
+      stopPlayback();
+      regenerateConsola();
+      // Mismo gesto que el botón 🎹 Compose del reloj: mostrar SetMusicBox.
+      var consolaCard = el("consolaCard");
+      if(consolaCard){
+        var tb = consolaCard.querySelector("button[aria-expanded]");
+        if(tb && tb.getAttribute("aria-expanded") === "false") tb.click();
+        consolaCard.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+      startPlayback();
+    }
+    function init(){
+      el("multiSetsMemBtn").addEventListener("click", toMemory);
+      el("multiSetsComposeBtn").addEventListener("click", compose);
+      el("multiSetsClearBtn").addEventListener("click", clearMemory);
+      // Tres checkboxes excluyentes (mismo patrón que Modo A/Modo B de
+      // Cycles); no se puede dejar los tres destildados.
+      var ids = ["multiSetsModeBar", "multiSetsModeAttack", "multiSetsModeMixed"];
+      ids.forEach(function(id){
+        el(id).addEventListener("change", function(){
+          if(this.checked){
+            ids.forEach(function(o){ if(o !== id) el(o).checked = false; });
+          } else {
+            this.checked = true;
+          }
+          if(isActive()) regenerateConsola(); // el cambio de modo se aplica a la variación que sigue sonando en pantalla
+        });
+      });
+      window.__multiSetsOnClockChange = function(){
+        if(!resetting) active = false;
+        refreshUI();
+      };
+      refreshUI();
+    }
+    return {
+      init: init, isActive: isActive, assign: assign, rootForBar: rootForBar,
+      rootForAttack: rootForAttack, tagFor: tagFor, firstRoot: firstRoot, readoutText: readoutText
+    };
+  })();
 
   /* ------------------------------------------------------------
      Reparto rítmico al azar CON promedio garantizado e intercalado
@@ -7922,17 +8118,19 @@ function runAnalysis() {
     var progression = [], roles = [], meta = [], prevKey = null;
     for(var bar=0; bar<numBars; bar++){
       var picked, t, key, guard = 0;
+      var rcBar = MULTISETS.rootForBar(bar, rootChord); // MULTI SETS INPUT: set de este compás (= rootChord si no hay multi)
       do{
-        picked = randomSubsetChord(rootChord);
+        picked = randomSubsetChord(rcBar);
         t = randomChromaTransposition();
         key = picked.chord.join(",") + ":" + t;
         guard++;
       } while(key === prevKey && guard < 40);
       progression.push(transposeChord(picked.chord, t));
       meta.push({ t: t, complement: picked.complement.map(function(m){ return m + t; }) });
-      var sizeTag = picked.chord.length < rootChord.length ? (picked.chord.length + "n") : "";
+      var sizeTag = picked.chord.length < rcBar.length ? (picked.chord.length + "n") : "";
       var tTag = t === 0 ? "" : ("T+" + t);
-      var role = [sizeTag, tTag].filter(function(s){ return s; }).join(" · ");
+      var msTag = MULTISETS.tagFor(bar); // "" si MULTI SETS INPUT no está activo
+      var role = msTag === "mix" ? "mix" : [msTag, sizeTag, tTag].filter(function(s){ return s; }).join(" · ");
       roles.push(role || "Set completo");
       prevKey = key;
     }
@@ -8134,13 +8332,14 @@ function runAnalysis() {
       var slots = [];
       cellsByBar[bar].forEach(function(dur){
         var picked, t, inv, combo, voiced, strum;
+        var rcAtk = MULTISETS.rootForAttack(bar, rootChord); // MULTI SETS INPUT: set de ESTE reataque (= rootChord si no hay multi)
         if (JAZZ.roll()){
           // JAZZ: variedad de voicing (cerrada/drop2/drop3/abierta con
           // doblado, como el Voicing Explorer) + conducción de voces
           // suave la mayoría de las veces — ver JAZZ.pickChordVoicing.
           // NOTAS COMUNES: si está activo, fuerza esa elección al 100%
           // de las veces en vez del 65% habitual.
-          var cand = JAZZ.pickChordVoicing(rootChord, prevCombo, jazzPrevVoiced, COMMONNOTES.enabled());
+          var cand = JAZZ.pickChordVoicing(rcAtk, prevCombo, jazzPrevVoiced, COMMONNOTES.enabled());
           picked = cand.picked; t = cand.t; inv = cand.inv; combo = cand.combo;
           voiced = cand.voiced; strum = cand.strum;
           jazzPrevVoiced = voiced;
@@ -8149,7 +8348,7 @@ function runAnalysis() {
           // azar, sortea varios dentro del mismo acorde/grado y se
           // queda con el que comparte más notas con el reataque
           // anterior — mismo set, más continuidad.
-          var cnCand = COMMONNOTES.pickBestCandidate(rootChord, prevCombo, jazzPrevVoiced);
+          var cnCand = COMMONNOTES.pickBestCandidate(rcAtk, prevCombo, jazzPrevVoiced);
           picked = cnCand.picked; t = cnCand.t; inv = cnCand.inv; combo = cnCand.combo;
           voiced = cnCand.voiced;
           strum = false;
@@ -8157,7 +8356,7 @@ function runAnalysis() {
         } else {
           var comboGuard = 0;
           do{
-            picked = randomSubsetChord(rootChord);
+            picked = randomSubsetChord(rcAtk);
             t = randomChromaTransposition();
             inv = picked.chord.length > 1 ? randomInt(0, picked.chord.length-1) : 0;
             combo = picked.chord.join(",") + ":" + t + ":" + inv;
@@ -8548,7 +8747,8 @@ function runAnalysis() {
     var normalBtn = document.getElementById("consolaNormalBtn");
     if(!playBtn) return; // sección todavía no está en el DOM
     var readout = document.getElementById("consolaNotesReadout");
-    if(selected.size < 2){
+    var multi = MULTISETS.isActive(); // MULTI SETS INPUT: componer desde la memoria en vez de desde `selected`
+    if(!multi && selected.size < 2){
       readout.textContent = selected.size === 0 ? "—" : Array.from(selected).sort(function(a,b){return a-b;}).map(function(pc){return spellPitchClass(pc);}).join(" ");
       state.rootChord = []; state.progression = []; state.roles = []; state.chordEvents = []; state.slotChords = []; state.bassEvents = []; state.melodyEvents = []; state.comping2Events = []; state.bebopEvents = [];
       renderRoll();
@@ -8560,9 +8760,16 @@ function runAnalysis() {
     }
     playBtn.disabled = false;
     if(regenPlayBtn) regenPlayBtn.disabled = false;
-    if(normalBtn) normalBtn.disabled = false;
-    var rootChord = pcSetToChord(selected);
-    readout.textContent = rootChord.map(noteName).join("  ");
+    if(normalBtn) normalBtn.disabled = multi; // Normalito toca un solo set: no aplica a MULTI SETS
+    var rootChord;
+    if(multi){
+      MULTISETS.assign(NUM_BARS);
+      rootChord = MULTISETS.firstRoot(); // (state.rootChord solo indica "hay algo"; cada compás usa su propio set)
+      readout.textContent = MULTISETS.readoutText();
+    } else {
+      rootChord = pcSetToChord(selected);
+      readout.textContent = rootChord.map(noteName).join("  ");
+    }
     state.rootChord = rootChord;
     fixedIntervalOffset = 0; // modo test de intervalos fijos: cada variación nueva arranca el ciclo en C (offset 0)
     cyclesOffset = 0; // módulo Cycles (Modo A acumulativo): cada variación nueva arranca el ciclo en C también
@@ -10686,6 +10893,7 @@ function runAnalysis() {
     setNotes([0,4,7,11]); // C E G B — dispara runAnalysis() -> regenerateConsola()
   });
   document.getElementById("consolaNormalBtn").addEventListener("click", normalizeConsola);
+  MULTISETS.init(); // MULTI SETS INPUT (debajo del reloj principal)
   document.getElementById("consolaAlwaysCompleteChk").addEventListener("change", function(){
     alwaysCompleteSet = this.checked;
     if(state.rootChord.length) regenerateConsola();
