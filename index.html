@@ -1027,7 +1027,7 @@
     </div>
 
     <div class="consola-controls">
-      <div class="consola-field consola-instruments" title="Tempo, sliders de complejidad armónica/rítmica y opciones (Always complete set, Subsets, Supersets, More repetition, Notas comunes) del motor libre, agrupados y contraídos por defecto para simplificar la vista — mismos controles de siempre, en el mismo lugar.">
+      <div class="consola-field consola-instruments" title="Tempo, sliders de complejidad armónica/rítmica y opciones (Subsets, Supersets, More repetition, Notas comunes) del motor libre, agrupados y contraídos por defecto para simplificar la vista — mismos controles de siempre, en el mismo lugar.">
         <div class="consola-subfield-head">
           <label>How to play</label>
           <button type="button" class="subfield-toggle" aria-expanded="false" aria-controls="howToPlayBody" onclick="toggleModule(this)" title="Mostrar/ocultar Tempo, los sliders de complejidad y las opciones del motor"></button>
@@ -1035,7 +1035,7 @@
         <div class="collapsible-content collapsed" id="howToPlayBody" style="display:flex;flex-wrap:wrap;gap:20px 30px;">
       <div class="consola-field">
         <label for="consolaTempo">Tempo</label>
-        <input type="range" id="consolaTempo" min="60" max="140" value="84" step="1">
+        <input type="range" id="consolaTempo" min="40" max="200" value="84" step="1">
         <span class="consola-val" id="consolaTempoVal">84 BPM</span>
       </div>
       <div class="consola-field" title="Controla, en conjunto, la transposición cromática al azar por compás y el achique automático del acorde (hasta 2 notas menos) que el motor libre aplicaba siempre a máxima intensidad. 0% = notas literales elegidas, sin transportar, set completo siempre. 100% = comportamiento de siempre.">
@@ -1071,7 +1071,6 @@
       <div class="consola-field consola-instruments">
         <label>Opciones del motor</label>
         <div class="consola-inst-row">
-          <span class="consola-inst-toggle" title="Tildado (default): el bajo de cada compás siempre recupera las notas que el subset de armonía dejó afuera, así armonía+bajo+melodía reconstruyen entre todos el set completo transportado. Destildado: el bajo puede doblar notas del mismo subset que ya está sonando en armonía, sin obligación de completar el set en ese compás — sonido más variado/disperso, sigue sin salir nunca del set elegido."><input type="checkbox" id="consolaAlwaysCompleteChk" checked><label for="consolaAlwaysCompleteChk">Always complete set</label></span>
           <span class="consola-inst-toggle" title="Además del subset de siempre (el set completo o casi completo), a veces usa un subconjunto MÁS CHICO del mismo set elegido — más variedad de tamaños de acorde por compás, sin salir nunca del set."><input type="checkbox" id="consolaSubsetsChk"><label for="consolaSubsetsChk">&#8681; Subsets (variedad)</label></span>
           <span class="consola-inst-toggle" title="Además del subset de siempre, a veces usa el COMPLEMENTO del set elegido (las notas que el set deja afuera dentro de la octava) — más variedad armónica, siempre derivada del mismo set."><input type="checkbox" id="consolaSupersetsChk"><label for="consolaSupersetsChk">&#8679; Supersets (variedad)</label></span>
           <span class="consola-inst-toggle" title="Cada compás de armonía, bajo, melodía y batería tiene un 40% extra de probabilidad de repetir exactamente el patrón del compás anterior; además, bajo y melodía tienen un 40% de probabilidad por compás de acoplar sus ataques a los de la armonía en vez de llevar su propio ritmo."><input type="checkbox" id="consolaMoreRepChk"><label for="consolaMoreRepChk">&#128257; More repetition</label></span>
@@ -1208,17 +1207,18 @@
       </div>
       <div class="consola-field" title="Nivel general del reverb — envío compartido, con un impulso sintético generado en el navegador (no carga ningún archivo). Cada pista tiene además su propio nivel de envío en el mini mixer, más abajo (&quot;Reverb (envío por pista)&quot;); este slider escala a todas juntas.">
         <label for="consolaReverbAmount">Reverb</label>
-        <input type="range" id="consolaReverbAmount" min="0" max="100" value="25" step="1">
-        <span class="consola-val" id="consolaReverbAmountVal">25%</span>
+        <input type="range" id="consolaReverbAmount" min="0" max="100" value="50" step="1">
+        <span class="consola-val" id="consolaReverbAmountVal">50%</span>
       </div>
       <div class="consola-field">
         <label for="consolaVolume">Volumen</label>
-        <input type="range" id="consolaVolume" min="0" max="100" value="70" step="1">
-        <span class="consola-val" id="consolaVolumeVal">70%</span>
+        <input type="range" id="consolaVolume" min="0" max="100" value="100" step="1">
+        <span class="consola-val" id="consolaVolumeVal">100%</span>
       </div>
       <div class="consola-field" style="flex-direction:row;flex-wrap:wrap;gap:8px;">
         <button type="button" class="chip primary" id="consolaPlayBtn" title="Reproduce el segmento en loop — repite siempre la misma secuencia (la última generada) hasta que la cambies con 🔀 o elijas otras notas.">&#9658; Reproducir</button>
         <button type="button" class="chip chip-small" id="consolaRegenPlayBtn" disabled title="Atajo: tecla G. Detiene lo que suene, sortea una variación nueva del segmento (mismo set de notas elegido) y la reproduce de una — funciona también mientras está sonando.">&#128256;</button>
+        <span class="consola-inst-toggle" title="Destildado (default): el bajo puede doblar notas del mismo subset que ya está sonando en armonía, sin obligación de completar el set en ese compás — sonido más variado/disperso, sigue sin salir nunca del set elegido. Tildado: el bajo de cada compás siempre recupera las notas que el subset de armonía dejó afuera, así armonía+bajo+melodía reconstruyen entre todos el set completo transportado. Al cambiarlo regenera el segmento."><input type="checkbox" id="consolaAlwaysCompleteChk"><label for="consolaAlwaysCompleteChk">Always complete set</label></span>
         <button type="button" class="chip" id="consolaStopBtn" disabled>&#9632; Detener</button>
         <button type="button" class="chip" id="consolaResetBtn" title="Pánico: corta de golpe cualquier nota que haya quedado sonando (MIDI all notes off) — a diferencia de Detener, funciona aunque no esté reproduciendo.">&#128721; Reset</button>
         <button type="button" class="chip" id="consolaMoreCompingBtn" title="Agrega una QUINTA pista MIDI, con timbre de cuerdas (strings), que dobla cada nota de la melodía junto con 1 o 2 notas más del acorde vigente en ese instante (siempre del mismo set, nunca una nota ajena) — el grupito entero queda siempre pegado a la nota de melodía, a lo sumo a una octava o dos de distancia.">moreComping</button>
@@ -1303,10 +1303,18 @@
         </div>
         <div class="mix-channel" title="Volumen de Doblar melodía (repite la Melodía una octava — o una quinta con 'alt-melody' — abajo, con su propio timbre). Sin efecto mientras el selector 'Doblar melodía' esté en Mute.">
           <label for="mixMelodyDoubleVol">Doblar melodía</label>
-          <input type="range" id="mixMelodyDoubleVol" min="0" max="150" value="100" step="1">
+          <input type="range" id="mixMelodyDoubleVol" min="0" max="150" value="50" step="1">
           <div class="mix-val-row">
-            <span class="mix-val" id="mixMelodyDoubleVolVal">100%</span>
+            <span class="mix-val" id="mixMelodyDoubleVolVal">50%</span>
             <input type="checkbox" class="mix-focus" data-track="melodyDouble" title="Foco: si lo tildás, baja el volumen de todas las demás pistas (este fader no cambia)" aria-label="Foco en Doblar melodía">
+          </div>
+        </div>
+        <div class="mix-channel" title="Volumen de Doblar armonía (repite la Armonía con un segundo timbre). Sin efecto mientras el selector 'Doblar armonía' esté en Mute.">
+          <label for="mixChordDoubleVol">Doblar armonía</label>
+          <input type="range" id="mixChordDoubleVol" min="0" max="150" value="50" step="1">
+          <div class="mix-val-row">
+            <span class="mix-val" id="mixChordDoubleVolVal">50%</span>
+            <input type="checkbox" class="mix-focus" data-track="chordDouble" title="Foco: si lo tildás, baja el volumen de todas las demás pistas (este fader no cambia)" aria-label="Foco en Doblar armonía">
           </div>
         </div>
       </div>
@@ -1351,7 +1359,7 @@
             <option value="piano" selected>Piano</option>
           </select>
         </div>
-        <div class="mix-preset-group" id="chordDoublePresetGroup" data-mix-group="chordDouble" title="Repite exactamente las mismas notas y el mismo ritmo de la Armonía, con un segundo timbre — para doblarla. En Mute (default) no genera ningún sonido nuevo ni dobla nada.">
+        <div class="mix-preset-group" id="chordDoublePresetGroup" data-mix-group="chordDouble" title="Repite exactamente las mismas notas y el mismo ritmo de la Armonía, con un segundo timbre — para doblarla. Default: Nord Pad (Warm Pad Pro). En Mute no genera ningún sonido nuevo ni dobla nada.">
           <label class="mix-preset-label" for="chordDoublePresetSelect">Doblar armonía</label>
           <select class="mix-preset-select" id="chordDoublePresetSelect">
             <!-- Las opciones (todos los .sf2 y todos sus presets) las arma sfBuildPresetSelects() al cargar la página. -->
@@ -1365,7 +1373,7 @@
             <option value="flute" selected>Flauta</option>
           </select>
         </div>
-        <div class="mix-preset-group" id="melodyDoublePresetGroup" data-mix-group="melodyDouble" title="Repite las mismas notas y el mismo ritmo de la Melodía, una octava abajo (o una quinta abajo con 'alt-melody' tildado), con un segundo timbre — para doblarla. En Mute (default) no genera ningún sonido nuevo ni dobla nada.">
+        <div class="mix-preset-group" id="melodyDoublePresetGroup" data-mix-group="melodyDouble" title="Repite las mismas notas y el mismo ritmo de la Melodía, una octava abajo (o una quinta abajo con 'alt-melody' tildado), con un segundo timbre — para doblarla. Default: Fagot. En Mute no genera ningún sonido nuevo ni dobla nada.">
           <label class="mix-preset-label" for="melodyDoublePresetSelect">Doblar melodía</label>
           <select class="mix-preset-select" id="melodyDoublePresetSelect">
             <!-- Las opciones (todos los .sf2 y todos sus presets) las arma sfBuildPresetSelects() al cargar la página. -->
@@ -8392,7 +8400,7 @@ function runAnalysis() {
     var jazzPrevBass = null; // JAZZ: nota anterior del bajo, para caminar por grados conjuntos
     var patPos = 0, patStep = 0; // melodicPatterns: posición del contorno, persiste a lo largo de TODO el pasaje (nunca se resetea por compás/acorde)
     progression.forEach(function(chord, bar){
-      // Con "Always complete set" tildado (default): el bajo arranca con
+      // Con "Always complete set" tildado (apagado por default): el bajo arranca con
       // la cola del complemento y va cubriendo esas notas primero (lo
       // que garantiza que armonía+bajo+melodía reconstruyan el set
       // completo). Destildado: la cola queda vacía a propósito — el
@@ -8523,7 +8531,7 @@ function runAnalysis() {
   // Opciones de variedad armónica
   var subsetVarietyEnabled = false;
   var supersetVarietyEnabled = false;
-  var alwaysCompleteSet = true; // checkbox #consolaAlwaysCompleteChk (tildado por defecto) — ver buildBassMelodyEventsRandom
+  var alwaysCompleteSet = false; // checkbox #consolaAlwaysCompleteChk (apagado por defecto; está junto al botón 🔀) — ver buildBassMelodyEventsRandom
   var chromaVariety = 0.25; // 0..1 — slider #consolaChromaSlider (default 25%), ver randomChromaTransposition/currentSubsetGap
   var chordDensityVariety = 0.5; // 0..1 — slider #consolaChordsSlider (default 50%), ver buildChordEventsRandom
 
@@ -8897,7 +8905,7 @@ function runAnalysis() {
   }
 
   // ---------- audio: sintetizador PAD (comparte el AudioContext del Oráculo) ----------
-  var currentVolume = 0.7;
+  var currentVolume = 1.0;
   var masterBoost = null, masterLimiter = null;
   function ensureMasterGain(ctx){
     if(!masterGain){
@@ -8937,12 +8945,12 @@ function runAnalysis() {
   // presets deciden qué instrumento usar en armonía/melodía/bajo (los
   // 12 de Instruments.sf2, con sintetizador de siempre como respaldo)
   // y qué muestras usar en batería (kit real o percusión/congas).
-  var mixGains = { drum: 1, bass: 1, chord: 1, melody: 1, melodyDouble: 1, chordDouble: 1, comping2: 1, bebop: 0 };
+  var mixGains = { drum: 1, bass: 1, chord: 1, melody: 1, melodyDouble: 0.5, chordDouble: 0.5, comping2: 1, bebop: 0 }; // Doblar melodía / Doblar armonía: 50% por defecto
   // ---------- Foco: checkbox chico junto a cada fader del mini mixer ----------
   // mixGains sigue guardando SIEMPRE el valor crudo del fader. El nivel real
   // que llega al gain node es mixGains * focusFactor: 1 para las pistas
   // tildadas (o para todas si no hay ninguna tildada), FOCUS_DUCK para el
-  // resto — incluidas Doblar armonía y moreComping, que no tienen fader.
+  // resto — incluida moreComping, que no tiene fader.
   var FOCUS_DUCK = 0.35;
   var focusTracks = {};
   function focusActive(){
@@ -8951,16 +8959,19 @@ function runAnalysis() {
   }
   function focusFactor(track){ return (!focusActive() || focusTracks[track]) ? 1 : FOCUS_DUCK; }
   function mixEffective(track){ return mixGains[track] * focusFactor(track); }
-  var mixPresets = { harmony: sfDefaultKeyFor("harmony", "piano"), melody: sfDefaultKeyFor("melody", "flute"), melodyDouble: sfDefaultKeyFor("melodyDouble", "mute"), chordDouble: sfDefaultKeyFor("chordDouble", "mute"), bass: sfDefaultKeyFor("bass", "synthBass"), drum: sfDefaultKeyFor("drum", "kit"), bebop: "tenorSax" };
+  // Defaults propios (no los de SF_DEFAULT_FILES): Bajo = "synthBass" (Bajo original sintetizado) y
+  // Doblar melodía = "bassoon" (Fagot, Instruments.sf2). Doblar armonía = Nord Pad (SF_DEFAULT_FILES).
+  // Las filas de "Bass default.sf2" y "Armonica.sf2" siguen en el catálogo, elegibles a mano.
+  var mixPresets = { harmony: sfDefaultKeyFor("harmony", "piano"), melody: sfDefaultKeyFor("melody", "flute"), melodyDouble: "bassoon", chordDouble: sfDefaultKeyFor("chordDouble", "mute"), bass: "synthBass", drum: sfDefaultKeyFor("drum", "kit"), bebop: "tenorSax" };
   var chordGainNode = null, bassGainNode = null, melodyGainNode = null, drumGainNode = null, melodyDoubleGainNode = null, chordDoubleGainNode = null, comping2GainNode = null, bebopGainNode = null;
 
   // ---------- Reverb: bus de envío compartido ----------
-  // reverbSendLevel = nivel general (slider "Reverb", 25% por defecto,
-  // mismo default que Chromatism). reverbMix[track] = multiplicador
+  // reverbSendLevel = nivel general (slider "Reverb", 50% por defecto).
+  // reverbMix[track] = multiplicador
   // relativo de CADA pista (100% por defecto = todas parejas; se ajusta
   // con los faders "Reverb (envío por pista)" del mini mixer). El envío
   // real de cada pista es reverbSendLevel * reverbMix[track].
-  var reverbSendLevel = 0.25;
+  var reverbSendLevel = 0.5;
   var reverbMix = { chord: 1, bass: 1, melody: 1, melodyDouble: 1, chordDouble: 1, drum: 1, comping2: 1, bebop: 1 };
   var reverbBusGain = null, reverbConvolver = null, reverbReturnGain = null;
   var reverbSendGains = { chord: null, bass: null, melody: null, melodyDouble: null, chordDouble: null, drum: null, comping2: null, bebop: null };
@@ -10365,7 +10376,7 @@ function runAnalysis() {
       });
       // Doblar armonía: selector aparte (#chordDoublePresetSelect, "Mute"
       // por defecto) — repite exactamente las mismas notas y el mismo
-      // ritmo de la Armonía, con un segundo timbre. En Mute (default) no
+      // ritmo de la Armonía, con un segundo timbre. En Mute no
       // entra a este bloque: no genera ningún sonido nuevo ni dobla nada.
       if(mixPresets.chordDouble !== "mute"){
         var chordDoubleFam = voiceFamilyFor(mixPresets.chordDouble, "strings1");
@@ -10954,6 +10965,9 @@ function runAnalysis() {
       var bebopVolEl2 = document.getElementById("mixBebopVol"), bebopVolValEl2 = document.getElementById("mixBebopVolVal");
       if(bebopVolEl2) bebopVolEl2.value = 0;
       if(bebopVolValEl2) bebopVolValEl2.textContent = "0%";
+      var chordDblVolEl2 = document.getElementById("mixChordDoubleVol"), chordDblVolValEl2 = document.getElementById("mixChordDoubleVolVal");
+      if(chordDblVolEl2) chordDblVolEl2.value = 0;
+      if(chordDblVolValEl2) chordDblVolValEl2.textContent = "0%";
     } else if(soloPianoPrev){
       ["harmony","melody","bass"].forEach(function(track){
         mixPresets[track] = soloPianoPrev.presets[track];
@@ -10971,6 +10985,9 @@ function runAnalysis() {
       var bebopVolEl3 = document.getElementById("mixBebopVol"), bebopVolValEl3 = document.getElementById("mixBebopVolVal");
       if(bebopVolEl3){ bebopVolEl3.value = Math.round(soloPianoPrev.gains.bebop*100); }
       if(bebopVolValEl3){ bebopVolValEl3.textContent = Math.round(soloPianoPrev.gains.bebop*100) + "%"; }
+      var chordDblVolEl3 = document.getElementById("mixChordDoubleVol"), chordDblVolValEl3 = document.getElementById("mixChordDoubleVolVal");
+      if(chordDblVolEl3){ chordDblVolEl3.value = Math.round(soloPianoPrev.gains.chordDouble*100); }
+      if(chordDblVolValEl3){ chordDblVolValEl3.textContent = Math.round(soloPianoPrev.gains.chordDouble*100) + "%"; }
       soloPianoPrev = null;
     }
   });
@@ -10995,7 +11012,8 @@ function runAnalysis() {
       { id: "mixChordVol",        valId: "mixChordVolVal",        track: "chord"        },
       { id: "mixMelodyVol",       valId: "mixMelodyVolVal",       track: "melody"       },
       { id: "mixBebopVol",        valId: "mixBebopVolVal",        track: "bebop"        },
-      { id: "mixMelodyDoubleVol", valId: "mixMelodyDoubleVolVal", track: "melodyDouble" }
+      { id: "mixMelodyDoubleVol", valId: "mixMelodyDoubleVolVal", track: "melodyDouble" },
+      { id: "mixChordDoubleVol",  valId: "mixChordDoubleVolVal",  track: "chordDouble"  }
     ];
     MIX_SLIDERS.forEach(function(cfg){
       var el = document.getElementById(cfg.id);
