@@ -149,24 +149,25 @@
      el cuadro de detalles de la derecha (#results, comprimido por defecto). */
   .clock-center{
     position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-    width:62%;max-width:200px;text-align:center;
+    width:62%;max-width:214px;text-align:center;
     display:flex;flex-direction:column;align-items:center;gap:5px;
     pointer-events:none;
   }
   .clock-center button{pointer-events:auto;}
+  .clock-center .subfield-toggle{width:23px;height:23px;font-size:15px;}
   .clock-center.clock-center-static{position:static;transform:none;width:100%;max-width:none;margin-top:14px;}
   .clock-center-head{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:4px 7px;}
-  .clock-center-code{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;color:var(--gold);}
+  .clock-center-code{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--gold);}
   .clock-center-flag{
-    font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.06em;color:var(--violet);
+    font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.06em;color:var(--violet);
     border:1px solid var(--violet);border-radius:100px;padding:1px 6px;white-space:nowrap;
   }
   .clock-center-name{
-    font-family:'Cormorant Garamond',serif;font-style:italic;font-size:11.5px;line-height:1.2;color:var(--ink-muted);
+    font-family:'Cormorant Garamond',serif;font-style:italic;font-size:13.5px;line-height:1.2;color:var(--ink-muted);
     display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;
   }
   #clockCenter .clock-center-cifrado, #pianoSummary .clock-center-cifrado{
-    font-size:22px;line-height:1.1;color:var(--ink);font-weight:700;white-space:normal;overflow-wrap:anywhere;
+    font-size:26px;line-height:1.1;color:var(--ink);font-weight:700;white-space:normal;overflow-wrap:anywhere;
   }
   #clockCenter .clock-center-cifrado *, #pianoSummary .clock-center-cifrado *{font-weight:700;}
 
@@ -1036,10 +1037,11 @@
         </div>
         <div class="collapsible-content collapsed" id="examplesBody">
           <div class="examples-chips">
-          <button class="chip" data-ex="0,4,7">Tríada mayor</button>
-          <button class="chip" data-ex="0,3,7">Tríada menor</button>
-          <button class="chip" data-ex="0,4,7,10">Dominante 7</button>
-          <button class="chip" data-ex="0,3,6,10">Semidism. 7</button>
+          <button class="chip" data-ex="0,4,7" title="Tríada mayor · 0 4 7">C</button>
+          <button class="chip" data-ex="0,3,7" title="Tríada menor · 0 3 7">Cm</button>
+          <button class="chip" data-ex="0,2,4,7" title="0 2 4 7">C(9)</button>
+          <button class="chip" data-ex="0,5,10" title="0 5 10">C7sus4</button>
+          <button class="chip" data-ex="0,4,7,11" title="0 4 7 11">CMaj7</button>
           </div>
         </div>
       </div>
@@ -3556,7 +3558,7 @@ const CIFRADO_GRADO_NATURAL = { 1:0, 2:2, 9:2, 3:4, 4:5, 11:5, 5:7, 6:9, 13:9, 7
 // (0 = tónica). Si están a la vez la 3ra mayor (4) y el semitono 3, este
 // último se interpreta como 9na aumentada (acorde 7#9, "de Hendrix"), no
 // como 3ra menor, para no hacer ganar a un acorde de la familia menor.
-function cifradoPickBestChord(inputSet) {
+function cifradoPickBestChord(inputSet, preferCompact) {
   let matchSet = inputSet;
   if (inputSet.has(3) && inputSet.has(4)) {
     matchSet = new Set(inputSet);
@@ -3568,10 +3570,17 @@ function cifradoPickBestChord(inputSet) {
     subconjuntos.sort((a, b) => b.intervalos.length - a.intervalos.length);
     return subconjuntos[0];
   }
-  let mejor = candidatos[0], mejorPuntaje = -1;
+  // Sin ningún acorde completo: gana el de más notas en común. Con `preferCompact`
+  // (lo usa el cifrado del reloj), ante un empate gana el acorde MÁS CORTO — el que
+  // deja menos notas propias sin tocar (0 5 10 -> 7sus sin 5ª, no 11 sin 3ª/5ª/9ª).
+  // Sin la opción (tabla, generador, SetMusicBox) el desempate es el de siempre:
+  // el primero de CIFRADO_QUALITIES.
+  let mejor = candidatos[0], mejorPuntaje = -1, mejorLen = Infinity;
   candidatos.forEach(c => {
     const comunes = c.intervalos.filter(iv => matchSet.has(iv.semitono)).length;
-    if (comunes > mejorPuntaje) { mejorPuntaje = comunes; mejor = c; }
+    if (comunes > mejorPuntaje || (preferCompact && comunes === mejorPuntaje && c.intervalos.length < mejorLen)) {
+      mejorPuntaje = comunes; mejorLen = c.intervalos.length; mejor = c;
+    }
   });
   return mejor;
 }
@@ -11689,28 +11698,17 @@ function runAnalysis() {
   const CIFRADO_ROOT_BY_PC = ["C", "D♭", "D", "E♭", "E", "F", "F♯", "G", "A♭", "A", "B♭", "B"];
   let clockLinked = true;
 
+  // La tónica es SIEMPRE la primera nota ingresada (orden de inserción de la
+  // selección del reloj/piano; en los Ejemplos rápidos, la primera de la lista):
+  // se lee el conjunto completo desde ahí, aunque otra nota dé un acorde "más
+  // limpio" (p.ej. 0 5 10 -> C7sus4 sin 5ª, no F sus4).
   function bestChordFromPcs(pcsRaw) {
     const uniq = Array.from(new Set(pcsRaw.map(pc => ((pc % 12) + 12) % 12)));
     if (!uniq.length) return null;
-    let best = null, bestScore = -Infinity;
-    uniq.forEach(rootPc => {
-      const relSet = new Set(uniq.map(pc => ((pc - rootPc) % 12 + 12) % 12));
-      relSet.add(0);
-      const acorde = cifradoPickBestChord(relSet);
-      const matched = acorde.intervalos.filter(iv => relSet.has(iv.semitono)).length;
-      const missing = acorde.intervalos.length - matched; // notas propias del acorde que faltan (se mostrarían como "no3", "no5", etc.)
-      const extra = relSet.size - matched; // notas que sobran como tensión ("add")
-      // Prioridad: primero que no falte ninguna nota propia del acorde
-      // (missing = 0, el mismo criterio de "subconjunto exacto" de
-      // cifradoPickBestChord) — recién ahí, entre esas, la que menos
-      // notas sueltas deja como "add". Una coincidencia con huecos
-      // (missing > 0) nunca le gana a una sin huecos, sin importar cuántas
-      // tensiones agregue esta última. Empate exacto -> gana la raíz que
-      // se tocó primero en el reloj (orden de inserción de `uniq`).
-      const score = (missing === 0 ? 1000 : 0) - missing * 50 - extra * 5;
-      if (score > bestScore) { bestScore = score; best = { rootPc, acorde, relSet }; }
-    });
-    return best;
+    const rootPc = uniq[0];
+    const relSet = new Set(uniq.map(pc => ((pc - rootPc) % 12 + 12) % 12));
+    relSet.add(0);
+    return { rootPc, acorde: cifradoPickBestChord(relSet, true), relSet };
   }
 
   function applyClockNotes(pcsRaw) {
