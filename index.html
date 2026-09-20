@@ -987,7 +987,7 @@
         <button class="chip" id="clearBtn">Limpiar</button>
         <button class="chip toggle" id="sf2Btn" type="button" aria-pressed="false" title="Carga bajo demanda tres SoundFonts reales (Instruments+Drums+Percussion, ~29MB) y reemplaza el sintetizador por muestras de instrumento y batería reales (incluye SetMusicBox). Un clic más para volver al sintetizador liviano.">🎼 Sonido real (SoundFont)</button>
         <input type="file" id="sf2LocalPicker" webkitdirectory directory multiple hidden aria-hidden="true">
-        <label class="hifi-toggle" title="Reemplaza instrumentos puntuales por SoundFonts premium aparte (Soundfonts/HIFI/), uno por uno a medida que se agregan — hoy: Piano (Steinway D), Armonía (Warm Pad), Bajo (Acoustic Bass / Super Bass Electric — opciones nuevas en el selector de Bajo) y Batería (Jazz Kit). Solo se nota con '🎼 Sonido real' activado; se descargan todos juntos al tildar este checkbox. Al activarlo, si el Bajo está en el default de siempre, pasa a Acoustic Bass.">
+        <label class="hifi-toggle" title="Reemplaza instrumentos puntuales por SoundFonts premium aparte (Soundfonts/EXTRA/), uno por uno a medida que se agregan — hoy: Piano (Steinway D), Armonía (Warm Pad), Bajo (Super Bass Electric — opción nueva en el selector de Bajo) y Batería (Jazz Kit). Solo se nota con '🎼 Sonido real' activado; se descargan todos juntos al tildar este checkbox.">
           <input type="checkbox" id="hifiChk"> HIFI
         </label>
       </div>
@@ -4269,7 +4269,7 @@ const SF2_DEFAULT_PRESET = { bank: 0, preset: 0 }; // Grand Piano
 // Checkbox "HIFI" (al lado del botón "Sonido real"): cuando está tildado,
 // SetMusicBox usa, para las "key" listadas acá, este .sf2 aparte en vez
 // del sintetizador/GM de siempre. Cada entrada es un archivo INDEPENDIENTE
-// en Soundfonts/HIFI/ (no se carga con el botón "Sonido real" ni suma
+// en Soundfonts/EXTRA/ (no se carga con el botón "Sonido real" ni suma
 // peso a esa carga inicial) — todos se descargan juntos recién al tildar
 // el checkbox por primera vez (ver hifiLoadAllIfNeeded).
 // Dos formas de usar una entrada:
@@ -4277,7 +4277,7 @@ const SF2_DEFAULT_PRESET = { bank: 0, preset: 0 }; // Grand Piano
 //      (ej. "piano", "kit"): reemplaza ese instrumento de forma
 //      transparente en cualquier selector que lo tenga elegido, sin
 //      agregar opción nueva al <select>.
-//   2) "key" nueva sin equivalente (ej. "pad", "bassAcoustic",
+//   2) "key" nueva sin equivalente (ej. "pad",
 //      "bassSuperElectric" acá abajo): no tiene reemplazo/fallback GM
 //      propio — su <option> aparece sola en los selectores de preset
 //      (ver sfBuildPresetSelects, en el módulo SetMusicBox), no hace
@@ -4291,8 +4291,8 @@ const SF2_DEFAULT_PRESET = { bank: 0, preset: 0 }; // Grand Piano
 // Además, CUALQUIER .sf2 dentro de Soundfonts/ (esté o no en este
 // manifest) se descubre solo y todos sus presets aparecen en los
 // selectores — ver "Catálogo unificado" más abajo (sfDiscoverReady).
-const HIFI_MANIFEST_URL = "Soundfonts/HIFI/manifest.json";
-// Fallback embebido si Soundfonts/HIFI/manifest.json todavía no existe
+const HIFI_MANIFEST_URL = "Soundfonts/EXTRA/manifest.json";
+// Fallback embebido si Soundfonts/EXTRA/manifest.json todavía no existe
 // en el repo o falla el fetch — mismo contenido que HIFI_FILES tenía
 // hardcodeado hasta ahora, así el sitio sigue sonando igual sin el
 // manifest. Una vez que el manifest está presente, LO REEMPLAZA por
@@ -4300,24 +4300,24 @@ const HIFI_MANIFEST_URL = "Soundfonts/HIFI/manifest.json";
 // soundfonts nuevos sin tocar código — ver comentario de formato más
 // abajo, junto a hifiLoadManifest.
 const HIFI_DEFAULT_MANIFEST = [
-  { key: "piano",             file: "Grand piano.sf2",           bank: 0, program: 0,  label: "Steinway D",           mode: "replace" },
+  { key: "piano",             file: "Keys/Steinway Grand Piano 1.2 - 000-000 Steinway Grand.sf2", bank: 0, program: 0,  label: "Steinway D",           mode: "replace" },
   { key: "pad",                file: "Warm Pad.sf2",              bank: 0, program: 0,  label: "Warm Pad",             mode: "new", fallbackFamily: "pad",  target: "melodic" },
-  { key: "bassAcoustic",       file: "Acoustic Bass.sf2",         bank: 0, program: 32, label: "Acoustic Bass",        mode: "new", fallbackFamily: "bass", target: "melodic" },
   { key: "bassSuperElectric",  file: "super bass electric.sf2",   bank: 0, program: 0,  label: "Super Bass Electric",  mode: "new", fallbackFamily: "bass", target: "melodic" },
-  { key: "kit",                file: "Jazz Kit.sf2",              bank: 0, program: 0,  label: "Jazz Kit (Jazz Traps)", mode: "replace" }
+  { key: "kit",                file: "Drums/Jazz Kit - 000-000 Jazz Traps.sf2", bank: 0, program: 0,  label: "Jazz Kit (Jazz Traps)", mode: "replace" }
 ];
 const HIFI_FILES = [];
 const HIFI_FILES_BY_KEY = {};
 let hifiEnabled = false;
 const hifiFontByKey = {};              // key -> .sf2 parseado (una vez listo)
 const hifiStateByKey = {};             // key -> idle | loading | ready | error
-// Formato de Soundfonts/HIFI/manifest.json — { "instruments": [ {...}, ... ] }.
+// Formato de Soundfonts/EXTRA/manifest.json — { "instruments": [ {...}, ... ] }.
 // Cada entrada:
 //   key    — identificador único. Para mode:"replace" tiene que
 //            coincidir con una key ya existente (piano/epiano/
 //            harpsichord/celesta/strings1/brass1/sopranoSax/tenorSax/
 //            bassoon/flute/contrabass/jazzGuitar/kit/percussion).
-//   file   — nombre del archivo dentro de Soundfonts/HIFI/ (con
+//   file   — ruta del archivo dentro de Soundfonts/EXTRA/ (puede incluir
+//            subcarpetas, ej. "Keys/…"; con
 //            espacios tal cual, sin encodear — esto lo hace el código).
 //   bank/program — banco y programa MIDI a usar dentro de ese .sf2.
 //   label  — nombre a mostrar (se le agrega " (HIFI)" automático en
@@ -4331,7 +4331,7 @@ const hifiStateByKey = {};             // key -> idle | loading | ready | error
 //            "sax"|"flute"|"bass".
 //   target  (solo mode:"new") — "melodic" (Armonía/Doblar armonía/
 //            Melodía/Doblar melodía/Bebop/Bajo) o "drum" (Batería).
-// Para sumar un soundfont nuevo: subís el .sf2 a Soundfonts/HIFI/ y
+// Para sumar un soundfont nuevo: subís el .sf2 a Soundfonts/EXTRA/ y
 // agregás una entrada acá — no hace falta tocar index.html.
 let HIFI_MANIFEST_ENTRIES = [];
 const hifiManifestReady = (async function hifiLoadManifest() {
@@ -4344,7 +4344,7 @@ const hifiManifestReady = (async function hifiLoadManifest() {
     }
   } catch (e) { /* sin manifest todavía, o fetch fallido: se usa HIFI_DEFAULT_MANIFEST */ }
   entries.forEach((f) => {
-    var fileUrl = "Soundfonts/HIFI/" + f.file.split("/").map(encodeURIComponent).join("/");
+    var fileUrl = "Soundfonts/EXTRA/" + f.file.split("/").map(encodeURIComponent).join("/");
     var entry = { key: f.key, url: fileUrl, bank: f.bank || 0, program: f.program || 0, label: f.label || f.key };
     HIFI_FILES.push(entry);
     HIFI_FILES_BY_KEY[f.key] = entry;
@@ -4835,8 +4835,8 @@ function sf2ShowLoadOverlayError() {
 // con TODOS los presets que declara el phdr de ese .sf2.
 //   · Los 3 archivos base (Instruments/Drums/Percussion) se cargan solos
 //     al abrir la página: sus presets aparecen apenas terminan.
-//   · Todo OTRO .sf2 dentro de Soundfonts/ (típicamente Soundfonts/HIFI/)
-//     se descubre solo: con Soundfonts/HIFI/manifest.json (que define
+//   · Todo OTRO .sf2 dentro de Soundfonts/ (típicamente Soundfonts/EXTRA/)
+//     se descubre solo: con Soundfonts/EXTRA/manifest.json (que define
 //     las keys y las opciones "(HIFI)" dedicadas) Y listando las
 //     carpetas con la API de GitHub — subir un .sf2 al repo alcanza,
 //     aunque no esté en el manifest. Sus presets se leen al tildar HIFI
@@ -9198,8 +9198,8 @@ function runAnalysis() {
     return "pad";
   }
   var SF_HIFI_DEDICATED = {
-    piano: { key:"pianoHifi", label:"Piano (HIFI)", title:"Soundfont HIFI aparte (Soundfonts/HIFI/Grand piano.sf2, Steinway D) — requiere el checkbox HIFI tildado. Sin HIFI, esta opción cae directo al sintetizador (a diferencia de 'Piano', que de todos modos ya usa HIFI en forma transparente si está tildado, y si no, el SoundFont base Instruments.sf2)." },
-    kit:   { key:"kitHifi",   label:"Kit (HIFI)",   title:"Soundfont HIFI aparte (Soundfonts/HIFI/Jazz Kit.sf2) — requiere el checkbox HIFI tildado. Sin HIFI, cae directo al sintetizador de batería (a diferencia de 'Kit', que usa el SoundFont base Drums.sf2 como paso intermedio)." }
+    piano: { key:"pianoHifi", label:"Piano (HIFI)", title:"Soundfont HIFI aparte (Soundfonts/EXTRA/Keys/Steinway Grand Piano 1.2 - 000-000 Steinway Grand.sf2, Steinway D) — requiere el checkbox HIFI tildado. Sin HIFI, esta opción cae directo al sintetizador (a diferencia de 'Piano', que de todos modos ya usa HIFI en forma transparente si está tildado, y si no, el SoundFont base Instruments.sf2)." },
+    kit:   { key:"kitHifi",   label:"Kit (HIFI)",   title:"Soundfont HIFI aparte (Soundfonts/EXTRA/Drums/Jazz Kit - 000-000 Jazz Traps.sf2) — requiere el checkbox HIFI tildado. Sin HIFI, cae directo al sintetizador de batería (a diferencia de 'Kit', que usa el SoundFont base Drums.sf2 como paso intermedio)." }
   };
   function sfBaseFileRecords(){
     var instCurated = SM2_INSTRUMENTS.map(function(it){
@@ -9215,11 +9215,11 @@ function runAnalysis() {
     return sfExtraFiles.map(function(e){
       var curated = [];
       HIFI_MANIFEST_ENTRIES.forEach(function(m){
-        if(sfUrlForPath("Soundfonts/HIFI/" + m.file).toLowerCase() !== e.url.toLowerCase()) return;
+        if(sfUrlForPath("Soundfonts/EXTRA/" + m.file).toLowerCase() !== e.url.toLowerCase()) return;
         if(m.mode === "new"){
           curated.push({ key:m.key, label:(m.label || m.key) + " (HIFI)", bank:m.bank || 0, program:m.program || 0,
             family:m.fallbackFamily || "pad",
-            title:"Soundfont HIFI aparte (Soundfonts/HIFI/" + m.file + ") — requiere el checkbox HIFI tildado, se carga junto con el resto de HIFI." });
+            title:"Soundfont HIFI aparte (Soundfonts/EXTRA/" + m.file + ") — requiere el checkbox HIFI tildado, se carga junto con el resto de HIFI." });
         } else if(SF_HIFI_DEDICATED[m.key]){
           var d = SF_HIFI_DEDICATED[m.key];
           curated.push({ key:d.key, label:d.label, bank:m.bank || 0, program:m.program || 0, title:d.title });
@@ -9334,7 +9334,7 @@ function runAnalysis() {
   function sm2ResolveFontAndProgram(key){
     // Presets sin key propia: "sf:<archivo>:<banco>:<programa>" (ver
     // sfBuildPresetSelects). Los 3 archivos base van por sm2FontFor; los
-    // extras (Soundfonts/HIFI/…) exigen HIFI tildado y el archivo cargado
+    // extras (Soundfonts/EXTRA/…) exigen HIFI tildado y el archivo cargado
     // — mismo criterio que el resto de las opciones HIFI.
     if(key.indexOf("sf:") === 0){
       var sfParts = key.split(":");
@@ -11066,10 +11066,10 @@ function runAnalysis() {
     var hifiChkEl = document.getElementById("hifiChk");
     if(hifiChkEl){
       hifiChkEl.addEventListener("change", function(){
-        if(this.checked && mixPresets.bass === "synthBass"){
+        var bassEl = document.getElementById("bassPresetSelect");
+        if(this.checked && mixPresets.bass === "synthBass" && bassEl && bassEl.querySelector('option[value="bassAcoustic"]')){
           mixPresets.bass = "bassAcoustic";
-          var bassEl = document.getElementById("bassPresetSelect");
-          if(bassEl) bassEl.value = "bassAcoustic";
+          bassEl.value = "bassAcoustic";
         }
       });
     }
