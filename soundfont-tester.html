@@ -250,6 +250,33 @@
   }
   #keymapHint b{color:var(--green); font-weight:600;}
 
+  /* ---- MIDI player ---- */
+  #midiPanel{
+    border:1px solid var(--line);
+    background:var(--panel);
+    border-radius:6px;
+    padding:10px 12px;
+    margin:0 0 18px;
+    display:flex;
+    flex-direction:column;
+    gap:9px;
+  }
+  .midi-row{display:flex; align-items:center; gap:10px; min-width:0;}
+  .midi-label{font-family:var(--mono); font-size:11px; letter-spacing:.08em; color:var(--text-dim); flex-shrink:0;}
+  #midiName{
+    font-family:var(--mono); font-size:12.5px; color:var(--text-dim);
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  #midiName.loaded{color:var(--text);}
+  #midiSeek{flex:1; min-width:0; accent-color:var(--amber);}
+  #midiTime{font-family:var(--mono); font-size:12px; color:var(--amber); white-space:nowrap;}
+  #midiMode{
+    background:var(--panel-raised); color:var(--text);
+    border:1px solid var(--line); border-radius:5px;
+    padding:5px 8px; font-size:12.5px; font-family:var(--sans);
+  }
+  #midiInfo{font-family:var(--mono); font-size:11.5px; color:var(--text-dim);}
+
   ::-webkit-scrollbar{width:9px; height:9px;}
   ::-webkit-scrollbar-thumb{background:#3a3a3f; border-radius:5px;}
   ::-webkit-scrollbar-track{background:transparent;}
@@ -267,13 +294,13 @@
 <header>
   <h1>SOUNDFONT TESTER</h1>
   <label id="dropzone" for="fileInput">
-    <span id="dzText">Arrastrá un archivo .sf2 a cualquier parte de la página, o tocá acá para elegirlo</span>
+    <span id="dzText">Arrastrá un .sf2 y/o un .mid a cualquier parte de la página, o tocá acá para elegirlos</span>
     <span class="fname" id="dzFname"></span>
   </label>
-  <input type="file" id="fileInput" accept=".sf2,.sf3">
+  <input type="file" id="fileInput" accept=".sf2,.sf3,.mid,.midi" multiple>
   <div id="meta"></div>
 </header>
-<div id="dragOverlay">Soltá el archivo .sf2 acá</div>
+<div id="dragOverlay">Soltá el .sf2 o el .mid acá</div>
 
 <main>
   <div id="presetPane">
@@ -298,6 +325,26 @@
       <button class="btn" id="testTone">🔊 probar audio (sin SoundFont)</button>
     </div>
     <div id="status" style="font-family:var(--mono); font-size:12px; color:var(--green); min-height:16px; margin:-10px 0 14px;"></div>
+
+    <div id="midiPanel">
+      <div class="midi-row">
+        <span class="midi-label">MIDI</span>
+        <span id="midiName">Arrastrá un .mid a cualquier parte de la página</span>
+      </div>
+      <div class="midi-row">
+        <button class="btn" id="midiPlay" disabled>▶ Play</button>
+        <button class="btn" id="midiStop" disabled>■ Stop</button>
+        <input type="range" id="midiSeek" min="0" max="1000" value="0" step="1" disabled aria-label="Posición">
+        <span id="midiTime">0:00 / 0:00</span>
+      </div>
+      <div class="midi-row">
+        <select id="midiMode" aria-label="Qué preset usa el MIDI">
+          <option value="selected">Todo con el preset seleccionado</option>
+          <option value="gm">Usar los programas del MIDI (banco/programa)</option>
+        </select>
+        <span id="midiInfo"></span>
+      </div>
+    </div>
 
     <div id="pianoWrap">
       <div id="piano"></div>
@@ -764,49 +811,64 @@
     return iz;
   }
 
+  // preset + note + velocity -> zone, sample and decoded AudioBuffer (or { err })
+  function resolveVoice(sf, preset, note, vel) {
+    const iz = findVoiceZones(preset, sf, note, vel);
+    if (!iz) return { err: `Nota ${note} (${noteName(note)}): fuera del rango de este preset.` };
+    const shdrEntry = sf.shdr[iz.sampleId];
+    if (!shdrEntry) return { err: `Nota ${note}: el índice de muestra (${iz.sampleId}) no existe en shdr.` };
+
+    const start = shdrEntry.start + iz.startOffset;
+    const end = shdrEntry.end + iz.endOffset;
+    const loopStart = shdrEntry.startloop + iz.startloopOffset;
+    const loopEnd = shdrEntry.endloop + iz.endloopOffset;
+
+    const buffer = getSampleBuffer(sf, shdrEntry, iz.sampleId, start, end);
+    if (!buffer) return { err: `Nota ${note}: muestra "${shdrEntry.name}" con longitud inválida (start=${start}, end=${end}).` };
+    return { iz, shdrEntry, start, loopStart, loopEnd, buffer };
+  }
+
+  // Creates one sample voice and starts it at `when` (AudioContext time).
+  function startSource(rv, note, when, dest, peak) {
+    const ctx = ensureCtx();
+    const { iz, shdrEntry, start, loopStart, loopEnd, buffer } = rv;
+
+    const rootKey = iz.rootKeyOverride != null ? iz.rootKeyOverride
+      : (shdrEntry.originalPitch === 255 ? 60 : shdrEntry.originalPitch);
+    const centsOffset = (shdrEntry.pitchCorrection || 0) + iz.fineTune + iz.coarseTune * 100;
+    const rate = Math.pow(2, ((note - rootKey) * 100 - centsOffset) / 1200);
+
+    const src = ctx.createBufferSource();
+    src.buffer = buffer;
+    src.playbackRate.value = rate;
+
+    const loop = (iz.sampleModes === 1 || iz.sampleModes === 3) && loopEnd > loopStart;
+    if (loop) {
+      src.loop = true;
+      src.loopStart = Math.max(0, (loopStart - start) / shdrEntry.sampleRate);
+      src.loopEnd = Math.max(src.loopStart + 0.001, (loopEnd - start) / shdrEntry.sampleRate);
+    }
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0, when);
+    gain.gain.linearRampToValueAtTime(peak, when + 0.006);
+
+    src.connect(gain).connect(dest);
+    src.start(when);
+    return { src, gain, rate, loop };
+  }
+
   function noteOn(sf, preset, note, vel = 100) {
     try {
-      const iz = findVoiceZones(preset, sf, note, vel);
-      if (!iz) { setStatus(`Nota ${note} (${noteName(note)}): fuera del rango de este preset.`, true); return; }
-      const shdrEntry = sf.shdr[iz.sampleId];
-      if (!shdrEntry) { setStatus(`Nota ${note}: el índice de muestra (${iz.sampleId}) no existe en shdr.`, true); return; }
-
-      const start = shdrEntry.start + iz.startOffset;
-      const end = shdrEntry.end + iz.endOffset;
-      const loopStart = shdrEntry.startloop + iz.startloopOffset;
-      const loopEnd = shdrEntry.endloop + iz.endloopOffset;
-
-      const buffer = getSampleBuffer(sf, shdrEntry, iz.sampleId, start, end);
-      if (!buffer) { setStatus(`Nota ${note}: muestra "${shdrEntry.name}" con longitud inválida (start=${start}, end=${end}).`, true); return; }
+      const rv = resolveVoice(sf, preset, note, vel);
+      if (rv.err) { setStatus(rv.err, true); return; }
 
       const ctx = ensureCtx();
       stopVoice(note, true);
 
-      const rootKey = iz.rootKeyOverride != null ? iz.rootKeyOverride
-        : (shdrEntry.originalPitch === 255 ? 60 : shdrEntry.originalPitch);
-      const centsOffset = (shdrEntry.pitchCorrection || 0) + iz.fineTune + iz.coarseTune * 100;
-      const rate = Math.pow(2, ((note - rootKey) * 100 - centsOffset) / 1200);
-
-      const src = ctx.createBufferSource();
-      src.buffer = buffer;
-      src.playbackRate.value = rate;
-
-      const loop = (iz.sampleModes === 1 || iz.sampleModes === 3) && loopEnd > loopStart;
-      if (loop) {
-        src.loop = true;
-        src.loopStart = Math.max(0, (loopStart - start) / shdrEntry.sampleRate);
-        src.loopEnd = Math.max(src.loopStart + 0.001, (loopEnd - start) / shdrEntry.sampleRate);
-      }
-
-      const gain = ctx.createGain();
-      const now = ctx.currentTime;
-      gain.gain.setValueAtTime(0, now);
-      gain.gain.linearRampToValueAtTime(0.85, now + 0.006);
-
-      src.connect(gain).connect(ctx.destination);
-      src.start(now);
+      const { src, gain, rate } = startSource(rv, note, ctx.currentTime, ctx.destination, 0.85);
       activeVoices.set(note, { src, gain });
-      setStatus(`▶ ${shdrEntry.name} · nota ${noteName(note)} · ctx: ${ctx.state} · rate ${rate.toFixed(3)}`, false);
+      setStatus(`▶ ${rv.shdrEntry.name} · nota ${noteName(note)} · ctx: ${ctx.state} · rate ${rate.toFixed(3)}`, false);
     } catch (err) {
       setStatus("Error al reproducir: " + err.message, true);
       console.error(err);
@@ -860,6 +922,7 @@
       try {
         sf = parseSF2(reader.result);
         sf.fileName = file.name;
+        bufferCache.clear(); // cached AudioBuffers belong to the previous file (keys are only sampleId:start:end)
         extractBtn.disabled = false;
         renderPresetList();
         metaEl.textContent = `${sf.presets.length} presets · ${sf.instruments.length} instrumentos`;
@@ -867,7 +930,9 @@
         currentPreset = null;
         currentPresetEl.textContent = "—";
         hintEl.textContent = "Elegí un preset de la lista y tocá el teclado para escucharlo.";
+        midiOnSoundfontLoaded();
       } catch (err) {
+        wantAutoplay = false;
         dzText.textContent = "Error: " + err.message;
         dzFname.textContent = "";
         metaEl.textContent = "";
@@ -908,6 +973,7 @@
         ? 60 : Math.floor((currentPreset.zones[0].keyLo + currentPreset.zones[0].keyHi) / 2);
       noteOn(sf, currentPreset, note, 100);
       setTimeout(() => stopVoice(note, false), 500);
+      midiOnPresetChange();
     }
   }
 
@@ -976,6 +1042,445 @@
   }
   extractBtn.addEventListener("click", extractAll);
 
+  // ---------------------------------------------------------------
+  // MIDI: Standard MIDI File (format 0/1) -> flat note list in seconds.
+  // Everything time-dependent (tempo map, sustain pedal, program/bank,
+  // channel volume) is resolved here once, so playback is just
+  // "schedule these notes".
+  // ---------------------------------------------------------------
+  function parseMIDI(buffer) {
+    const v = new DataView(buffer);
+    const len = buffer.byteLength;
+    if (len < 14 || fourCC(v, 0) !== "MThd") throw new Error("No es un archivo MIDI válido (falta MThd).");
+    const hdrLen = v.getUint32(4);
+    const format = v.getUint16(8), nTracks = v.getUint16(10), division = v.getUint16(12);
+    if (format === 2) throw new Error("MIDI formato 2 (secuencias independientes) no está soportado.");
+
+    let ppq = division, fixedSecPerTick = 0;
+    if (division & 0x8000) { // SMPTE time division: high byte = -fps (two's complement)
+      let fps = 256 - (division >> 8);
+      if (fps === 29) fps = 29.97;
+      fixedSecPerTick = 1 / (fps * (division & 0xff));
+    } else if (!ppq) {
+      throw new Error("MIDI con división de tiempo 0.");
+    }
+
+    const events = [];
+    let truncated = false, seq = 0;
+    let off = 8 + hdrLen;
+    for (let t = 0; t < nTracks && off + 8 <= len; ) {
+      const id = fourCC(v, off);
+      const size = v.getUint32(off + 4);
+      const start = off + 8;
+      const end = Math.min(start + size, len);
+      off = start + size;
+      if (id !== "MTrk") continue; // unknown chunk: skip, doesn't count as a track
+      t++;
+      if (start + size > len) truncated = true;
+
+      let p = start, tick = 0, running = 0;
+      const vlq = () => {
+        let x = 0, b;
+        do { b = v.getUint8(p++); x = (x << 7) | (b & 0x7f); } while ((b & 0x80) && p < end);
+        return x;
+      };
+      try {
+        while (p < end) {
+          tick += vlq();
+          if (p >= end) break;
+          const first = v.getUint8(p);
+          if (first === 0xff) { // meta
+            running = 0; p++;
+            const type = v.getUint8(p++), l = vlq();
+            if (type === 0x51 && l === 3) {
+              events.push({ tick, ord: seq++, st: 0xff, ch: 0, a: (v.getUint8(p) << 16) | (v.getUint8(p + 1) << 8) | v.getUint8(p + 2), b: 0 });
+            }
+            p += l;
+            continue;
+          }
+          if (first === 0xf0 || first === 0xf7) { // sysex
+            running = 0; p++;
+            p += vlq();
+            continue;
+          }
+          let status;
+          if (first & 0x80) { status = first; p++; running = first; }
+          else if (running) { status = running; }
+          else throw new Error("MIDI corrupto (running status sin estado previo).");
+          const kind = status & 0xf0, ch = status & 0x0f;
+          const a = v.getUint8(p++);
+          const b = (kind === 0xc0 || kind === 0xd0) ? 0 : v.getUint8(p++);
+          events.push({ tick, ord: seq++, st: kind, ch, a, b });
+        }
+      } catch (e) {
+        if (!(e instanceof RangeError)) throw e;
+        truncated = true; // ran past the end of the file: keep what we have
+      }
+    }
+    events.sort((x, y) => x.tick - y.tick || x.ord - y.ord);
+
+    // ---- pass over the merged event list: tempo map + per-channel state ----
+    const chs = Array.from({ length: 16 }, () => ({ bank: 0, prog: 0, vol: 100, expr: 127, sus: false, open: new Map(), held: [] }));
+    const notes = [];
+    const closeNote = (n, at) => { n.dur = Math.max(0.02, at - n.t); };
+    let usPerQN = 500000, lastTick = 0, sec = 0;
+
+    for (const e of events) {
+      sec += (e.tick - lastTick) * (fixedSecPerTick || usPerQN / 1e6 / ppq);
+      lastTick = e.tick;
+      if (e.st === 0xff) { usPerQN = e.a || 500000; continue; }
+      const c = chs[e.ch];
+
+      if (e.st === 0x90 && e.b > 0) {
+        const n = {
+          t: sec, dur: 0.02, ch: e.ch, note: e.a, vel: e.b, bank: c.bank, prog: c.prog,
+          gain: (e.b / 127) * (c.vol / 127) * (c.expr / 127) // linear: a simplification of the GM curves
+        };
+        notes.push(n);
+        let l = c.open.get(e.a);
+        if (!l) c.open.set(e.a, l = []);
+        l.push(n);
+      } else if (e.st === 0x80 || e.st === 0x90) { // note off (or note on with vel 0)
+        const l = c.open.get(e.a);
+        if (l && l.length) {
+          const n = l.shift(); // oldest open note of this pitch
+          if (c.sus) c.held.push(n); else closeNote(n, sec);
+        }
+      } else if (e.st === 0xb0) {
+        if (e.a === 0) c.bank = e.b;
+        else if (e.a === 7) c.vol = e.b;
+        else if (e.a === 11) c.expr = e.b;
+        else if (e.a === 64) {
+          const on = e.b >= 64;
+          if (c.sus && !on) { for (const n of c.held) closeNote(n, sec); c.held = []; }
+          c.sus = on;
+        } else if (e.a === 120 || e.a === 123) { // all sound off / all notes off
+          for (const l of c.open.values()) for (const n of l) closeNote(n, sec);
+          for (const n of c.held) closeNote(n, sec);
+          c.open.clear(); c.held = [];
+        }
+      } else if (e.st === 0xc0) {
+        c.prog = e.a;
+      }
+    }
+    for (const c of chs) { // anything still ringing at the end of the file
+      for (const l of c.open.values()) for (const n of l) closeNote(n, sec);
+      for (const n of c.held) closeNote(n, sec);
+    }
+
+    if (!notes.length) throw new Error("El MIDI no tiene notas.");
+    let duration = 0;
+    for (const n of notes) duration = Math.max(duration, n.t + n.dur);
+    return {
+      notes, duration, format, truncated,
+      channels: new Set(notes.map(n => n.ch)).size
+    };
+  }
+
+  // ---------------------------------------------------------------
+  // MIDI player: look-ahead scheduler on the AudioContext clock
+  // ---------------------------------------------------------------
+  const midiPlayBtn = document.getElementById("midiPlay");
+  const midiStopBtn = document.getElementById("midiStop");
+  const midiSeek = document.getElementById("midiSeek");
+  const midiTimeEl = document.getElementById("midiTime");
+  const midiNameEl = document.getElementById("midiName");
+  const midiModeEl = document.getElementById("midiMode");
+  const midiInfoEl = document.getElementById("midiInfo");
+
+  const LOOKAHEAD = 0.4;  // seconds scheduled ahead of the clock
+  const TICK_MS = 30;
+  let midi = null;
+  let wantAutoplay = false; // MIDI was dropped before a SoundFont was ready
+  let midiBus = null;
+  const mp = { playing: false, pos: 0, startCtx: 0, idx: 0, timer: null, token: 0, seeking: false };
+  const midiVoices = new Set();
+  const rvCache = new Map(); // "presetIdx|note|vel" -> resolveVoice() result
+  const gmCache = new Map(); // "bank:prog" -> { p, why }
+
+  const fmtTime = s => { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
+
+  function ensureMidiBus() {
+    const ctx = ensureCtx();
+    if (midiBus) return;
+    const comp = ctx.createDynamicsCompressor(); // keeps dense passages from clipping
+    comp.threshold.value = -10; comp.knee.value = 10; comp.ratio.value = 6;
+    comp.attack.value = 0.003; comp.release.value = 0.2;
+    midiBus = ctx.createGain();
+    midiBus.gain.value = 0.8;
+    midiBus.connect(comp).connect(ctx.destination);
+  }
+
+  function getResolved(preset, note, vel) {
+    const key = preset.hdrIdx + "|" + note + "|" + vel;
+    let rv = rvCache.get(key);
+    if (rv === undefined) { rv = resolveVoice(sf, preset, note, vel); rvCache.set(key, rv); }
+    return rv;
+  }
+
+  function gmLookup(bank, prog, drum) {
+    const key = (drum ? 128 : bank) + ":" + prog;
+    let r = gmCache.get(key);
+    if (r) return r;
+    const P = sf.presets;
+    if (drum) {
+      const exact = P.find(p => p.bank === 128 && p.program === prog);
+      const any = exact || P.find(p => p.bank === 128);
+      r = { p: any || null, why: any ? "" : "drum" };
+    } else {
+      const found = P.find(p => p.bank === bank && p.program === prog) || P.find(p => p.bank === 0 && p.program === prog);
+      r = { p: found || null, why: found ? "" : "fallback" };
+    }
+    gmCache.set(key, r);
+    return r;
+  }
+
+  // Which preset plays this note? -> { p: preset|null, why: ""|"fallback"|"drum" }
+  function presetForNote(n) {
+    const cur = currentPreset || sf.presets[0];
+    if (midiModeEl.value === "selected") {
+      if (n.ch === 9 && cur.bank !== 128) return { p: null, why: "drum" }; // channel 10 is percussion
+      return { p: cur, why: "" };
+    }
+    const r = gmLookup(n.bank, n.prog, n.ch === 9);
+    return r.p || r.why === "drum" ? r : { p: cur, why: "fallback" }; // program not in this SoundFont
+  }
+
+  function scheduleNote(n, when) {
+    const { p } = presetForNote(n);
+    if (!p) return;
+    const rv = getResolved(p, n.note, n.vel);
+    if (rv.err) return;
+    const peak = 0.85 * n.gain;
+    const v = startSource(rv, n.note, when, midiBus, peak);
+    midiVoices.add(v);
+    v.src.onended = () => {
+      midiVoices.delete(v);
+      try { v.src.disconnect(); v.gain.disconnect(); } catch (e) { /* already gone */ }
+    };
+    if (n.ch === 9 && !v.loop) return; // one-shot percussion: let the sample ring out
+    const endT = when + Math.max(0.01, n.dur), rel = 0.12;
+    v.gain.gain.setValueAtTime(peak, endT);
+    v.gain.gain.linearRampToValueAtTime(0, endT + rel);
+    v.src.stop(endT + rel + 0.02);
+  }
+
+  function killMidiVoices() {
+    if (audioCtx) {
+      const now = audioCtx.currentTime;
+      for (const v of midiVoices) {
+        try {
+          v.gain.gain.cancelScheduledValues(now);
+          v.gain.gain.setValueAtTime(v.gain.gain.value, now);
+          v.gain.gain.linearRampToValueAtTime(0, now + 0.04);
+          v.src.stop(now + 0.06);
+        } catch (e) { /* already stopped */ }
+      }
+    }
+    midiVoices.clear();
+  }
+
+  // Decode every sample the song needs BEFORE starting, so the first notes don't stall the clock.
+  async function prewarm(token) {
+    const stats = { fallback: 0, drum: 0, bad: 0 };
+    const notes = midi.notes;
+    let last = performance.now();
+    for (let i = 0; i < notes.length; i++) {
+      const { p, why } = presetForNote(notes[i]);
+      if (why === "fallback") stats.fallback++;
+      if (!p) { stats.drum++; continue; }
+      if (getResolved(p, notes[i].note, notes[i].vel).err) stats.bad++;
+      if (performance.now() - last > 40) {
+        setStatus(`Preparando muestras… ${Math.round(100 * i / notes.length)}%`, false);
+        await tick();
+        if (token !== mp.token) return null; // cancelled meanwhile
+        last = performance.now();
+      }
+    }
+    return stats;
+  }
+
+  function firstIdxFrom(pos) { // first note with t >= pos
+    const notes = midi.notes;
+    let lo = 0, hi = notes.length;
+    while (lo < hi) { const mid = (lo + hi) >> 1; if (notes[mid].t < pos) lo = mid + 1; else hi = mid; }
+    return lo;
+  }
+
+  function currentPos() {
+    return mp.playing ? Math.min(midi.duration, Math.max(0, audioCtx.currentTime - mp.startCtx)) : mp.pos;
+  }
+
+  function updateSeek(pos) {
+    if (!midi) return;
+    midiSeek.value = Math.round(1000 * pos / midi.duration);
+    midiTimeEl.textContent = fmtTime(pos) + " / " + fmtTime(midi.duration);
+  }
+
+  function setPlayUi(state) {
+    midiPlayBtn.textContent = state === "playing" ? "⏸ Pausa" : state === "loading" ? "Preparando…" : "▶ Play";
+    midiPlayBtn.disabled = !midi || state === "loading";
+    midiStopBtn.disabled = !midi;
+    midiSeek.disabled = !midi;
+  }
+
+  function haltPlayback() {
+    mp.token++; // cancels a pending prewarm
+    if (mp.timer) { clearInterval(mp.timer); mp.timer = null; }
+    mp.playing = false;
+    killMidiVoices();
+  }
+
+  function schedTick() {
+    const pos = audioCtx.currentTime - mp.startCtx;
+    const horizon = pos + LOOKAHEAD;
+    const notes = midi.notes;
+    while (mp.idx < notes.length && notes[mp.idx].t < horizon) {
+      const n = notes[mp.idx++];
+      try { scheduleNote(n, mp.startCtx + n.t); } catch (err) { console.error(err); }
+    }
+    if (!mp.seeking) updateSeek(Math.min(midi.duration, Math.max(0, pos)));
+    if (pos >= midi.duration) { // song over: release tails ring out on their own
+      clearInterval(mp.timer); mp.timer = null;
+      mp.playing = false; mp.pos = 0;
+      setPlayUi("stopped"); updateSeek(0);
+      setStatus("MIDI terminado.", false);
+    }
+  }
+
+  async function midiPlay(from) {
+    if (!midi) return;
+    if (!sf || !sf.presets.length) { setStatus("Primero cargá un SoundFont para escuchar el MIDI.", true); return; }
+    wantAutoplay = false;
+    const startPos = typeof from === "number" ? from : (mp.pos >= midi.duration - 0.05 ? 0 : mp.pos);
+    haltPlayback();
+    mp.pos = startPos;
+    const token = ++mp.token;
+    if (midiModeEl.value === "selected" && !currentPreset) selectPreset(0, false);
+    ensureMidiBus();
+    setPlayUi("loading");
+
+    const stats = await prewarm(token);
+    if (!stats || token !== mp.token) return;
+
+    const ctx = ensureCtx();
+    if (ctx.state !== "running") { try { await Promise.race([ctx.resume(), sleep(400)]); } catch (e) { /* ignore */ } }
+    if (token !== mp.token) return;
+    if (ctx.state !== "running") {
+      setPlayUi("stopped");
+      setStatus("El navegador bloqueó el audio hasta que interactúes con la página: tocá ▶ Play.", true);
+      return;
+    }
+
+    mp.startCtx = ctx.currentTime - mp.pos + 0.1; // small lead-in so the first notes are scheduled in time
+    mp.idx = firstIdxFrom(mp.pos);
+    mp.playing = true;
+    setPlayUi("playing");
+    renderMidiInfo(stats);
+    setStatus(`▶ MIDI: ${midi.fileName}`, false);
+    mp.timer = setInterval(schedTick, TICK_MS);
+    schedTick();
+  }
+
+  function midiPause() {
+    mp.pos = currentPos();
+    haltPlayback();
+    setPlayUi("stopped");
+    updateSeek(mp.pos);
+  }
+
+  function midiStop() {
+    haltPlayback();
+    mp.pos = 0;
+    wantAutoplay = false;
+    setPlayUi("stopped");
+    updateSeek(0);
+  }
+
+  function renderMidiInfo(stats) {
+    if (!midi) { midiInfoEl.textContent = ""; return; }
+    const parts = [`${midi.notes.length} notas`, `${midi.channels} canales`, `formato ${midi.format}`];
+    if (midi.truncated) parts.push("archivo truncado");
+    if (stats) {
+      if (stats.bad) parts.push(`${stats.bad} fuera de rango del preset`);
+      if (stats.drum) parts.push(midiModeEl.value === "selected"
+        ? `${stats.drum} de percusión (canal 10) omitidas: el preset seleccionado no es un kit`
+        : `${stats.drum} de percusión omitidas: el SoundFont no tiene kit (banco 128)`);
+      if (stats.fallback) parts.push(`${stats.fallback} con programa que no está en el SoundFont → usan el preset seleccionado`);
+    }
+    midiInfoEl.textContent = parts.join(" · ");
+  }
+
+  function loadMidi(file) {
+    midiNameEl.textContent = "Leyendo " + file.name + "…";
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const m = parseMIDI(reader.result);
+        m.fileName = file.name;
+        haltPlayback();
+        midi = m;
+        mp.pos = 0;
+        midiNameEl.textContent = file.name;
+        midiNameEl.classList.add("loaded");
+        renderMidiInfo(null);
+        setPlayUi("stopped");
+        updateSeek(0);
+        if (sf && sf.presets.length) {
+          midiPlay(0);
+        } else {
+          wantAutoplay = true; // starts by itself as soon as a SoundFont is loaded
+          setStatus(sf ? "El SoundFont no tiene presets." : "MIDI cargado. Cargá un SoundFont y arranca solo.", !!sf);
+        }
+      } catch (err) {
+        midiNameEl.textContent = "Error: " + err.message;
+        midiNameEl.classList.remove("loaded");
+        console.error(err);
+      }
+    };
+    reader.onerror = () => { midiNameEl.textContent = "No se pudo leer el archivo."; };
+    reader.readAsArrayBuffer(file);
+  }
+
+  // hooks called from the SoundFont side
+  function midiOnSoundfontLoaded() {
+    haltPlayback();
+    mp.pos = 0;
+    rvCache.clear(); gmCache.clear();
+    setPlayUi("stopped");
+    updateSeek(0);
+    renderMidiInfo(null);
+    if (midi && wantAutoplay) midiPlay(0);
+  }
+  function midiOnPresetChange() { // user clicked another preset: hear it on the song right away
+    if (mp.playing && midiModeEl.value === "selected") midiPlay(currentPos());
+  }
+
+  midiPlayBtn.addEventListener("click", () => { if (mp.playing) midiPause(); else midiPlay(); });
+  midiStopBtn.addEventListener("click", midiStop);
+  midiSeek.addEventListener("input", () => {
+    if (!midi) return;
+    mp.seeking = true;
+    midiTimeEl.textContent = fmtTime(midiSeek.value / 1000 * midi.duration) + " / " + fmtTime(midi.duration);
+  });
+  midiSeek.addEventListener("change", () => {
+    if (!midi) return;
+    mp.seeking = false;
+    const t = midiSeek.value / 1000 * midi.duration;
+    if (mp.playing) midiPlay(t); else { mp.pos = t; updateSeek(t); }
+  });
+  midiModeEl.addEventListener("change", () => { if (mp.playing) midiPlay(currentPos()); else renderMidiInfo(null); });
+
+  // ---- dispatch dropped / picked files by extension ----
+  function handleFiles(fileList) {
+    const files = [...fileList];
+    const sfFile = files.find(f => /\.sf[23]$/i.test(f.name));
+    const midiFile = files.find(f => /\.midi?$/i.test(f.name));
+    if (!sfFile && !midiFile) { loadFile(files[0]); return; } // unknown extension: try it as a SoundFont, like before
+    if (sfFile) loadFile(sfFile);
+    if (midiFile) loadMidi(midiFile);
+  }
+
   // ---- drop / file picking ----
   // The whole window is a drop target (not just the small header bar), and we
   // must preventDefault on dragover everywhere or the browser will just try
@@ -1000,12 +1505,12 @@
     e.preventDefault();
     dragCounter = 0;
     dragOverlay.classList.remove("show");
-    const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
-    if (file) loadFile(file);
+    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
   });
 
   fileInput.addEventListener("change", () => {
-    if (fileInput.files[0]) loadFile(fileInput.files[0]);
+    if (fileInput.files.length) handleFiles(fileInput.files);
+    fileInput.value = ""; // so picking the same file again fires "change"
   });
 
   // ---- piano rendering ----
@@ -1125,6 +1630,7 @@
 
   window.addEventListener("keydown", e => {
     if (e.repeat) return;
+    if (e.target && e.target.matches && e.target.matches("select, input")) return;
     const k = e.key.toLowerCase();
     if (k === "z") { kbOctaveShift = Math.max(-3, kbOctaveShift - 1); return; }
     if (k === "x") { kbOctaveShift = Math.min(3, kbOctaveShift + 1); return; }
