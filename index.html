@@ -1175,10 +1175,10 @@
           <span class="consola-inst-toggle" title="Agrupa variaciones extra: ghost notes de caja entre los golpes principales, síncopa ocasional del bombo fuera del grid, y cross-stick/rimshot en vez de caja en los compases más quietos."><input type="checkbox" id="consolaOtherRhythmVarChk" checked><label for="consolaOtherRhythmVarChk">other-rhythm-variations</label></span>
         </div>
       </div>
-      <div class="consola-field consola-instruments" title="Compás (time signature) de cada uno de los 12 compases del segmento. Campo de texto: numerador/denominador (3/4, 6/8, 12/8, 5/4, 7/4, 9/8...) — se aplica a los 12 compases por igual. 4/4 por defecto, igual que siempre. Un compás compuesto (denominador 8, numerador múltiplo de 3 mayor a 3: 6/8, 9/8, 12/8) se siente subdividido de a 3 en vez de a 2 — armonía, bajo y melodía lo respetan. Mix time signatures: sortea entre 2 y 4 compases distintos (el tipeado siempre es uno de ellos) y los reparte al azar entre los 12 compases del segmento — un compás distinto en cada Reproducir/Regenerar.">
-        <label for="consolaTimeSigInput">Rhythm — Time signature</label>
+      <div class="consola-field consola-instruments" title="Compás (time signature) de cada uno de los 12 compases del segmento. Dos campos de texto: numerador / denominador (3/4, 6/8, 12/8, 5/4, 7/4, 9/8...) — se aplica a los 12 compases por igual. 4/4 por defecto, igual que siempre. Un compás compuesto (denominador 8, numerador múltiplo de 3 mayor a 3: 6/8, 9/8, 12/8) se siente subdividido de a 3 en vez de a 2 — armonía, bajo y melodía lo respetan. Mix time signatures: sortea entre 2 y 4 compases distintos (el tipeado siempre es uno de ellos) y los reparte al azar entre los 12 compases del segmento — un compás distinto en cada Reproducir/Regenerar.">
+        <label for="consolaTimeSigNum">Rhythm — Time signature</label>
         <div class="consola-inst-row">
-          <input type="text" id="consolaTimeSigInput" value="4/4" inputmode="numeric" pattern="[0-9]{1,2}/[0-9]{1,2}" size="6" style="width:64px;">
+          <input type="text" id="consolaTimeSigNum" value="4" inputmode="numeric" pattern="[0-9]{1,2}" maxlength="2" size="2" aria-label="Numerador" title="Numerador (1-32)" style="width:40px;text-align:center;"><span aria-hidden="true">/</span><input type="text" id="consolaTimeSigDen" value="4" inputmode="numeric" pattern="[0-9]{1,2}" maxlength="2" size="2" aria-label="Denominador" title="Denominador (1, 2, 4, 8 o 16)" style="width:40px;text-align:center;">
           <span class="consola-inst-toggle" title="Sortea entre 2 y 4 compases distintos (incluido el tipeado arriba) y los reparte al azar entre los 12 compases — algunos quedan en uno, otros en otro."><input type="checkbox" id="consolaMixTimeSigChk"><label for="consolaMixTimeSigChk">Mix time signatures</label></span>
         </div>
         <span class="consola-val" id="consolaTimeSigStatus"></span>
@@ -1319,7 +1319,7 @@
         </div>
         <div class="collapsible-content collapsed" id="bebopModeBody">
         <div class="consola-inst-row" style="align-items:center;">
-        <button type="button" class="chip" id="consolaBebopBtn" title="Agrega una SEXTA pista MIDI: una línea melódica INDEPENDIENTE (no dobla a la melodía principal, tiene su propia nota en cada instante) en corcheas fijas, en el modo (o modos) que elijas con los checkboxes Arpeggios/Scales de al lado. Instrumento elegible abajo en el mini mixer (Sax tenor por defecto). Apagada por defecto — tiene su propio volumen en el mini mixer (🎷 Bebop, en 0% por defecto).">bebopMelody</button>
+        <button type="button" class="chip" id="consolaBebopBtn" title="Agrega una SEXTA pista MIDI: una línea melódica INDEPENDIENTE (no dobla a la melodía principal, tiene su propia nota en cada instante) en corcheas fijas, en el modo (o modos) que elijas con los checkboxes Arpeggios/Scales de al lado. Instrumento elegible abajo en el mini mixer (Sax soprano por defecto). Apagada por defecto — tiene su propio volumen en el mini mixer (🎷 Bebop, en 0% por defecto).">bebopMelody</button>
         <span class="consola-bebop-mode" style="display:inline-flex;flex-wrap:wrap;align-items:center;gap:10px;margin-left:2px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.04em;color:var(--ink-muted);">
           <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;" title="bebopMelody arpegia en corcheas las notas del acorde vigente (ascendente en compases pares, descendente en impares) — siempre dentro del set elegido, nunca una nota ajena.">
             <input type="checkbox" id="consolaBebopArpChk" checked> Arpeggios
@@ -1476,11 +1476,11 @@
             <input type="checkbox" id="consolaAltMelodyChk"><label for="consolaAltMelodyChk">alt-melody</label>
           </span>
         </div>
-        <div class="mix-preset-group" id="bebopPresetGroup" data-mix-group="bebop" title="Instrumento de la pista bebopMelody (línea melódica independiente, chord-scale). Por defecto Sax tenor — cambialo si la querés con otro timbre.">
+        <div class="mix-preset-group" id="bebopPresetGroup" data-mix-group="bebop" title="Instrumento de la pista bebopMelody (línea melódica independiente, chord-scale). Por defecto Sax soprano — cambialo si la querés con otro timbre.">
           <label class="mix-preset-label" for="bebopPresetSelect">Bebop</label>
           <select class="mix-preset-select" id="bebopPresetSelect">
             <!-- Las opciones (todos los .sf2 y todos sus presets) las arma sfBuildPresetSelects() al cargar la página. -->
-            <option value="tenorSax" selected>Sax tenor</option>
+            <option value="sopranoSax" selected>Sax soprano</option>
           </select>
         </div>
         <div class="mix-preset-group" id="bassPresetGroup" data-mix-group="bass">
@@ -6602,8 +6602,8 @@ function runAnalysis() {
      (time signature) de cada uno de los NUM_BARS compases del
      segmento. Por defecto, los 12 compases quedan en 4/4 (mismo
      comportamiento de siempre). El campo de texto
-     #consolaTimeSigInput acepta "N/D" (3/4, 6/8, 12/8, 5/4, 7/4,
-     9/8, etc.); el checkbox #consolaMixTimeSigChk sortea entre 2 y
+     #consolaTimeSigNum / #consolaTimeSigDen (numerador / denominador:
+     3/4, 6/8, 12/8, 5/4, 7/4, 9/8, etc.); el checkbox #consolaMixTimeSigChk sortea entre 2 y
      4 compases distintos (el tipeado siempre es uno de ellos) y los
      reparte al azar entre los 12 compases.
      Cada compás se traduce a una duración en NEGRAS (numerador*4/
@@ -6629,8 +6629,9 @@ function runAnalysis() {
       return { num:num, den:den, beats:beats, compound:compound, label:num+"/"+den };
     }
     function inputSig(){
-      var el = document.getElementById("consolaTimeSigInput");
-      return parseSig(el && el.value) || { num:4, den:4, beats:4, compound:false, label:"4/4" };
+      var n = document.getElementById("consolaTimeSigNum");
+      var d = document.getElementById("consolaTimeSigDen");
+      return parseSig((n ? n.value.trim() : "") + "/" + (d ? d.value.trim() : "")) || { num:4, den:4, beats:4, compound:false, label:"4/4" };
     }
     function mixEnabled(){
       var chk = document.getElementById("consolaMixTimeSigChk");
@@ -7472,7 +7473,7 @@ function runAnalysis() {
          corcheas.
        - narrowRegister (desmarcado, por defecto): sin restricción
          extra — solo el piso/techo de seguridad general del motor
-         (MELODY_MIDI_FLOOR..CEIL, ~3.4 octavas).
+         (MELODY_MIDI_FLOOR..CEIL, C5..C8, 3 octavas).
        - narrowRegister (marcado): restringe a un rango fijo de 2
          octavas (ver NARROW_FLOOR/NARROW_CEIL más abajo) — cualquier
          nota que caiga fuera de ese rango se transpone una octava
@@ -7520,11 +7521,11 @@ function runAnalysis() {
     }
     // narrowRegister: restringe a un rango fijo de 2 octavas (24
     // semitonos) — más angosto que el piso/techo de seguridad general
-    // (MELODY_MIDI_FLOOR..CEIL, ~3.4 octavas). Mismo mecanismo que
+    // (MELODY_MIDI_FLOOR..CEIL, C5..C8, 3 octavas). Mismo mecanismo que
     // clampMelodyRange: transpone una octava para arriba o para abajo
     // (la que corresponda) hasta entrar en rango, nunca cambia la clase
-    // de altura. Piso elegido = MELODY_MIDI_FLOOR (G3, el mismo piso
-    // general ya usado en todo el motor), techo = piso + 24 (G5).
+    // de altura. Piso elegido = MELODY_MIDI_FLOOR (C5, el mismo piso
+    // general ya usado en todo el motor), techo = piso + 24 (C7).
     // OJO: MELODY_MIDI_FLOOR se lee DENTRO de la función (no al armar
     // este IIFE) — a la altura de este IIFE esa variable todavía no fue
     // asignada (se define más abajo en el mismo scope) y hubiera dado
@@ -7962,8 +7963,10 @@ function runAnalysis() {
   // puede terminar en un registro poco práctico. Esto la reacota a un
   // rango razonable de octavas, corrigiendo solo de a 12 semitonos
   // enteros — nunca cambia QUÉ nota es, solo en qué octava suena.
-  var MELODY_MIDI_FLOOR = 55;   // G3
-  var MELODY_MIDI_CEIL  = 96;   // C7
+  // Rango de Melodía Y de bebopMelody (las dos pasan por este clamp):
+  // C5 (72) a C8 (108), con C4 = 60 (BASE_MIDI).
+  var MELODY_MIDI_FLOOR = 72;   // C5
+  var MELODY_MIDI_CEIL  = 108;  // C8
   function clampMelodyRange(midi){
     while(midi > MELODY_MIDI_CEIL) midi -= 12;
     while(midi < MELODY_MIDI_FLOOR) midi += 12;
@@ -8636,7 +8639,7 @@ function runAnalysis() {
       var barStart = RHYTHM.start(bar);
       var offset = 0;
       cell.forEach(function(dur, k){
-        var midi = tones[k % tones.length];
+        var midi = clampMelodyRange(tones[k % tones.length]);
         events.push({midi:midi, startBeat: barStart + offset, durBeats:dur, bar:bar});
         offset += dur;
       });
@@ -8905,7 +8908,7 @@ function runAnalysis() {
             segShift = shift;
             lastChordRef = currentSlotChord;
           }
-          midi = base + octAdd + segShift;
+          midi = clampMelodyRange(base + octAdd + segShift); // el ancla cubre la 1ra nota del tramo; el clamp garantiza el rango en todas
         } else {
           base = currentSlotChord[randomInt(0, currentSlotChord.length-1)];
           octAdd = Math.random() < 0.18 ? 24 : 12;
@@ -9368,7 +9371,7 @@ function runAnalysis() {
   // Defaults propios (no los de SF_DEFAULT_FILES): Bajo = "synthBass" (Bajo original sintetizado) y
   // Doblar melodía = "bassoon" (Fagot, Instruments.sf2). Doblar armonía = Nord Pad (SF_DEFAULT_FILES).
   // Las filas de "Bass default.sf2" y "Armonica.sf2" siguen en el catálogo, elegibles a mano.
-  var mixPresets = { harmony: sfDefaultKeyFor("harmony", "piano"), melody: sfDefaultKeyFor("melody", "flute"), melodyDouble: "bassoon", chordDouble: sfDefaultKeyFor("chordDouble", "mute"), bass: "synthBass", drum: sfDefaultKeyFor("drum", "kit"), bebop: "tenorSax" };
+  var mixPresets = { harmony: sfDefaultKeyFor("harmony", "piano"), melody: sfDefaultKeyFor("melody", "flute"), melodyDouble: "bassoon", chordDouble: sfDefaultKeyFor("chordDouble", "mute"), bass: "synthBass", drum: sfDefaultKeyFor("drum", "kit"), bebop: "sopranoSax" };
   var chordGainNode = null, bassGainNode = null, melodyGainNode = null, drumGainNode = null, melodyDoubleGainNode = null, chordDoubleGainNode = null, comping2GainNode = null, bebopGainNode = null;
 
   // ---------- Reverb: bus de envío compartido ----------
@@ -10869,11 +10872,11 @@ function runAnalysis() {
     // la melodía principal — tiene su propia nota por evento, elegida
     // por CHORDSCALE), con selector de instrumento propio
     // (#bebopPresetSelect, igual patrón que Armonía/Melodía/Bajo —
-    // Sax tenor por defecto). Vacía si el botón #consolaBebopBtn está
+    // Sax soprano por defecto). Vacía si el botón #consolaBebopBtn está
     // apagado. #mixBebopVol arranca en 0%, pero el listener del botón
     // lo auto-sube a 100% la primera vez que se prende (ver arriba),
     // así que se escucha de una sin pasos extra.
-    var bebopFam = voiceFamilyFor(mixPresets.bebop, "tenorSax");
+    var bebopFam = voiceFamilyFor(mixPresets.bebop, "sopranoSax");
     state.bebopEvents.forEach(function(ev){
       var t = loopStartTime + ev.startBeat*spb;
       var dur = ev.durBeats*spb;
@@ -11119,7 +11122,7 @@ function runAnalysis() {
       }
     }
     add("moreComping", "comping2", 5, state.comping2Events, 0, 48);
-    add("bebopMelody", "bebop", 6, state.bebopEvents, 0, exportProgramFor(mixPresets.bebop, 66));
+    add("bebopMelody", "bebop", 6, state.bebopEvents, 0, exportProgramFor(mixPresets.bebop, 64));
     if(instEnabled("consolaDrumChk") && mixEffective("drum") > 0 && drumEvents.length){
       var drumEvs = drumEvents.map(function(ev){
         return { midi:drumMidiFor(ev), startBeat:ev.startBeat, durBeats:0.25, vel:ev.vel != null ? ev.vel : 96 };
@@ -11374,7 +11377,7 @@ function runAnalysis() {
   document.getElementById("consolaRegenPlayBtn").addEventListener("click", regenerarYReproducir);
   // Atajo G (mayúscula o minúscula, sin Ctrl/Cmd/Alt, sin autorepetición).
   // No se dispara mientras se escribe en un campo de texto/número/textarea
-  // (p. ej. el numerador de Time signature). Checkboxes y sliders no
+  // (p. ej. numerador/denominador de Time signature). Checkboxes y sliders no
   // cuentan como "escribir", así que G funciona aunque hayas tocado uno.
   // En un <select> se corta el type-ahead del navegador (la G no salta
   // a "Guitarra jazz") y dispara el atajo.
@@ -11490,8 +11493,10 @@ function runAnalysis() {
   // completo — arma de nuevo armonía/bajo/melodía/batería a la medida
   // de la nueva métrica — no alcanza con reconstruir solo drumEvents
   // como con Rhythm complexity arriba.
-  document.getElementById("consolaTimeSigInput").addEventListener("change", function(){
-    if(state.rootChord.length) regenerateConsola();
+  ["consolaTimeSigNum","consolaTimeSigDen"].forEach(function(id){
+    document.getElementById(id).addEventListener("change", function(){
+      if(state.rootChord.length) regenerateConsola();
+    });
   });
   document.getElementById("consolaMixTimeSigChk").addEventListener("change", function(){
     if(state.rootChord.length) regenerateConsola();
