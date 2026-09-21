@@ -1064,6 +1064,11 @@
           <button type="button" class="chip" id="multiSetsMemBtn" disabled title="Guarda el set actual del reloj/piano en el próximo casillero libre y resetea el reloj">To Memory</button>
           <button type="button" class="chip primary" id="multiSetsComposeBtn" disabled title="Combina al azar los sets guardados en los 12 compases de SetMusicBox y lo reproduce">&#127922; Compose</button>
           <button type="button" class="chip" id="multiSetsClearBtn" disabled title="Vacía los 5 casilleros">Borrar memoria</button>
+          <button type="button" class="chip" id="multiSetsRandomFillBtn" title="Rellena los 5 casilleros con sets al azar (reemplaza lo que haya guardado). Cada set tiene entre 2 y N notas, con N elegido en el slider de al lado; los 5 sets salen distintos entre sí. SetMusicBox pasa a componer desde la memoria, igual que con To Memory.">&#127922; Random Fill</button>
+          <span style="display:inline-flex;align-items:center;gap:6px;">
+            <input type="range" id="multiSetsRandomMax" min="3" max="8" step="1" value="4" style="width:80px;" aria-label="Cantidad máxima de notas de cada set random" title="Máximo de notas de cada set random (mín. 3, máx. 8): cada set tendrá entre 2 y este número de notas.">
+            <span id="multiSetsRandomMaxVal" style="font-size:12px;color:var(--ink-muted);min-width:64px;">2–4 notas</span>
+          </span>
         </div>
         <div class="consola-inst-row multiset-modes" title="Cómo se reparten los sets guardados. Por compás: cada compás sortea UN set y todo ese compás (armonía, bajo, melodía) usa solo sus notas. Por reataque: cada reataque de armonía sortea su propio set, dentro del mismo compás. Mezcla: cada compás sortea al azar si se comporta como 'Por compás' o como 'Por reataque'. Se elige uno a la vez.">
           <span class="consola-inst-toggle"><input type="checkbox" id="multiSetsModeBar"><label for="multiSetsModeBar">Por compás</label></span>
@@ -1354,9 +1359,9 @@
         </div>
         <div class="mix-channel">
           <label for="mixBassVol">Bajo</label>
-          <input type="range" id="mixBassVol" min="0" max="150" value="100" step="1">
+          <input type="range" id="mixBassVol" min="0" max="150" value="40" step="1">
           <div class="mix-val-row">
-            <span class="mix-val" id="mixBassVolVal">100%</span>
+            <span class="mix-val" id="mixBassVolVal">40%</span>
             <input type="checkbox" class="mix-focus" data-track="bass" title="Foco: si lo tildás, baja el volumen de todas las demás pistas (este fader no cambia)" aria-label="Foco en Bajo">
           </div>
         </div>
@@ -1500,6 +1505,12 @@
     <div id="consolaBebopRollLabel" style="margin-bottom:6px;font-size:12px;font-weight:600;color:var(--ink-muted);padding-top:0;">🎷 bebopMelody — piano roll separado (aislado del principal)</div>
     <div class="consola-roll-wrap" id="consolaBebopRollHost" style="min-height:60px;margin-bottom:20px;"></div>
     <div class="consola-roll-wrap" id="consolaRollHost"></div>
+
+    <div class="consola-export" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px;">
+      <button type="button" class="chip" id="consolaExportMidiBtn" disabled title="Descarga el segmento actual como archivo MIDI (.mid): una pista por instrumento (armonía, dobles, bajo, melodía, moreComping, bebopMelody, batería en canal 10) con el tempo y los compases actuales.">&#11015; Export MIDI</button>
+      <button type="button" class="chip" id="consolaExportMp3Btn" disabled title="Renderiza el segmento actual (una vuelta + cola de reverb) con los timbres, volúmenes y reverb que estás usando y lo descarga como MP3. La primera vez baja el codificador MP3 (lamejs) de internet.">&#11015; Export MP3</button>
+      <span id="consolaExportStatus" role="status" aria-live="polite" style="font-size:12px;color:var(--ink-muted);"></span>
+    </div>
 
     <p class="consola-foot">
       Armonía: cada reataque sortea un subset del set elegido (o el set completo) con su propia transposición e inversión, nunca la misma combinación dos veces seguidas ni una nota ajena al set; el bajo depende de Bass function (en How to play): con Current set (default) toca solo notas del acorde en curso; con Superset toca, la mitad de las veces, una nota de afuera del set (es el único modo que sale del set elegido). Las notas nunca entran en bloque: se escalonan, con más distancia entre ataques cuanto más dura el acorde. &#8634; Normalito toca el set completo sin subsets ni transposición, una sola inversión por compás.
@@ -7766,6 +7777,37 @@ function runAnalysis() {
       refreshUI();
       if(wasActive){ stopPlayback(); regenerateConsola(); } // deja de componer desde la memoria: vuelve al set del reloj (o queda vacío)
     }
+    // Random Fill: reemplaza los 5 casilleros por 5 sets al azar y distintos entre sí. Cada set
+    // tiene entre 2 y N notas (N = slider #multiSetsRandomMax, 3-8, default 4), con las notas
+    // (pitch classes) elegidas al azar entre las 12. Mismo cierre que To Memory: la memoria pasa
+    // a mandar y el reloj se resetea (clearNotes -> runAnalysis -> regenerateConsola).
+    function randomMaxNotes(){
+      var sl = el("multiSetsRandomMax");
+      var n = sl ? parseInt(sl.value, 10) : 4;
+      return (n >= 3 && n <= 8) ? n : 4;
+    }
+    function randomSet(maxN){
+      var k = randomInt(2, maxN);
+      var pool = [0,1,2,3,4,5,6,7,8,9,10,11];
+      for(var i = pool.length-1; i > 0; i--){ var j = randomInt(0, i); var t = pool[i]; pool[i] = pool[j]; pool[j] = t; }
+      return pool.slice(0, k).sort(function(a,b){ return a-b; });
+    }
+    function randomFill(){
+      var maxN = randomMaxNotes();
+      var made = [], seen = {};
+      while(made.length < MAX_SLOTS){ // con maxN >= 3 hay 66+ sets posibles: no hay riesgo de quedarse sin distintos
+        var pcs = randomSet(maxN), key = pcs.join(",");
+        if(seen[key]) continue;
+        seen[key] = true;
+        made.push(pcs);
+      }
+      slots = made;
+      status("Random Fill: 5 sets de 2\u2013" + maxN + " notas.");
+      active = true;
+      resetting = true;
+      try{ clearNotes(); }finally{ resetting = false; }
+      refreshUI();
+    }
     function compose(){
       if(!slots.length){ status("Guardá al menos un set con To Memory."); return; }
       status("");
@@ -7786,6 +7828,11 @@ function runAnalysis() {
       if(el("multiSetsMemBtn2")) el("multiSetsMemBtn2").addEventListener("click", toMemory);
       el("multiSetsComposeBtn").addEventListener("click", compose);
       el("multiSetsClearBtn").addEventListener("click", clearMemory);
+      if(el("multiSetsRandomFillBtn")) el("multiSetsRandomFillBtn").addEventListener("click", randomFill);
+      if(el("multiSetsRandomMax")) el("multiSetsRandomMax").addEventListener("input", function(){
+        var lab = el("multiSetsRandomMaxVal");
+        if(lab) lab.textContent = "2\u2013" + randomMaxNotes() + " notas";
+      });
       // Tres checkboxes excluyentes (mismo patrón que Modo A/Modo B de
       // Cycles); no se puede dejar los tres destildados.
       var ids = ["multiSetsModeBar", "multiSetsModeAttack", "multiSetsModeMixed"];
@@ -9062,6 +9109,7 @@ function runAnalysis() {
       msg.className = "consola-empty";
       msg.textContent = "Seleccioná al menos 2 notas arriba (reloj o piano) para armar el segmento.";
       host.appendChild(msg);
+      updateExportBtns();
       return;
     }
 
@@ -9176,6 +9224,7 @@ function runAnalysis() {
       wrap.appendChild(span);
     });
     host.appendChild(wrap);
+    updateExportBtns();
   }
 
   // Piano roll SEPARADO para bebopMelody — a pedido: antes compartía el
@@ -9302,7 +9351,7 @@ function runAnalysis() {
   // presets deciden qué instrumento usar en armonía/melodía/bajo (los
   // 12 de Instruments.sf2, con sintetizador de siempre como respaldo)
   // y qué muestras usar en batería (kit real o percusión/congas).
-  var mixGains = { drum: 1, bass: 1, chord: 1, melody: 1, melodyDouble: 0.5, chordDouble: 0.5, comping2: 1, bebop: 0 }; // Doblar melodía / Doblar armonía: 50% por defecto
+  var mixGains = { drum: 1, bass: 0.4, chord: 1, melody: 1, melodyDouble: 0.5, chordDouble: 0.5, comping2: 1, bebop: 0 }; // Bajo: 40% por defecto. Doblar melodía / Doblar armonía: 50% por defecto
   // ---------- Foco: checkbox chico junto a cada fader del mini mixer ----------
   // mixGains sigue guardando SIEMPRE el valor crudo del fader. El nivel real
   // que llega al gain node es mixGains * focusFactor: 1 para las pistas
@@ -10937,6 +10986,316 @@ function runAnalysis() {
   }
   window.consolaStartPlayback = startPlayback;
   window.consolaStopPlayback = stopPlayback; // declaración hoisted más abajo — accesible acá igual
+
+  /* ================================================================
+     EXPORT MIDI / MP3 — botones debajo de los dos piano rolls.
+     Exportan lo MISMO que suena al apretar Reproducir: las pistas
+     cuyo checkbox está prendido (Armonía/Bajo/Melodía/Batería), los
+     dobles si no están en Mute, moreComping y bebopMelody si están
+     prendidos, y omiten cualquier pista con fader en 0.
+     · MIDI: archivo SMF formato 1 escrito a mano (sin librerías), una
+       pista por instrumento, tempo de #consolaTempo y un cambio de
+       compás por cada compás distinto de RHYTHM. Una vuelta del segmento.
+     · MP3: renderiza UNA vuelta + cola de reverb en un
+       OfflineAudioContext, con el mismo grafo de audio de siempre
+       (buses, mini mixer, reverb, limiter, SoundFont si está activo),
+       y lo codifica con lamejs, que se baja de cdnjs la primera vez
+       que se usa (el resto del sitio sigue sin necesitar internet).
+     ================================================================ */
+  var EXPORT_PPQ = 480;
+  var EXPORT_TAIL_SEC = 3;     // cola después del último compás (reverb + release de las notas)
+  var EXPORT_MP3_KBPS = 192;
+  var EXPORT_LAME_URLS = [
+    "https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js",
+    "https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.all.js"
+  ];
+  var exportBusy = false;
+
+  function exportSetStatus(text){
+    var el = document.getElementById("consolaExportStatus");
+    if(el) el.textContent = text || "";
+  }
+  function updateExportBtns(){
+    var ok = state.chordEvents.length > 0 && !exportBusy;
+    var midiBtn = document.getElementById("consolaExportMidiBtn");
+    var mp3Btn = document.getElementById("consolaExportMp3Btn");
+    if(midiBtn) midiBtn.disabled = !ok;
+    if(mp3Btn) mp3Btn.disabled = !ok;
+  }
+  function exportStamp(){
+    var d = new Date();
+    function p2(n){ return (n < 10 ? "0" : "") + n; }
+    return d.getFullYear() + p2(d.getMonth()+1) + p2(d.getDate()) + "-" + p2(d.getHours()) + p2(d.getMinutes()) + p2(d.getSeconds());
+  }
+  function exportDownload(blob, filename){
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 10000);
+  }
+  function exportBpm(){
+    var el = document.getElementById("consolaTempo");
+    var bpm = el ? parseInt(el.value, 10) : NaN;
+    return bpm > 0 ? bpm : 100;
+  }
+
+  // ---------- MIDI ----------
+  // Programa GM de cada preset: los 12 de Instruments.sf2 traen el suyo
+  // (SM2_INSTRUMENTS), lo mismo el resto de los presets de ese .sf2
+  // ("sf:instruments:banco:programa"). Para presets de otros .sf2 no hay
+  // un programa GM conocido: se usa uno por familia tímbrica (la misma
+  // que ya usa el sitio como sintetizador de respaldo).
+  var EXPORT_FAMILY_PROGRAM = { piano:0, pad:48, sax:66, flute:73, bass:32 };
+  function exportProgramFor(key, fallbackProgram){
+    var inst = SM2_INSTRUMENTS_BY_KEY[key];
+    if(inst && inst.program != null) return inst.program;
+    var m = /^sf:instruments:\d+:(\d+)$/.exec(key || "");
+    if(m) return parseInt(m[1], 10);
+    if(inst && EXPORT_FAMILY_PROGRAM[inst.fallback] != null) return EXPORT_FAMILY_PROGRAM[inst.fallback];
+    return fallbackProgram;
+  }
+  function midiVLQ(n){
+    var bytes = [n & 0x7f];
+    while((n >>= 7) > 0) bytes.unshift((n & 0x7f) | 0x80);
+    return bytes;
+  }
+  function midiText(str){
+    var enc = new TextEncoder().encode(str);
+    return Array.prototype.slice.call(enc);
+  }
+  function midiU32(n){ return [(n >>> 24) & 255, (n >>> 16) & 255, (n >>> 8) & 255, n & 255]; }
+  function midiU16(n){ return [(n >>> 8) & 255, n & 255]; }
+  // events: [{tick, order, bytes}] — order: 0 = meta/programa/CC, 1 = note off, 2 = note on
+  // (a igual tick, primero las metas, después los note-off y al final los note-on: así una
+  // nota que termina justo cuando arranca otra igual no se corta).
+  function midiTrackBytes(events, endTick){
+    events.sort(function(a, b){ return (a.tick - b.tick) || (a.order - b.order); });
+    var out = [], last = 0;
+    events.forEach(function(e){
+      Array.prototype.push.apply(out, midiVLQ(e.tick - last));
+      Array.prototype.push.apply(out, e.bytes);
+      last = e.tick;
+    });
+    Array.prototype.push.apply(out, midiVLQ(Math.max(0, endTick - last)));
+    out.push(0xFF, 0x2F, 0x00);
+    return [0x4D, 0x54, 0x72, 0x6B].concat(midiU32(out.length), out); // "MTrk"
+  }
+  function midiNoteEvents(evs, ch, semitones, defaultVel){
+    var out = [];
+    evs.forEach(function(ev){
+      var note = Math.round(ev.midi + semitones);
+      if(note < 0 || note > 127) return;
+      var on = Math.round(ev.startBeat * EXPORT_PPQ);
+      var dur = ev.durBeats != null ? Math.max(1, Math.round(ev.durBeats * EXPORT_PPQ)) : Math.round(EXPORT_PPQ / 4);
+      var vel = ev.vel != null ? Math.max(1, Math.min(127, Math.round(ev.vel))) : defaultVel;
+      out.push({ tick:on,       order:2, bytes:[0x90 | ch, note, vel] });
+      out.push({ tick:on + dur, order:1, bytes:[0x80 | ch, note, 0] });
+    });
+    return out;
+  }
+  // Lista de pistas a exportar — misma lógica de "qué suena" que scheduleLoopAt.
+  function exportTrackList(){
+    var list = [];
+    function add(name, mixKey, ch, evs, semitones, program){
+      if(!evs || !evs.length) return;
+      if(mixEffective(mixKey) <= 0) return; // fader en 0: silenciada, no se exporta
+      list.push({ name:name, mixKey:mixKey, ch:ch, evs:evs, semitones:semitones || 0, program:program });
+    }
+    if(instEnabled("consolaChordChk")){
+      add("Armonia", "chord", 0, state.chordEvents, 0, exportProgramFor(mixPresets.harmony, 48));
+      if(mixPresets.chordDouble !== "mute") add("Doblar armonia", "chordDouble", 1, state.chordEvents, 0, exportProgramFor(mixPresets.chordDouble, 48));
+    }
+    if(instEnabled("consolaBassChk")){
+      add("Bajo", "bass", 2, state.bassEvents, 0, exportProgramFor(mixPresets.bass, 32));
+    }
+    if(instEnabled("consolaMelodyChk")){
+      add("Melodia", "melody", 3, state.melodyEvents, 0, exportProgramFor(mixPresets.melody, 73));
+      if(mixPresets.melodyDouble !== "mute"){
+        var alt = document.getElementById("consolaAltMelodyChk");
+        add("Doblar melodia", "melodyDouble", 4, state.melodyEvents, (alt && alt.checked) ? -7 : -12, exportProgramFor(mixPresets.melodyDouble, 73));
+      }
+    }
+    add("moreComping", "comping2", 5, state.comping2Events, 0, 48);
+    add("bebopMelody", "bebop", 6, state.bebopEvents, 0, exportProgramFor(mixPresets.bebop, 66));
+    if(instEnabled("consolaDrumChk") && mixEffective("drum") > 0 && drumEvents.length){
+      var drumEvs = drumEvents.map(function(ev){
+        return { midi:drumMidiFor(ev), startBeat:ev.startBeat, durBeats:0.25, vel:ev.vel != null ? ev.vel : 96 };
+      });
+      list.push({ name:"Bateria", mixKey:"drum", ch:9, evs:drumEvs, semitones:0, program:null });
+    }
+    return list;
+  }
+  function buildMidiFile(){
+    var bpm = exportBpm();
+    var loopEndTick = Math.round(TOTAL_BEATS * EXPORT_PPQ);
+    var tracks = [];
+
+    // Pista 0: tempo + compases
+    var meta = [];
+    var usec = Math.round(60000000 / bpm);
+    var songName = midiText("SetMusicBox");
+    meta.push({ tick:0, order:0, bytes:[0xFF, 0x03, songName.length].concat(songName) });
+    meta.push({ tick:0, order:0, bytes:[0xFF, 0x51, 0x03, (usec >>> 16) & 255, (usec >>> 8) & 255, usec & 255] });
+    var lastLabel = null;
+    for(var bar = 0; bar < NUM_BARS; bar++){
+      var label = RHYTHM.label(bar);
+      if(label === lastLabel) continue;
+      lastLabel = label;
+      var parts = label.split("/");
+      var num = parseInt(parts[0], 10), den = parseInt(parts[1], 10);
+      meta.push({ tick:Math.round(RHYTHM.start(bar) * EXPORT_PPQ), order:0,
+        bytes:[0xFF, 0x58, 0x04, num, Math.round(Math.log(den) / Math.LN2), 24, 8] });
+    }
+    tracks.push(midiTrackBytes(meta, loopEndTick));
+
+    // Una pista por instrumento
+    exportTrackList().forEach(function(t){
+      var ev = [];
+      var nameBytes = midiText(t.name);
+      ev.push({ tick:0, order:0, bytes:[0xFF, 0x03, nameBytes.length].concat(nameBytes) });
+      if(t.program != null) ev.push({ tick:0, order:0, bytes:[0xC0 | t.ch, t.program] });
+      ev.push({ tick:0, order:0, bytes:[0xB0 | t.ch, 7, Math.round(Math.min(1, mixEffective(t.mixKey)) * 127)] }); // volumen de canal = fader del mini mixer
+      var noteEv = midiNoteEvents(t.evs, t.ch, t.semitones, 90);
+      var end = loopEndTick;
+      noteEv.forEach(function(e){ ev.push(e); if(e.tick > end) end = e.tick; });
+      tracks.push(midiTrackBytes(ev, end));
+    });
+
+    var header = [0x4D, 0x54, 0x68, 0x64].concat(midiU32(6), midiU16(1), midiU16(tracks.length), midiU16(EXPORT_PPQ)); // "MThd"
+    var all = header;
+    tracks.forEach(function(tb){ all = all.concat(tb); });
+    return new Blob([new Uint8Array(all)], { type:"audio/midi" });
+  }
+  function exportMidi(){
+    if(exportBusy || state.chordEvents.length === 0) return;
+    try{
+      var blob = buildMidiFile();
+      exportDownload(blob, "SetMusicBox_" + exportStamp() + ".mid");
+      exportSetStatus("MIDI exportado.");
+    }catch(err){
+      console.error("Export MIDI:", err);
+      exportSetStatus("No se pudo exportar el MIDI: " + err.message);
+    }
+  }
+
+  // ---------- MP3 ----------
+  var lamePromise = null;
+  function loadLame(){
+    if(window.lamejs && typeof window.lamejs.Mp3Encoder === "function") return Promise.resolve(window.lamejs);
+    if(lamePromise) return lamePromise;
+    lamePromise = new Promise(function(resolve, reject){
+      var idx = 0;
+      (function tryNext(){
+        if(idx >= EXPORT_LAME_URLS.length){ reject(new Error("no se pudo cargar el codificador MP3 (lamejs) — hace falta internet la primera vez")); return; }
+        var sc = document.createElement("script");
+        sc.src = EXPORT_LAME_URLS[idx++];
+        sc.onload = function(){
+          if(window.lamejs && typeof window.lamejs.Mp3Encoder === "function") resolve(window.lamejs);
+          else tryNext();
+        };
+        sc.onerror = tryNext;
+        document.head.appendChild(sc);
+      })();
+    }).catch(function(err){ lamePromise = null; throw err; });
+    return lamePromise;
+  }
+  // Renderiza UNA vuelta del segmento (+ cola) en un OfflineAudioContext. El grafo de audio
+  // del sitio (buses, reverb, limiter) vive en variables de módulo atadas al AudioContext en
+  // vivo: se las aparta un instante, se arma el grafo nuevo sobre el contexto offline (todo
+  // sincrónico, dentro de scheduleLoopAt) y se restauran ANTES de esperar el render — así
+  // reproducir/detener sigue funcionando normal mientras se renderiza.
+  function renderLoopOffline(){
+    var OCtx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+    if(!OCtx) return Promise.reject(new Error("este navegador no soporta OfflineAudioContext"));
+    var spb = 60 / exportBpm();
+    var loopDur = TOTAL_BEATS * spb;
+    var sr = 44100;
+    var off = new OCtx(2, Math.ceil((loopDur + EXPORT_TAIL_SEC) * sr), sr);
+    var saved = {
+      masterGain:masterGain, masterBoost:masterBoost, masterLimiter:masterLimiter,
+      chordGainNode:chordGainNode, bassGainNode:bassGainNode, melodyGainNode:melodyGainNode, drumGainNode:drumGainNode,
+      melodyDoubleGainNode:melodyDoubleGainNode, chordDoubleGainNode:chordDoubleGainNode, comping2GainNode:comping2GainNode, bebopGainNode:bebopGainNode,
+      reverbBusGain:reverbBusGain, reverbConvolver:reverbConvolver, reverbReturnGain:reverbReturnGain, reverbSendGains:reverbSendGains, voices:voices
+    };
+    masterGain = masterBoost = masterLimiter = null;
+    chordGainNode = bassGainNode = melodyGainNode = drumGainNode = null;
+    melodyDoubleGainNode = chordDoubleGainNode = comping2GainNode = bebopGainNode = null;
+    reverbBusGain = reverbConvolver = reverbReturnGain = null;
+    reverbSendGains = { chord:null, bass:null, melody:null, melodyDouble:null, chordDouble:null, drum:null, comping2:null, bebop:null };
+    voices = [];
+    try{
+      scheduleLoopAt(off, ensureMasterGain(off), 0, spb);
+    } finally {
+      masterGain = saved.masterGain; masterBoost = saved.masterBoost; masterLimiter = saved.masterLimiter;
+      chordGainNode = saved.chordGainNode; bassGainNode = saved.bassGainNode; melodyGainNode = saved.melodyGainNode; drumGainNode = saved.drumGainNode;
+      melodyDoubleGainNode = saved.melodyDoubleGainNode; chordDoubleGainNode = saved.chordDoubleGainNode; comping2GainNode = saved.comping2GainNode; bebopGainNode = saved.bebopGainNode;
+      reverbBusGain = saved.reverbBusGain; reverbConvolver = saved.reverbConvolver; reverbReturnGain = saved.reverbReturnGain; reverbSendGains = saved.reverbSendGains;
+      voices = saved.voices;
+    }
+    return off.startRendering();
+  }
+  function floatToInt16(src, from, to){
+    var out = new Int16Array(to - from);
+    for(var j = 0; j < out.length; j++){
+      var v = Math.max(-1, Math.min(1, src[from + j]));
+      out[j] = v < 0 ? v * 0x8000 : v * 0x7FFF;
+    }
+    return out;
+  }
+  function encodeMp3(audioBuffer, lame, onProgress){
+    var left = audioBuffer.getChannelData(0);
+    var right = audioBuffer.numberOfChannels > 1 ? audioBuffer.getChannelData(1) : left;
+    var enc = new lame.Mp3Encoder(2, audioBuffer.sampleRate, EXPORT_MP3_KBPS);
+    var BLOCK = 1152, chunks = [], i = 0, total = left.length;
+    return new Promise(function(resolve, reject){
+      (function step(){
+        try{
+          var t0 = performance.now();
+          while(i < total && performance.now() - t0 < 30){ // tandas de ~30 ms para no congelar la página
+            var end = Math.min(i + BLOCK, total);
+            var buf = enc.encodeBuffer(floatToInt16(left, i, end), floatToInt16(right, i, end));
+            if(buf.length) chunks.push(buf);
+            i = end;
+          }
+          if(i < total){ onProgress(i / total); setTimeout(step, 0); return; }
+          var tail = enc.flush();
+          if(tail.length) chunks.push(tail);
+          resolve(new Blob(chunks, { type:"audio/mpeg" }));
+        }catch(err){ reject(err); }
+      })();
+    });
+  }
+  function exportMp3(){
+    if(exportBusy || state.chordEvents.length === 0) return;
+    exportBusy = true;
+    updateExportBtns();
+    exportSetStatus("Cargando codificador MP3…");
+    loadLame().then(function(lame){
+      exportSetStatus("Renderizando audio…");
+      return renderLoopOffline().then(function(audioBuffer){
+        return encodeMp3(audioBuffer, lame, function(f){ exportSetStatus("Codificando MP3… " + Math.round(f * 100) + "%"); });
+      });
+    }).then(function(blob){
+      exportDownload(blob, "SetMusicBox_" + exportStamp() + ".mp3");
+      exportSetStatus("MP3 exportado.");
+    }).catch(function(err){
+      console.error("Export MP3:", err);
+      exportSetStatus("No se pudo exportar el MP3: " + (err && err.message ? err.message : err));
+    }).then(function(){
+      exportBusy = false;
+      updateExportBtns();
+    });
+  }
+  (function(){
+    var midiBtn = document.getElementById("consolaExportMidiBtn");
+    var mp3Btn = document.getElementById("consolaExportMp3Btn");
+    if(midiBtn) midiBtn.addEventListener("click", exportMidi);
+    if(mp3Btn) mp3Btn.addEventListener("click", exportMp3);
+    updateExportBtns();
+  })();
 
   function stopPlayback(){
     playing = false;
