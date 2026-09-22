@@ -51,6 +51,12 @@
   }
   .sf2-load-overlay.sf2-load-error .sf2-load-bar-fill{ background:var(--red-warn); }
   .sf2-load-overlay .sf2-load-label{ white-space:nowrap; }
+  .sf2-load-overlay .sf2-load-error-detail{
+    display:none; white-space:normal; max-width:240px;
+    font-size:11px; color:var(--red-warn); -webkit-user-select:text; user-select:text;
+  }
+  .sf2-load-overlay.sf2-load-error .sf2-load-error-detail{ display:block; }
+  .sf2-load-overlay.sf2-load-error{ pointer-events:auto; }
   body{
     margin:0;
     background:
@@ -974,6 +980,7 @@
 <div class="sf2-load-overlay" id="sf2LoadOverlay">
   <span class="sf2-load-label" id="sf2LoadLabel">&#127932; Cargando sonidos&hellip; 0%</span>
   <span class="sf2-load-bar"><span class="sf2-load-bar-fill" id="sf2LoadBarFill"></span></span>
+  <span class="sf2-load-error-detail" id="sf2LoadErrorDetail"></span>
 </div>
 
 <!-- Fondo de página: avatar detrás del texto -->
@@ -5025,10 +5032,15 @@ function sf2HideLoadOverlay() {
   const overlay = document.getElementById("sf2LoadOverlay");
   if (overlay) overlay.classList.add("sf2-load-hidden");
 }
-function sf2ShowLoadOverlayError() {
+// detail: texto del error real (err.message u otro dato útil) — se
+// muestra abajo del cartel en rojo, seleccionable con el dedo, para poder
+// leerlo/copiarlo directo en el iPhone sin necesitar Mac ni consola remota.
+function sf2ShowLoadOverlayError(detail) {
   const overlay = document.getElementById("sf2LoadOverlay");
   const label = document.getElementById("sf2LoadLabel");
+  const detailEl = document.getElementById("sf2LoadErrorDetail");
   if (label) label.textContent = "🎼 Error al cargar sonidos";
+  if (detailEl) detailEl.textContent = detail || "(sin detalle — revisá la consola)";
   if (overlay) overlay.classList.add("sf2-load-error");
 }
 // ---- Catálogo unificado: TODOS los .sf2 de Soundfonts/ y TODOS sus presets ----
@@ -5271,7 +5283,7 @@ async function sf2Activate(btn) {
     sf2State = "error";
     sf2Font = null; sf2DrumsFont = null; sf2PercFont = null;
     btn.textContent = "🎼 Error al cargar — reintentar";
-    sf2ShowLoadOverlayError();
+    sf2ShowLoadOverlayError((err && (err.message || String(err))) || null);
   } finally {
     btn.disabled = false;
   }
