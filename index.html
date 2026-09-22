@@ -1187,6 +1187,8 @@
           <span class="consola-inst-toggle" title="Corre levemente el hi-hat y la caja unos milisegundos antes o después del grid exacto (push-pull), golpe a golpe. No toca el bombo (ancla el pulso) ni Swing Drums (ese groove ya trae su propio timing real del MIDI)."><input type="checkbox" id="consolaMicroTimingChk" checked><label for="consolaMicroTimingChk">Micro-timing</label></span>
           <span class="consola-inst-toggle" title="Ata la densidad efectiva del compás a su posición dentro de la frase de 4: más probabilidad de fill/platillo/ride en el último compás de cada frase (4, 8, 12) y un poco más de respiro en el resto, en vez de la misma probabilidad pareja en los 12 compases."><input type="checkbox" id="consolaSectionVariationChk" checked><label for="consolaSectionVariationChk">Variación por sección</label></span>
           <span class="consola-inst-toggle" title="Agrupa variaciones extra: ghost notes de caja entre los golpes principales, síncopa ocasional del bombo fuera del grid, y cross-stick/rimshot en vez de caja en los compases más quietos."><input type="checkbox" id="consolaOtherRhythmVarChk" checked><label for="consolaOtherRhythmVarChk">other-rhythm-variations</label></span>
+          <span class="consola-inst-toggle" title="Le da altura/contorno a la batería: colorea un golpe de bombo por compás con un tom (agudo/medio/grave, en un contorno que sube y baja a lo largo del segmento) y el golpe de hi-hat acentuado con campana/cowbell/pandereta, en vez de sonar siempre con las mismas 3 notas fijas (bombo/caja/hi-hat). No agrega golpes nuevos, solo cambia el timbre/altura de golpes que ya iban a sonar."><input type="checkbox" id="consolaMoreMelodicChk" checked><label for="consolaMoreMelodicChk">moreMelodic</label></span>
+          <span class="consola-inst-toggle" title="Además de evitar que dos compases SEGUIDOS queden con el patrón idéntico (lo que ya hace el motor de siempre), evita que el mismo patrón vuelva a aparecer dentro de una ventana de 3 compases — tanto para el estilo de batería (basic/fill/sparse/etc.) como para la subdivisión de hi-hat."><input type="checkbox" id="consolaLessRepetitiveChk" checked><label for="consolaLessRepetitiveChk">lessRepetitive</label></span>
         </div>
       </div>
       <div class="consola-field consola-instruments" title="Compás (time signature) de cada uno de los 12 compases del segmento. Dos campos de texto: numerador / denominador (3/4, 6/8, 12/8, 5/4, 7/4, 9/8...) — se aplica a los 12 compases por igual. 4/4 por defecto, igual que siempre. Un compás compuesto (denominador 8, numerador múltiplo de 3 mayor a 3: 6/8, 9/8, 12/8) se siente subdividido de a 3 en vez de a 2 — armonía, bajo y melodía lo respetan. Mix time signatures: sortea entre 2 y 4 compases distintos (el tipeado siempre es uno de ellos) y los reparte al azar entre los 12 compases del segmento — un compás distinto en cada Reproducir/Regenerar.">
@@ -8044,6 +8046,34 @@ function runAnalysis() {
     }
     return arr;
   }
+  // lessRepetitive (checkbox #consolaLessRepetitiveChk): avoidAdjacentDuplicates
+  // de arriba solo mira el compás INMEDIATO anterior. Esto amplía esa
+  // ventana a `window` compases hacia atrás — si el compás actual repite
+  // exactamente la forma de cualquiera de los últimos `window-1`
+  // compases, busca más adelante uno que no choque con ninguno de esos y
+  // lo intercambia. Son swaps sobre el mismo array (misma cuota exacta
+  // por peso de distributeWeighted, no se agregan ni sacan elementos).
+  function avoidRepeatsInWindow(arr, window){
+    for(var i=1;i<arr.length;i++){
+      var lookback = Math.min(window-1, i);
+      var clash = false;
+      for(var w=1; w<=lookback; w++){
+        if(arr[i] === arr[i-w]){ clash = true; break; }
+      }
+      if(!clash) continue;
+      for(var j=i+1;j<arr.length;j++){
+        var ok = true;
+        for(var w2=1; w2<=lookback; w2++){
+          if(arr[j] === arr[i-w2]){ ok = false; break; }
+        }
+        if(ok){
+          var tmp = arr[i]; arr[i]=arr[j]; arr[j]=tmp;
+          break;
+        }
+      }
+    }
+    return arr;
+  }
 
   function invLabel(n){ return n === 0 ? "Fundamental" : (n + "ª inversión"); }
 
@@ -10577,6 +10607,14 @@ function runAnalysis() {
     var c = document.getElementById("consolaOtherRhythmVarChk");
     return !!(c && c.checked);
   }
+  function moreMelodicEnabled(){
+    var c = document.getElementById("consolaMoreMelodicChk");
+    return !!(c && c.checked);
+  }
+  function lessRepetitiveEnabled(){
+    var c = document.getElementById("consolaLessRepetitiveChk");
+    return !!(c && c.checked);
+  }
 
   // Velocity humanizada: variación aleatoria ±12 sobre una base por tipo
   // de golpe, más acento fijo (+14) en los tiempos 1 y 3 del compás.
@@ -10702,6 +10740,45 @@ function runAnalysis() {
   // quedan en la misma familia de respaldo sintetizado que ya usa Swing
   // Drums para estas mismas notas (tom->kick, crash/ride->hihat), así
   // nunca suenan mudas con el SoundFont apagado.
+  // moreMelodic (checkbox #consolaMoreMelodicChk, ON por defecto) — le da
+  // contorno de altura a la batería del motor aleatorio (bombo/caja/
+  // hi-hat suenan siempre con las mismas 3 notas fijas, sin melodía
+  // propia). NO agrega golpes nuevos (eso ya lo controla Rhythm
+  // complexity) — solo recolorea, como máximo, un golpe de bombo y uno
+  // de hi-hat que YA iban a sonar en el compás, con notas GM de tom/
+  // campana/cowbell/pandereta (mismo mecanismo de `midi` que ya usa
+  // addRhythmComplexityLayer, drumMidiFor ya lo prioriza sobre el mapeo
+  // fijo). No aplica con Swing Drums (buildDrumEvents ya devuelve el
+  // patrón fijo antes de llegar acá).
+  var MELODIC_TOM_NOTES = [50, 47, 45];   // tom agudo, medio, grave (GM)
+  var MELODIC_COLOR_NOTES = [56, 53, 54]; // cowbell, campana del ride, pandereta (GM)
+  function addMelodicDrumLayer(events, base, bar){
+    // Contorno: compases pares recorren agudo→grave, impares grave→agudo
+    // — a lo largo de los 12 compases se siente una frase que sube y
+    // baja, no un color al azar en cada compás.
+    var toneSeq = (bar % 2 === 0) ? MELODIC_TOM_NOTES : MELODIC_TOM_NOTES.slice().reverse();
+    var tone = toneSeq[bar % toneSeq.length];
+    var kickIdx = -1, bestDist = Infinity;
+    for(var i=events.length-1; i>=0 && events[i].startBeat >= base; i--){
+      if(events[i].type === "kick" && events[i].midi == null){
+        var d = Math.abs((events[i].startBeat - base) - 2);
+        if(d < bestDist){ bestDist = d; kickIdx = i; }
+      }
+    }
+    if(kickIdx !== -1) events[kickIdx].midi = tone;
+
+    var color = MELODIC_COLOR_NOTES[bar % MELODIC_COLOR_NOTES.length];
+    var hihatIdx = -1;
+    for(var k=events.length-1; k>=0 && events[k].startBeat >= base; k--){
+      if(events[k].type === "hihat" && events[k].midi == null && events[k].open){ hihatIdx = k; break; }
+    }
+    if(hihatIdx === -1){
+      for(var k2=events.length-1; k2>=0 && events[k2].startBeat >= base; k2--){
+        if(events[k2].type === "hihat" && events[k2].midi == null){ hihatIdx = k2; break; }
+      }
+    }
+    if(hihatIdx !== -1) events[hihatIdx].midi = color;
+  }
   function addRhythmComplexityLayer(events, base, complexity, otherVariations){
     // Fill de toms sobre el último tiempo del compás (3 golpes
     // descendentes en corcheas: tom agudo, medio-grave, grave — notas GM
@@ -10798,6 +10875,13 @@ function runAnalysis() {
     var hihatVarietyByBar = avoidAdjacentDuplicates(
       distributeWeighted(hihatPool, numBars, function(v){ return v.feel; })
     );
+    // lessRepetitive: amplía la ventana anti-repetición de 1 compás
+    // (avoidAdjacentDuplicates de siempre) a 3, tanto para el estilo de
+    // batería como para la subdivisión de hi-hat.
+    if (lessRepetitiveEnabled()){
+      styleByBar = avoidRepeatsInWindow(styleByBar, 3);
+      hihatVarietyByBar = avoidRepeatsInWindow(hihatVarietyByBar, 3);
+    }
     // MÁS REPETICIÓN: 40% extra de probabilidad, compás a compás, de
     // repetir el patrón de batería del compás anterior.
     if (MOREREP.enabled()) styleByBar = MOREREP.applyRepetitionBias(styleByBar);
@@ -10830,6 +10914,11 @@ function runAnalysis() {
           events.push({type:"hihat", startBeat: base+e*step+microTimingOffset(), open: !!openSet[e]});
         }
       }
+      // moreMelodic: recolorea (nunca agrega) un golpe de bombo y uno de
+      // hi-hat de ESTE compás con tom/campana/cowbell/pandereta — antes
+      // de la capa de Rhythm complexity, así ride/crash (si salen) no le
+      // pisan el color recién puesto.
+      if (moreMelodicEnabled()) addMelodicDrumLayer(events, base, bar);
       // Variación por sección: modula el % que ve la capa aditiva, no el
       // styleByBar de arriba (ver sectionComplexity()).
       var barComplexity = sectionComplexity(bar, rhythmComplexity);
@@ -11617,7 +11706,7 @@ function runAnalysis() {
   // velocityHumanizeEnabled()/etc. junto a buildDrumEvents), así que acá
   // solo hace falta reconstruir drumEvents al toggle, mismo patrón que
   // Rhythm complexity y Swing Drums.
-  ["consolaVelocityHumanizeChk","consolaMicroTimingChk","consolaSectionVariationChk","consolaOtherRhythmVarChk"].forEach(function(id){
+  ["consolaVelocityHumanizeChk","consolaMicroTimingChk","consolaSectionVariationChk","consolaOtherRhythmVarChk","consolaMoreMelodicChk","consolaLessRepetitiveChk"].forEach(function(id){
     document.getElementById(id).addEventListener("change", function(){
       drumEvents = buildDrumEvents(NUM_BARS);
     });
