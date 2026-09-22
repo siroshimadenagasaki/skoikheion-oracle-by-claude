@@ -1157,6 +1157,7 @@
           <span class="consola-inst-toggle" title="Además del subset de siempre, a veces usa el COMPLEMENTO del set elegido (las notas que el set deja afuera dentro de la octava) — más variedad armónica, siempre derivada del mismo set."><input type="checkbox" id="consolaSupersetsChk"><label for="consolaSupersetsChk">&#8679; Supersets (variedad)</label></span>
           <span class="consola-inst-toggle" title="Cada compás de armonía, bajo, melodía y batería tiene un 40% extra de probabilidad de repetir exactamente el patrón del compás anterior; además, bajo y melodía tienen un 40% de probabilidad por compás de acoplar sus ataques a los de la armonía en vez de llevar su propio ritmo."><input type="checkbox" id="consolaMoreRepChk"><label for="consolaMoreRepChk">&#128257; More repetition</label></span>
           <span class="consola-inst-toggle" title="En cada reataque de armonía se sortean varias combinaciones válidas de subconjunto/transposición/inversión dentro del MISMO acorde/grado elegido (nunca de otro) y se elige la que comparte más notas con el acorde anterior — el doble de notas comunes en promedio que al azar puro, con la misma restricción de conjunto de siempre."><input type="checkbox" id="consolaCommonNotesChk"><label for="consolaCommonNotesChk">&#128279; Notas comunes</label></span>
+          <span class="consola-inst-toggle" title="Con 35% de probabilidad por variación, reserva 4 compases seguidos (elegidos al azar dentro de los 12) como un 'respiro': en esos 4 compases, un solo acorde por compás (una redonda, sin reataques extra) y el bajo también en redondas — nunca se aplica a menos de 4 compases ni se corta a la mitad. El resto del segmento sigue con el ritmo de siempre (Chromatism, Chords, ataque quebrado, etc.). No afecta a Normalito."><input type="checkbox" id="consolaAddLittlePeaceChk" checked><label for="consolaAddLittlePeaceChk">&#128330;&#65039; AddLittlePeace</label></span>
         </div>
       </div>
       <div class="consola-field consola-instruments" title="Bass function: de dónde saca sus notas el bajo en el modo libre (no afecta a ↺ Normalito, que usa su propio bajo fijo). Los dos checkboxes son excluyentes.">
@@ -7191,6 +7192,51 @@ function runAnalysis() {
     };
   })();
 
+  /* ================================================================
+     MÓDULO ADD LITTLE PEACE — checkbox #consolaAddLittlePeaceChk
+     (activado por defecto). Con PROB (35%) de probabilidad por cada
+     variación nueva (sorteado UNA vez en regenerateConsola/reset, no
+     por compás), reserva un tramo de SPAN (4) compases SEGUIDOS,
+     elegido al azar dentro de los NUM_BARS del segmento, como
+     "respiro": en esos compases se fuerza un solo reataque de armonía
+     por compás (una redonda — mismo mecanismo que ya usa el slider
+     Chords al forzar `[4]`) y el bajo también en redondas (un ataque
+     por compás). Fuera de ese tramo, todo sigue con el ritmo de
+     siempre (Chromatism, Chords, More repetition, ataque quebrado,
+     etc. — este módulo solo pisa la CÉLULA rítmica de esos compases
+     puntuales, al final de la cadena, así siempre gana sobre lo que
+     hayan decidido los demás módulos). Solo aplica al motor libre
+     (buildChordEventsRandom / buildBassMelodyEventsRandom) — no toca
+     Normalito, que ya es un acorde fijo por compás sin ritmo variable.
+     ================================================================ */
+  var ADDLITTLEPEACE = (function(){
+    function enabled(){
+      var chk = document.getElementById("consolaAddLittlePeaceChk");
+      return !!(chk && chk.checked);
+    }
+    var PROB = 0.35;
+    var SPAN = 4;
+    var range = null; // {start, end} (end exclusivo) o null — se resetea en cada regenerateConsola()
+    function reset(numBars){
+      range = null;
+      if (!enabled()) return;
+      if (numBars < SPAN) return; // no hay lugar para 4 compases seguidos
+      if (Math.random() >= PROB) return;
+      var start = randomInt(0, numBars - SPAN);
+      range = { start: start, end: start + SPAN };
+    }
+    function isPeaceBar(bar){
+      return !!(range && bar >= range.start && bar < range.end);
+    }
+    return {
+      enabled: enabled,
+      PROB: PROB,
+      SPAN: SPAN,
+      reset: reset,
+      isPeaceBar: isPeaceBar
+    };
+  })();
+
   // ---------- NOTAS COMUNES: más continuidad armónica entre reataques ----------
   // No introduce ninguna nota fuera del acorde/grado ya elegido — solo
   // decide, entre varias combinaciones válidas de subconjunto +
@@ -8527,6 +8573,12 @@ function runAnalysis() {
         return Math.random() < chordDensityVariety ? cell : [4];
       });
     }
+    // AddLittlePeace: si esta variación sorteó un tramo de respiro, esos
+    // compases quedan SIEMPRE en un solo reataque (redonda) — pisa
+    // cualquier decisión anterior (pool, MoreRep, Chords slider).
+    cellsByBar = cellsByBar.map(function(cell, bar){
+      return ADDLITTLEPEACE.isPeaceBar(bar) ? [4] : cell;
+    });
     var events = [];
     var slotChords = [];
     var prevCombo = null;
@@ -8831,6 +8883,14 @@ function runAnalysis() {
         if (Math.random() < MOREREP.COUPLE_PROB) melodyCells[crBar] = chordCellForBar.slice();
       }
     }
+    // AddLittlePeace: en el tramo de respiro (si salió sorteado), el
+    // bajo también queda en redondas — un solo ataque por compás, pisa
+    // cualquier ritmo anterior (pool, MoreRep/acople). La melodía NO se
+    // toca: sigue con su propio ritmo, solo que ahora contra un acorde
+    // sostenido todo el compás.
+    bassCells = bassCells.map(function(cell, bar){
+      return ADDLITTLEPEACE.isPeaceBar(bar) ? [4] : cell;
+    });
     var bassEvents = [], melodyEvents = [];
     var jazzPrevBass = null; // JAZZ: nota anterior del bajo, para caminar por grados conjuntos
     var patPos = 0, patStep = 0; // melodicPatterns: posición del contorno, persiste a lo largo de TODO el pasaje (nunca se resetea por compás/acorde)
@@ -9024,6 +9084,7 @@ function runAnalysis() {
     fixedIntervalOffset = 0; // modo test de intervalos fijos: cada variación nueva arranca el ciclo en C (offset 0)
     cyclesOffset = 0; // módulo Cycles (Modo A acumulativo): cada variación nueva arranca el ciclo en C también
     MELODICPATTERNS.reset(); // melodicPatterns: un contorno nuevo por variación, compartido por melodía principal y bebopMelody
+    ADDLITTLEPEACE.reset(NUM_BARS); // AddLittlePeace: sortea si esta variación tiene (35%) un tramo de 4 compases de respiro, y dónde
     var built = buildProgressionRandom(rootChord, NUM_BARS);
     state.progression = built.progression;
     state.roles = built.roles;
@@ -11658,6 +11719,9 @@ function runAnalysis() {
     });
   });
   document.getElementById("consolaMoreRepChk").addEventListener("change", function(){
+    if(state.rootChord.length) regenerateConsola();
+  });
+  document.getElementById("consolaAddLittlePeaceChk").addEventListener("change", function(){
     if(state.rootChord.length) regenerateConsola();
   });
   document.getElementById("consolaCommonNotesChk").addEventListener("change", function(){
