@@ -51,12 +51,6 @@
   }
   .sf2-load-overlay.sf2-load-error .sf2-load-bar-fill{ background:var(--red-warn); }
   .sf2-load-overlay .sf2-load-label{ white-space:nowrap; }
-  .sf2-load-overlay .sf2-load-error-detail{
-    display:none; white-space:normal; max-width:240px;
-    font-size:11px; color:var(--red-warn); -webkit-user-select:text; user-select:text;
-  }
-  .sf2-load-overlay.sf2-load-error .sf2-load-error-detail{ display:block; }
-  .sf2-load-overlay.sf2-load-error{ pointer-events:auto; }
   body{
     margin:0;
     background:
@@ -980,7 +974,6 @@
 <div class="sf2-load-overlay" id="sf2LoadOverlay">
   <span class="sf2-load-label" id="sf2LoadLabel">&#127932; Cargando sonidos&hellip; 0%</span>
   <span class="sf2-load-bar"><span class="sf2-load-bar-fill" id="sf2LoadBarFill"></span></span>
-  <span class="sf2-load-error-detail" id="sf2LoadErrorDetail"></span>
 </div>
 
 <!-- Fondo de página: avatar detrás del texto -->
@@ -2679,11 +2672,18 @@
         </select>
       </div>
       <div class="progresion-controls">
+        <label for="mvPresetSelect" class="progresion-tempo">Instrumento:
+          <select class="mix-preset-select" id="mvPresetSelect">
+            <!-- Las opciones (todos los .sf2 y todos sus presets) las arma sfBuildPresetSelects(), igual que el resto de los selectores del mini mixer. -->
+            <option value="piano" selected>Piano</option>
+          </select>
+        </label>
         <label for="mvTempo" class="progresion-tempo">Tempo:
           <input type="range" id="mvTempo" min="40" max="200" value="90" step="1">
           <span id="mvTempoVal">90 BPM</span>
         </label>
         <button type="button" class="chip" id="mvSortearBtn">&#127922; Sortear</button>
+        <span class="consola-inst-toggle" title="Apagado por defecto: reproduce los 4 acordes una vez y para sola. Tildalo para que suene en loop hasta Detener."><input type="checkbox" id="mvLoopChk"><label for="mvLoopChk">&#128257; Loop</label></span>
         <button type="button" class="chip primary" id="mvPlayBtn" disabled>&#9658; Reproducir</button>
         <button type="button" class="chip" id="mvStopBtn" disabled>&#9632; Detener</button>
       </div>
@@ -5032,15 +5032,10 @@ function sf2HideLoadOverlay() {
   const overlay = document.getElementById("sf2LoadOverlay");
   if (overlay) overlay.classList.add("sf2-load-hidden");
 }
-// detail: texto del error real (err.message u otro dato útil) — se
-// muestra abajo del cartel en rojo, seleccionable con el dedo, para poder
-// leerlo/copiarlo directo en el iPhone sin necesitar Mac ni consola remota.
-function sf2ShowLoadOverlayError(detail) {
+function sf2ShowLoadOverlayError() {
   const overlay = document.getElementById("sf2LoadOverlay");
   const label = document.getElementById("sf2LoadLabel");
-  const detailEl = document.getElementById("sf2LoadErrorDetail");
   if (label) label.textContent = "🎼 Error al cargar sonidos";
-  if (detailEl) detailEl.textContent = detail || "(sin detalle — revisá la consola)";
   if (overlay) overlay.classList.add("sf2-load-error");
 }
 // ---- Catálogo unificado: TODOS los .sf2 de Soundfonts/ y TODOS sus presets ----
@@ -5283,7 +5278,7 @@ async function sf2Activate(btn) {
     sf2State = "error";
     sf2Font = null; sf2DrumsFont = null; sf2PercFont = null;
     btn.textContent = "🎼 Error al cargar — reintentar";
-    sf2ShowLoadOverlayError((err && (err.message || String(err))) || null);
+    sf2ShowLoadOverlayError();
   } finally {
     btn.disabled = false;
   }
@@ -9590,7 +9585,7 @@ function runAnalysis() {
   // Defaults propios (no los de SF_DEFAULT_FILES): Bajo = "synthBass" (Bajo original sintetizado) y
   // Doblar melodía = "bassoon" (Fagot, Instruments.sf2). Doblar armonía = Nord Pad (SF_DEFAULT_FILES).
   // Las filas de "Bass default.sf2" y "Armonica.sf2" siguen en el catálogo, elegibles a mano.
-  var mixPresets = { harmony: sfDefaultKeyFor("harmony", "piano"), melody: sfDefaultKeyFor("melody", "flute"), melodyDouble: "bassoon", chordDouble: sfDefaultKeyFor("chordDouble", "mute"), bass: "synthBass", drum: sfDefaultKeyFor("drum", "kit"), bebop: "sopranoSax" };
+  var mixPresets = { harmony: sfDefaultKeyFor("harmony", "piano"), melody: sfDefaultKeyFor("melody", "flute"), melodyDouble: "bassoon", chordDouble: sfDefaultKeyFor("chordDouble", "mute"), bass: "synthBass", drum: sfDefaultKeyFor("drum", "kit"), bebop: "sopranoSax", modalVamps: sfDefaultKeyFor("harmony", "piano") };
   var chordGainNode = null, bassGainNode = null, melodyGainNode = null, drumGainNode = null, melodyDoubleGainNode = null, chordDoubleGainNode = null, comping2GainNode = null, bebopGainNode = null;
 
   // ---------- Reverb: bus de envío compartido ----------
@@ -9820,7 +9815,8 @@ function runAnalysis() {
     { id:"melodyPresetSelect",       mix:"melody",       special:[] },
     { id:"melodyDoublePresetSelect", mix:"melodyDouble", special:[{ value:"mute", label:"Mute (apagado)" }] },
     { id:"bebopPresetSelect",        mix:"bebop",        special:[] },
-    { id:"bassPresetSelect",         mix:"bass",         special:[{ value:"synthBass", label:"Bajo original (sintetizado)" }] }
+    { id:"bassPresetSelect",         mix:"bass",         special:[{ value:"synthBass", label:"Bajo original (sintetizado)" }] },
+    { id:"mvPresetSelect",           mix:"modalVamps",   special:[] }
   ];
   var SF_DRUM_SELECTS = [
     { id:"drumPresetSelect", mix:"drum", special:[] }
@@ -12086,7 +12082,8 @@ function runAnalysis() {
       { id: "melodyDoublePresetSelect", key: "melodyDouble" },
       { id: "bebopPresetSelect",        key: "bebop"        },
       { id: "bassPresetSelect",         key: "bass"         },
-      { id: "drumPresetSelect",         key: "drum"         }
+      { id: "drumPresetSelect",         key: "drum"         },
+      { id: "mvPresetSelect",           key: "modalVamps"   }
     ];
     SELECTS.forEach(function(cfg){
       var el = document.getElementById(cfg.id);
@@ -12217,7 +12214,6 @@ function runAnalysis() {
     var mvChords = [];
     var mvTempo = 90;
     var mvPlaying = false;
-    var mvTimer = null;
     var mvLastStatus = "";
 
     function mvSelectedKeyword(){
@@ -12322,7 +12318,7 @@ function runAnalysis() {
     function mvPlayChord(c, startOffset, dur){
       var ctx = getAudioCtx();
       if(!ctx) return;
-      var presetKey = sfDefaultKeyFor("harmony", "piano");
+      var presetKey = mixPresets.modalVamps;
       var t0 = ctx.currentTime + startOffset;
       var gain = Math.max(0.05, 0.16 / Math.sqrt(c.notes.length));
       c.notes.forEach(function(midi){
@@ -12333,8 +12329,27 @@ function runAnalysis() {
       });
     }
 
+    // BUG corregido (reportado por el usuario, "Detener no funciona"):
+    // la versión anterior llamaba a mvPlayChord() para los 4 compases
+    // de una sola vez, apenas se tocaba Reproducir (usando
+    // ctx.currentTime + startOffset para el desfasaje de cada uno) —
+    // eso programa el audio de todo el loop entero en el motor de Web
+    // Audio de una sola vez, así que Detener (que solo cancelaba el
+    // setTimeout de la vuelta SIGUIENTE) no cortaba nada de lo que ya
+    // estaba programado: seguían sonando los 4 compases igual. Ahora
+    // cada compás se agenda con su propio setTimeout, uno a la vez, y
+    // TODOS los timers (agenda de cada compás + resaltado visual +
+    // continuación del loop) quedan guardados en mvTimers — Detener los
+    // cancela todos de una, así que como mucho queda sonando el compás
+    // que ya había arrancado en ese instante (nunca los 3 restantes).
+    var mvTimers = [];
+    function mvClearTimers(){
+      mvTimers.forEach(function(id){ clearTimeout(id); });
+      mvTimers = [];
+    }
+
     function mvStop(){
-      if(mvTimer){ clearTimeout(mvTimer); mvTimer = null; }
+      mvClearTimers();
       mvPlaying = false;
       var playBtn = document.getElementById("mvPlayBtn");
       var stopBtn = document.getElementById("mvStopBtn");
@@ -12354,22 +12369,29 @@ function runAnalysis() {
       var cards = document.querySelectorAll("#mvGrid .progresion-chord");
       var dur = mvStepDur();
       mvChords.forEach(function(c, i){
-        var t = i * dur;
-        mvPlayChord(c, t, dur);
-        var card = cards[i];
-        if(card){
-          setTimeout(function(){
-            cards.forEach(function(el){ el.classList.remove("playing"); });
-            card.classList.add("playing");
-          }, Math.max(0, t * 1000));
-        }
+        var tid = setTimeout(function(){
+          mvPlayChord(c, 0, dur); // startOffset 0: ya estamos en el instante real de este compás
+          cards.forEach(function(el){ el.classList.remove("playing"); });
+          if(cards[i]) cards[i].classList.add("playing");
+        }, i * dur * 1000);
+        mvTimers.push(tid);
       });
       var total = mvChords.length * dur;
-      // Loop indefinido (pedido explícitamente) hasta Detener — mismo
-      // patrón que el Generador de progresiones con Loop prendido.
-      mvTimer = setTimeout(function(){
-        if(mvPlaying) mvPlay();
+      // Loop: apagado por defecto (checkbox #mvLoopChk) — reproduce los 4
+      // acordes una vez y se detiene sola; tildado, repite hasta Detener
+      // (mismo patrón que el Generador de progresiones con su checkbox
+      // Loop). Se relee recién acá, al terminar la corrida — tocarlo
+      // mientras suena decide recién en la vuelta siguiente, igual que
+      // en el otro módulo.
+      var loopTid = setTimeout(function(){
+        var loopChk = document.getElementById("mvLoopChk");
+        if(mvPlaying && loopChk && loopChk.checked){
+          mvPlay();
+        } else {
+          mvStop();
+        }
       }, total * 1000 + 60);
+      mvTimers.push(loopTid);
     }
 
     var mvSortearBtn = document.getElementById("mvSortearBtn");
