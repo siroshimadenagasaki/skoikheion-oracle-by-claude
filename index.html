@@ -1034,7 +1034,7 @@
         <div class="clock-center clock-center-static" id="pianoSummary"></div>
       </div>
       <div class="clock-actions">
-        <button class="chip primary" id="playChordBtn" type="button">▶ Acorde</button>
+        <button class="chip primary" id="creaturaBtn" type="button" title="Corre sola la secuencia: Random Fill (2–3/2–4/2–5 notas al azar, modo Mezcla) → Compose → tilda Mix time signatures → Detener → espera 2s → 🔀 Regenerar. Una sola pasada por click.">🪄 creatura</button>
         <button class="chip" id="composeBtn" type="button" title="Toca el segmento de 12 compases de SetMusicBox con las notas actuales">🎹 Compose</button>
         <button class="chip" id="clearBtn">Limpiar</button>
         <button class="chip" id="multiSetsMemBtn2" type="button" disabled title="Mismo botón que To Memory de Multi Sets Input (copia acá para no tener que abrir esa tarjeta): guarda el set actual del reloj/piano en el próximo casillero libre y resetea el reloj. Entre paréntesis, cuántos sets van guardados.">To Memory (0/5)</button>
@@ -1127,8 +1127,8 @@
       </div>
       <div class="consola-field" title="Controla, en conjunto, la transposición cromática al azar por compás y el achique automático del acorde (hasta 2 notas menos) que el motor libre aplicaba siempre a máxima intensidad. 0% = notas literales elegidas, sin transportar, set completo siempre. 100% = comportamiento de siempre.">
         <label for="consolaChromaSlider">Chromatism</label>
-        <input type="range" id="consolaChromaSlider" min="0" max="100" value="25" step="1">
-        <span class="consola-val" id="consolaChromaVal">25%</span>
+        <input type="range" id="consolaChromaSlider" min="0" max="100" value="15" step="1">
+        <span class="consola-val" id="consolaChromaVal">15%</span>
       </div>
       <div class="consola-field" title="Gradúa cuántos compases tienen más de un acorde. 0% = siempre un solo acorde por compás (una redonda, sin reataques extra). 100% = comportamiento de siempre (ritmo armónico variable, con hasta 5 reataques por compás).">
         <label for="consolaChordsSlider">Chords</label>
@@ -1213,7 +1213,7 @@
           <span class="consola-inst-toggle"><input type="checkbox" id="consolaMelodyChk" checked><label for="consolaMelodyChk">Melodía</label></span>
           <span class="consola-inst-toggle"><input type="checkbox" id="consolaDrumChk" checked><label for="consolaDrumChk">&#129345; Batería</label></span>
           <span class="consola-inst-toggle" title="Mezcla figuras largas y cortas DENTRO del mismo compás de melodía, en vez del comportamiento de siempre (un compás entero de figuras largas y, cada tanto, un compás entero de fill de notas cortas). No cambia qué nota suena, solo el ritmo."><input type="checkbox" id="consolaMixDurChk" checked><label for="consolaMixDurChk">&#127925; Mix melody duration</label></span>
-          <span class="consola-inst-toggle" title="Reemplaza la selección de nota de la melodía (y de bebopMelody, si está prendido) por un CONTORNO fijo — un patrón de saltos tipo '2 arriba, 1 abajo' repetido, en vez de arpegio lineal en los compases densos o nota al azar en el resto. El patrón se sortea de un pool variado (ciclos de 2 a 4 movimientos) una vez por cada Reproducir/Regenerar, y siempre indexa dentro del acorde vigente (nunca una nota ajena al set) — si el salto se pasa del tamaño del acorde, sigue contando en la octava de al lado, igual que una 9na es un 2 una octava arriba."><input type="checkbox" id="consolaMelodicPatternsChk"><label for="consolaMelodicPatternsChk">&#127925; melodicPatterns</label></span>
+          <span class="consola-inst-toggle" title="Reemplaza la selección de nota de la melodía (y de bebopMelody, si está prendido) por un CONTORNO fijo — un patrón de saltos tipo '2 arriba, 1 abajo' repetido, en vez de arpegio lineal en los compases densos o nota al azar en el resto. El patrón se sortea de un pool variado (ciclos de 2 a 4 movimientos) una vez por cada Reproducir/Regenerar, y siempre indexa dentro del acorde vigente (nunca una nota ajena al set) — si el salto se pasa del tamaño del acorde, sigue contando en la octava de al lado, igual que una 9na es un 2 una octava arriba."><input type="checkbox" id="consolaMelodicPatternsChk" checked><label for="consolaMelodicPatternsChk">&#127925; melodicPatterns</label></span>
         </div>
       </div>
       <div class="consola-field consola-instruments" title="Modo TEST: si tildás uno o más, la transposición cromática al azar (por compás y por reataque) deja de usar el rango del slider Chromatism y sortea SOLO entre los intervalos tildados acá. La dirección (Ascendente/Descendente) es global para todos — 2da m, 2da M, 3ra m, 3ra M, 4ta J y 5ta J transponen todos para el mismo lado a la vez; Descendente está tildado por defecto. Al tildar el primer intervalo, el slider Chromatism baja a 0% automáticamente (queda en 0% mientras uses esto). Destildando todos, Chromatism sigue en 0% hasta que lo subas vos a mano. No afecta el achique de subset (eso sigue atado solo a Chromatism).">
@@ -1238,7 +1238,7 @@
       </div>
       <div class="consola-field consola-instruments" title="Módulo aparte del modo TEST de arriba: mientras el checkbox 'Cycles' esté tildado, cada transposición cromática al azar (por compás y por reataque) se sortea por lotería ponderada entre este set de intervalos + la línea 'Chromatism (enlazado)' (que reserva su propio % del sorteo, y está enlazada con el slider Chromatism de más arriba — mover uno mueve el otro). El resto del sorteo (100% - Chromatism%) se reparte proporcionalmente entre los sliders de intervalo con valor mayor a 0. Si en 'Transposition intervals (test)' de arriba hay algún checkbox tildado, ESE modo manda (misma prioridad que ya tiene hoy sobre Chromatism) y Cycles no se aplica. Con Cycles destildado, la página se comporta exactamente igual que hoy.">
         <div class="consola-subfield-head">
-          <span class="consola-inst-toggle"><input type="checkbox" id="consolaCyclesChk"><label for="consolaCyclesChk">Cycles</label></span>
+          <span class="consola-inst-toggle"><input type="checkbox" id="consolaCyclesChk" checked><label for="consolaCyclesChk">Cycles</label></span>
           <button type="button" class="subfield-toggle" aria-expanded="false" aria-controls="cyclesDetailBody" onclick="toggleModule(this)" title="Mostrar/ocultar Modo A/B y los sliders de intervalo de Cycles"></button>
         </div>
         <div class="collapsible-content collapsed" id="cyclesDetailBody">
@@ -1246,11 +1246,11 @@
           <span class="consola-inst-toggle"><input type="checkbox" id="consolaCyclesModeA" checked><label for="consolaCyclesModeA">Modo A (acumula)</label></span>
           <span class="consola-inst-toggle"><input type="checkbox" id="consolaCyclesModeB"><label for="consolaCyclesModeB">Modo B (sin acumular)</label></span>
         </div>
-        <div class="consola-cycles-body is-disabled" id="consolaCyclesBody">
+        <div class="consola-cycles-body" id="consolaCyclesBody">
           <div class="consola-cycles-line is-linked" title="Duplicado del slider Chromatism de más arriba, enlazado en las dos direcciones (mover uno mueve el otro). Reserva su propio % del sorteo antes de repartir el resto entre los intervalos de abajo.">
             <label for="consolaCycleChroma">Chromatism (enlazado)</label>
-            <input type="range" id="consolaCycleChroma" min="0" max="100" value="25" step="1">
-            <span class="consola-val" id="consolaCycleChromaVal">25%</span>
+            <input type="range" id="consolaCycleChroma" min="0" max="100" value="15" step="1">
+            <span class="consola-val" id="consolaCycleChromaVal">15%</span>
           </div>
           <div class="consola-cycles-line">
             <label for="consolaCycle2mDown">2das menor descendentes</label>
@@ -5260,16 +5260,15 @@ if (SF2_IS_LOCAL_FILE) {
   sf2Activate(document.getElementById("sf2Btn"));
 }
 
-// Sonido breve al activar una nota de entrada (reloj, piano o diapasón).
-function playInputNote(pc) {
-  playSynthTone(pcToFreq(pc, 4), { duration: 0.7, gain: 0.15 });
-}
-
-// Reproduce todas las notas seleccionadas juntas, como acorde.
-function playChord() {
+// Reproduce el acorde ACUMULADO hasta el momento (todas las notas de
+// `selected`), 1 segundo — reemplaza al viejo botón "▶ Acorde": ahora
+// se dispara sola desde toggleNote() cada vez que se agrega una nota
+// nueva en cualquier entrada (reloj, piano, diapasón/digitaciones),
+// no por click de un botón aparte.
+function playAccumulatedChord() {
   if (selected.size === 0) return;
   Array.from(selected).forEach(pc => {
-    playSynthTone(pcToFreq(pc, 4), { duration: 1.7, gain: 0.13 });
+    playSynthTone(pcToFreq(pc, 4), { duration: 1.0, gain: 0.13 });
   });
 }
 
@@ -5289,7 +5288,7 @@ function toggleNote(pc) {
   else selected.add(pc);
   const isSelected = selected.has(pc);
   pcElements[pc].forEach(el => el.classList.toggle("selected", isSelected));
-  if (isSelected) playInputNote(pc);
+  if (isSelected) playAccumulatedChord();
   runAnalysis();
 }
 
@@ -5554,7 +5553,6 @@ tabPiano.addEventListener("click", () => {
 });
 
 document.getElementById("clearBtn").addEventListener("click", clearNotes);
-document.getElementById("playChordBtn").addEventListener("click", playChord);
 document.getElementById("composeBtn").addEventListener("click", function(){
   var btn = document.getElementById("consolaPlayBtn");
   // Expandir + llevar a la vista SetMusicBox automáticamente (pedido:
@@ -8141,7 +8139,7 @@ function runAnalysis() {
   // solo toca notas del acorde EN CURSO), y necesita que quepan en sus
   // propias ranuras rítmicas (mínimo 2 por compás, de ahí el tope de 2).
   var MAX_SUBSET_GAP = 2;
-  // Slider #consolaChromaSlider ("Chromatism", 25% por
+  // Slider #consolaChromaSlider ("Chromatism", 15% por
   // defecto). Antes de este slider, el motor "libre y al azar" aplicaba
   // SIEMPRE, a máxima intensidad y sin depender de ningún checkbox, dos
   // mecanismos: transposición cromática al azar por reataque, y achique
@@ -8196,7 +8194,7 @@ function runAnalysis() {
   // resultado de clase de altura que subir una cuarta). "up" = -semitonos.
   // Sin dirección fija: signo al azar en cada paso (igual se acumula).
   var fixedIntervalOffset = 0;
-  // Módulo "Cycles" (#consolaCyclesChk, apagado por defecto) — checkbox
+  // Módulo "Cycles" (#consolaCyclesChk, prendido por defecto) — checkbox
   // aparte del modo TEST de arriba (#consolaInt*): en vez de un set de
   // checkboxes que sortean uniforme entre los tildados, acá cada línea
   // (dirección incluida) tiene su propio slider de %, más una línea
@@ -8211,7 +8209,7 @@ function runAnalysis() {
   // Si Transposition intervals (test) tiene algún checkbox tildado, ESE
   // modo manda (misma prioridad que ya tenía sobre Chromatism) y Cycles
   // se ignora — ver la rama `if (fixed.length)` de abajo, sin cambios.
-  var cyclesEnabled = false;
+  var cyclesEnabled = true; // default ON — checkbox #consolaCyclesChk arranca tildado
   var cyclesAccumulate = true; // Modo A (acumula, default) vs Modo B (no acumula) — #consolaCyclesModeA/B
   var cyclesOffset = 0; // offset acumulativo propio de Cycles (independiente de fixedIntervalOffset), reset en regenerateConsola()
   var CYCLES_INTERVAL_IDS = [
@@ -9064,7 +9062,7 @@ function runAnalysis() {
   var subsetVarietyEnabled = false;
   var supersetVarietyEnabled = false;
   var bassFunction = "current"; // "current" (default: notas del acorde en curso) | "superset" (acorde en curso + notas de afuera del set) — checkboxes excluyentes #consolaBassFnCurrentChk / #consolaBassFnSupersetChk (How to play) — ver buildBassMelodyEventsRandom
-  var chromaVariety = 0.25; // 0..1 — slider #consolaChromaSlider (default 25%), ver randomChromaTransposition/currentSubsetGap
+  var chromaVariety = 0.15; // 0..1 — slider #consolaChromaSlider (default 15%), ver randomChromaTransposition/currentSubsetGap
   var chordDensityVariety = 0.5; // 0..1 — slider #consolaChordsSlider (default 50%), ver buildChordEventsRandom
 
   // Modo automático (se dispara solo, cada vez que cambian las notas
@@ -12529,6 +12527,82 @@ function runAnalysis() {
       const btn = buttons.find(b => b.getAttribute("data-fs-card") === active.id);
       if (btn) setFullscreen(active, btn, false);
     });
+  })();
+</script>
+<script>
+  // Botón "creatura" (reemplaza al viejo "▶ Acorde" en el reloj de
+  // entrada, ver playAccumulatedChord). Corre, en un solo click y UNA
+  // SOLA VEZ (no en loop), una secuencia fija sobre botones y
+  // checkboxes que ya existían en la página — no inventa lógica de
+  // composición nueva, solo encadena: Random Fill (rango de notas al
+  // azar entre 2–3 / 2–4 / 2–5, forzando modo "Mezcla") -> Compose
+  // (arma y reproduce desde los 5 sets que acaba de guardar Random
+  // Fill) -> tilda "Mix time signatures" -> Detener -> espera 2
+  // segundos -> 🔀 Regenerar (sortea una variación nueva y la toca).
+  // Se disparan clicks y eventos "change"/"input" reales sobre los
+  // controles existentes, así se reusa toda su lógica de habilitado/
+  // refreshUI/regenerateConsola tal cual, sin duplicarla acá.
+  (function(){
+    var btn = document.getElementById("creaturaBtn");
+    if(!btn) return;
+    var running = false;
+
+    function wait(ms){
+      return new Promise(function(res){ setTimeout(res, ms); });
+    }
+    function setChecked(id, value){
+      var elm = document.getElementById(id);
+      if(!elm) return;
+      if(elm.checked !== value){
+        elm.checked = value;
+        elm.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    }
+    function clickIfEnabled(id){
+      var elm = document.getElementById(id);
+      if(elm && !elm.disabled) elm.click();
+    }
+
+    async function runCreatura(){
+      if(running) return; // no reentrar si ya está corriendo
+      running = true;
+      btn.disabled = true;
+      try {
+        // 1) Random Fill: rango de notas al azar entre las 3 opciones
+        // pedidas (2–3 / 2–4 / 2–5), y modo Mezcla forzado aunque el
+        // usuario haya dejado tildado Por compás o Por reataque.
+        var maxOptions = [3, 4, 5];
+        var maxN = maxOptions[Math.floor(Math.random() * maxOptions.length)];
+        var maxSlider = document.getElementById("multiSetsRandomMax");
+        if(maxSlider){
+          maxSlider.value = maxN;
+          maxSlider.dispatchEvent(new Event("input", { bubbles: true }));
+        }
+        setChecked("multiSetsModeMixed", true);
+        clickIfEnabled("multiSetsRandomFillBtn");
+
+        // 2) Compose: arma los 12 compases desde esos 5 sets y arranca
+        // la reproducción (mismo botón 🎲 Compose de Multi Sets Input).
+        clickIfEnabled("multiSetsComposeBtn");
+
+        // 3) Mix time signatures: tildar.
+        setChecked("consolaMixTimeSigChk", true);
+
+        // 4) Detener.
+        clickIfEnabled("consolaStopBtn");
+
+        // 5) Esperar 2 segundos.
+        await wait(2000);
+
+        // 6) 🔀 Regenerar: sortea una variación nueva y la reproduce.
+        clickIfEnabled("consolaRegenPlayBtn");
+      } finally {
+        btn.disabled = false;
+        running = false;
+      }
+    }
+
+    btn.addEventListener("click", function(){ runCreatura(); });
   })();
 </script>
 </body>
