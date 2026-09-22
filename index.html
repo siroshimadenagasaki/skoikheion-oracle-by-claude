@@ -301,9 +301,13 @@
   .multiset-slot{background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:8px 4px;min-height:58px;text-align:center;display:flex;flex-direction:column;justify-content:center;gap:3px;}
   .multiset-slot b{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.1em;color:var(--ink-muted);}
   .multiset-slot span{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-muted);word-break:break-word;}
+  .multiset-slot small.solomon{font-family:'JetBrains Mono',monospace;font-size:9.5px;line-height:1.35;color:var(--ink-muted);word-break:break-word;}
+  .multiset-slot small.solomon b{font-weight:700;}
   .multiset-slot.filled{border-color:var(--gold-dim);}
   .multiset-slot.filled b{color:var(--gold);}
   .multiset-slot.filled span{color:var(--ink);}
+  .multiset-slot.filled small.solomon{color:var(--ink-muted);}
+  .multiset-slot.filled small.solomon b{color:var(--gold-dim);}
   .multiset-card .clock-actions{margin-top:14px;}
   .multiset-card button.chip:disabled{opacity:.4;cursor:not-allowed;}
   .multiset-modes{justify-content:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--line);}
@@ -554,6 +558,14 @@
   .consola-readout .notes{
     font-family:'JetBrains Mono',monospace;font-size:20px;color:var(--gold);
     margin-top:4px;min-height:26px;letter-spacing:.03em;
+  }
+  .consola-readout .solomon-info{
+    font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--ink-muted);
+    margin-top:6px;line-height:1.5;
+  }
+  .consola-readout .solomon-info b{color:var(--gold-dim);font-weight:700;}
+  .consola-readout .solomon-info .name{
+    font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--ink-muted);
   }
   .consola-controls{
     display:flex;flex-wrap:wrap;gap:20px 30px;align-items:center;justify-content:center;
@@ -1054,11 +1066,11 @@
       <div class="collapsible-content collapsed" id="multiSetsBody">
         <p class="multiset-help">Elegí un set en el reloj (o el piano) y apretá To Memory: se guarda en el próximo casillero y el reloj se resetea. Repetí hasta 5 sets (mínimo 1). Compose arma el segmento de 12 compases de SetMusicBox con una combinación al azar de esos sets y lo reproduce.</p>
         <div class="multiset-slots" id="multiSetSlots">
-          <div class="multiset-slot"><b>1</b><span>&mdash;</span></div>
-          <div class="multiset-slot"><b>2</b><span>&mdash;</span></div>
-          <div class="multiset-slot"><b>3</b><span>&mdash;</span></div>
-          <div class="multiset-slot"><b>4</b><span>&mdash;</span></div>
-          <div class="multiset-slot"><b>5</b><span>&mdash;</span></div>
+          <div class="multiset-slot"><b>1</b><span>&mdash;</span><small class="solomon"></small></div>
+          <div class="multiset-slot"><b>2</b><span>&mdash;</span><small class="solomon"></small></div>
+          <div class="multiset-slot"><b>3</b><span>&mdash;</span><small class="solomon"></small></div>
+          <div class="multiset-slot"><b>4</b><span>&mdash;</span><small class="solomon"></small></div>
+          <div class="multiset-slot"><b>5</b><span>&mdash;</span><small class="solomon"></small></div>
         </div>
         <div class="clock-actions">
           <button type="button" class="chip" id="multiSetsMemBtn" disabled title="Guarda el set actual del reloj/piano en el próximo casillero libre y resetea el reloj">To Memory</button>
@@ -1094,6 +1106,7 @@
     <div class="consola-readout">
       <div class="label">Set actual</div>
       <div class="notes" id="consolaNotesReadout">&mdash;</div>
+      <div class="solomon-info" id="consolaSolomonReadout"></div>
       <div style="margin-top:10px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
         <button type="button" class="chip" id="consolaTryBtn">Probar con C E G B</button>
         <button type="button" class="chip" id="consolaNormalBtn" disabled>&#8634; Normalito</button>
@@ -3118,6 +3131,20 @@ function analyze(chordsData, rawPcs) {
     solomon_name: solomonChord ? solomonChord["name"] : null,
     z_mate: zMate,
   };
+}
+
+// Atajo para UI que solo necesita código Solomon + descripción de un set
+// (pitch classes 0-11, sin octava) — usado en Multi Sets Input y en el
+// readout "Set actual" de SetMusicBox. Reusa analyze()/getSolomonChord()
+// tal cual el panel de resultados principal, así el código mostrado es
+// siempre exactamente el mismo que ahí (ninguna lógica duplicada).
+function solomonLabelFor(pcs) {
+  if (!pcs || pcs.length < 2) return null;
+  try {
+    const r = analyze(CHORDS_DATA, pcs);
+    if (!r.solomon_code) return null;
+    return { code: r.solomon_code, name: r.solomon_name || "" };
+  } catch (e) { return null; }
 }
 
 /* ============================================================
@@ -7741,6 +7768,16 @@ function runAnalysis() {
     function readoutText(){
       return slots.map(function(pcs, i){ return (i+1) + ": " + setName(pcs); }).join("   |   ");
     }
+    // Línea de código Solomon + descripción por cada set guardado, para el
+    // readout "Set actual" (misma info que ya se ve en cada casillero de
+    // Multi Sets Input, resumida acá abajo de las notas).
+    function solomonReadoutHTML(){
+      return slots.map(function(pcs, i){
+        var lbl = solomonLabelFor(pcs);
+        if(!lbl) return (i+1) + ": \u2014";
+        return (i+1) + ": <b>" + lbl.code + "</b>" + (lbl.name ? " <span class=\"name\">" + lbl.name + "</span>" : "");
+      }).join("   |   ");
+    }
 
     // ---------- UI ----------
     function status(msg){ var st = el("multiSetsStatus"); if(st) st.textContent = msg || ""; }
@@ -7750,6 +7787,11 @@ function runAnalysis() {
         var filled = i < slots.length;
         boxes[i].classList.toggle("filled", filled);
         boxes[i].querySelector("span").textContent = filled ? setName(slots[i]) : "\u2014";
+        var solEl = boxes[i].querySelector("small.solomon");
+        if(solEl){
+          var lbl = filled ? solomonLabelFor(slots[i]) : null;
+          solEl.innerHTML = lbl ? ("<b>" + lbl.code + "</b>" + (lbl.name ? " " + lbl.name : "")) : "";
+        }
       }
       var canSave = selected.size >= 2 && slots.length < MAX_SLOTS;
       el("multiSetsMemBtn").disabled = !canSave;
@@ -7855,7 +7897,8 @@ function runAnalysis() {
     }
     return {
       init: init, isActive: isActive, assign: assign, rootForBar: rootForBar,
-      rootForAttack: rootForAttack, tagFor: tagFor, firstRoot: firstRoot, readoutText: readoutText
+      rootForAttack: rootForAttack, tagFor: tagFor, firstRoot: firstRoot, readoutText: readoutText,
+      solomonReadoutHTML: solomonReadoutHTML
     };
   })();
 
@@ -8947,9 +8990,11 @@ function runAnalysis() {
     var normalBtn = document.getElementById("consolaNormalBtn");
     if(!playBtn) return; // sección todavía no está en el DOM
     var readout = document.getElementById("consolaNotesReadout");
+    var solomonReadout = document.getElementById("consolaSolomonReadout");
     var multi = MULTISETS.isActive(); // MULTI SETS INPUT: componer desde la memoria en vez de desde `selected`
     if(!multi && selected.size < 2){
       readout.textContent = selected.size === 0 ? "—" : Array.from(selected).sort(function(a,b){return a-b;}).map(function(pc){return spellPitchClass(pc);}).join(" ");
+      if(solomonReadout) solomonReadout.innerHTML = "";
       state.rootChord = []; state.progression = []; state.roles = []; state.chordEvents = []; state.slotChords = []; state.bassEvents = []; state.melodyEvents = []; state.comping2Events = []; state.bebopEvents = [];
       renderRoll();
       renderBebopRoll();
@@ -8966,9 +9011,14 @@ function runAnalysis() {
       MULTISETS.assign(NUM_BARS);
       rootChord = MULTISETS.firstRoot(); // (state.rootChord solo indica "hay algo"; cada compás usa su propio set)
       readout.textContent = MULTISETS.readoutText();
+      if(solomonReadout) solomonReadout.innerHTML = MULTISETS.solomonReadoutHTML();
     } else {
       rootChord = pcSetToChord(selected);
       readout.textContent = rootChord.map(noteName).join("  ");
+      if(solomonReadout){
+        var singleLbl = solomonLabelFor(Array.from(selected));
+        solomonReadout.innerHTML = singleLbl ? ("<b>" + singleLbl.code + "</b>" + (singleLbl.name ? " <span class=\"name\">" + singleLbl.name + "</span>" : "")) : "";
+      }
     }
     state.rootChord = rootChord;
     fixedIntervalOffset = 0; // modo test de intervalos fijos: cada variación nueva arranca el ciclo en C (offset 0)
