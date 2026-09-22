@@ -997,6 +997,7 @@
     <button data-target="subsupCard" title="Ir a Subconjuntos y Superconjuntos">Subconjuntos y Superconjuntos</button>
     <button data-target="voicingExplorerCard" title="Ir a Voicing Explorer">Voicing Explorer</button>
     <button data-target="gtCard" title="Ir a Grados en Terceras">Grados en Terceras</button>
+    <button data-target="modalVampsCard" title="Ir a Modal Vamps">Modal Vamps</button>
     <button data-target="projectRulesCard" title="Ir a Reglas del Proyecto">Reglas del Proyecto</button>
   </div>
 </div>
@@ -2647,6 +2648,56 @@
       }
 
       window.regenerateGradosTerceras = gtRender;
+    })();
+  </script>
+
+  <div class="overlay-card" id="modalVampsCard">
+    <div style="display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;">
+      <h2 style="margin:0;">Modal Vamps <span style="font-weight:400;font-size:12px;color:var(--ink-muted);">(test)</span></h2>
+      <button type="button" class="chip" id="mvToggleBtn" aria-expanded="false" aria-controls="mvCollapse">+ Expandir</button>
+      <button type="button" class="chip fullscreen-btn" data-fs-card="modalVampsCard" title="Pantalla completa">⛶ Full screen</button>
+    </div>
+    <div id="mvCollapse" hidden>
+      <p class="overlay-sub">Módulo de prueba — un modo a la vez. &#127922; Sortear prueba sets al azar de 3 a 5 notas; para cada uno calcula sus inversiones (rotaciones: de la 1ª nota a la última, de la 2ª a la 1ª, etc. — el mismo cálculo que ya usa <a href="#modesCard">Modos del set</a>) y se queda con las que la Categoría del sitio reconoce como el modo elegido. Esa rotación ya viene transportada a su propia tónica; acá esa tónica se toca siempre como pedal fijo en C (no se transporta a la tónica real de cada acorde). Se reproducen en loop, un compás por acorde, con piano por defecto.</p>
+      <div class="consola-field">
+        <label for="mvMode">Modo</label>
+        <select id="mvMode">
+          <option value="Jónica">Jónico</option>
+          <option value="Dórica">Dórico</option>
+          <option value="Frigia">Frigio</option>
+          <option value="Lidia">Lidio</option>
+          <option value="Mixolidia">Mixolidio</option>
+          <option value="Eólica">Eólico</option>
+          <option value="Locria">Locrio</option>
+        </select>
+      </div>
+      <div class="progresion-controls">
+        <label for="mvTempo" class="progresion-tempo">Tempo:
+          <input type="range" id="mvTempo" min="40" max="200" value="90" step="1">
+          <span id="mvTempoVal">90 BPM</span>
+        </label>
+        <button type="button" class="chip" id="mvSortearBtn">&#127922; Sortear</button>
+        <button type="button" class="chip primary" id="mvPlayBtn" disabled>&#9658; Reproducir</button>
+        <button type="button" class="chip" id="mvStopBtn" disabled>&#9632; Detener</button>
+      </div>
+      <div class="progresion-grid" id="mvGrid">
+        <div class="empty-state">Tocá &#127922; Sortear para armar un vamp modal.</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      var toggleBtn = document.getElementById("mvToggleBtn");
+      var collapse = document.getElementById("mvCollapse");
+      if(toggleBtn && collapse){
+        toggleBtn.addEventListener("click", function(){
+          var willExpand = collapse.hidden;
+          collapse.hidden = !willExpand;
+          toggleBtn.textContent = willExpand ? "− Contraer" : "+ Expandir";
+          toggleBtn.setAttribute("aria-expanded", String(willExpand));
+        });
+      }
     })();
   </script>
 
@@ -12118,6 +12169,216 @@ function runAnalysis() {
   })();
 
   regenerateConsola();
+
+  /* ============================================================
+     MODAL VAMPS (test) — módulo aparte, no toca `state`/`selected`
+     ni regenerateConsola(). No reimplementa análisis modal propio:
+     reusa analyze()/generarModosDelSet()/categoriasParaConjunto()
+     (las mismas funciones globales que arman la tarjeta "Modos del
+     set" — ver más arriba en el archivo) para calcular, de un set al
+     azar, sus inversiones (rotaciones) y qué Categoría le reconoce
+     el sitio a cada una; solo se queda con las que matchean el modo
+     elegido. Esa rotación ya sale transportada a su propia tónica en
+     0=C (mismo criterio de "Modos del set"), así que acá el pedal de
+     bajo es SIEMPRE C literal — no se vuelve a transportar a otra
+     tónica. El sonido reusa BASE_MIDI/mod12/randomInt y el mismo
+     camino piano (playSM2Voice con fallback a playPianoVoice) que ya
+     usa la armonía de SetMusicBox. Ver
+     claude_modal-vamps-2026-09-22.md para el diseño completo.
+     ============================================================ */
+  (function(){
+    // Nombre del modo -> substring de la Categoría (CATEGORIAS_DE_ACORDES,
+    // arriba en el archivo) que la identifica. "Locria" es el nombre real
+    // de esa categoría en el motor (no "Locrio"); el resto son los mismos
+    // rótulos que ya se ven en la tarjeta "Modos del set".
+    var MODE_KEYWORD = {
+      "Jónica": "Jónica", "Dórica": "Dórica", "Frigia": "Frigia", "Lidia": "Lidia",
+      "Mixolidia": "Mixolidia", "Eólica": "Eólica", "Locria": "Locria"
+    };
+    // Guard anti-loop-infinito (mismo espíritu que los "40 intentos" del
+    // motor libre, pero mucho más alto): probado offline con el motor
+    // real — Locria es la categoría más angosta (calce exacto de 4
+    // notas) y necesita ~600 intentos en promedio para completar los 4
+    // acordes, con picos cercanos a 900; 5000 deja margen de sobra y
+    // sigue resolviendo en bien menos de un segundo.
+    var MV_MAX_ATTEMPTS = 5000;
+    var mvChords = [];
+    var mvTempo = 90;
+    var mvPlaying = false;
+    var mvTimer = null;
+    var mvLastStatus = "";
+
+    function mvSelectedKeyword(){
+      var sel = document.getElementById("mvMode");
+      var val = sel ? sel.value : "Jónica";
+      return MODE_KEYWORD[val] || val;
+    }
+
+    function mvRandomPcs(){
+      var size = randomInt(3, 5);
+      var pool = [0,1,2,3,4,5,6,7,8,9,10,11];
+      for(var i = pool.length - 1; i > 0; i--){
+        var j = Math.floor(Math.random() * (i + 1));
+        var tmp = pool[i]; pool[i] = pool[j]; pool[j] = tmp;
+      }
+      return pool.slice(0, size);
+    }
+
+    // Un intento: sortea un set al azar, calcula sus inversiones con el
+    // mismo motor que "Modos del set" y devuelve la primera fila cuya
+    // Categoría matchea el modo elegido (o null si esta tirada no dio
+    // ninguna).
+    function mvTryOne(keyword){
+      var pcs = mvRandomPcs();
+      var baseA = analyze(CHORDS_DATA, pcs);
+      var filas = generarModosDelSet(CHORDS_DATA, baseA.a_form);
+      var candidatas = filas.filter(function(f){ return f.categoria && f.categoria.indexOf(keyword) !== -1; });
+      if(!candidatas.length) return null;
+      var f = candidatas[randomInt(0, candidatas.length - 1)];
+      // f.conjunto ya está transportado a su propia tónica en 0=C (ver
+      // generarModosDelSet) — el bajo pedal fijo en C sale de acá gratis,
+      // sin transponer nada nosotros.
+      var pcsOnC = f.conjunto.slice().sort(function(a, b){ return a - b; });
+      var bassMidi = 48; // C3 — pedal fijo, siempre
+      var notes = [bassMidi];
+      pcsOnC.forEach(function(pc){
+        if(pc === 0) return; // ya está como bajo
+        var m = BASE_MIDI + pc;
+        while(m <= bassMidi) m += 12;
+        notes.push(m);
+      });
+      notes.sort(function(a, b){ return a - b; });
+      return {
+        categoria: f.categoria,
+        pcs: pcsOnC,
+        notes: notes,
+        forte_code: f.forte_code,
+        solomon_code: f.solomon_code,
+        solomon_name: f.solomon_name
+      };
+    }
+
+    function mvNoteName(midi){
+      return spellPitchClass(mod12(midi)) + (Math.floor(midi / 12) - 1);
+    }
+
+    function mvUpdateButtons(){
+      var playBtn = document.getElementById("mvPlayBtn");
+      if(playBtn) playBtn.disabled = !mvChords.length;
+    }
+
+    function mvRender(){
+      var grid = document.getElementById("mvGrid");
+      if(!grid) return;
+      if(!mvChords.length){
+        grid.innerHTML = '<div class="empty-state">' + (mvLastStatus || 'Tocá &#127922; Sortear para armar un vamp modal.') + '</div>';
+        return;
+      }
+      var html = mvChords.map(function(c, i){
+        var notas = c.notes.map(mvNoteName).join(" ");
+        var forte = (c.solomon_code || c.forte_code || "—") + (c.solomon_name ? " · " + c.solomon_name : "");
+        return '<div class="progresion-chord" data-idx="' + i + '">' +
+          '<div class="progresion-chip">' +
+            '<div class="pc-grado"><b>' + c.categoria + '</b> &middot; bajo C (pedal)</div>' +
+            '<div class="pc-notas">' + notas + '</div>' +
+            '<div class="pc-set">[' + c.pcs.join(", ") + '] &middot; ' + forte + '</div>' +
+          '</div>' +
+        '</div>';
+      }).join("");
+      if(mvChords.length < 4){
+        html += '<div class="empty-state">Solo se encontraron ' + mvChords.length + ' de 4 — tocá Sortear de nuevo.</div>';
+      }
+      grid.innerHTML = html;
+    }
+
+    function mvSortear(){
+      var keyword = mvSelectedKeyword();
+      mvChords = [];
+      var attempts = 0;
+      while(mvChords.length < 4 && attempts < MV_MAX_ATTEMPTS){
+        attempts++;
+        var found = mvTryOne(keyword);
+        if(found) mvChords.push(found);
+      }
+      mvLastStatus = mvChords.length ? "" : "No se encontró ningún acorde compatible con ese modo — tocá Sortear de nuevo.";
+      mvRender();
+      mvUpdateButtons();
+    }
+
+    function mvStepDur(){ return (60 / mvTempo) * 4; }
+
+    function mvPlayChord(c, startOffset, dur){
+      var ctx = getAudioCtx();
+      if(!ctx) return;
+      var presetKey = sfDefaultKeyFor("harmony", "piano");
+      var t0 = ctx.currentTime + startOffset;
+      var gain = Math.max(0.05, 0.16 / Math.sqrt(c.notes.length));
+      c.notes.forEach(function(midi){
+        var played = sm2UsingSF2() && playSM2Voice(ctx, ctx.destination, presetKey, midi, t0, dur * 0.92, gain);
+        if(!played){
+          playPianoVoice(ctx, ctx.destination, midi, t0, dur * 0.92, { attack: 0.008, release: 0.35, peakGain: gain, cutoff: 4200 });
+        }
+      });
+    }
+
+    function mvStop(){
+      if(mvTimer){ clearTimeout(mvTimer); mvTimer = null; }
+      mvPlaying = false;
+      var playBtn = document.getElementById("mvPlayBtn");
+      var stopBtn = document.getElementById("mvStopBtn");
+      if(playBtn) playBtn.disabled = !mvChords.length;
+      if(stopBtn) stopBtn.disabled = true;
+      document.querySelectorAll("#mvGrid .progresion-chord").forEach(function(el){ el.classList.remove("playing"); });
+    }
+
+    function mvPlay(){
+      if(!mvChords.length) return;
+      mvStop();
+      mvPlaying = true;
+      var playBtn = document.getElementById("mvPlayBtn");
+      var stopBtn = document.getElementById("mvStopBtn");
+      if(playBtn) playBtn.disabled = true;
+      if(stopBtn) stopBtn.disabled = false;
+      var cards = document.querySelectorAll("#mvGrid .progresion-chord");
+      var dur = mvStepDur();
+      mvChords.forEach(function(c, i){
+        var t = i * dur;
+        mvPlayChord(c, t, dur);
+        var card = cards[i];
+        if(card){
+          setTimeout(function(){
+            cards.forEach(function(el){ el.classList.remove("playing"); });
+            card.classList.add("playing");
+          }, Math.max(0, t * 1000));
+        }
+      });
+      var total = mvChords.length * dur;
+      // Loop indefinido (pedido explícitamente) hasta Detener — mismo
+      // patrón que el Generador de progresiones con Loop prendido.
+      mvTimer = setTimeout(function(){
+        if(mvPlaying) mvPlay();
+      }, total * 1000 + 60);
+    }
+
+    var mvSortearBtn = document.getElementById("mvSortearBtn");
+    if(mvSortearBtn) mvSortearBtn.addEventListener("click", function(){ mvStop(); mvSortear(); });
+    var mvPlayBtn = document.getElementById("mvPlayBtn");
+    if(mvPlayBtn) mvPlayBtn.addEventListener("click", mvPlay);
+    var mvStopBtn = document.getElementById("mvStopBtn");
+    if(mvStopBtn) mvStopBtn.addEventListener("click", mvStop);
+    var mvTempoEl = document.getElementById("mvTempo");
+    if(mvTempoEl){
+      mvTempoEl.addEventListener("input", function(){
+        mvTempo = parseInt(this.value, 10) || 90;
+        var val = document.getElementById("mvTempoVal");
+        if(val) val.textContent = mvTempo + " BPM";
+      });
+      mvTempoEl.addEventListener("change", function(){
+        var stopBtn = document.getElementById("mvStopBtn");
+        if(stopBtn && !stopBtn.disabled) mvPlay();
+      });
+    }
+  })();
 })();
 </script>
 
