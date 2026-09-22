@@ -2658,17 +2658,48 @@
       <button type="button" class="chip fullscreen-btn" data-fs-card="modalVampsCard" title="Pantalla completa">⛶ Full screen</button>
     </div>
     <div id="mvCollapse" hidden>
-      <p class="overlay-sub">Módulo de prueba — un modo a la vez. &#127922; Sortear prueba sets al azar de 3 a 5 notas; para cada uno calcula sus inversiones (rotaciones: de la 1ª nota a la última, de la 2ª a la 1ª, etc. — el mismo cálculo que ya usa <a href="#modesCard">Modos del set</a>) y se queda con las que la Categoría del sitio reconoce como el modo elegido. Esa rotación ya viene transportada a su propia tónica; acá esa tónica se toca siempre como pedal fijo en C (no se transporta a la tónica real de cada acorde). Se reproducen en loop, un compás por acorde, con piano por defecto.</p>
+      <p class="overlay-sub">Módulo de prueba — una categoría a la vez. &#127922; Sortear prueba sets al azar de 3 a 5 notas; para cada uno calcula sus inversiones (rotaciones: de la 1ª nota a la última, de la 2ª a la 1ª, etc. — el mismo cálculo que ya usa <a href="#modesCard">Modos del set</a>) y se queda con las que matchean exactamente la categoría elegida, según la misma tabla de categorización (<code>CATEGORIAS_DE_ACORDES</code>) que ya usan "Modos del set" y "Superposición cromática". Esa rotación ya viene transportada a su propia tónica; acá esa tónica se toca siempre como pedal fijo en C (no se transporta a la tónica real de cada acorde). Se reproducen en loop, un compás por acorde, con piano por defecto.</p>
       <div class="consola-field">
-        <label for="mvMode">Modo</label>
+        <label for="mvMode">Categoría</label>
         <select id="mvMode">
-          <option value="Jónica">Jónico</option>
-          <option value="Dórica">Dórico</option>
-          <option value="Frigia">Frigio</option>
-          <option value="Lidia">Lidio</option>
-          <option value="Mixolidia">Mixolidio</option>
-          <option value="Eólica">Eólico</option>
-          <option value="Locria">Locrio</option>
+          <optgroup label="Mayor">
+            <option value="Mayor (no4 no7)">Mayor (no4 no7)</option>
+            <option value="Jónica (no4)">Jónica (no4)</option>
+            <option value="Jónica (4)">Jónica (4)</option>
+            <option value="Lidia (4#)">Lidia (4#)</option>
+            <option value="Mayor aumentado (no4 5#)">Mayor aumentado (no4 5#)</option>
+            <option value="Jónica / Lidia (no4 2#)">Jónica / Lidia (no4 2#)</option>
+            <option value="Mayor alt">Mayor alt</option>
+            <option value="Jónica / Lidia (no3)">Jónica / Lidia (no3)</option>
+          </optgroup>
+          <optgroup label="Menor">
+            <option value="Menor (no6)">Menor (no6)</option>
+            <option value="Dórica (6)">Dórica (6)</option>
+            <option value="Eólica (6b)">Eólica (6b)</option>
+          </optgroup>
+          <optgroup label="Dominante">
+            <option value="Mixolidia (no4)">Mixolidia (no4)</option>
+            <option value="Mixolidia (4) — sus4">Mixolidia (4) — sus4</option>
+            <option value="Mixolidia (4#)">Mixolidia (4#)</option>
+            <option value="Dominante aumentado 7 (no4 5#)">Dominante aumentado 7 (no4 5#)</option>
+            <option value="Mixolidia Alterada">Mixolidia Alterada</option>
+            <option value="Alterada">Alterada</option>
+          </optgroup>
+          <optgroup label="Frigia">
+            <option value="Frigia (3)">Frigia (3)</option>
+            <option value="Frigia (3b)">Frigia (3b)</option>
+            <option value="Frigia (no3)">Frigia (no3)</option>
+          </optgroup>
+          <optgroup label="Locria">
+            <option value="Locria">Locria</option>
+          </optgroup>
+          <optgroup label="Disminuida">
+            <option value="Disminuida modo 1 (A)">Disminuida modo 1 (A)</option>
+            <option value="Disminuida modo 1 (B)">Disminuida modo 1 (B)</option>
+          </optgroup>
+          <optgroup label="Ambiguo">
+            <option value="Ambiguo">Ambiguo</option>
+          </optgroup>
         </select>
       </div>
       <div class="progresion-controls">
@@ -12196,14 +12227,18 @@ function runAnalysis() {
      claude_modal-vamps-2026-09-22.md para el diseño completo.
      ============================================================ */
   (function(){
-    // Nombre del modo -> substring de la Categoría (CATEGORIAS_DE_ACORDES,
-    // arriba en el archivo) que la identifica. "Locria" es el nombre real
-    // de esa categoría en el motor (no "Locrio"); el resto son los mismos
-    // rótulos que ya se ven en la tarjeta "Modos del set".
-    var MODE_KEYWORD = {
-      "Jónica": "Jónica", "Dórica": "Dórica", "Frigia": "Frigia", "Lidia": "Lidia",
-      "Mixolidia": "Mixolidia", "Eólica": "Eólica", "Locria": "Locria"
-    };
+    // El selector ya ofrece directamente los valores reales del campo
+    // "nombre" de CATEGORIAS_DE_ACORDES (las 24 variantes puntuales,
+    // agrupadas por optgroup según su "categoria") — la misma
+    // categorización que usan "Modos del set" y "Superposición
+    // cromática". Antes acá se hacía un matching aproximado por
+    // substring contra el rótulo ya armado (nombres tipo
+    // "Jónico/Dórico"); ahora mvTryOne matchea EXACTO contra v.nombre
+    // llamando a categoriasMatches() de nuevo sobre el mismo conjunto,
+    // sin pasar por ningún mapeo intermedio. "Ambiguo" es la única
+    // opción que no viene de v.nombre (esa categoría no aparece en
+    // matches, solo se resuelve vía m.tipo === "ambiguo" — ver más
+    // abajo).
     // Guard anti-loop-infinito (mismo espíritu que los "40 intentos" del
     // motor libre, pero mucho más alto): probado offline con el motor
     // real — Locria es la categoría más angosta (calce exacto de 4
@@ -12218,8 +12253,7 @@ function runAnalysis() {
 
     function mvSelectedKeyword(){
       var sel = document.getElementById("mvMode");
-      var val = sel ? sel.value : "Jónica";
-      return MODE_KEYWORD[val] || val;
+      return sel ? sel.value : "Mayor (no4 no7)";
     }
 
     function mvRandomPcs(){
@@ -12240,7 +12274,11 @@ function runAnalysis() {
       var pcs = mvRandomPcs();
       var baseA = analyze(CHORDS_DATA, pcs);
       var filas = generarModosDelSet(CHORDS_DATA, baseA.a_form);
-      var candidatas = filas.filter(function(f){ return f.categoria && f.categoria.indexOf(keyword) !== -1; });
+      var candidatas = filas.filter(function(f){
+        var m = categoriasMatches(f.conjunto);
+        if (keyword === "Ambiguo") return m.tipo === "ambiguo";
+        return m.matches.some(function(v){ return v.nombre === keyword; });
+      });
       if(!candidatas.length) return null;
       var f = candidatas[randomInt(0, candidatas.length - 1)];
       // f.conjunto ya está transportado a su propia tónica en 0=C (ver
