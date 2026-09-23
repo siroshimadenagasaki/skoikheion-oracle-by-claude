@@ -1039,7 +1039,7 @@
         <button class="chip" id="composeBtn" type="button" title="Toca el segmento de 12 compases de SetMusicBox con las notas actuales">🎹 Compose</button>
         <button class="chip" id="clearBtn">Limpiar</button>
         <button class="chip" id="multiSetsMemBtn2" type="button" disabled title="Mismo botón que To Memory de Multi Sets Input (copia acá para no tener que abrir esa tarjeta): guarda el set actual del reloj/piano en el próximo casillero libre y resetea el reloj. Entre paréntesis, cuántos sets van guardados.">To Memory (0/5)</button>
-        <button class="chip toggle" id="sf2Btn" type="button" aria-pressed="false" title="Carga bajo demanda tres SoundFonts reales (Instruments+Drums+Percussion, ~29MB) y reemplaza el sintetizador por muestras de instrumento y batería reales (incluye SetMusicBox). Un clic más para volver al sintetizador liviano.">🎼 Sonido real (SoundFont)</button>
+        <button class="chip toggle" id="sf2Btn" type="button" aria-pressed="false" title="Carga los SoundFonts default y clásicos (Soundfonts/*.sf2 + un .sf2 por instrumento) y reemplaza el sintetizador por muestras de instrumento y batería reales (incluye SetMusicBox). Un clic más para volver al sintetizador liviano.">🎼 Sonido real (SoundFont)</button>
         <input type="file" id="sf2LocalPicker" webkitdirectory directory multiple hidden aria-hidden="true">
         <button class="chip" id="loadExtraBtn" type="button" title="Carga los SoundFonts de la carpeta Soundfonts/EXTRA/ (Piano Steinway D, Warm Pad, Super Bass Electric, Jazz Kit… y cualquier .sf2 que subas ahí) y activa sus opciones (HIFI) en los selectores del mini mixer. Solo se nota con '🎼 Sonido real' activado. Si alguno falla, volvé a apretarlo para reintentar.">loadExtra</button>
       </div>
@@ -4500,9 +4500,6 @@ function synthPluck(freq, { start = 0, duration = 1.6, gain = 0.5 } = {}) {
    - Soundfonts/Percussion.sf2 (~0.5MB): congas cromáticas, usada
      como preset alternativo de la pista de batería en SetMusicBox.
    ------------------------------------------------------------ */
-const SF2_URL = "Soundfonts/Instruments.sf2";
-const SF2_DRUMS_URL = "Soundfonts/Drums.sf2";
-const SF2_PERC_URL = "Soundfonts/Percussion.sf2";
 const SF2_DEFAULT_PRESET = { bank: 0, preset: 0 }; // Grand Piano
 
 // ---- HIFI: SoundFonts premium aparte, uno por instrumento -------------
@@ -5043,11 +5040,7 @@ function playSynthTone(freq, opts) {
 // es ponderado por tamaño aproximado de cada archivo (no hace falta que
 // sea exacto, solo que la barra avance parejo en vez de saltar de golpe
 // al pasar de un archivo al siguiente).
-const SF2_FILES = [
-  { key: "instruments", url: SF2_URL,       weight: 20.5 },
-  { key: "drums",       url: SF2_DRUMS_URL, weight: 8.4 },
-  { key: "percussion",  url: SF2_PERC_URL,  weight: 0.5 },
-];
+
 // Indicador flotante (arriba a la izquierda, ver #sf2LoadOverlay): mismo
 // porcentaje ponderado que ya se mostraba en el botón, más una barra
 // visual — desaparece solo (fade-out) al llegar a "ready"; si falla,
@@ -5091,7 +5084,7 @@ function sf2ShowLoadOverlayError() {
 const SF_GH_OWNER = "siroshimadenagasaki";
 const SF_GH_REPO = "skoikheion-oracle-by-claude";
 const SF_ROOT_DIR = "Soundfonts";
-const SF_BASE_URLS = [SF2_URL, SF2_DRUMS_URL, SF2_PERC_URL];
+const SF_BASE_URLS = []; // Instruments/Drums/Percussion.sf2 ya no existen (ver SF_LEGACY_FILES)
 // ---- Defaults del mini mixer (Soundfonts/*.sf2 subidos como "default") ----
 // Un archivo por selector. bank/program/label salen del phdr real de cada
 // .sf2 (leídos con HIFI tildado en el sitio en vivo, 2026-09-19). Estos 6
@@ -5102,7 +5095,7 @@ const SF_DEFAULT_FILES = [
   { mix: "harmony",      file: "Piano default.sf2", bank: 0, program: 0,  label: "Grand Piano",          kind: "melodic", family: "piano" },
   { mix: "chordDouble",  file: "Nord Pad.sf2",      bank: 0, program: 0,  label: "Warm Pad Pro",         kind: "melodic", family: "pad"   },
   { mix: "melody",       file: "Flute default.sf2", bank: 0, program: 73, label: "Flute",                kind: "melodic", family: "flute" },
-  { mix: "melodyDouble", file: "Armonica.sf2",      bank: 0, program: 0,  label: "Hohner C Harmonica",   kind: "melodic", family: "flute" },
+  { mix: "melodyDouble", file: "EXTRA/Armonica.sf2",      bank: 0, program: 0,  label: "Hohner C Harmonica",   kind: "melodic", family: "flute" },
   { mix: "bass",         file: "Bass default.sf2",  bank: 0, program: 32, label: "Acoust. Bass (Solar)", kind: "melodic", family: "bass"  },
   { mix: "drum",         file: "Drums default.sf2", bank: 0, program: 0,  label: "JDRockKit",            kind: "drum" }
 ];
@@ -5113,6 +5106,41 @@ function sfDefaultKeyFor(mix, fallback) {
   return fallback;
 }
 function sfIsDefaultId(id) { return SF_DEFAULT_FILES.some((d) => sfDefaultId(d) === id); }
+// ---- Keys clásicas (piano, fagot, tenorSax, kit…) -> archivo nuevo ----
+// Instruments.sf2 / Drums.sf2 / Percussion.sf2 se borraron del repo el
+// 2026-09-19 y se reemplazaron por un .sf2 por instrumento. Cada key
+// clásica (usada por PRESET_SETS, Solo Piano, defaults del mixer, etc.)
+// apunta acá a su archivo nuevo — bank/program leídos del phdr real
+// (2026-09-23). Se bajan solos al abrir la página (sin loadExtra), junto
+// con SF_DEFAULT_FILES. "percussion" (congas) no tiene archivo nuevo:
+// cae al sintetizador de batería.
+const SF_LEGACY_FILES = {
+  piano:       { file: "Piano default.sf2",                                     bank: 0, program: 0  },
+  epiano:      { file: "EXTRA/Keys/Instruments - 000-004 E.Pïano 1.sf2",         bank: 0, program: 4  },
+  harpsichord: { file: "EXTRA/Keys/Instruments - 000-006 Harpsichord.sf2",       bank: 0, program: 6  },
+  celesta:     { file: "EXTRA/Keys/Instruments - 000-008 Celesta.sf2",           bank: 0, program: 8  },
+  strings1:    { file: "EXTRA/Instruments - 000-048 String Section 1 (Ma.sf2",   bank: 0, program: 48 },
+  strings:     { file: "EXTRA/Instruments - 000-048 String Section 1 (Ma.sf2",   bank: 0, program: 48 },
+  brass1:      { file: "EXTRA/Instruments - 000-061 Brass Section 1.sf2",        bank: 0, program: 61 },
+  sopranoSax:  { file: "EXTRA/ Melody/Instruments - 000-064 Soprano Sax.sf2",    bank: 0, program: 64 },
+  tenorSax:    { file: "EXTRA/ Melody/Instruments - 000-066 Tenor Sax.sf2",      bank: 0, program: 66 },
+  bassoon:     { file: "EXTRA/Instruments - 000-070 Bassoon.sf2",                bank: 0, program: 70 },
+  flute:       { file: "Flute default.sf2",                                     bank: 0, program: 73 },
+  contrabass:  { file: "EXTRA/Instruments - 000-043 Contrabass.sf2",             bank: 0, program: 43 },
+  jazzGuitar:  { file: "EXTRA/Instruments - 000-026 Jazz Guitar.sf2",            bank: 0, program: 26 },
+  kit:         { file: "Drums default.sf2",                                     bank: 0, program: 0  }
+};
+function sfLegacyUrl(key) { const l = SF_LEGACY_FILES[key]; return l ? sfUrlForPath(SF_ROOT_DIR + "/" + l.file) : null; }
+function sfLegacyId(key) { const l = SF_LEGACY_FILES[key]; return l ? "x_" + encodeURIComponent(l.file) : null; }
+// Archivos que se bajan solos al abrir la página: defaults + clásicos.
+function sfAutoFiles() {
+  const seen = {}, out = [];
+  SF_DEFAULT_FILES.map((d) => d.file).concat(Object.keys(SF_LEGACY_FILES).map((k) => SF_LEGACY_FILES[k].file)).forEach((f) => {
+    if (seen[f]) return; seen[f] = true; out.push(f);
+  });
+  return out;
+}
+function sfIsAutoId(id) { return sfAutoFiles().some((f) => "x_" + encodeURIComponent(f) === id); }
 const SF_DISCOVER_CACHE_KEY = "sfDiscoverCacheV1";
 const SF_DISCOVER_CACHE_TTL_MS = 5 * 60 * 1000; // la API sin token da 60 pedidos/hora por IP
 let sfExtraFiles = SF_DEFAULT_FILES.map((d) => ({ id: sfDefaultId(d), url: sfUrlForPath(SF_ROOT_DIR + "/" + d.file), path: SF_ROOT_DIR + "/" + d.file, label: d.file, kind: d.kind }));       // [{ id, url, path, label, kind }] — todo .sf2 que NO es uno de los 3 base
@@ -5167,7 +5195,9 @@ function sfKindFor(path, manifestEntries) {
     if (m.mode === "new") return m.target === "drum" ? "drum" : "melodic";
     return (m.key === "kit" || m.key === "percussion") ? "drum" : "melodic";
   }
-  return /kit|drum|perc|bater/i.test(path.split("/").pop()) ? "drum" : "melodic";
+  const name = path.split("/").pop();
+  if (/steel/i.test(name)) return "melodic"; // "Steel Drums" es melódico (GM 114), no un kit
+  return /kit|drum|perc|bater/i.test(name) ? "drum" : "melodic";
 }
 const sfDiscoverReady = (async function sfDiscover() {
   const manifest = await hifiManifestReady;
@@ -5182,7 +5212,7 @@ const sfDiscoverReady = (async function sfDiscover() {
   try { (await sfDiscoverPaths()).forEach(addPath); }
   catch (err) { console.warn("No se pudo listar Soundfonts/ con la API de GitHub — solo se usan los archivos del manifest:", err); }
   manifest.forEach((m) => addPath(SF_ROOT_DIR + "/EXTRA/" + m.file));
-  SF_DEFAULT_FILES.forEach((d) => addPath(SF_ROOT_DIR + "/" + d.file)); // defaults: nunca dependen de la API
+  sfAutoFiles().forEach((f) => addPath(SF_ROOT_DIR + "/" + f)); // defaults + clásicos: nunca dependen de la API
   const files = [];
   found.forEach((f) => {
     const rel = f.path.slice(SF_ROOT_DIR.length + 1);
@@ -5222,7 +5252,7 @@ function sfLoadFontOnce(url) {
 // Los 6 .sf2 default se bajan solos al abrir la página (sin HIFI). Espera
 // al descubrimiento solo para asegurarse de que todo el script ya corrió.
 Promise.resolve(sfDiscoverReady).catch(() => {}).then(() => {
-  SF_DEFAULT_FILES.forEach((d) => sfLoadFontOnce(sfUrlForPath(SF_ROOT_DIR + "/" + d.file)));
+  sfAutoFiles().forEach((f) => sfLoadFontOnce(sfUrlForPath(SF_ROOT_DIR + "/" + f)));
 });
 // Carga (bajo demanda, una sola vez por archivo) cada .sf2 de HIFI_FILES
 // Y cada .sf2 extra descubierto en Soundfonts/ — se dispara al tildar el
@@ -5257,7 +5287,7 @@ async function hifiLoadAllIfNeeded() {
 // reintentar los que fallaron (hifiLoadAllIfNeeded salta los ya cargados).
 const loadExtraBtn = document.getElementById("loadExtraBtn");
 function loadExtraSummary() {
-  const files = sfExtraFiles.filter((e) => !sfIsDefaultId(e.id));
+  const files = sfExtraFiles.filter((e) => !sfIsAutoId(e.id));
   return { ok: files.filter((e) => sfStateByUrl[e.url] === "ready").length, total: files.length };
 }
 loadExtraBtn.addEventListener("click", async function () {
@@ -5276,29 +5306,29 @@ async function sf2Activate(btn) {
   sf2State = "loading";
   btn.disabled = true;
   try {
-    const totalWeight = SF2_FILES.reduce((s, f) => s + f.weight, 0);
-    let doneWeight = 0;
-    const parsed = {};
-    for (const f of SF2_FILES) {
-      const buf = await sf2GetArrayBuffer(f.url, (frac) => {
-        const overall = (doneWeight + frac * f.weight) / totalWeight;
-        const pct = Math.round(overall * 100);
-        btn.textContent = "🎼 Cargando " + pct + "%…";
-        sf2UpdateLoadOverlay(pct);
-      });
-      parsed[f.key] = sf2ParseFont(buf);
-      doneWeight += f.weight;
-    }
-    sf2Font = parsed.instruments;
-    sf2DrumsFont = parsed.drums;
-    sf2PercFont = parsed.percussion;
+    // Baja defaults + clásicos (SF_LEGACY_FILES) con sfLoadFontOnce —
+    // misma promesa que el resto del catálogo, nunca se baja dos veces.
+    // Progreso por archivo terminado. Si alguno falla, los demás siguen;
+    // solo el piano (usado por el resto del sitio) es obligatorio.
+    const urls = sfAutoFiles().map((f) => sfUrlForPath(SF_ROOT_DIR + "/" + f));
+    let done = 0;
+    await Promise.all(urls.map((u) => sfLoadFontOnce(u).then(() => {
+      done++;
+      const pct = Math.round(done / urls.length * 100);
+      btn.textContent = "🎼 Cargando " + pct + "%…";
+      sf2UpdateLoadOverlay(pct);
+    })));
+    sf2Font = sfFontByUrl[sfLegacyUrl("piano")] || null;
+    sf2DrumsFont = sfFontByUrl[sfLegacyUrl("kit")] || null;
+    sf2PercFont = null;
+    if (!sf2Font) throw new Error("No se pudo cargar " + SF_LEGACY_FILES.piano.file);
     sf2PresetIdx = sf2FindPresetIdx(sf2Font, SF2_DEFAULT_PRESET.bank, SF2_DEFAULT_PRESET.preset);
     if (sf2PresetIdx === -1) sf2PresetIdx = 0;
     sf2State = "ready";
     currentSynth = "sf2";
     btn.textContent = "🎼 Sonido real (SoundFont) ✓";
     btn.title = "Preset activo: " + (sf2Font.phdr[sf2PresetIdx] || {}).name +
-      " — incluye batería y percusión reales en SetMusicBox — clic para volver al sintetizador liviano";
+      " — incluye batería real en SetMusicBox — clic para volver al sintetizador liviano";
     btn.setAttribute("aria-pressed", "true");
     sfNotifyCatalogChange(false); // los presets de los 3 archivos base ya se pueden listar en los selectores
     sf2UpdateLoadOverlay(100);
@@ -7649,7 +7679,7 @@ function runAnalysis() {
          corcheas.
        - narrowRegister (desmarcado, por defecto): sin restricción
          extra — solo el piso/techo de seguridad general del motor
-         (MELODY_MIDI_FLOOR..CEIL, C5..C8, 3 octavas).
+         (MELODY_MIDI_FLOOR..CEIL, C6..C9, 3 octavas).
        - narrowRegister (marcado): restringe a un rango fijo de 2
          octavas (ver NARROW_FLOOR/NARROW_CEIL más abajo) — cualquier
          nota que caiga fuera de ese rango se transpone una octava
@@ -7697,11 +7727,11 @@ function runAnalysis() {
     }
     // narrowRegister: restringe a un rango fijo de 2 octavas (24
     // semitonos) — más angosto que el piso/techo de seguridad general
-    // (MELODY_MIDI_FLOOR..CEIL, C5..C8, 3 octavas). Mismo mecanismo que
+    // (MELODY_MIDI_FLOOR..CEIL, C6..C9, 3 octavas). Mismo mecanismo que
     // clampMelodyRange: transpone una octava para arriba o para abajo
     // (la que corresponda) hasta entrar en rango, nunca cambia la clase
-    // de altura. Piso elegido = MELODY_MIDI_FLOOR (C5, el mismo piso
-    // general ya usado en todo el motor), techo = piso + 24 (C7).
+    // de altura. Piso elegido = MELODY_MIDI_FLOOR (C6, el mismo piso
+    // general ya usado en todo el motor), techo = piso + 24 (C8).
     // OJO: MELODY_MIDI_FLOOR se lee DENTRO de la función (no al armar
     // este IIFE) — a la altura de este IIFE esa variable todavía no fue
     // asignada (se define más abajo en el mismo scope) y hubiera dado
@@ -8184,9 +8214,10 @@ function runAnalysis() {
   // rango razonable de octavas, corrigiendo solo de a 12 semitonos
   // enteros — nunca cambia QUÉ nota es, solo en qué octava suena.
   // Rango de Melodía Y de bebopMelody (las dos pasan por este clamp):
-  // C5 (72) a C8 (108), con C4 = 60 (BASE_MIDI).
-  var MELODY_MIDI_FLOOR = 72;   // C5
-  var MELODY_MIDI_CEIL  = 108;  // C8
+  // C6 (84) a C9 (120), con C4 = 60 (BASE_MIDI). Subido una octava
+  // (antes C5..C8) a pedido, 2026-09-23.
+  var MELODY_MIDI_FLOOR = 84;   // C6
+  var MELODY_MIDI_CEIL  = 120;  // C9
   function clampMelodyRange(midi){
     while(midi > MELODY_MIDI_CEIL) midi -= 12;
     while(midi < MELODY_MIDI_FLOOR) midi += 12;
@@ -9822,11 +9853,7 @@ function runAnalysis() {
     kit:        { font:"drums",      bank:128, program:0 },
     percussion: { font:"percussion", bank:0,   program:0 }
   };
-  var SM2_PROGRAMS = { strings: { font:"instruments", bank:0, program:48 } }; // pista moreComping
-  SM2_INSTRUMENTS.forEach(function(it){
-    SM2_PROGRAMS[it.key] = { font:"instruments", bank:0, program:it.program };
-  });
-  Object.keys(SM2_DRUM_KITS).forEach(function(k){ SM2_PROGRAMS[k] = SM2_DRUM_KITS[k]; });
+  // (SM2_PROGRAMS eliminado 2026-09-23: las keys clásicas resuelven con SF_LEGACY_FILES.)
 
   /* ================================================================
      SELECTORES DE PRESET — armados desde el catálogo unificado de
@@ -9871,9 +9898,11 @@ function runAnalysis() {
       return { key:it.key, label:it.label, bank:0, program:it.program, family:it.fallback };
     });
     return [
-      { id:"instruments", label:"Instruments.sf2", kind:"melodic", font:sf2Font,      extra:false, curated:instCurated },
-      { id:"drums",       label:"Drums.sf2",       kind:"drum",    font:sf2DrumsFont, extra:false, curated:[{ key:"kit",        label:"Kit (batería real)", bank:128, program:0 }] },
-      { id:"percussion",  label:"Percussion.sf2",  kind:"drum",    font:sf2PercFont,  extra:false, curated:[{ key:"percussion", label:"Percusión (congas)", bank:0,   program:0 }] }
+      // Sin font: solo las keys clásicas (cada una suena con su archivo
+      // de SF_LEGACY_FILES); los presets de cada archivo ya aparecen en
+      // su propio grupo del catálogo.
+      { id:"instruments", label:"Clásicos", kind:"melodic", font:null, extra:false, curated:instCurated },
+      { id:"drums",       label:"Clásicos", kind:"drum",    font:null, extra:false, curated:[{ key:"kit", label:"Kit (batería real)", bank:0, program:0 }] }
     ];
   }
   function sfExtraFileRecords(){
@@ -9989,7 +10018,7 @@ function runAnalysis() {
   // banco/programa usar en ESTE momento: si el checkbox HIFI está
   // tildado y ese reemplazo ya terminó de cargar, el .sf2 premium
   // aparte (HIFI_FILES); si no, el programa GM de siempre dentro de
-  // Instruments.sf2/Drums.sf2/Percussion.sf2 (SM2_PROGRAMS). Único punto
+  // su .sf2 propio de SF_LEGACY_FILES. Único punto
   // de decisión HIFI — tanto el cache de índices como playSM2Voice pasan
   // siempre por acá, así nunca quedan desalineados.
   function sm2ResolveFontAndProgram(key){
@@ -10004,7 +10033,7 @@ function runAnalysis() {
         var baseFont = sm2FontFor(sfId);
         return baseFont ? { font: baseFont, bank: sfBank, program: sfProg, tag: sfId } : null;
       }
-      if(!hifiEnabled && !sfIsDefaultId(sfId)) return null; // los defaults (SF_DEFAULT_FILES) no piden HIFI
+      if(!hifiEnabled && !sfIsAutoId(sfId)) return null; // defaults y clásicos (se bajan solos) no piden HIFI
       for(var xi = 0; xi < sfExtraFiles.length; xi++){
         if(sfExtraFiles[xi].id !== sfId) continue;
         var xFont = sfFontByUrl[sfExtraFiles[xi].url];
@@ -10024,11 +10053,13 @@ function runAnalysis() {
     // que ya hace la opción plana "Piano"/"Kit", que sigue existiendo
     // sin cambios).
     if(HIFI_ALIAS_KEY[key]) return null;
-    var p = SM2_PROGRAMS[key];
-    if(!p) return null;
-    var font = sm2FontFor(p.font);
-    if(!font) return null;
-    return { font: font, bank: p.bank, program: p.program, tag: p.font };
+    // Keys clásicas: su .sf2 propio (SF_LEGACY_FILES) — Instruments/
+    // Drums/Percussion.sf2 ya no existen.
+    var lg = SF_LEGACY_FILES[key];
+    if(!lg) return null;
+    var lu = sfLegacyUrl(key);
+    var lf = sfFontByUrl[lu];
+    return lf ? { font: lf, bank: lg.bank, program: lg.program, tag: sfTagForUrl(lu, sfLegacyId(key)) } : null;
   }
   function sm2PresetIdxFor(key){
     // Los tres .sf2 principales se cargan/recargan siempre juntos (mismo
