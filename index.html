@@ -593,6 +593,7 @@
   .consola-inst-row{display:flex;flex-wrap:wrap;gap:4px 12px;}
   .consola-inst-toggle{display:flex;align-items:center;gap:6px;}
   .consola-inst-toggle input[type=checkbox]{width:15px;height:15px;accent-color:var(--gold);cursor:pointer;}
+  .consola-inst-toggle input.consola-mini-range{width:70px;accent-color:var(--gold);cursor:pointer;}
   .consola-inst-toggle label{
     font-family:'JetBrains Mono',monospace;font-size:11.5px;letter-spacing:.03em;
     text-transform:none;color:var(--ink);cursor:pointer;
@@ -1157,7 +1158,7 @@
           <span class="consola-inst-toggle" title="Además del subset de siempre, a veces usa el COMPLEMENTO del set elegido (las notas que el set deja afuera dentro de la octava) — más variedad armónica, siempre derivada del mismo set."><input type="checkbox" id="consolaSupersetsChk"><label for="consolaSupersetsChk">&#8679; Supersets (variedad)</label></span>
           <span class="consola-inst-toggle" title="Cada compás de armonía, bajo, melodía y batería tiene un 40% extra de probabilidad de repetir exactamente el patrón del compás anterior; además, bajo y melodía tienen un 40% de probabilidad por compás de acoplar sus ataques a los de la armonía en vez de llevar su propio ritmo."><input type="checkbox" id="consolaMoreRepChk"><label for="consolaMoreRepChk">&#128257; More repetition</label></span>
           <span class="consola-inst-toggle" title="En cada reataque de armonía se sortean varias combinaciones válidas de subconjunto/transposición/inversión dentro del MISMO acorde/grado elegido (nunca de otro) y se elige la que comparte más notas con el acorde anterior — el doble de notas comunes en promedio que al azar puro, con la misma restricción de conjunto de siempre."><input type="checkbox" id="consolaCommonNotesChk"><label for="consolaCommonNotesChk">&#128279; Notas comunes</label></span>
-          <span class="consola-inst-toggle" title="Con 35% de probabilidad por variación, reserva 4 compases seguidos (elegidos al azar dentro de los 12) como un 'respiro': en esos 4 compases, un solo acorde por compás (una redonda, sin reataques extra) y el bajo también en redondas — nunca se aplica a menos de 4 compases ni se corta a la mitad. El resto del segmento sigue con el ritmo de siempre (Chromatism, Chords, ataque quebrado, etc.). No afecta a Normalito."><input type="checkbox" id="consolaAddLittlePeaceChk" checked><label for="consolaAddLittlePeaceChk">&#128330;&#65039; AddLittlePeace</label></span>
+          <span class="consola-inst-toggle" title="Slider 0–100% (default 30%): probabilidad por variación de reservar 4 compases seguidos (elegidos al azar dentro de los 12) como un 'respiro': en esos 4 compases, un solo acorde por compás (una redonda, sin reataques extra) y el bajo también en redondas — nunca se aplica a menos de 4 compases ni se corta a la mitad. El resto del segmento sigue con el ritmo de siempre (Chromatism, Chords, ataque quebrado, etc.). No afecta a Normalito. 0% = nunca."><label for="consolaAddLittlePeaceSlider">&#128330;&#65039; AddLittlePeace</label><input type="range" class="consola-mini-range" id="consolaAddLittlePeaceSlider" min="0" max="100" value="30" step="1"><span class="consola-val" id="consolaAddLittlePeaceVal">30%</span></span>
         </div>
       </div>
       <div class="consola-field consola-instruments" title="Bass function: de dónde saca sus notas el bajo en el modo libre (no afecta a ↺ Normalito, que usa su propio bajo fijo). Los dos checkboxes son excluyentes.">
@@ -7326,8 +7327,8 @@ function runAnalysis() {
   })();
 
   /* ================================================================
-     MÓDULO ADD LITTLE PEACE — checkbox #consolaAddLittlePeaceChk
-     (activado por defecto). Con PROB (35%) de probabilidad por cada
+     MÓDULO ADD LITTLE PEACE — slider #consolaAddLittlePeaceSlider
+     (0–100%, default 30%; 0% = apagado). Con esa probabilidad por cada
      variación nueva (sorteado UNA vez en regenerateConsola/reset, no
      por compás), reserva un tramo de SPAN (4) compases SEGUIDOS,
      elegido al azar dentro de los NUM_BARS del segmento, como
@@ -7343,18 +7344,19 @@ function runAnalysis() {
      Normalito, que ya es un acorde fijo por compás sin ritmo variable.
      ================================================================ */
   var ADDLITTLEPEACE = (function(){
-    function enabled(){
-      var chk = document.getElementById("consolaAddLittlePeaceChk");
-      return !!(chk && chk.checked);
+    function prob(){
+      var sl = document.getElementById("consolaAddLittlePeaceSlider");
+      var v = sl ? parseFloat(sl.value) : 30;
+      return isFinite(v) ? Math.max(0, Math.min(100, v)) / 100 : 0.30;
     }
-    var PROB = 0.35;
+    function enabled(){ return prob() > 0; }
     var SPAN = 4;
     var range = null; // {start, end} (end exclusivo) o null — se resetea en cada regenerateConsola()
     function reset(numBars){
       range = null;
       if (!enabled()) return;
       if (numBars < SPAN) return; // no hay lugar para 4 compases seguidos
-      if (Math.random() >= PROB) return;
+      if (Math.random() >= prob()) return;
       var start = randomInt(0, numBars - SPAN);
       range = { start: start, end: start + SPAN };
     }
@@ -7363,7 +7365,7 @@ function runAnalysis() {
     }
     return {
       enabled: enabled,
-      PROB: PROB,
+      prob: prob,
       SPAN: SPAN,
       reset: reset,
       isPeaceBar: isPeaceBar
@@ -9247,7 +9249,7 @@ function runAnalysis() {
     fixedIntervalOffset = 0; // modo test de intervalos fijos: cada variación nueva arranca el ciclo en C (offset 0)
     cyclesOffset = 0; // módulo Cycles (Modo A acumulativo): cada variación nueva arranca el ciclo en C también
     MELODICPATTERNS.reset(); // melodicPatterns: un contorno nuevo por variación, compartido por melodía principal y bebopMelody
-    ADDLITTLEPEACE.reset(NUM_BARS); // AddLittlePeace: sortea si esta variación tiene (35%) un tramo de 4 compases de respiro, y dónde
+    ADDLITTLEPEACE.reset(NUM_BARS); // AddLittlePeace: sortea si esta variación tiene (slider, default 30%) un tramo de 4 compases de respiro, y dónde
     var built = buildProgressionRandom(rootChord, NUM_BARS);
     state.progression = built.progression;
     state.roles = built.roles;
@@ -11952,7 +11954,10 @@ function runAnalysis() {
   document.getElementById("consolaMoreRepChk").addEventListener("change", function(){
     if(state.rootChord.length) regenerateConsola();
   });
-  document.getElementById("consolaAddLittlePeaceChk").addEventListener("change", function(){
+  document.getElementById("consolaAddLittlePeaceSlider").addEventListener("input", function(){
+    document.getElementById("consolaAddLittlePeaceVal").textContent = this.value + "%";
+  });
+  document.getElementById("consolaAddLittlePeaceSlider").addEventListener("change", function(){
     if(state.rootChord.length) regenerateConsola();
   });
   document.getElementById("consolaCommonNotesChk").addEventListener("change", function(){
