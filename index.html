@@ -1518,6 +1518,7 @@
             <option value="kit" selected>Kit (batería real)</option>
           </select>
           <button type="button" class="chip toggle" id="swingDrumsBtn" aria-pressed="false" title="Reemplaza el patrón de batería generado por el groove real de un MIDI (JBB NmlMedSwg, swing 4/4) — 4 compases que se repiten para llenar el loop. Toca &quot;Reproducir&quot; de nuevo (o esperá al próximo loop) para que se note.">Swing Drums</button>
+          <button type="button" class="chip toggle" id="modernJazzBtn" aria-pressed="false" title="Batería de jazz moderno/experimental generada: ride que respira, comping conversacional en tresillos, polirritmias (3 contra 4, de a 5), compases de espacio y fills melódicos de toms. Rhythm complexity controla la densidad. Excluyente con Swing Drums.">Jazz moderno</button>
         </div>
       </div>
       </div>
@@ -7242,11 +7243,16 @@ function runAnalysis() {
     // Batería: ride "spang-a-lang" (negra + corchea swingueada tras
     // cada tiempo). La batería no tiene altura definida, así que acá
     // no hay ninguna restricción de set que respetar.
+    // Corregido 2026-09-23: antes no traía `midi`, así que drumMidiFor lo
+    // mandaba a hi-hat 42/46 (no sonaba ride), y tocaba la corchea swing
+    // en los 4 tiempos. Ahora: ride real (GM 51), spang-a-lang de verdad
+    // (1 · 2-y · 3 · 4-y = 6 golpes) y pedal de hi-hat (GM 44) en 2 y 4.
     var RIDE_HITS = [
-      {b:0,   open:false}, {b:L,     open:true},
-      {b:1,   open:false}, {b:1+L,   open:true},
-      {b:2,   open:false}, {b:2+L,   open:true},
-      {b:3,   open:false}, {b:3+L,   open:true}
+      {b:0,   open:false, midi:51, vel:84},
+      {b:1,   open:false, midi:51, vel:84}, {b:1+L, open:true, midi:51, vel:64},
+      {b:2,   open:false, midi:51, vel:84},
+      {b:3,   open:false, midi:51, vel:84}, {b:3+L, open:true, midi:51, vel:64},
+      {b:1,   open:false, midi:44, vel:70}, {b:3,   open:false, midi:44, vel:70}
     ];
     // "density" (0..1, sparso a denso): usado por el slider Rhythm
     // complexity (#consolaRhythmComplexitySlider) para re-pesar este pool
@@ -7257,7 +7263,7 @@ function runAnalysis() {
       { val:{ tier:"ride",      kick:[0],         snare:[],                    hihatHits: RIDE_HITS }, w:5, density:0.4 },
       { val:{ tier:"rideBomb",  kick:[0,2.75],    snare:[1.75],                hihatHits: RIDE_HITS }, w:2, density:0.65 },
       { val:{ tier:"rideComp",  kick:[],          snare:[2],                   hihatHits: RIDE_HITS }, w:2, density:0.15 },
-      { val:{ tier:"rideFours", kick:[0,1,2,3],   snare:[0.75,1.5,2.75,3.5],   hihatHits: RIDE_HITS }, w:1, density:0.95 }
+      { val:{ tier:"rideFours", kick:[0,1,2,3],   kickVel:28, snare:[0.75,1.5,2.75,3.5],   hihatHits: RIDE_HITS }, w:1, density:0.95 }
     ];
 
     return {
@@ -10092,7 +10098,7 @@ function runAnalysis() {
   // la pista. Devuelve false (sin sonar nada) si el preset no existe o
   // la nota queda fuera de su rango — el llamador debe usar el
   // sintetizador de siempre como respaldo en ese caso.
-  function playSM2Voice(ctx, dest, presetKey, midi, startTime, duration, gain){
+  function playSM2Voice(ctx, dest, presetKey, midi, startTime, duration, gain, vel){
     var presetIdx = sm2PresetIdxFor(presetKey);
     if(presetIdx < 0) return false;
     var resolved = sm2ResolveFontAndProgram(presetKey);
@@ -10100,7 +10106,10 @@ function runAnalysis() {
     var font = resolved.font;
     var fontTag = resolved.tag;
     if(!font) return false;
-    var hits = sf2ResolveNote(font, presetIdx, midi, 100);
+    // vel (opcional, 1-127): elige la capa de velocidad real del .sf2
+    // (ej. 36_soft_kick / 36_hard_kick en Drums default). Sin vel: 100,
+    // como siempre.
+    var hits = sf2ResolveNote(font, presetIdx, midi, vel != null ? Math.max(1, Math.min(127, Math.round(vel))) : 100);
     if(!hits.length) return false;
     var perHitGain = gain / hits.length;
     hits.forEach(function(hit){
@@ -10870,6 +10879,123 @@ function runAnalysis() {
     return events;
   }
 
+  // ---- JAZZ MODERNO (botón #modernJazzBtn, apagado por defecto) ------
+  // Batería de jazz moderno/experimental, generada compás a compás sobre
+  // una grilla de tresillos (3 slots por negra, slot/3 = beat). Capas:
+  //  - Ride que respira: spang-a-lang (GM 51) que a veces saltea golpes,
+  //    agrega corcheas swing sueltas o se va a la campana (GM 53).
+  //  - Pedal de hi-hat (GM 44) en 2 y 4 + bombo "feathered" (vel 24).
+  //  - Comping conversacional: caja/bombo en slots débiles, arranque
+  //    desplazado y saltos irregulares (2/2/4/5 slots) contra el pulso.
+  //  - Polirritmia: 1–2 compases agrupando de a 4 tresillos (3 contra 4)
+  //    o de a 5; sigue entre compases y resuelve en el 1 siguiente con
+  //    crash + bombo.
+  //  - Espacio: compases con solo ride + pedal (nunca en fin de frase).
+  //  - Fills melódicos de toms en fin de frase, arrancando en un slot
+  //    variable (no siempre en el tiempo 4).
+  //  - Dinámica de frase: la velocidad crece dentro de cada frase de 4.
+  // Rhythm complexity (0..1) escala comping, fills y polirritmia, y
+  // reduce los compases de espacio. Excluyente con Swing Drums. Notas GM
+  // (el Jazz Kit HIFI, que no es GM, se remapea en drumNoteForKit).
+  var modernJazzEnabled = false;
+  // Drums default (JDRockKit) tiene solo 3 muestras de tom (41=45,
+  // 43=47, 48=50 — verificado en el .sf2): 50/47/45 son las 3 distintas.
+  var MJ_TOMS = [50, 47, 45];
+  function mjRand(a, b){ return a + Math.floor(Math.random()*(b-a+1)); }
+  function mjPick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+  function buildModernJazzEvents(numBars){
+    var events = [];
+    var cx = rhythmComplexity;
+    var polyLeft = 0, polyGroup = 4, polyPos = 0, resolveNext = false;
+    for (var bar=0; bar<numBars; bar++){
+      var base = RHYTHM.start(bar);
+      var beats = RHYTHM.beats(bar);
+      var slots = Math.round(beats*3);
+      var phrasePos = bar % 4;
+      var phraseEnd = (phrasePos === 3);
+      var dyn = 0.85 + phrasePos*0.08;           // crescendo de frase
+      var push = function(ev){
+        if (ev.vel != null) ev.vel = Math.max(1, Math.min(127, Math.round(ev.vel*dyn)));
+        events.push(ev);
+      };
+      var at = function(slot){ return base + slot/3; };
+
+      // Resolución en el 1 (tras polirritmia o fill de fin de frase)
+      if (resolveNext){
+        push({type:"hihat", open:true, midi:49, startBeat: at(0), vel: 96});
+        push({type:"kick", startBeat: at(0), vel: 92});
+        resolveNext = false;
+      }
+
+      // ¿Arranca una polirritmia? (compás 1 o 3 de la frase)
+      if (polyLeft === 0 && (phrasePos === 0 || phrasePos === 2) && Math.random() < 0.12 + cx*0.25){
+        polyLeft = Math.random() < 0.5 ? 1 : 2;
+        polyGroup = Math.random() < 0.65 ? 4 : 5;
+        polyPos = 0;
+      }
+      var isPoly = polyLeft > 0;
+      var isSpace = !isPoly && !phraseEnd && Math.random() < Math.max(0.05, 0.3 - cx*0.2);
+      var bellBar = phraseEnd && Math.random() < 0.25;
+
+      // Ride que respira + pedal + feathering
+      for (var k=0; k<Math.floor(beats+1e-6); k++){
+        var q = k*3;
+        if (!(k > 0 && Math.random() < 0.05)){
+          var bell = bellBar || Math.random() < 0.08;
+          push({type:"hihat", open:false, midi: bell ? 53 : 51, startBeat: at(q), vel: mjRand(76, 88)});
+        }
+        var wantSkip = (k % 2 === 1) ? Math.random() >= 0.15 : Math.random() < 0.1;
+        if (wantSkip && q+2 < slots) push({type:"hihat", open:true, midi:51, startBeat: at(q+2), vel: mjRand(56, 68)});
+        if (k % 2 === 1) push({type:"hihat", open:false, midi:44, startBeat: at(q), vel: 70});
+        push({type:"kick", startBeat: at(q), vel: 24});
+      }
+
+      // Fill melódico de toms (fin de frase), arranque variable
+      var fillStart = slots;
+      if (phraseEnd && Math.random() < 0.4 + cx*0.4){
+        fillStart = mjRand(Math.max(1, slots-9), slots-3);
+        var hits = mjRand(3, 5);
+        var zig = Math.random() < 0.35;
+        var tIdx = 0, s = fillStart;
+        for (var h=0; h<hits && s<slots; h++){
+          push({type:"kick", midi: MJ_TOMS[tIdx], startBeat: at(s)+microTimingOffset(), vel: mjRand(70, 95)});
+          tIdx = zig ? (tIdx + mjPick([1, 2])) % MJ_TOMS.length : Math.min(MJ_TOMS.length-1, tIdx+1);
+          s += Math.random() < 0.6 ? 1 : 2;
+        }
+        resolveNext = true;
+      }
+
+      if (isPoly){
+        // Acentos cada polyGroup slots, continuando desde el compás anterior
+        for (var ps=0; ps<fillStart; ps++){
+          if ((polyPos + ps) % polyGroup === 0){
+            var alt = Math.floor((polyPos + ps)/polyGroup) % 2 === 0;
+            push({type: alt ? "snare" : "kick", startBeat: at(ps), vel: alt ? 84 : 80});
+            if (alt) push({type:"hihat", open:false, midi:53, startBeat: at(ps), vel: 70});
+          }
+        }
+        polyPos = (polyPos + slots) % polyGroup;
+        polyLeft--;
+        if (polyLeft === 0) resolveNext = true;
+      } else if (!isSpace){
+        // Comping conversacional
+        var dens = (0.25 + cx*0.45) * (phraseEnd ? 1.4 : 1);
+        var slot = mjRand(1, 3);
+        while (slot < fillStart){
+          var onBeat = slot % 3 === 0;
+          if (!(onBeat && Math.random() < 0.6) && Math.random() < dens){
+            var kickHit = Math.random() < 0.3;
+            push(kickHit
+              ? {type:"kick", startBeat: at(slot), vel: mjRand(68, 86)}
+              : {type:"snare", startBeat: at(slot)+microTimingOffset(), vel: mjRand(34, 82)});
+          }
+          slot += mjPick([2, 2, 4, 5]);
+        }
+      }
+    }
+    return events;
+  }
+
   // "Cuerpos" extra del kit, capa aditiva de Rhythm complexity — se
   // agregan ENCIMA del patrón de siempre de ese compás, nunca lo
   // reemplazan. Notas GM reales para cuando el SoundFont está activo
@@ -10996,6 +11122,7 @@ function runAnalysis() {
   }
   function buildDrumEvents(numBars){
     if(swingDrumsEnabled) return buildSwingDrumEvents(numBars);
+    if(modernJazzEnabled) return buildModernJazzEvents(numBars);
     // JAZZ: patrón de ride "spang-a-lang" en vez del hi-hat parejo —
     // la batería no tiene altura definida, así que acá no hay ninguna
     // restricción de set que respetar, es variedad rítmica pura.
@@ -11031,10 +11158,19 @@ function runAnalysis() {
       // compuesto, de a 2 si es simple) en vez de forzar un patrón de
       // 4/4 dentro de un compás de otra duración.
       var style = RHYTHM.isDefault4_4(bar) ? styleByBar[bar] : genericDrumPattern(RHYTHM.beats(bar), RHYTHM.compound(bar));
-      style.kick.forEach(function(b){ events.push({type:"kick", startBeat: base+b}); });
+      style.kick.forEach(function(b){
+        var kev = {type:"kick", startBeat: base+b};
+        if (style.kickVel != null) kev.vel = style.kickVel; // bombo "feathered" (jazz)
+        events.push(kev);
+      });
       style.snare.forEach(function(b){ events.push({type:"snare", startBeat: base+b+microTimingOffset()}); });
       if (style.hihatHits){
-        style.hihatHits.forEach(function(h){ events.push({type:"hihat", startBeat: base+h.b+microTimingOffset(), open: !!h.open}); });
+        style.hihatHits.forEach(function(h){
+          var hev = {type:"hihat", startBeat: base+h.b+microTimingOffset(), open: !!h.open};
+          if (h.midi != null) hev.midi = h.midi; // ride 51 / pedal 44 (jazz)
+          if (h.vel != null) hev.vel = h.vel;
+          events.push(hev);
+        });
       } else if (!JAZZ.roll() && HIHAT_VARIETY_TIERS[style.tier]){
         var cell = hihatVarietyByBar[bar];
         var tOff = 0;
@@ -11101,6 +11237,38 @@ function runAnalysis() {
     if(ev.type === "snare") return 38;
     if(ev.type === "rimshot") return 37; // cross-stick GM
     return ev.open ? 46 : 42; // hihat abierto / cerrado
+  }
+  // Remapeo de notas por kit (verificado 2026-09-23 parseando las zonas
+  // de cada .sf2, no asumido):
+  //  - "Drums default.sf2" (JDRockKit) y "Brush Kit" (GM 128-040) siguen
+  //    el mapa GM: 51 ride, 53 campana, 44 pedal, etc. Sin remapeo.
+  //  - "Jazz Kit - Jazz Traps" (HIFI) NO es GM: bombo 0-37, caja con
+  //    escobilla 38-52, barridos 53-58, toms con escobilla 59-78,
+  //    platillos con escobilla 79-96; no tiene hi-hat ni ride de palillo.
+  //    Sin remapeo, el ride (51) y el crash (49) sonaban como caja y los
+  //    toms (41-50) también. Se remapean solo platillos y toms; bombo,
+  //    caja y hi-hat/pedal (que ya caen en taps de caja con escobilla)
+  //    quedan como están. El orden agudo/grave de los 4 toms no se puede
+  //    saber por el nombre de la muestra — no verificado de oído.
+  var JAZZ_TRAPS_REMAP = {
+    51: 79, 59: 79,          // ride -> Brush Cymbal 1
+    53: 81,                  // campana -> Brush Cymbal 3
+    49: 80, 57: 80, 55: 81,  // crash/splash -> Brush Cymbal 2/3
+    50: 59, 48: 59,          // tom agudo -> Brushed Tom #1
+    47: 60, 45: 62,          // toms medios -> #2 / #3
+    43: 64, 41: 64           // tom grave -> #4
+  };
+  function drumKitIsJazzTraps(kitKey){
+    var r = sm2ResolveFontAndProgram(kitKey);
+    if(!r || !r.font || !r.font.phdr) return false;
+    var idx = sf2FindPresetIdx(r.font, r.bank, r.program);
+    var ph = idx >= 0 ? r.font.phdr[idx] : null;
+    return !!(ph && /jazz\s*traps/i.test(ph.name || ""));
+  }
+  function drumNoteForKit(isJazzTraps, gmNote, ev){
+    if(!isJazzTraps) return gmNote;
+    if(gmNote === 38 && ev && ev.vel != null && ev.vel >= 75) return 47; // caja fuerte -> Hrd Brush Snare1
+    return JAZZ_TRAPS_REMAP[gmNote] != null ? JAZZ_TRAPS_REMAP[gmNote] : gmNote;
   }
   function scheduleLoopAt(ctx, dest, loopStartTime, spb){
     // Mini mixer: un canal de ganancia por instrumento (independiente
@@ -11176,6 +11344,7 @@ function runAnalysis() {
       // playSM2Voice/sm2ResolveFontAndProgram ya resuelven por key
       // genérica, no hace falta enumerar acá los valores posibles.
       var drumKitKey = mixPresets.drum || "kit";
+      var kitIsJazzTraps = sm2Active && drumKitIsJazzTraps(drumKitKey);
       drumEvents.forEach(function(ev){
         var t = loopStartTime + ev.startBeat*spb;
         // Swing Drums trae velocidad real (ev.vel, 0-127); Velocity
@@ -11187,7 +11356,12 @@ function runAnalysis() {
         var velScale = ev.vel != null ? ev.vel/96 : 1;
         var sm2Gain = (ev.type === "kick" ? 0.34 : ev.type === "snare" ? 0.26 : ev.type === "rimshot" ? 0.2 : (ev.open ? 0.2 : 0.15)) * velScale;
         var sm2Dur = ev.type === "kick" ? 0.3 : ev.type === "snare" ? 0.25 : ev.type === "rimshot" ? 0.12 : (ev.open ? 0.5 : 0.15);
-        if(sm2Active && playSM2Voice(ctx, gains.drum, drumKitKey, drumMidiFor(ev), t, sm2Dur, sm2Gain)) return;
+        // Ride/campana/crash suenan largo; toms un poco más que el bombo
+        // (notas GM, antes del remapeo por kit).
+        if (ev.midi === 51 || ev.midi === 53 || ev.midi === 59) sm2Dur = 0.9;
+        else if (ev.midi === 49 || ev.midi === 57 || ev.midi === 55) sm2Dur = 1.4;
+        else if (ev.midi === 41 || ev.midi === 43 || ev.midi === 45 || ev.midi === 47 || ev.midi === 48 || ev.midi === 50) sm2Dur = 0.45;
+        if(sm2Active && playSM2Voice(ctx, gains.drum, drumKitKey, drumNoteForKit(kitIsJazzTraps, drumMidiFor(ev), ev), t, sm2Dur, sm2Gain, ev.vel)) return;
         if(ev.type === "kick") playKickDrum(ctx, gains.drum, t, velScale);
         else if(ev.type === "snare") playSnareDrum(ctx, gains.drum, t, velScale);
         else if(ev.type === "rimshot") playRimShot(ctx, gains.drum, t, velScale);
@@ -12219,6 +12393,11 @@ function runAnalysis() {
       // drumEvents al toque, mismo patrón que el click directo del botón.
       if(typeof set.swingDrums === "boolean" && swingDrumsEnabled !== set.swingDrums){
         swingDrumsEnabled = set.swingDrums;
+        if(swingDrumsEnabled && modernJazzEnabled){
+          modernJazzEnabled = false;
+          var mjB = document.getElementById("modernJazzBtn");
+          if(mjB) mjB.setAttribute("aria-pressed", "false");
+        }
         var swBtn = document.getElementById("swingDrumsBtn");
         if(swBtn) swBtn.setAttribute("aria-pressed", String(swingDrumsEnabled));
         drumEvents = buildDrumEvents(NUM_BARS);
@@ -12238,6 +12417,26 @@ function runAnalysis() {
       swingDrumsBtn.addEventListener("click", function(){
         swingDrumsEnabled = !swingDrumsEnabled;
         swingDrumsBtn.setAttribute("aria-pressed", String(swingDrumsEnabled));
+        if(swingDrumsEnabled && modernJazzEnabled){
+          modernJazzEnabled = false;
+          var mjB2 = document.getElementById("modernJazzBtn");
+          if(mjB2) mjB2.setAttribute("aria-pressed", "false");
+        }
+        drumEvents = buildDrumEvents(NUM_BARS);
+      });
+    }
+    // Jazz moderno: toggle, excluyente con Swing Drums (ver
+    // buildModernJazzEvents).
+    var modernJazzBtn = document.getElementById("modernJazzBtn");
+    if(modernJazzBtn){
+      modernJazzBtn.addEventListener("click", function(){
+        modernJazzEnabled = !modernJazzEnabled;
+        modernJazzBtn.setAttribute("aria-pressed", String(modernJazzEnabled));
+        if(modernJazzEnabled && swingDrumsEnabled){
+          swingDrumsEnabled = false;
+          var swB2 = document.getElementById("swingDrumsBtn");
+          if(swB2) swB2.setAttribute("aria-pressed", "false");
+        }
         drumEvents = buildDrumEvents(NUM_BARS);
       });
     }
