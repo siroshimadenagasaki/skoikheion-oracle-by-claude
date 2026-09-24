@@ -1044,6 +1044,9 @@
         <input type="file" id="sf2LocalPicker" webkitdirectory directory multiple hidden aria-hidden="true">
         <button class="chip" id="loadExtraBtn" type="button" title="Carga los SoundFonts de la carpeta Soundfonts/EXTRA/ (Piano Steinway D, Warm Pad, Super Bass Electric, Jazz Kit… y cualquier .sf2 que subas ahí) y activa sus opciones (HIFI) en los selectores del mini mixer. Solo se nota con '🎼 Sonido real' activado. Si alguno falla, volvé a apretarlo para reintentar.">loadExtra</button>
       </div>
+      <div class="clock-actions only-drums-row">
+        <button class="chip toggle" id="onlyDrumsBtn" type="button" aria-pressed="false" title="onlydrums: reproduce SetMusicBox y silencia todas las pistas excepto la batería (no toca los faders ni el export MIDI). Otro clic vuelve a sonar todo.">&#129345; onlydrums</button>
+      </div>
       <div class="examples examples-module" id="examplesModule">
         <div class="examples-head">
           <span class="examples-title">Ejemplos rápidos</span>
@@ -9651,6 +9654,10 @@ function runAnalysis() {
   }
   function focusFactor(track){ return (!focusActive() || focusTracks[track]) ? 1 : FOCUS_DUCK; }
   function mixEffective(track){ return mixGains[track] * focusFactor(track); }
+  // onlydrums: silencia en el AUDIO todo menos la batería. No cambia mixGains
+  // ni mixEffective (el export MIDI sigue igual); solo el nivel de los gain nodes.
+  var onlyDrums = false;
+  function audioGain(track){ return (onlyDrums && track !== "drum") ? 0 : mixEffective(track); }
   // Defaults propios (no los de SF_DEFAULT_FILES): Bajo = "synthBass" (Bajo original sintetizado) y
   // Doblar melodía = "bassoon" (Fagot, Instruments.sf2). Doblar armonía = Nord Pad (SF_DEFAULT_FILES).
   // Las filas de "Bass default.sf2" y "Armonica.sf2" siguen en el catálogo, elegibles a mano.
@@ -9709,42 +9716,42 @@ function runAnalysis() {
     var master = ensureMasterGain(ctx);
     if(!chordGainNode){
       chordGainNode = ctx.createGain();
-      chordGainNode.gain.value = mixEffective("chord");
+      chordGainNode.gain.value = audioGain("chord");
       chordGainNode.connect(master);
     }
     if(!bassGainNode){
       bassGainNode = ctx.createGain();
-      bassGainNode.gain.value = mixEffective("bass");
+      bassGainNode.gain.value = audioGain("bass");
       bassGainNode.connect(master);
     }
     if(!melodyGainNode){
       melodyGainNode = ctx.createGain();
-      melodyGainNode.gain.value = mixEffective("melody");
+      melodyGainNode.gain.value = audioGain("melody");
       melodyGainNode.connect(master);
     }
     if(!melodyDoubleGainNode){
       melodyDoubleGainNode = ctx.createGain();
-      melodyDoubleGainNode.gain.value = mixEffective("melodyDouble");
+      melodyDoubleGainNode.gain.value = audioGain("melodyDouble");
       melodyDoubleGainNode.connect(master);
     }
     if(!chordDoubleGainNode){
       chordDoubleGainNode = ctx.createGain();
-      chordDoubleGainNode.gain.value = mixEffective("chordDouble");
+      chordDoubleGainNode.gain.value = audioGain("chordDouble");
       chordDoubleGainNode.connect(master);
     }
     if(!drumGainNode){
       drumGainNode = ctx.createGain();
-      drumGainNode.gain.value = mixEffective("drum");
+      drumGainNode.gain.value = audioGain("drum");
       drumGainNode.connect(master);
     }
     if(!comping2GainNode){
       comping2GainNode = ctx.createGain();
-      comping2GainNode.gain.value = mixEffective("comping2");
+      comping2GainNode.gain.value = audioGain("comping2");
       comping2GainNode.connect(master);
     }
     if(!bebopGainNode){
       bebopGainNode = ctx.createGain();
-      bebopGainNode.gain.value = mixEffective("bebop");
+      bebopGainNode.gain.value = audioGain("bebop");
       bebopGainNode.connect(master);
     }
     // Envíos de reverb: una copia en paralelo de cada canal seco de
@@ -9779,7 +9786,7 @@ function runAnalysis() {
                track === "bebop" ? bebopGainNode : null;
     if(node){
       var ctx = getAudioCtx();
-      node.gain.setTargetAtTime(mixEffective(track), ctx ? ctx.currentTime : 0, 0.01);
+      node.gain.setTargetAtTime(audioGain(track), ctx ? ctx.currentTime : 0, 0.01);
     }
   }
   // Reverb: mismo patrón que setMixGain de arriba (setTargetAtTime, sin
@@ -11499,6 +11506,22 @@ function runAnalysis() {
     tickPlayhead(ctx, loopAnchor, spb, loopDur);
   }
   window.consolaStartPlayback = startPlayback;
+  // ---- onlydrums (botón debajo del reloj de entrada) ----
+  (function(){
+    var btn = document.getElementById("onlyDrumsBtn");
+    if(!btn) return;
+    btn.addEventListener("click", function(){
+      onlyDrums = !onlyDrums;
+      btn.classList.toggle("active", onlyDrums);
+      btn.setAttribute("aria-pressed", onlyDrums ? "true" : "false");
+      if(onlyDrums){
+        var drumChk = document.getElementById("consolaDrumChk");
+        if(drumChk && !drumChk.checked){ drumChk.checked = true; drumChk.dispatchEvent(new Event("change", { bubbles: true })); }
+      }
+      applyAllMixGains();
+      if(onlyDrums && !playing) startPlayback(); // sin secuencia generada no hace nada
+    });
+  })();
   window.consolaStopPlayback = stopPlayback; // declaración hoisted más abajo — accesible acá igual
 
   /* ================================================================
@@ -11843,13 +11866,13 @@ function runAnalysis() {
     var restoreAt = now + FADE + 0.005;
     if(masterGain) masterGain.gain.setValueAtTime(currentVolume, restoreAt);
     if(reverbReturnGain) reverbReturnGain.gain.setValueAtTime(1, restoreAt);
-    if(chordGainNode) chordGainNode.gain.setValueAtTime(mixEffective("chord"), restoreAt);
-    if(bassGainNode) bassGainNode.gain.setValueAtTime(mixEffective("bass"), restoreAt);
-    if(melodyGainNode) melodyGainNode.gain.setValueAtTime(mixEffective("melody"), restoreAt);
-    if(melodyDoubleGainNode) melodyDoubleGainNode.gain.setValueAtTime(mixEffective("melodyDouble"), restoreAt);
-    if(drumGainNode) drumGainNode.gain.setValueAtTime(mixEffective("drum"), restoreAt);
-    if(comping2GainNode) comping2GainNode.gain.setValueAtTime(mixEffective("comping2"), restoreAt);
-    if(bebopGainNode) bebopGainNode.gain.setValueAtTime(mixEffective("bebop"), restoreAt);
+    if(chordGainNode) chordGainNode.gain.setValueAtTime(audioGain("chord"), restoreAt);
+    if(bassGainNode) bassGainNode.gain.setValueAtTime(audioGain("bass"), restoreAt);
+    if(melodyGainNode) melodyGainNode.gain.setValueAtTime(audioGain("melody"), restoreAt);
+    if(melodyDoubleGainNode) melodyDoubleGainNode.gain.setValueAtTime(audioGain("melodyDouble"), restoreAt);
+    if(drumGainNode) drumGainNode.gain.setValueAtTime(audioGain("drum"), restoreAt);
+    if(comping2GainNode) comping2GainNode.gain.setValueAtTime(audioGain("comping2"), restoreAt);
+    if(bebopGainNode) bebopGainNode.gain.setValueAtTime(audioGain("bebop"), restoreAt);
 
     document.getElementById("consolaPlayBtn").disabled = state.chordEvents.length===0;
     var regenPlayBtnEl2 = document.getElementById("consolaRegenPlayBtn");

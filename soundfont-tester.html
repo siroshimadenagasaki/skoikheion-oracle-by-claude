@@ -276,6 +276,8 @@
     padding:5px 8px; font-size:12.5px; font-family:var(--sans);
   }
   #midiInfo{font-family:var(--mono); font-size:11.5px; color:var(--text-dim);}
+  #pianoRoll{display:none; width:100%; height:160px; background:var(--bg); border:1px solid var(--line); border-radius:4px; cursor:pointer;}
+  #pianoRoll.on{display:block;}
 
   ::-webkit-scrollbar{width:9px; height:9px;}
   ::-webkit-scrollbar-thumb{background:#3a3a3f; border-radius:5px;}
@@ -322,6 +324,7 @@
       <span id="octaveLabel">C3–C6</span>
       <button class="btn" id="octUp">octava ▶</button>
       <button class="btn" id="fastTest" style="margin-left:auto;">⏩ fast test (todos los Do)</button>
+      <button class="btn" id="chromTest">🎹 test cromático (0–127)</button>
       <button class="btn" id="testTone">🔊 probar audio (sin SoundFont)</button>
     </div>
     <div id="status" style="font-family:var(--mono); font-size:12px; color:var(--green); min-height:16px; margin:-10px 0 14px;"></div>
@@ -344,6 +347,7 @@
         </select>
         <span id="midiInfo"></span>
       </div>
+      <canvas id="pianoRoll" aria-label="Piano roll del MIDI (click para ir a esa posición)"></canvas>
     </div>
 
     <div id="pianoWrap">
@@ -1424,6 +1428,7 @@
         midiNameEl.textContent = file.name;
         midiNameEl.classList.add("loaded");
         renderMidiInfo(null);
+        rollRender();
         setPlayUi("stopped");
         updateSeek(0);
         if (sf && sf.presets.length) {
@@ -1455,6 +1460,51 @@
   function midiOnPresetChange() { // user clicked another preset: hear it on the song right away
     if (mp.playing && midiModeEl.value === "selected") midiPlay(currentPos());
   }
+
+  // ---- piano roll básico: canción completa ajustada al ancho, cabezal en vivo, click = seek ----
+  const rollEl = document.getElementById("pianoRoll");
+  const rollCtx = rollEl.getContext("2d");
+  let rollCache = null; // canvas offscreen con las notas ya dibujadas
+  const ROLL_COLORS = ["#7cd992","#e8b04a","#6fb3e8","#e87a6f","#b58be8","#e8e06f","#6fe8d4","#e86fb4"];
+  function rollRender() {
+    if (!midi) { rollEl.classList.remove("on"); rollCache = null; return; }
+    rollEl.classList.add("on");
+    const dpr = window.devicePixelRatio || 1;
+    const w = Math.max(1, Math.round(rollEl.clientWidth * dpr));
+    const h = Math.max(1, Math.round(rollEl.clientHeight * dpr));
+    rollEl.width = w; rollEl.height = h;
+    let lo = 127, hi = 0;
+    for (const n of midi.notes) { if (n.note < lo) lo = n.note; if (n.note > hi) hi = n.note; }
+    lo = Math.max(0, lo - 1); hi = Math.min(127, hi + 1);
+    const rows = hi - lo + 1, rowH = h / rows, xs = w / midi.duration;
+    const c = document.createElement("canvas"); c.width = w; c.height = h;
+    const g = c.getContext("2d");
+    g.fillStyle = "rgba(255,255,255,0.04)"; // filas de Do como referencia
+    for (let k = lo; k <= hi; k++) if (k % 12 === 0) g.fillRect(0, h - (k - lo + 1) * rowH, w, rowH);
+    for (const n of midi.notes) {
+      g.fillStyle = ROLL_COLORS[n.ch % ROLL_COLORS.length];
+      g.fillRect(n.t * xs, h - (n.note - lo + 1) * rowH, Math.max(1, n.dur * xs), Math.max(1, rowH - (rowH > 3 ? 1 : 0)));
+    }
+    rollCache = c;
+  }
+  function rollFrame() {
+    if (rollCache) {
+      rollCtx.clearRect(0, 0, rollEl.width, rollEl.height);
+      rollCtx.drawImage(rollCache, 0, 0);
+      const x = Math.round(currentPos() / midi.duration * rollEl.width);
+      rollCtx.fillStyle = "#fff";
+      rollCtx.fillRect(x, 0, Math.max(1, window.devicePixelRatio || 1), rollEl.height);
+    }
+    requestAnimationFrame(rollFrame);
+  }
+  requestAnimationFrame(rollFrame);
+  window.addEventListener("resize", rollRender);
+  rollEl.addEventListener("click", e => {
+    if (!midi) return;
+    const r = rollEl.getBoundingClientRect();
+    const t = Math.min(midi.duration, Math.max(0, (e.clientX - r.left) / r.width * midi.duration));
+    if (mp.playing) midiPlay(t); else { mp.pos = t; updateSeek(t); }
+  });
 
   midiPlayBtn.addEventListener("click", () => { if (mp.playing) midiPause(); else midiPlay(); });
   midiStopBtn.addEventListener("click", midiStop);
@@ -1586,27 +1636,40 @@
 
   buildPiano();
 
-  document.getElementById("fastTest").addEventListener("click", () => {
+  // Runner compartido por los tests; iniciar uno nuevo cancela el anterior.
+  let testRun = 0;
+  function runNoteTest(notes, stepMs, label) {
     if (!sf || !sf.presets.length) { setStatus("Primero cargá un SoundFont.", true); return; }
     selectPreset(0, false);
     const preset = currentPreset;
     ensureCtx();
-    const cNotes = [];
-    for (let n = 0; n <= 120; n += 12) cNotes.push(n); // C-1 .. C9
+    const run = ++testRun;
     let i = 0;
-    setStatus(`Fast test: preset "${preset.name}" · ${cNotes.length} notas Do, medio segundo cada una.`, false);
+    setStatus(`${label}: preset "${preset.name}" · ${notes.length} notas, ${stepMs} ms cada una.`, false);
     function step() {
-      if (i > 0) stopVoice(cNotes[i - 1], true);
-      if (i >= cNotes.length) return;
-      const note = cNotes[i];
+      if (i > 0) stopVoice(notes[i - 1], true);
+      if (run !== testRun || i >= notes.length) return;
+      const note = notes[i];
       noteOn(sf, preset, note, 100);
       const el = pianoEl.querySelector(`[data-note="${note}"]`);
       if (el) el.classList.add("down");
-      setTimeout(() => { if (el) el.classList.remove("down"); }, 480);
+      setTimeout(() => { if (el) el.classList.remove("down"); }, stepMs - 20);
       i++;
-      setTimeout(step, 500);
+      setTimeout(step, stepMs);
     }
     step();
+  }
+
+  document.getElementById("fastTest").addEventListener("click", () => {
+    const cNotes = [];
+    for (let n = 0; n <= 120; n += 12) cNotes.push(n); // C-1 .. C9
+    runNoteTest(cNotes, 500, "Fast test");
+  });
+
+  document.getElementById("chromTest").addEventListener("click", () => {
+    const all = [];
+    for (let n = 0; n <= 127; n++) all.push(n); // C-1 .. G9, las 128 notas MIDI
+    runNoteTest(all, 200, "Test cromático");
   });
 
   document.getElementById("testTone").addEventListener("click", () => {
