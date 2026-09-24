@@ -1,9 +1,0 @@
-{
-  "instruments": [
-    { "key": "piano",              "file": "Grand piano.sf2",         "bank": 0, "program": 0,  "label": "Steinway D",            "mode": "replace" },
-    { "key": "pad",                "file": "Warm Pad.sf2",            "bank": 0, "program": 0,  "label": "Warm Pad",              "mode": "new", "fallbackFamily": "pad",  "target": "melodic" },
-    { "key": "bassAcoustic",       "file": "Acoustic Bass.sf2",       "bank": 0, "program": 32, "label": "Acoustic Bass",         "mode": "new", "fallbackFamily": "bass", "target": "melodic" },
-    { "key": "bassSuperElectric",  "file": "super bass electric.sf2", "bank": 0, "program": 0,  "label": "Super Bass Electric",   "mode": "new", "fallbackFamily": "bass", "target": "melodic" },
-    { "key": "kit",                "file": "Jazz Kit.sf2",            "bank": 0, "program": 0,  "label": "Jazz Kit (Jazz Traps)", "mode": "replace" }
-  ]
-}
