@@ -1465,8 +1465,9 @@
       </div>
       <div class="mix-styles">
         <span>Estilos (set de presets)</span>
-        <button class="chip" id="presetBaroqueBtn" type="button" title="Set de presets: Armonía → Clavecín, Bajo → Piano eléctrico, Melodía → Flauta, Melodía doblada → Clavecín (prende el doblaje).">Baroque</button>
-        <button class="chip" id="presetJazzBtn" type="button" title="Set de presets: Armonía → Piano, Doblar armonía → Mute, Melodía → Sax soprano, Doblar melodía → Mute, Bajo → Bajo original (sintetizado). Además prende Swing Drums (groove real de jazz, en vez del patrón de batería aleatorio).">Jazz</button>
+        <button class="chip" id="presetBaroqueBtn" type="button" title="Set de presets: Armonía → Clavecín, Bajo → Fagot, Melodía → Flauta, Melodía doblada → Clavecín (prende el doblaje).">Baroque</button>
+        <button class="chip" id="presetJazzBtn" type="button" title="Set de presets: Armonía → Piano, Doblar armonía → Mute, Melodía → Sax soprano, Doblar melodía → Mute, Bajo → Bajo original (sintetizado). Además prende Swing Drums (groove real de jazz, en vez del patrón de batería aleatorio).">Jazz traditional</button>
+        <button class="chip" id="presetJazzFusionBtn" type="button" title="Copia de Jazz traditional con Armonía → Piano eléctrico y Melodía → Ethan's Bassoon (Soundfonts/bassoon.sf2). Doblar armonía → Mute, Doblar melodía → Mute, Bajo → Bajo original (sintetizado). Además prende Swing Drums.">Jazz fusion</button>
       </div>
       <div class="mix-presets">
         <div class="mix-preset-group" id="harmonyPresetGroup" data-mix-group="harmony">
@@ -1521,7 +1522,7 @@
             <option value="kit" selected>Kit (batería real)</option>
           </select>
           <button type="button" class="chip toggle" id="swingDrumsBtn" aria-pressed="false" title="Reemplaza el patrón de batería generado por el groove real de un MIDI (JBB NmlMedSwg, swing 4/4) — 4 compases que se repiten para llenar el loop. Toca &quot;Reproducir&quot; de nuevo (o esperá al próximo loop) para que se note.">Swing Drums</button>
-          <button type="button" class="chip toggle" id="modernJazzBtn" aria-pressed="false" title="Batería de jazz moderno/experimental generada: ride que respira, comping conversacional en tresillos, polirritmias (3 contra 4, de a 5), compases de espacio y fills melódicos de toms. Rhythm complexity controla la densidad. Excluyente con Swing Drums.">Jazz moderno</button>
+          <button type="button" class="chip toggle" id="modernJazzBtn" aria-pressed="true" title="Batería de jazz moderno/experimental generada: ride que respira, comping conversacional en tresillos, polirritmias (3 contra 4, de a 5), compases de espacio y fills melódicos de toms. Rhythm complexity controla la densidad. Excluyente con Swing Drums.">Jazz moderno</button>
         </div>
       </div>
       </div>
@@ -5137,10 +5138,12 @@ const SF_LEGACY_FILES = {
 };
 function sfLegacyUrl(key) { const l = SF_LEGACY_FILES[key]; return l ? sfUrlForPath(SF_ROOT_DIR + "/" + l.file) : null; }
 function sfLegacyId(key) { const l = SF_LEGACY_FILES[key]; return l ? "x_" + encodeURIComponent(l.file) : null; }
+// Otros .sf2 que usan los estilos (Jazz fusion → "sf:x_bassoon.sf2:0:0").
+const SF_ALWAYS_FILES = ["bassoon.sf2"];
 // Archivos que se bajan solos al abrir la página: defaults + clásicos.
 function sfAutoFiles() {
   const seen = {}, out = [];
-  SF_DEFAULT_FILES.map((d) => d.file).concat(Object.keys(SF_LEGACY_FILES).map((k) => SF_LEGACY_FILES[k].file)).forEach((f) => {
+  SF_DEFAULT_FILES.map((d) => d.file).concat(Object.keys(SF_LEGACY_FILES).map((k) => SF_LEGACY_FILES[k].file), SF_ALWAYS_FILES).forEach((f) => {
     if (seen[f]) return; seen[f] = true; out.push(f);
   });
   return out;
@@ -6366,12 +6369,7 @@ function runAnalysis() {
     var overtoneGain = ctx.createGain(); overtoneGain.gain.value = 0.06;
     overtone.connect(overtoneGain); overtoneGain.connect(filter);
 
-    var vibrato = ctx.createOscillator();
-    vibrato.type = "sine"; vibrato.frequency.setValueAtTime(5.2, t0);
-    var vibratoGain = ctx.createGain();
-    vibratoGain.gain.setValueAtTime(0, t0);
-    vibratoGain.gain.linearRampToValueAtTime(freq * 0.006, t0 + attack + 0.12);
-    vibrato.connect(vibratoGain); vibratoGain.connect(osc.frequency);
+    // Sin vibrato (2026-09-23): se eliminó toda modulación de altura.
 
     var noiseSrc = ctx.createBufferSource();
     noiseSrc.buffer = progresionGetNoiseBuffer(ctx);
@@ -6387,7 +6385,7 @@ function runAnalysis() {
     noiseGain.gain.linearRampToValueAtTime(0, sustainEnd + release);
     noiseSrc.connect(noiseFilter); noiseFilter.connect(noiseGain); noiseGain.connect(ctx.destination);
 
-    [osc, overtone, vibrato].forEach(function (o, idx) {
+    [osc, overtone].forEach(function (o, idx) {
       o.start(t0);
       o.stop(sustainEnd + release + 0.1);
       progresionVoices.push({ osc: o, env: idx === 0 ? env : null });
@@ -10295,22 +10293,13 @@ function runAnalysis() {
     filter.connect(voiceGain);
     voiceGain.connect(dest);
 
-    var lfo = ctx.createOscillator();
-    lfo.type = "sine";
-    lfo.frequency.value = 5.3;
-    var lfoGain = ctx.createGain();
-    lfoGain.gain.value = 6; // profundidad del vibrato, en cents
-    lfo.connect(lfoGain);
-    lfo.start(startTime);
-    lfo.stop(sustainEnd + release + 0.1);
-    voices.push(lfo);
+    // Sin LFO de vibrato (2026-09-23): se eliminó toda modulación de altura.
 
     [-7, 0, 7].forEach(function(cents){
       var osc = ctx.createOscillator();
       osc.type = "sawtooth";
       osc.frequency.value = freq;
       osc.detune.value = cents;
-      lfoGain.connect(osc.detune);
       osc.connect(filter);
       osc.start(startTime);
       osc.stop(sustainEnd + release + 0.1);
@@ -10355,16 +10344,7 @@ function runAnalysis() {
     overtone.connect(overtoneGain);
     overtoneGain.connect(filter);
 
-    // Vibrato suave: LFO modulando la frecuencia del oscilador principal,
-    // que entra recién después del ataque (como en una flauta real).
-    var vibrato = ctx.createOscillator();
-    vibrato.type = "sine";
-    vibrato.frequency.value = 5.2;
-    var vibratoGain = ctx.createGain();
-    vibratoGain.gain.setValueAtTime(0, startTime);
-    vibratoGain.gain.linearRampToValueAtTime(freq*0.006, startTime + attack + 0.12);
-    vibrato.connect(vibratoGain);
-    vibratoGain.connect(osc.frequency);
+    // Sin vibrato (2026-09-23): se eliminó toda modulación de altura.
 
     // Un toque de aire (ruido filtrado muy suave) para el ataque, típico
     // del "chiff" de flauta al empezar la nota.
@@ -10385,7 +10365,7 @@ function runAnalysis() {
     noiseGain.connect(dest);
 
     osc.connect(filter);
-    [osc, overtone, vibrato].forEach(function(o){
+    [osc, overtone].forEach(function(o){
       o.start(startTime);
       o.stop(sustainEnd + release + 0.1);
       voices.push(o);
@@ -10441,16 +10421,7 @@ function runAnalysis() {
     third.connect(thirdGain);
     thirdGain.connect(bodyFilter);
 
-    // Vibrato, entra después del ataque como en un saxo tocado con
-    // expresión (más marcado que el de la flauta).
-    var vibrato = ctx.createOscillator();
-    vibrato.type = "sine";
-    vibrato.frequency.value = 5.6;
-    var vibratoGain = ctx.createGain();
-    vibratoGain.gain.setValueAtTime(0, startTime);
-    vibratoGain.gain.linearRampToValueAtTime(freq*0.008, startTime + attack + 0.1);
-    vibrato.connect(vibratoGain);
-    vibratoGain.connect(osc.frequency);
+    // Sin vibrato (2026-09-23): se eliminó toda modulación de altura.
 
     // Aire/lengüeta: ruido filtrado más presente que en la flauta, típico
     // del ataque "breathy" de un saxo.
@@ -10470,7 +10441,7 @@ function runAnalysis() {
     noiseFilter.connect(noiseGain);
     noiseGain.connect(dest);
 
-    [osc, third, vibrato].forEach(function(o){
+    [osc, third].forEach(function(o){
       o.start(startTime);
       o.stop(sustainEnd + release + 0.1);
       voices.push(o);
@@ -10904,7 +10875,7 @@ function runAnalysis() {
   // Rhythm complexity (0..1) escala comping, fills y polirritmia, y
   // reduce los compases de espacio. Excluyente con Swing Drums. Notas GM
   // (el Jazz Kit HIFI, que no es GM, se remapea en drumNoteForKit).
-  var modernJazzEnabled = false;
+  var modernJazzEnabled = true; // prendido por defecto (2026-09-23)
   // Drums default (JDRockKit) tiene solo 3 muestras de tom (41=45,
   // 43=47, 48=50 — verificado en el .sf2): 50/47/45 son las 3 distintas.
   var MJ_TOMS = [50, 47, 45];
@@ -12365,12 +12336,22 @@ function runAnalysis() {
     var hifiChkEl = document.getElementById("loadExtraBtn");
     if(hifiChkEl){
       hifiChkEl.addEventListener("click", function(){
+        if(hifiChkEl.dataset.autoClick === "1") return; // la carga automática no toca el Bajo
         var bassEl = document.getElementById("bassPresetSelect");
         if(mixPresets.bass === "synthBass" && bassEl && bassEl.querySelector('option[value="bassAcoustic"]')){
           mixPresets.bass = "bassAcoustic";
           bassEl.value = "bassAcoustic";
         }
       });
+      // loadExtra por defecto (2026-09-23): al abrir la página se aprieta
+      // solo, una vez — mismo efecto que el click manual.
+      // No cambia el Bajo a Acoustic Bass (eso queda solo para el click
+      // manual): así el default del Bajo sigue siendo el de siempre.
+      setTimeout(function(){
+        hifiChkEl.dataset.autoClick = "1";
+        hifiChkEl.click();
+        hifiChkEl.dataset.autoClick = "";
+      }, 0);
     }
 
     // ---- Sets de presets con nombre (ej. "Baroque") ----------------------
@@ -12381,8 +12362,12 @@ function runAnalysis() {
     // a PRESET_SETS y un botón en el HTML con
     // data-preset-set="esaKey" (o cablearlo a mano como acá abajo).
     var PRESET_SETS = {
-      baroque: { harmony: "harpsichord", bass: "epiano", melody: "flute",  melodyDouble: "harpsichord", gains: { drum: 0 } },
-      jazz:    { harmony: "piano", chordDouble: "mute", melody: "sopranoSax", melodyDouble: "mute", bass: "synthBass", swingDrums: true }
+      baroque:    { harmony: "harpsichord", bass: "bassoon", melody: "flute",  melodyDouble: "harpsichord", gains: { drum: 0 } },
+      jazz:       { harmony: "piano", chordDouble: "mute", melody: "sopranoSax", melodyDouble: "mute", bass: "synthBass", swingDrums: true },
+      // Jazz fusion = copia de Jazz traditional con Armonía → Piano
+      // eléctrico y Melodía → "Ethan's Bassoon" (Soundfonts/bassoon.sf2,
+      // único preset: banco 0 / programa 0, leído del phdr).
+      jazzfusion: { harmony: "epiano", chordDouble: "mute", melody: "sf:x_bassoon.sf2:0:0", melodyDouble: "mute", bass: "synthBass", swingDrums: true }
     };
     function applyPresetSet(setKey){
       var set = PRESET_SETS[setKey];
@@ -12430,6 +12415,8 @@ function runAnalysis() {
     if(baroqueBtn) baroqueBtn.addEventListener("click", function(){ applyPresetSet("baroque"); });
     var jazzBtn = document.getElementById("presetJazzBtn");
     if(jazzBtn) jazzBtn.addEventListener("click", function(){ applyPresetSet("jazz"); });
+    var jazzFusionBtn = document.getElementById("presetJazzFusionBtn");
+    if(jazzFusionBtn) jazzFusionBtn.addEventListener("click", function(){ applyPresetSet("jazzfusion"); });
 
     // Swing Drums: toggle simple (mismo patrón que sf2Btn/aria-pressed).
     // Reconstruye drumEvents al toque para que, si ya está sonando el
