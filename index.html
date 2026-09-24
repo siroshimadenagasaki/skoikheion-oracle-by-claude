@@ -1171,6 +1171,12 @@
           <span class="consola-inst-toggle" title="Superset: en cada ataque del bajo, 50% de las veces toca una nota del acorde en curso y el otro 50% una nota de AFUERA del set de ese reataque (una clase de tono que no pertenece al set transportado). Es el único modo del motor que sale del set elegido."><input type="checkbox" id="consolaBassFnSupersetChk"><label for="consolaBassFnSupersetChk">Superset</label></span>
         </div>
       </div>
+      <div class="consola-field consola-instruments" title="Pedal de sustain de la Armonía (motor libre y Normalito): en cada cambio de acorde se tira un dado al 50%. Si sale, el pedal se pisa antes de que termine el acorde y se suelta después del ataque del próximo — las notas del acorde que termina siguen sonando por encima del ataque siguiente y se cortan un instante después, enlazando un acorde con otro (legato). Una nota que se repite igual en el acorde siguiente no se estira (se vuelve a atacar, como en un piano real). No cambia QUÉ notas suenan, solo cuánto duran. Prendido por defecto.">
+        <label>Armonía</label>
+        <div class="consola-inst-row">
+          <span class="consola-inst-toggle" title="Sustain: 50% de los cambios de acorde quedan enlazados con pedal (el acorde saliente se sostiene hasta un instante después del ataque del entrante)."><input type="checkbox" id="consolaSustainChk" checked><label for="consolaSustainChk">&#127929; Sustain</label></span>
+        </div>
+      </div>
         </div>
       </div>
       <div class="consola-field consola-instruments" title="Todo lo de ritmo agrupado y contraído por defecto: Rhythm complexity, Variaciones de ritmo (Velocity humanizada, Micro-timing, Variación por sección, other-rhythm-variations), Rhythm — Time signature (con Mix time signatures) y Loop — mismos controles de siempre, solo reubicados.">
@@ -8719,6 +8725,60 @@ function runAnalysis() {
       roll: roll
     };
   })();
+  /* ================================================================
+     SUSTAINPEDAL — checkbox #consolaSustainChk (How to play, prendido
+     por defecto). Post-proceso de los eventos de Armonía (motor libre y
+     Normalito): en cada cambio de reataque (slot k -> slot k+1, también
+     de un compás al siguiente, nunca del último al primero del loop) se
+     tira un dado al 50%. Si sale, simula el pedal: se pisa antes de que
+     termine el acorde k y se suelta RELEASE después del ataque del
+     acorde k+1 — o sea, cada nota del acorde k se estira hasta
+     (inicio de k+1) + RELEASE. RELEASE = min(1/4 de tiempo, mitad de la
+     duración de k+1). Si la misma nota (mismo midi) vuelve a sonar en
+     k+1, esa nota NO se estira (se re-ataca, como en un piano real, y
+     así no quedan dos notas iguales superpuestas en el MIDI exportado).
+     Nunca agrega ni cambia notas: solo alarga duraciones.
+     ================================================================ */
+  var SUSTAINPEDAL = (function(){
+    var PROB = 0.5;
+    function enabled(){
+      var chk = document.getElementById("consolaSustainChk");
+      return !!(chk && chk.checked);
+    }
+    function apply(events, slotChords){
+      if(!enabled() || !events || !events.length || !slotChords || !slotChords.length) return events;
+      // Lista plana de reataques con su inicio absoluto y sus eventos.
+      var slots = [];
+      slotChords.forEach(function(barSlots, bar){
+        var barStart = RHYTHM.start(bar);
+        (barSlots || []).forEach(function(sl){
+          slots.push({ bar:bar, start: barStart + sl.startBeat, end: barStart + sl.startBeat + sl.durBeats, dur: sl.durBeats, evs: [] });
+        });
+      });
+      events.forEach(function(ev){
+        for(var i=0;i<slots.length;i++){
+          var sl = slots[i];
+          if(sl.bar === ev.bar && ev.startBeat >= sl.start - 1e-9 && ev.startBeat < sl.end - 1e-9){ sl.evs.push(ev); return; }
+        }
+      });
+      for(var k=0;k<slots.length-1;k++){
+        if(Math.random() >= PROB) continue;
+        var cur = slots[k], nxt = slots[k+1];
+        if(!nxt.evs.length) continue;
+        var release = nxt.start + Math.min(0.25, nxt.dur*0.5);
+        var nextMidis = {};
+        nxt.evs.forEach(function(e){ nextMidis[e.midi] = true; });
+        cur.evs.forEach(function(e){
+          if(nextMidis[e.midi]) return; // misma nota en el acorde siguiente: se re-ataca, no se estira
+          var end = e.startBeat + e.durBeats;
+          if(release > end) e.durBeats = release - e.startBeat;
+          e.sustain = true;
+        });
+      }
+      return events;
+    }
+    return { enabled: enabled, apply: apply, PROB: PROB };
+  })();
   function buildChordEventsRandom(rootChord, numBars){
     var chordPool = JAZZ.roll() ? JAZZ.CHORD_RHYTHM_POOL : CHORD_RHYTHM_POOL;
     var cellsByBar = avoidAdjacentDuplicates(
@@ -9261,7 +9321,7 @@ function runAnalysis() {
     state.progression = built.progression;
     state.roles = built.roles;
     var chordBuilt = buildChordEventsRandom(rootChord, NUM_BARS);
-    state.chordEvents = chordBuilt.events;
+    state.chordEvents = SUSTAINPEDAL.apply(chordBuilt.events, chordBuilt.slotChords); // Sustain (How to play): 50% de los cambios de acorde enlazados con pedal
     state.slotChords = chordBuilt.slotChords;
     var bm = buildBassMelodyEventsRandom(state.progression, built.meta, chordBuilt.slotChords);
     state.bassEvents = bm.bassEvents;
@@ -9291,7 +9351,7 @@ function runAnalysis() {
     state.progression = built.progression;
     state.roles = built.roles;
     var chordBuiltNormal = buildChordEvents(state.progression);
-    state.chordEvents = chordBuiltNormal.events;
+    state.chordEvents = SUSTAINPEDAL.apply(chordBuiltNormal.events, chordBuiltNormal.slotChords); // Sustain (How to play)
     state.slotChords = chordBuiltNormal.slotChords;
     state.bassEvents = buildBassEvents(state.progression);
     state.melodyEvents = buildMelodyEvents(state.progression);
@@ -12129,6 +12189,9 @@ function runAnalysis() {
     if(state.rootChord.length) regenerateConsola();
   });
   document.getElementById("consolaCommonNotesChk").addEventListener("change", function(){
+    if(state.rootChord.length) regenerateConsola();
+  });
+  document.getElementById("consolaSustainChk").addEventListener("change", function(){
     if(state.rootChord.length) regenerateConsola();
   });
   document.getElementById("consolaMixDurChk").addEventListener("change", function(){
