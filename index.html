@@ -1040,9 +1040,9 @@
         <button class="chip" id="composeBtn" type="button" title="Toca el segmento de 12 compases de SetMusicBox con las notas actuales">🎹 Compose</button>
         <button class="chip" id="clearBtn">Limpiar</button>
         <button class="chip" id="multiSetsMemBtn2" type="button" disabled title="Mismo botón que To Memory de Multi Sets Input (copia acá para no tener que abrir esa tarjeta): guarda el set actual del reloj/piano en el próximo casillero libre y resetea el reloj. Entre paréntesis, cuántos sets van guardados.">To Memory (0/5)</button>
-        <button class="chip toggle" id="sf2Btn" type="button" aria-pressed="false" title="Carga los SoundFonts default y clásicos (Soundfonts/*.sf2 + un .sf2 por instrumento) y reemplaza el sintetizador por muestras de instrumento y batería reales (incluye SetMusicBox). Un clic más para volver al sintetizador liviano.">🎼 Sonido real (SoundFont)</button>
+        <button class="chip toggle" id="sf2Btn" type="button" aria-pressed="false" title="Carga los SoundFonts default y clásicos (Soundfonts v2/*.sf2 + un .sf2 por instrumento) y reemplaza el sintetizador por muestras de instrumento y batería reales (incluye SetMusicBox). Un clic más para volver al sintetizador liviano.">🎼 Sonido real (SoundFont)</button>
         <input type="file" id="sf2LocalPicker" webkitdirectory directory multiple hidden aria-hidden="true">
-        <button class="chip" id="loadExtraBtn" type="button" title="Carga los SoundFonts de la carpeta Soundfonts/EXTRA/ (Piano Steinway D, Warm Pad, Super Bass Electric, Jazz Kit… y cualquier .sf2 que subas ahí) y activa sus opciones (HIFI) en los selectores del mini mixer. Solo se nota con '🎼 Sonido real' activado. Si alguno falla, volvé a apretarlo para reintentar.">loadExtra</button>
+        <button class="chip" id="loadExtraBtn" type="button" title="Carga los SoundFonts de la carpeta Soundfonts v2/Extra v2/ (Piano Steinway D, Warm Pad, Super Bass Electric, Jazz Kit… y cualquier .sf2 que subas ahí) y activa sus opciones (HIFI) en los selectores del mini mixer. Solo se nota con '🎼 Sonido real' activado. Si alguno falla, volvé a apretarlo para reintentar.">loadExtra</button>
       </div>
       <div class="clock-actions only-drums-row">
         <button class="chip toggle" id="onlyDrumsBtn" type="button" aria-pressed="false" title="onlydrums: reproduce SetMusicBox y silencia todas las pistas excepto la batería (no toca los faders ni el export MIDI). Otro clic vuelve a sonar todo.">&#129345; onlydrums</button>
@@ -1473,7 +1473,7 @@
         <span>Estilos (set de presets)</span>
         <button class="chip" id="presetBaroqueBtn" type="button" title="Set de presets: Armonía → Clavecín, Bajo → Fagot, Melodía → Flauta, Melodía doblada → Clavecín (prende el doblaje).">Baroque</button>
         <button class="chip" id="presetJazzBtn" type="button" title="Set de presets: Armonía → Piano, Doblar armonía → Mute, Melodía → Sax soprano, Doblar melodía → Mute, Bajo → Bajo original (sintetizado). Además prende Swing Drums (groove real de jazz, en vez del patrón de batería aleatorio).">Jazz traditional</button>
-        <button class="chip" id="presetJazzFusionBtn" type="button" title="Copia de Jazz traditional con Armonía → Piano eléctrico y Melodía → Ethan's Bassoon (Soundfonts/bassoon.sf2). Doblar armonía → Mute, Doblar melodía → Mute, Bajo → Bajo original (sintetizado). Además prende Swing Drums.">Jazz fusion</button>
+        <button class="chip" id="presetJazzFusionBtn" type="button" title="Copia de Jazz traditional con Armonía → Piano eléctrico y Melodía → Ethan's Bassoon (Soundfonts v2/Extra v2/bassoon.sf2). Doblar armonía → Mute, Doblar melodía → Mute, Bajo → Bajo original (sintetizado). Además prende Swing Drums.">Jazz fusion</button>
       </div>
       <div class="mix-presets">
         <div class="mix-preset-group" id="harmonyPresetGroup" data-mix-group="harmony">
@@ -4519,7 +4519,7 @@ const SF2_DEFAULT_PRESET = { bank: 0, preset: 0 }; // Grand Piano
 // Checkbox "HIFI" (al lado del botón "Sonido real"): cuando está tildado,
 // SetMusicBox usa, para las "key" listadas acá, este .sf2 aparte en vez
 // del sintetizador/GM de siempre. Cada entrada es un archivo INDEPENDIENTE
-// en Soundfonts/EXTRA/ (no se carga con el botón "Sonido real" ni suma
+// en Soundfonts v2/Extra v2/ (no se carga con el botón "Sonido real" ni suma
 // peso a esa carga inicial) — todos se descargan juntos recién al tildar
 // el checkbox por primera vez (ver hifiLoadAllIfNeeded).
 // Dos formas de usar una entrada:
@@ -4541,8 +4541,13 @@ const SF2_DEFAULT_PRESET = { bank: 0, preset: 0 }; // Grand Piano
 // Además, CUALQUIER .sf2 dentro de Soundfonts/ (esté o no en este
 // manifest) se descubre solo y todos sus presets aparecen en los
 // selectores — ver "Catálogo unificado" más abajo (sfDiscoverReady).
-const HIFI_MANIFEST_URL = "Soundfonts/EXTRA/manifest.json";
-// Fallback embebido si Soundfonts/EXTRA/manifest.json todavía no existe
+// Carpetas de soundfonts (remapeo 2026-09-25: Soundfonts/ -> "Soundfonts v2/",
+// EXTRA/ -> "Extra v2/"). Si renombrás una carpeta: cambiá estas 2 líneas y
+// las rutas de SF_DEFAULT_FILES / SF_LEGACY_FILES / SF_ALWAYS_FILES.
+const SF_ROOT_DIR = "Soundfonts v2";
+const SF_EXTRA_DIR = "Extra v2";
+const HIFI_MANIFEST_URL = SF_ROOT_DIR.split("/").map(encodeURIComponent).join("/") + "/" + encodeURIComponent(SF_EXTRA_DIR) + "/manifest.json";
+// Fallback embebido si Soundfonts v2/Extra v2/manifest.json todavía no existe
 // en el repo o falla el fetch — mismo contenido que HIFI_FILES tenía
 // hardcodeado hasta ahora, así el sitio sigue sonando igual sin el
 // manifest. Una vez que el manifest está presente, LO REEMPLAZA por
@@ -4551,8 +4556,8 @@ const HIFI_MANIFEST_URL = "Soundfonts/EXTRA/manifest.json";
 // abajo, junto a hifiLoadManifest.
 const HIFI_DEFAULT_MANIFEST = [
   { key: "piano",             file: "Keys/Steinway Grand Piano 1.2 - 000-000 Steinway Grand.sf2", bank: 0, program: 0,  label: "Steinway D",           mode: "replace" },
-  { key: "pad",                file: "Warm Pad.sf2",              bank: 0, program: 0,  label: "Warm Pad",             mode: "new", fallbackFamily: "pad",  target: "melodic" },
-  { key: "bassSuperElectric",  file: "super bass electric.sf2",   bank: 0, program: 0,  label: "Super Bass Electric",  mode: "new", fallbackFamily: "bass", target: "melodic" },
+  { key: "pad",                file: "Synth/Warm Pad.sf2",              bank: 0, program: 0,  label: "Warm Pad",             mode: "new", fallbackFamily: "pad",  target: "melodic" },
+  { key: "bassSuperElectric",  file: "BASS/super bass electric.sf2",   bank: 0, program: 0,  label: "Super Bass Electric",  mode: "new", fallbackFamily: "bass", target: "melodic" },
   { key: "kit",                file: "Drums/Jazz Kit - 000-000 Jazz Traps.sf2", bank: 0, program: 0,  label: "Jazz Kit (Jazz Traps)", mode: "replace" }
 ];
 const HIFI_FILES = [];
@@ -4560,13 +4565,13 @@ const HIFI_FILES_BY_KEY = {};
 let hifiEnabled = false;
 const hifiFontByKey = {};              // key -> .sf2 parseado (una vez listo)
 const hifiStateByKey = {};             // key -> idle | loading | ready | error
-// Formato de Soundfonts/EXTRA/manifest.json — { "instruments": [ {...}, ... ] }.
+// Formato de Soundfonts v2/Extra v2/manifest.json — { "instruments": [ {...}, ... ] }.
 // Cada entrada:
 //   key    — identificador único. Para mode:"replace" tiene que
 //            coincidir con una key ya existente (piano/epiano/
 //            harpsichord/celesta/strings1/brass1/sopranoSax/tenorSax/
 //            bassoon/flute/contrabass/jazzGuitar/kit/percussion).
-//   file   — ruta del archivo dentro de Soundfonts/EXTRA/ (puede incluir
+//   file   — ruta del archivo dentro de Soundfonts v2/Extra v2/ (puede incluir
 //            subcarpetas, ej. "Keys/…"; con
 //            espacios tal cual, sin encodear — esto lo hace el código).
 //   bank/program — banco y programa MIDI a usar dentro de ese .sf2.
@@ -4581,7 +4586,7 @@ const hifiStateByKey = {};             // key -> idle | loading | ready | error
 //            "sax"|"flute"|"bass".
 //   target  (solo mode:"new") — "melodic" (Armonía/Doblar armonía/
 //            Melodía/Doblar melodía/Bebop/Bajo) o "drum" (Batería).
-// Para sumar un soundfont nuevo: subís el .sf2 a Soundfonts/EXTRA/ y
+// Para sumar un soundfont nuevo: subís el .sf2 a Soundfonts v2/Extra v2/ y
 // agregás una entrada acá — no hace falta tocar index.html.
 let HIFI_MANIFEST_ENTRIES = [];
 const hifiManifestReady = (async function hifiLoadManifest() {
@@ -4594,7 +4599,7 @@ const hifiManifestReady = (async function hifiLoadManifest() {
     }
   } catch (e) { /* sin manifest todavía, o fetch fallido: se usa HIFI_DEFAULT_MANIFEST */ }
   entries.forEach((f) => {
-    var fileUrl = "Soundfonts/EXTRA/" + f.file.split("/").map(encodeURIComponent).join("/");
+    var fileUrl = sfUrlForPath(SF_ROOT_DIR + "/" + SF_EXTRA_DIR + "/" + f.file);
     var entry = { key: f.key, url: fileUrl, bank: f.bank || 0, program: f.program || 0, label: f.label || f.key };
     HIFI_FILES.push(entry);
     HIFI_FILES_BY_KEY[f.key] = entry;
@@ -5081,8 +5086,8 @@ function sf2ShowLoadOverlayError() {
 // con TODOS los presets que declara el phdr de ese .sf2.
 //   · Los 3 archivos base (Instruments/Drums/Percussion) se cargan solos
 //     al abrir la página: sus presets aparecen apenas terminan.
-//   · Todo OTRO .sf2 dentro de Soundfonts/ (típicamente Soundfonts/EXTRA/)
-//     se descubre solo: con Soundfonts/EXTRA/manifest.json (que define
+//   · Todo OTRO .sf2 dentro de Soundfonts/ (típicamente Soundfonts v2/Extra v2/)
+//     se descubre solo: con Soundfonts v2/Extra v2/manifest.json (que define
 //     las keys y las opciones "(HIFI)" dedicadas) Y listando las
 //     carpetas con la API de GitHub — subir un .sf2 al repo alcanza,
 //     aunque no esté en el manifest. Sus presets se leen al tildar HIFI
@@ -5095,7 +5100,6 @@ function sf2ShowLoadOverlayError() {
 // que resuelve sm2ResolveFontAndProgram — no hace falta registrar nada.
 const SF_GH_OWNER = "siroshimadenagasaki";
 const SF_GH_REPO = "skoikheion-oracle-by-claude";
-const SF_ROOT_DIR = "Soundfonts";
 const SF_BASE_URLS = []; // Instruments/Drums/Percussion.sf2 ya no existen (ver SF_LEGACY_FILES)
 // ---- Defaults del mini mixer (Soundfonts/*.sf2 subidos como "default") ----
 // Un archivo por selector. bank/program/label salen del phdr real de cada
@@ -5107,7 +5111,7 @@ const SF_DEFAULT_FILES = [
   { mix: "harmony",      file: "Piano default.sf2", bank: 0, program: 0,  label: "Grand Piano",          kind: "melodic", family: "piano" },
   { mix: "chordDouble",  file: "Nord Pad.sf2",      bank: 0, program: 0,  label: "Warm Pad Pro",         kind: "melodic", family: "pad"   },
   { mix: "melody",       file: "Flute default.sf2", bank: 0, program: 73, label: "Flute",                kind: "melodic", family: "flute" },
-  { mix: "melodyDouble", file: "EXTRA/Armonica.sf2",      bank: 0, program: 0,  label: "Hohner C Harmonica",   kind: "melodic", family: "flute" },
+  { mix: "melodyDouble", file: "Extra v2/LEAD/Armonica.sf2", bank: 0, program: 0,  label: "Hohner C Harmonica",   kind: "melodic", family: "flute" },
   { mix: "bass",         file: "Bass default.sf2",  bank: 0, program: 32, label: "Acoust. Bass (Solar)", kind: "melodic", family: "bass"  },
   { mix: "drum",         file: "Drums default.sf2", bank: 0, program: 0,  label: "JDRockKit",            kind: "drum" }
 ];
@@ -5128,24 +5132,26 @@ function sfIsDefaultId(id) { return SF_DEFAULT_FILES.some((d) => sfDefaultId(d) 
 // cae al sintetizador de batería.
 const SF_LEGACY_FILES = {
   piano:       { file: "Piano default.sf2",                                     bank: 0, program: 0  },
-  epiano:      { file: "EXTRA/Keys/Instruments - 000-004 E.Pïano 1.sf2",         bank: 0, program: 4  },
-  harpsichord: { file: "EXTRA/Keys/Instruments - 000-006 Harpsichord.sf2",       bank: 0, program: 6  },
-  celesta:     { file: "EXTRA/Keys/Instruments - 000-008 Celesta.sf2",           bank: 0, program: 8  },
-  strings1:    { file: "EXTRA/Instruments - 000-048 String Section 1 (Ma.sf2",   bank: 0, program: 48 },
-  strings:     { file: "EXTRA/Instruments - 000-048 String Section 1 (Ma.sf2",   bank: 0, program: 48 },
-  brass1:      { file: "EXTRA/Instruments - 000-061 Brass Section 1.sf2",        bank: 0, program: 61 },
-  sopranoSax:  { file: "EXTRA/ Melody/Instruments - 000-064 Soprano Sax.sf2",    bank: 0, program: 64 },
-  tenorSax:    { file: "EXTRA/ Melody/Instruments - 000-066 Tenor Sax.sf2",      bank: 0, program: 66 },
-  bassoon:     { file: "EXTRA/Instruments - 000-070 Bassoon.sf2",                bank: 0, program: 70 },
+  epiano:      { file: "Extra v2/Keys/Instruments - 000-004 E.Pïano 1.sf2",      bank: 0, program: 4  },
+  harpsichord: { file: "Extra v2/Keys/Instruments - 000-006 Harpsichord.sf2",      bank: 0, program: 6  },
+  celesta:     { file: "Extra v2/Keys/Instruments - 000-008 Celesta.sf2",      bank: 0, program: 8  },
+  strings1:    { file: "Extra v2/Brass & Strings/Instruments - 000-048 String Section 1 (Ma.sf2",   bank: 0, program: 48 },
+  strings:     { file: "Extra v2/Brass & Strings/Instruments - 000-048 String Section 1 (Ma.sf2",   bank: 0, program: 48 },
+  brass1:      { file: "Extra v2/Brass & Strings/Instruments - 000-061 Brass Section 1.sf2",      bank: 0, program: 61 },
+  sopranoSax:  { file: "Extra v2/LEAD/Instruments - 000-064 Soprano Sax.sf2",    bank: 0, program: 64 },
+  tenorSax:    { file: "Extra v2/LEAD/Instruments - 000-066 Tenor Sax.sf2",      bank: 0, program: 66 },
+  bassoon:     { file: "Extra v2/LEAD/Instruments - 000-070 Bassoon.sf2",      bank: 0, program: 70 },
   flute:       { file: "Flute default.sf2",                                     bank: 0, program: 73 },
-  contrabass:  { file: "EXTRA/Instruments - 000-043 Contrabass.sf2",             bank: 0, program: 43 },
-  jazzGuitar:  { file: "EXTRA/Instruments - 000-026 Jazz Guitar.sf2",            bank: 0, program: 26 },
+  contrabass:  { file: "Extra v2/BASS/Instruments - 000-043 Contrabass.sf2",      bank: 0, program: 43 },
+  jazzGuitar:  { file: "Extra v2/Instruments - 000-026 Jazz Guitar.sf2",      bank: 0, program: 26 },
   kit:         { file: "Drums default.sf2",                                     bank: 0, program: 0  }
 };
 function sfLegacyUrl(key) { const l = SF_LEGACY_FILES[key]; return l ? sfUrlForPath(SF_ROOT_DIR + "/" + l.file) : null; }
 function sfLegacyId(key) { const l = SF_LEGACY_FILES[key]; return l ? "x_" + encodeURIComponent(l.file) : null; }
 // Otros .sf2 que usan los estilos (Jazz fusion → "sf:x_bassoon.sf2:0:0").
-const SF_ALWAYS_FILES = ["bassoon.sf2"];
+const SF_ALWAYS_FILES = ["Extra v2/bassoon.sf2"];
+// Key "sf:..." de un archivo (ruta relativa a SF_ROOT_DIR) — para usar en PRESET_SETS.
+function sfKeyForFile(file, bank, program) { return "sf:x_" + encodeURIComponent(file) + ":" + (bank || 0) + ":" + (program || 0); }
 // Archivos que se bajan solos al abrir la página: defaults + clásicos.
 function sfAutoFiles() {
   const seen = {}, out = [];
@@ -5155,7 +5161,7 @@ function sfAutoFiles() {
   return out;
 }
 function sfIsAutoId(id) { return sfAutoFiles().some((f) => "x_" + encodeURIComponent(f) === id); }
-const SF_DISCOVER_CACHE_KEY = "sfDiscoverCacheV1";
+const SF_DISCOVER_CACHE_KEY = "sfDiscoverCacheV2";
 const SF_DISCOVER_CACHE_TTL_MS = 5 * 60 * 1000; // la API sin token da 60 pedidos/hora por IP
 let sfExtraFiles = SF_DEFAULT_FILES.map((d) => ({ id: sfDefaultId(d), url: sfUrlForPath(SF_ROOT_DIR + "/" + d.file), path: SF_ROOT_DIR + "/" + d.file, label: d.file, kind: d.kind }));       // [{ id, url, path, label, kind }] — todo .sf2 que NO es uno de los 3 base
 let sfExtraVersion = 0;      // sube cada vez que termina de cargar un .sf2 extra (invalida el caché de índices de preset)
@@ -5176,29 +5182,48 @@ function sfTagForUrl(url, id) {
   for (const f of HIFI_FILES) if (f.url.toLowerCase() === url.toLowerCase()) return "hifi_" + f.key;
   return "sfx_" + id;
 }
-async function sfListSf2Paths(dir, depth) {
-  const api = "https://api.github.com/repos/" + SF_GH_OWNER + "/" + SF_GH_REPO + "/contents/" + sfUrlForPath(dir);
+// Lista de .sf2: se juntan DOS fuentes (lo que falte en una lo pone la otra):
+//   1) "Soundfonts v2/catalog.json" — { "files": [rutas relativas a SF_ROOT_DIR] }.
+//      Funciona siempre (sin API, sin límite). Lo regenera solo la GitHub
+//      Action .github/workflows/sf-catalog.yml en cada push que toque .sf2.
+//   2) API de GitHub, UN solo pedido (git/trees recursivo) — cubre un .sf2
+//      recién subido antes de que la Action actualice catalog.json.
+const SF_CATALOG_URL = sfUrlForPath(SF_ROOT_DIR + "/catalog.json");
+async function sfListSf2PathsFromCatalog() {
+  const res = await fetch(SF_CATALOG_URL, { cache: "no-cache" });
+  if (!res.ok) throw new Error("catalog.json " + res.status);
+  const data = await res.json();
+  return (data && Array.isArray(data.files) ? data.files : [])
+    .filter((f) => /\.sf2$/i.test(f)).map((f) => SF_ROOT_DIR + "/" + f);
+}
+async function sfListSf2PathsFromApi() {
+  const api = "https://api.github.com/repos/" + SF_GH_OWNER + "/" + SF_GH_REPO + "/git/trees/main?recursive=1";
   const res = await fetch(api, { headers: { Accept: "application/vnd.github+json" } });
-  if (!res.ok) throw new Error("GitHub API " + res.status + " al listar " + dir);
-  const items = await res.json();
-  let out = [];
-  for (const it of items) {
-    if (it.type === "file" && /\.sf2$/i.test(it.name)) out.push(it.path);
-    else if (it.type === "dir" && depth > 0) out = out.concat(await sfListSf2Paths(it.path, depth - 1));
-  }
-  return out;
+  if (!res.ok) throw new Error("GitHub API " + res.status);
+  const data = await res.json();
+  return (data.tree || []).filter((it) => it.type === "blob" && it.path.indexOf(SF_ROOT_DIR + "/") === 0 && /\.sf2$/i.test(it.path)).map((it) => it.path);
 }
 async function sfDiscoverPaths() {
+  const out = [];
+  try { (await sfListSf2PathsFromCatalog()).forEach((p) => out.push(p)); }
+  catch (err) { console.warn("Sin " + SF_ROOT_DIR + "/catalog.json:", err); }
+  let apiPaths = null;
   try {
     const raw = localStorage.getItem(SF_DISCOVER_CACHE_KEY);
     if (raw) {
       const c = JSON.parse(raw);
-      if (c && Array.isArray(c.paths) && Date.now() - c.t < SF_DISCOVER_CACHE_TTL_MS) return c.paths;
+      if (c && c.root === SF_ROOT_DIR && Array.isArray(c.paths) && Date.now() - c.t < SF_DISCOVER_CACHE_TTL_MS) apiPaths = c.paths;
     }
-  } catch (e) { /* sin caché de descubrimiento: se pide de nuevo */ }
-  const paths = await sfListSf2Paths(SF_ROOT_DIR, 2);
-  try { localStorage.setItem(SF_DISCOVER_CACHE_KEY, JSON.stringify({ t: Date.now(), paths })); } catch (e) { /* no pasa nada */ }
-  return paths;
+  } catch (e) { /* sin caché: se pide de nuevo */ }
+  if (!apiPaths) {
+    try {
+      apiPaths = await sfListSf2PathsFromApi();
+      try { localStorage.setItem(SF_DISCOVER_CACHE_KEY, JSON.stringify({ t: Date.now(), root: SF_ROOT_DIR, paths: apiPaths })); } catch (e) { /* no pasa nada */ }
+    } catch (err) { console.warn("No se pudo listar " + SF_ROOT_DIR + "/ con la API de GitHub (se usa catalog.json):", err); apiPaths = []; }
+  }
+  apiPaths.forEach((p) => out.push(p));
+  if (!out.length) throw new Error("Ni catalog.json ni la API devolvieron archivos");
+  return out;
 }
 // "melodic" -> selectores de instrumento; "drum" -> selector Batería.
 // Con manifest, manda su mode/target/key; sin manifest, se deduce del
@@ -5221,16 +5246,16 @@ const sfDiscoverReady = (async function sfDiscover() {
     if (SF_BASE_URLS.indexOf(url) !== -1) return;
     if (!found.has(url.toLowerCase())) found.set(url.toLowerCase(), { url, path });
   }
-  // La API va primero: trae el nombre de archivo con las mayúsculas reales
-  // (GitHub Pages distingue mayúsculas de minúsculas).
+  // catalog.json + API van primero: traen el nombre con las mayúsculas
+  // reales (GitHub Pages distingue mayúsculas de minúsculas).
   try { (await sfDiscoverPaths()).forEach(addPath); }
-  catch (err) { console.warn("No se pudo listar Soundfonts/ con la API de GitHub — solo se usan los archivos del manifest:", err); }
-  manifest.forEach((m) => addPath(SF_ROOT_DIR + "/EXTRA/" + m.file));
+  catch (err) { console.warn("No se pudo listar " + SF_ROOT_DIR + "/ — solo se usan los archivos del manifest y los defaults:", err); }
+  manifest.forEach((m) => addPath(SF_ROOT_DIR + "/" + SF_EXTRA_DIR + "/" + m.file));
   sfAutoFiles().forEach((f) => addPath(SF_ROOT_DIR + "/" + f)); // defaults + clásicos: nunca dependen de la API
   const files = [];
   found.forEach((f) => {
     const rel = f.path.slice(SF_ROOT_DIR.length + 1);
-    const mans = manifest.filter((m) => sfUrlForPath(SF_ROOT_DIR + "/EXTRA/" + m.file).toLowerCase() === f.url.toLowerCase());
+    const mans = manifest.filter((m) => sfUrlForPath(SF_ROOT_DIR + "/" + SF_EXTRA_DIR + "/" + m.file).toLowerCase() === f.url.toLowerCase());
     files.push({ id: "x_" + encodeURIComponent(rel), url: f.url, path: f.path, label: rel.split("/").join(" / "), kind: sfKindFor(f.path, mans) });
   });
   sfExtraFiles = files;
@@ -5296,7 +5321,7 @@ async function hifiLoadAllIfNeeded() {
   ));
 }
 // Botón "loadExtra" (reemplaza al checkbox HIFI): baja de una vez todos los
-// .sf2 de Soundfonts/EXTRA/ y deja activas sus opciones (HIFI) — mismo
+// .sf2 de Soundfonts v2/Extra v2/ y deja activas sus opciones (HIFI) — mismo
 // efecto que tenía tildar el checkbox. Se puede apretar de nuevo para
 // reintentar los que fallaron (hifiLoadAllIfNeeded salta los ya cargados).
 const loadExtraBtn = document.getElementById("loadExtraBtn");
@@ -5391,7 +5416,7 @@ document.getElementById("sf2Btn").addEventListener("click", sf2ToggleBtnClick);
 // por http(s).
 if (SF2_IS_LOCAL_FILE) {
   var sf2BtnLocalEl = document.getElementById("sf2Btn");
-  if (sf2BtnLocalEl) sf2BtnLocalEl.title += " — Abierto como archivo local: al hacer clic te va a pedir elegir la carpeta \"Soundfonts\" del proyecto (se lee del disco, sin internet ni servidor). Se pide una sola vez.";
+  if (sf2BtnLocalEl) sf2BtnLocalEl.title += " — Abierto como archivo local: al hacer clic te va a pedir elegir la carpeta \"Soundfonts v2\" del proyecto (se lee del disco, sin internet ni servidor). Se pide una sola vez.";
 } else {
   sf2Activate(document.getElementById("sf2Btn"));
 }
@@ -9963,8 +9988,8 @@ function runAnalysis() {
     return "pad";
   }
   var SF_HIFI_DEDICATED = {
-    piano: { key:"pianoHifi", label:"Piano (HIFI)", title:"Soundfont HIFI aparte (Soundfonts/EXTRA/Keys/Steinway Grand Piano 1.2 - 000-000 Steinway Grand.sf2, Steinway D) — requiere apretar loadExtra. Sin loadExtra, esta opción cae directo al sintetizador (a diferencia de 'Piano', que de todos modos ya usa HIFI en forma transparente si está tildado, y si no, el SoundFont base Instruments.sf2)." },
-    kit:   { key:"kitHifi",   label:"Kit (HIFI)",   title:"Soundfont HIFI aparte (Soundfonts/EXTRA/Drums/Jazz Kit - 000-000 Jazz Traps.sf2) — requiere apretar loadExtra. Sin loadExtra, cae directo al sintetizador de batería (a diferencia de 'Kit', que usa el SoundFont base Drums.sf2 como paso intermedio)." }
+    piano: { key:"pianoHifi", label:"Piano (HIFI)", title:"Soundfont HIFI aparte (Soundfonts v2/Extra v2/Keys/Steinway Grand Piano 1.2 - 000-000 Steinway Grand.sf2, Steinway D) — requiere apretar loadExtra. Sin loadExtra, esta opción cae directo al sintetizador (a diferencia de 'Piano', que de todos modos ya usa HIFI en forma transparente si está tildado, y si no, el SoundFont base Instruments.sf2)." },
+    kit:   { key:"kitHifi",   label:"Kit (HIFI)",   title:"Soundfont HIFI aparte (Soundfonts v2/Extra v2/Drums/Jazz Kit - 000-000 Jazz Traps.sf2) — requiere apretar loadExtra. Sin loadExtra, cae directo al sintetizador de batería (a diferencia de 'Kit', que usa el SoundFont base Drums.sf2 como paso intermedio)." }
   };
   function sfBaseFileRecords(){
     var instCurated = SM2_INSTRUMENTS.map(function(it){
@@ -9982,11 +10007,11 @@ function runAnalysis() {
     return sfExtraFiles.map(function(e){
       var curated = [];
       HIFI_MANIFEST_ENTRIES.forEach(function(m){
-        if(sfUrlForPath("Soundfonts/EXTRA/" + m.file).toLowerCase() !== e.url.toLowerCase()) return;
+        if(sfUrlForPath(SF_ROOT_DIR + "/" + SF_EXTRA_DIR + "/" + m.file).toLowerCase() !== e.url.toLowerCase()) return;
         if(m.mode === "new"){
           curated.push({ key:m.key, label:(m.label || m.key) + " (HIFI)", bank:m.bank || 0, program:m.program || 0,
             family:m.fallbackFamily || "pad",
-            title:"Soundfont HIFI aparte (Soundfonts/EXTRA/" + m.file + ") — requiere apretar loadExtra (se carga junto con el resto de Soundfonts/EXTRA/)." });
+            title:"Soundfont HIFI aparte (" + SF_ROOT_DIR + "/" + SF_EXTRA_DIR + "/" + m.file + ") — requiere apretar loadExtra (se carga junto con el resto de " + SF_ROOT_DIR + "/" + SF_EXTRA_DIR + "/)." });
         } else if(SF_HIFI_DEDICATED[m.key]){
           var d = SF_HIFI_DEDICATED[m.key];
           curated.push({ key:d.key, label:d.label, bank:m.bank || 0, program:m.program || 0, title:d.title });
@@ -9995,7 +10020,7 @@ function runAnalysis() {
       SF_DEFAULT_FILES.forEach(function(d){
         if(sfDefaultId(d) !== e.id) return;
         curated.push({ key:sfDefaultKey(d), label:d.label, bank:d.bank, program:d.program, family:d.family,
-          title:"Default de este selector · Soundfonts/" + d.file + " · banco " + d.bank + " · programa " + d.program });
+          title:"Default de este selector · " + SF_ROOT_DIR + "/" + d.file + " · banco " + d.bank + " · programa " + d.program });
       });
       return { id:e.id, label:e.label, kind:e.kind, font:sfFontByUrl[e.url] || null, extra:true, url:e.url, curated:curated };
     });
@@ -10097,7 +10122,7 @@ function runAnalysis() {
   function sm2ResolveFontAndProgram(key){
     // Presets sin key propia: "sf:<archivo>:<banco>:<programa>" (ver
     // sfBuildPresetSelects). Los 3 archivos base van por sm2FontFor; los
-    // extras (Soundfonts/EXTRA/…) exigen HIFI tildado y el archivo cargado
+    // extras (Soundfonts v2/Extra v2/…) exigen HIFI tildado y el archivo cargado
     // — mismo criterio que el resto de las opciones HIFI.
     if(key.indexOf("sf:") === 0){
       var sfParts = key.split(":");
@@ -12428,9 +12453,9 @@ function runAnalysis() {
       baroque:    { harmony: "harpsichord", bass: "bassoon", melody: "flute",  melodyDouble: "harpsichord", gains: { drum: 0 } },
       jazz:       { harmony: "piano", chordDouble: "mute", melody: "sopranoSax", melodyDouble: "mute", bass: "synthBass", swingDrums: true },
       // Jazz fusion = copia de Jazz traditional con Armonía → Piano
-      // eléctrico y Melodía → "Ethan's Bassoon" (Soundfonts/bassoon.sf2,
+      // eléctrico y Melodía → "Ethan's Bassoon" (Soundfonts v2/Extra v2/bassoon.sf2,
       // único preset: banco 0 / programa 0, leído del phdr).
-      jazzfusion: { harmony: "epiano", chordDouble: "mute", melody: "sf:x_bassoon.sf2:0:0", melodyDouble: "mute", bass: "synthBass", swingDrums: true }
+      jazzfusion: { harmony: "epiano", chordDouble: "mute", melody: sfKeyForFile("Extra v2/bassoon.sf2", 0, 0), melodyDouble: "mute", bass: "synthBass", swingDrums: true }
     };
     function applyPresetSet(setKey){
       var set = PRESET_SETS[setKey];
