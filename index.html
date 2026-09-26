@@ -42,6 +42,7 @@
     pointer-events:none;
   }
   .sf2-load-overlay.sf2-load-hidden{ opacity:0; }
+  .sf2-load-overlay.sf2-load-extra{ top:58px; }
   .sf2-load-overlay .sf2-load-bar{
     width:90px; height:6px; border-radius:4px; overflow:hidden;
     background:var(--surface-2); border:1px solid var(--line);
@@ -979,6 +980,12 @@
   <span class="sf2-load-bar"><span class="sf2-load-bar-fill" id="sf2LoadBarFill"></span></span>
 </div>
 
+<!-- Indicador de carga de loadExtra (mismo estilo, debajo del de Sonido real) -->
+<div class="sf2-load-overlay sf2-load-extra sf2-load-hidden" id="extraLoadOverlay">
+  <span class="sf2-load-label" id="extraLoadLabel">&#127932; Cargando extras&hellip; 0%</span>
+  <span class="sf2-load-bar"><span class="sf2-load-bar-fill" id="extraLoadBarFill"></span></span>
+</div>
+
 <!-- Fondo de página: avatar detrás del texto -->
 <div class="page-bg-avatar"></div>
 
@@ -1045,9 +1052,6 @@
         <button class="chip toggle" id="sf2Btn" type="button" aria-pressed="false" title="Carga los SoundFonts default y clásicos (Soundfonts v2/*.sf2 + un .sf2 por instrumento) y reemplaza el sintetizador por muestras de instrumento y batería reales (incluye SetMusicBox). Un clic más para volver al sintetizador liviano.">🎼 Sonido real (SoundFont)</button>
         <input type="file" id="sf2LocalPicker" webkitdirectory directory multiple hidden aria-hidden="true">
         <button class="chip" id="loadExtraBtn" type="button" title="Carga los SoundFonts de la carpeta Soundfonts v2/Extra v2/ (Piano Steinway D, Warm Pad, Super Bass Electric, Jazz Kit… y cualquier .sf2 que subas ahí) y activa sus opciones (HIFI) en los selectores del mini mixer. Solo se nota con '🎼 Sonido real' activado. Si alguno falla, volvé a apretarlo para reintentar.">loadExtra</button>
-      </div>
-      <div class="clock-actions only-drums-row">
-        <button class="chip toggle" id="onlyDrumsBtn" type="button" aria-pressed="false" title="onlydrums: reproduce SetMusicBox y silencia todas las pistas excepto la batería (no toca los faders ni el export MIDI). Otro clic vuelve a sonar todo.">&#129345; onlydrums</button>
       </div>
       <div class="examples examples-module" id="examplesModule">
         <div class="examples-head">
@@ -5270,6 +5274,14 @@ const sfDiscoverReady = (async function sfDiscover() {
 // Baja y parsea un .sf2 una sola vez por URL (si dos keys del manifest
 // apuntan al mismo archivo, o el archivo está en el manifest Y descubierto
 // por la API, se comparte la misma promesa — no se baja dos veces).
+// Progreso de una carga en lote (loadExtra): sfProgress = { urls:Set, done:Set, cb }.
+// Cada archivo terminado (ok o error) llama a sfProgressTick una sola vez.
+let sfProgress = null;
+function sfProgressTick(url) {
+  if (!sfProgress || !sfProgress.urls.has(url) || sfProgress.done.has(url)) return;
+  sfProgress.done.add(url);
+  sfProgress.cb(Math.round(sfProgress.done.size / sfProgress.urls.size * 100));
+}
 function sfLoadFontOnce(url) {
   if (!sfLoadPromiseByUrl[url]) {
     sfStateByUrl[url] = "loading";
@@ -5280,6 +5292,7 @@ function sfLoadFontOnce(url) {
         sfFontByUrl[url] = font;
         sfStateByUrl[url] = "ready";
         sfNotifyCatalogChange(true);
+        sfProgressTick(url);
         return font;
       } catch (err) {
         console.error("No se pudo cargar el SoundFont " + url + ":", err);
@@ -5287,6 +5300,7 @@ function sfLoadFontOnce(url) {
         sfStateByUrl[url] = "error";
         delete sfLoadPromiseByUrl[url]; // permite reintentar al volver a tildar HIFI
         sfNotifyCatalogChange(false);
+        sfProgressTick(url);
         return null;
       }
     })();
@@ -5338,10 +5352,30 @@ loadExtraBtn.addEventListener("click", async function () {
   if (loadExtraBtn.disabled) return;
   hifiEnabled = true;
   loadExtraBtn.disabled = true;
-  loadExtraBtn.textContent = "loadExtra … cargando";
+  loadExtraBtn.textContent = "loadExtra … 0%";
   sfNotifyCatalogChange(false); // los avisos de los selectores pasan a "cargando"
-  try { await hifiLoadAllIfNeeded(); } catch (err) { console.error("loadExtra:", err); }
+  const ov = document.getElementById("extraLoadOverlay");
+  const ovLabel = document.getElementById("extraLoadLabel");
+  const ovFill = document.getElementById("extraLoadBarFill");
+  const showPct = (pct) => {
+    loadExtraBtn.textContent = "loadExtra … " + pct + "%";
+    if (ovLabel) ovLabel.textContent = "🎼 Cargando extras… " + pct + "%";
+    if (ovFill) ovFill.style.width = pct + "%";
+  };
+  if (ov) ov.classList.remove("sf2-load-hidden", "sf2-load-error");
+  showPct(0);
+  try {
+    await hifiManifestReady; await sfDiscoverReady;
+    const urls = new Set(HIFI_FILES.map((f) => f.url).concat(sfExtraFiles.map((e) => e.url)));
+    // los que ya están listos (o fallaron y se reintentan) cuentan desde el inicio
+    const done = new Set([...urls].filter((u) => sfStateByUrl[u] === "ready"));
+    sfProgress = { urls, done, cb: showPct };
+    showPct(urls.size ? Math.round(done.size / urls.size * 100) : 100);
+    await hifiLoadAllIfNeeded();
+  } catch (err) { console.error("loadExtra:", err); }
+  sfProgress = null;
   const r = loadExtraSummary();
+  if (ov) { if (r.total > 0 && r.ok < r.total) { ov.classList.add("sf2-load-error"); if (ovLabel) ovLabel.textContent = "🎼 Extras: " + r.ok + "/" + r.total; } else ov.classList.add("sf2-load-hidden"); }
   loadExtraBtn.disabled = false;
   loadExtraBtn.textContent = (r.total > 0 && r.ok === r.total) ? "loadExtra ✓ (" + r.ok + ")" : "loadExtra ⚠ " + r.ok + "/" + r.total + " — reintentar";
   sfNotifyCatalogChange(false);
@@ -11800,22 +11834,6 @@ function runAnalysis() {
     tickPlayhead(ctx, loopAnchor, spb, loopDur);
   }
   window.consolaStartPlayback = startPlayback;
-  // ---- onlydrums (botón debajo del reloj de entrada) ----
-  (function(){
-    var btn = document.getElementById("onlyDrumsBtn");
-    if(!btn) return;
-    btn.addEventListener("click", function(){
-      onlyDrums = !onlyDrums;
-      btn.classList.toggle("active", onlyDrums);
-      btn.setAttribute("aria-pressed", onlyDrums ? "true" : "false");
-      if(onlyDrums){
-        var drumChk = document.getElementById("consolaDrumChk");
-        if(drumChk && !drumChk.checked){ drumChk.checked = true; drumChk.dispatchEvent(new Event("change", { bubbles: true })); }
-      }
-      applyAllMixGains();
-      if(onlyDrums && !playing) startPlayback(); // sin secuencia generada no hace nada
-    });
-  })();
   window.consolaStopPlayback = stopPlayback; // declaración hoisted más abajo — accesible acá igual
 
   /* ================================================================
