@@ -7719,7 +7719,7 @@ function runAnalysis() {
          corcheas.
        - narrowRegister (desmarcado, por defecto): sin restricción
          extra — solo el piso/techo de seguridad general del motor
-         (MELODY_MIDI_FLOOR..CEIL, C6..C9, 3 octavas).
+         (MELODY_MIDI_FLOOR..CEIL, C5..C8, 3 octavas).
        - narrowRegister (marcado): restringe a un rango fijo de 2
          octavas (ver NARROW_FLOOR/NARROW_CEIL más abajo) — cualquier
          nota que caiga fuera de ese rango se transpone una octava
@@ -7767,11 +7767,11 @@ function runAnalysis() {
     }
     // narrowRegister: restringe a un rango fijo de 2 octavas (24
     // semitonos) — más angosto que el piso/techo de seguridad general
-    // (MELODY_MIDI_FLOOR..CEIL, C6..C9, 3 octavas). Mismo mecanismo que
+    // (MELODY_MIDI_FLOOR..CEIL, C5..C8, 3 octavas). Mismo mecanismo que
     // clampMelodyRange: transpone una octava para arriba o para abajo
     // (la que corresponda) hasta entrar en rango, nunca cambia la clase
-    // de altura. Piso elegido = MELODY_MIDI_FLOOR (C6, el mismo piso
-    // general ya usado en todo el motor), techo = piso + 24 (C8).
+    // de altura. Piso elegido = MELODY_MIDI_FLOOR (C5, el mismo piso
+    // general ya usado en todo el motor), techo = piso + 24 (C7).
     // OJO: MELODY_MIDI_FLOOR se lee DENTRO de la función (no al armar
     // este IIFE) — a la altura de este IIFE esa variable todavía no fue
     // asignada (se define más abajo en el mismo scope) y hubiera dado
@@ -8254,10 +8254,11 @@ function runAnalysis() {
   // rango razonable de octavas, corrigiendo solo de a 12 semitonos
   // enteros — nunca cambia QUÉ nota es, solo en qué octava suena.
   // Rango de Melodía Y de bebopMelody (las dos pasan por este clamp):
-  // C6 (84) a C9 (120), con C4 = 60 (BASE_MIDI). Subido una octava
+  // C5 (72) a C8 (108), con C4 = 60 (BASE_MIDI). Bajado una octava
+  // (vuelve a C5..C8) a pedido, 2026-09-26. Antes: C6..C9, subido una octava
   // (antes C5..C8) a pedido, 2026-09-23.
-  var MELODY_MIDI_FLOOR = 84;   // C6
-  var MELODY_MIDI_CEIL  = 120;  // C9
+  var MELODY_MIDI_FLOOR = 72;   // C5
+  var MELODY_MIDI_CEIL  = 108;  // C8
   function clampMelodyRange(midi){
     while(midi > MELODY_MIDI_CEIL) midi -= 12;
     while(midi < MELODY_MIDI_FLOOR) midi += 12;
