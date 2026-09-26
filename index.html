@@ -1215,7 +1215,7 @@
         <label for="consolaLoopChk">Loop</label>
       </div>
       <div class="consola-field consola-loop" title="Duplica la duración del segmento a 24 compases en vez de los 12 de siempre — mismo motor, mismas reglas (Chromatism, Chords, Jazz, AddLittlePeace, Swing Drums, etc.), el doble de largo. Se aplica en el próximo Reproducir/Regenerar/Normalito.">
-        <input type="checkbox" id="consola24BarsChk">
+        <input type="checkbox" id="consola24BarsChk" checked>
         <label for="consola24BarsChk">24 compases</label>
       </div>
         </div>
@@ -6781,7 +6781,7 @@ function runAnalysis() {
 
   var BEATS_PER_BAR = 4;
   var NUM_BARS = 12;
-  // Checkbox #consola24BarsChk ("24 compases", destildado por defecto):
+  // Checkbox #consola24BarsChk ("24 compases", tildado por defecto):
   // duplica NUM_BARS a 24 en vez de 12. Todo el pipeline (RHYTHM,
   // buildProgressionRandom, buildChordEventsRandom, buildDrumEvents,
   // MULTISETS.assign, defaultInversionSeq, etc.) ya lee NUM_BARS como
