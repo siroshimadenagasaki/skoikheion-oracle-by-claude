@@ -4705,7 +4705,7 @@ function sf2PromptLocalFolder() {
 // la versión nueva en vez de seguir usando la vieja ya cacheada.
 const SF2_CACHE_DB_NAME = "stoikheionSF2Cache";
 const SF2_CACHE_STORE_NAME = "buffers";
-const SF2_CACHE_VERSION = 1;
+const SF2_CACHE_VERSION = 2; // 2026-09-26: Drums default.sf2 se reemplazó (hifidrum v2 GM) con el mismo nombre; subir 1 fuerza a todos a bajar la versión nueva
 let sf2CacheDbPromise = null;
 function sf2CacheOpenDb() {
   if (!("indexedDB" in window)) return Promise.reject(new Error("Sin IndexedDB en este navegador"));
