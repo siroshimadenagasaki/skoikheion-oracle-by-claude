@@ -1165,7 +1165,7 @@
           <span class="consola-inst-toggle" title="Slider 0–100% (default 30%, antes 'AddLittlePeace'): probabilidad por variación de reservar 4 compases seguidos (elegidos al azar dentro de los 12) como un 'respiro' de la MELODÍA: en esos 4 compases, la melodía queda en una sola nota sostenida por compás (redonda) en vez de su ritmo de siempre — pisa Rapid runs si coincide en el mismo compás. El resto del segmento sigue igual. No afecta a Normalito. 0% = nunca."><label for="consolaMelodicSpaceSlider">&#128330;&#65039; MelodicSpace</label><input type="range" class="consola-mini-range" id="consolaMelodicSpaceSlider" min="0" max="100" value="30" step="1"><span class="consola-val" id="consolaMelodicSpaceVal">30%</span></span>
           <span class="consola-inst-toggle" title="Slider 0–100% (default 0%): mismo concepto que MelodicSpace pero aplicado a ARMONÍA y BAJO — durante el tramo de respiro sorteado, un solo acorde por compás (redonda, sin reataques extra) y el bajo también en redondas. Es el rol que antes cumplía 'AddLittlePeace'. No afecta a Normalito. 0% = nunca."><label for="consolaHarmonicSpaceSlider">&#127925; HarmonicSpace</label><input type="range" class="consola-mini-range" id="consolaHarmonicSpaceSlider" min="0" max="100" value="0" step="1"><span class="consola-val" id="consolaHarmonicSpaceVal">0%</span></span>
           <span class="consola-inst-toggle" title="Slider 0–100% (default 0%): mismo concepto que MelodicSpace pero aplicado a BATERÍA — durante el tramo de respiro sorteado, la batería queda en un solo golpe suave por compás en vez de su patrón de siempre. No afecta a Normalito. 0% = nunca."><label for="consolaRhythmSpaceSlider">&#129345; RythmSpace</label><input type="range" class="consola-mini-range" id="consolaRhythmSpaceSlider" min="0" max="100" value="0" step="1"><span class="consola-val" id="consolaRhythmSpaceVal">0%</span></span>
-          <span class="consola-inst-toggle" title="Slider 0–100% (default 5%): probabilidad por compás de que la melodía haga una CORRIDA rápida — 1 compás entero o medio compás (al azar), todo en semicorcheas o todo en fusas (al azar). Las notas de la corrida suben/bajan por grados conjuntos usando SOLO las notas del acorde vigente en cada instante (nunca sale del set), sin silencios. El resto del compás (si la corrida es de medio compás) sigue con su ritmo de siempre. No afecta a Normalito. 0% = nunca."><label for="consolaRapidRunsSlider">&#9889; Rapid runs</label><input type="range" class="consola-mini-range" id="consolaRapidRunsSlider" min="0" max="100" value="5" step="1"><span class="consola-val" id="consolaRapidRunsVal">5%</span></span>
+          <span class="consola-inst-toggle" title="Slider 0–100% (default 5%): probabilidad por compás de que la melodía tenga notas rápidas (semicorcheas o fusas, al azar). 70% de esas veces: 1 a 3 grupitos de 2, 4 o 6 notas cortas repartidos al azar dentro de la melodía del compás. 30%: una CORRIDA en bloque de 1 compás entero o medio compás. Las notas de la corrida suben/bajan por grados conjuntos usando SOLO las notas del acorde vigente en cada instante (nunca sale del set), sin silencios. El resto del compás (si la corrida es de medio compás) sigue con su ritmo de siempre. No afecta a Normalito. 0% = nunca."><label for="consolaRapidRunsSlider">&#9889; Rapid runs</label><input type="range" class="consola-mini-range" id="consolaRapidRunsSlider" min="0" max="100" value="5" step="1"><span class="consola-val" id="consolaRapidRunsVal">5%</span></span>
         </div>
       </div>
       <div class="consola-field consola-instruments" title="Bass function: de dónde saca sus notas el bajo en el modo libre (no afecta a ↺ Normalito, que usa su propio bajo fijo). Los dos checkboxes son excluyentes.">
@@ -7481,6 +7481,43 @@ function runAnalysis() {
       for(var i=0;i<n;i++) out.push(len/n);
       return out;
     }
+    // Modo "repartido" (SCATTER_PROB = 70% de los compases con corrida;
+    // el otro 30% es la corrida en bloque de siempre): en vez de un solo
+    // bloque, 1 a 3 GRUPITOS de notas cortas (2, 4 o 6 — siempre número
+    // par) repartidos al azar dentro de la melodía del compás. Cada
+    // grupito reemplaza el comienzo o el final (al azar) de una nota
+    // original lo bastante larga; lo que sobra de esa nota queda como
+    // nota normal. Nunca en dos notas originales vecinas, así los
+    // grupitos no quedan pegados entre sí.
+    var SCATTER_PROB = 0.70;
+    var GROUP_SIZES = [2, 4, 6];
+    function scatter(cell, d){
+      var fits = [];
+      cell.forEach(function(dur, i){ if(dur >= 2*d - 1e-9) fits.push(i); });
+      if(!fits.length) return null;
+      for(var i=fits.length-1;i>0;i--){ var j=randomInt(0,i); var t=fits[i]; fits[i]=fits[j]; fits[j]=t; }
+      var want = randomInt(1, 3), chosen = {};
+      fits.forEach(function(idx){
+        if(Object.keys(chosen).length >= want) return;
+        if(chosen[idx-1] || chosen[idx+1]) return; // no pegar grupitos
+        chosen[idx] = true;
+      });
+      var outCell = [], outMask = [];
+      cell.forEach(function(dur, i){
+        if(!chosen[i]){ outCell.push(dur); outMask.push(false); return; }
+        var sizes = GROUP_SIZES.filter(function(n){ return n*d <= dur + 1e-9; });
+        var n = sizes[randomInt(0, sizes.length-1)];
+        var rest = dur - n*d;
+        var grp = [], gm = [];
+        for(var k=0;k<n;k++){ grp.push(d); gm.push(true); }
+        if(rest > 1e-9){
+          if(Math.random() < 0.5){ grp.push(rest); gm.push(false); } // grupito al comienzo de la nota
+          else { grp.unshift(rest); gm.unshift(false); }           // grupito al final (anticipa la próxima)
+        }
+        outCell = outCell.concat(grp); outMask = outMask.concat(gm);
+      });
+      return { cell: outCell, mask: outMask };
+    }
     // cells: array de células (duraciones). Devuelve {cells, masks}.
     function apply(cells){
       var p = prob();
@@ -7491,6 +7528,11 @@ function runAnalysis() {
         var beats = RHYTHM.beats(bar);
         var d = Math.random() < 0.5 ? 0.25 : 0.125;
         var newCell, mask;
+        if(Math.random() < SCATTER_PROB){ // 70%: grupitos pares repartidos
+          var sc = scatter(cell, d);
+          if(sc){ masks[bar] = sc.mask; return sc.cell; }
+          // si ninguna nota del compás tiene lugar para un grupo, cae a la corrida de siempre
+        }
         if(Math.random() < 0.5){ // compás entero
           newCell = runDurs(beats, d);
           mask = newCell.map(function(){ return true; });
