@@ -1162,6 +1162,7 @@
           <span class="consola-inst-toggle" title="Cada compás de armonía, bajo, melodía y batería tiene un 40% extra de probabilidad de repetir exactamente el patrón del compás anterior; además, bajo y melodía tienen un 40% de probabilidad por compás de acoplar sus ataques a los de la armonía en vez de llevar su propio ritmo."><input type="checkbox" id="consolaMoreRepChk"><label for="consolaMoreRepChk">&#128257; More repetition</label></span>
           <span class="consola-inst-toggle" title="En cada reataque de armonía se sortean varias combinaciones válidas de subconjunto/transposición/inversión dentro del MISMO acorde/grado elegido (nunca de otro) y se elige la que comparte más notas con el acorde anterior — el doble de notas comunes en promedio que al azar puro, con la misma restricción de conjunto de siempre."><input type="checkbox" id="consolaCommonNotesChk"><label for="consolaCommonNotesChk">&#128279; Notas comunes</label></span>
           <span class="consola-inst-toggle" title="Slider 0–100% (default 30%): probabilidad por variación de reservar 4 compases seguidos (elegidos al azar dentro de los 12) como un 'respiro': en esos 4 compases, un solo acorde por compás (una redonda, sin reataques extra) y el bajo también en redondas — nunca se aplica a menos de 4 compases ni se corta a la mitad. El resto del segmento sigue con el ritmo de siempre (Chromatism, Chords, ataque quebrado, etc.). No afecta a Normalito. 0% = nunca."><label for="consolaAddLittlePeaceSlider">&#128330;&#65039; AddLittlePeace</label><input type="range" class="consola-mini-range" id="consolaAddLittlePeaceSlider" min="0" max="100" value="30" step="1"><span class="consola-val" id="consolaAddLittlePeaceVal">30%</span></span>
+          <span class="consola-inst-toggle" title="Slider 0–100% (default 20%): probabilidad por compás de que la melodía haga una CORRIDA rápida — 1 compás entero o medio compás (al azar), todo en semicorcheas o todo en fusas (al azar). Las notas de la corrida suben/bajan por grados conjuntos usando SOLO las notas del acorde vigente en cada instante (nunca sale del set), sin silencios. El resto del compás (si la corrida es de medio compás) sigue con su ritmo de siempre. No afecta a Normalito. 0% = nunca."><label for="consolaRapidRunsSlider">&#9889; Rapid runs</label><input type="range" class="consola-mini-range" id="consolaRapidRunsSlider" min="0" max="100" value="20" step="1"><span class="consola-val" id="consolaRapidRunsVal">20%</span></span>
         </div>
       </div>
       <div class="consola-field consola-instruments" title="Bass function: de dónde saca sus notas el bajo en el modo libre (no afecta a ↺ Normalito, que usa su propio bajo fijo). Los dos checkboxes son excluyentes.">
@@ -7410,6 +7411,121 @@ function runAnalysis() {
     };
   })();
 
+  /* ================================================================
+     MÓDULO RAPID RUNS — slider #consolaRapidRunsSlider (0–100%,
+     default 20%; 0% = apagado). Por CADA compás del motor libre, con
+     esa probabilidad, reemplaza la célula rítmica de la melodía por una
+     corrida: 1 compás entero o medio compás (50/50; si es medio, 1ra o
+     2da mitad al azar), toda en semicorcheas (0.25) o toda en fusas
+     (0.125) (50/50). La otra mitad conserva los ataques originales de
+     esa célula (recortados al borde de la mitad). Devuelve además una
+     máscara por nota (true = nota de corrida) para que
+     buildBassMelodyEventsRandom: (a) no las silencie, y (b) les asigne
+     altura con nextPitch() — paso a paso por la "escalera" de notas
+     del acorde vigente dentro del registro de melodía (solo clases de
+     tono del acorde en curso → el set nunca se traiciona).
+     ================================================================ */
+  var RAPIDRUNS = (function(){
+    function prob(){
+      var sl = document.getElementById("consolaRapidRunsSlider");
+      var v = sl ? parseFloat(sl.value) : 20;
+      return isFinite(v) ? Math.max(0, Math.min(100, v)) / 100 : 0.20;
+    }
+    function onsetsOf(cell){
+      var out = [], t = 0;
+      cell.forEach(function(d){ out.push(t); t += d; });
+      return out;
+    }
+    // Ataques originales de `cell` que caen en [from, to), recortados y
+    // con relleno al inicio si el primer ataque es posterior a `from`.
+    function slice(cell, from, to){
+      var on = onsetsOf(cell), starts = [];
+      on.forEach(function(o){ if(o >= from - 1e-9 && o < to - 1e-9) starts.push(o); });
+      if(!starts.length || starts[0] > from + 1e-9) starts.unshift(from);
+      var out = [];
+      for(var i=0;i<starts.length;i++){
+        var end = (i+1<starts.length) ? starts[i+1] : to;
+        out.push(end - starts[i]);
+      }
+      return out;
+    }
+    function runDurs(len, d){
+      var n = Math.max(1, Math.round(len/d)), out = [];
+      for(var i=0;i<n;i++) out.push(len/n);
+      return out;
+    }
+    // cells: array de células (duraciones). Devuelve {cells, masks}.
+    function apply(cells){
+      var p = prob();
+      var masks = cells.map(function(c){ return c.map(function(){ return false; }); });
+      if(p <= 0) return { cells: cells, masks: masks };
+      var outCells = cells.map(function(cell, bar){
+        if(Math.random() >= p) return cell;
+        var beats = RHYTHM.beats(bar);
+        var d = Math.random() < 0.5 ? 0.25 : 0.125;
+        var newCell, mask;
+        if(Math.random() < 0.5){ // compás entero
+          newCell = runDurs(beats, d);
+          mask = newCell.map(function(){ return true; });
+        } else {
+          var half = beats/2;
+          var run = runDurs(half, d);
+          if(Math.random() < 0.5){ // 1ra mitad corrida
+            var rest = slice(cell, half, beats);
+            newCell = run.concat(rest);
+            mask = run.map(function(){ return true; }).concat(rest.map(function(){ return false; }));
+          } else { // 2da mitad corrida
+            var head = slice(cell, 0, half);
+            newCell = head.concat(run);
+            mask = head.map(function(){ return false; }).concat(run.map(function(){ return true; }));
+          }
+        }
+        masks[bar] = mask;
+        return newCell;
+      });
+      return { cells: outCells, masks: masks };
+    }
+    // Estado de la corrida en curso (se resetea al empezar cada corrida).
+    var cur = null, dir = 1;
+    function ladder(chord){
+      var pcs = {};
+      chord.forEach(function(m){ pcs[((m%12)+12)%12] = true; });
+      var out = [];
+      for(var m=MELODY_MIDI_FLOOR; m<=MELODY_MIDI_CEIL; m++) if(pcs[m%12]) out.push(m);
+      return out;
+    }
+    function startRun(prevMidi){
+      cur = (typeof prevMidi === "number") ? prevMidi : null;
+      dir = Math.random() < 0.5 ? 1 : -1;
+    }
+    // Próxima nota: el vecino (arriba/abajo según dir) de `cur` dentro de
+    // la escalera del acorde vigente; rebota en los bordes del registro y
+    // cambia de sentido al azar (12%) para que no sea una escala plana.
+    function nextPitch(chord){
+      var lad = ladder(chord);
+      if(!lad.length) return clampMelodyRange(chord[0] + 12);
+      if(cur === null){
+        var mid = Math.floor(lad.length/2) + randomInt(-2, 2);
+        cur = lad[Math.min(lad.length-1, Math.max(0, mid))];
+        return cur;
+      }
+      if(Math.random() < 0.12) dir = -dir;
+      // índice del primer escalón estrictamente arriba/abajo de cur
+      var next = null;
+      if(dir > 0){ for(var i=0;i<lad.length;i++) if(lad[i] > cur){ next = lad[i]; break; } }
+      else { for(var j=lad.length-1;j>=0;j--) if(lad[j] < cur){ next = lad[j]; break; } }
+      if(next === null){ // borde del registro: rebota
+        dir = -dir;
+        if(dir > 0){ for(var i2=0;i2<lad.length;i2++) if(lad[i2] > cur){ next = lad[i2]; break; } }
+        else { for(var j2=lad.length-1;j2>=0;j2--) if(lad[j2] < cur){ next = lad[j2]; break; } }
+        if(next === null) next = lad[0];
+      }
+      cur = next;
+      return cur;
+    }
+    return { prob: prob, apply: apply, startRun: startRun, nextPitch: nextPitch };
+  })();
+
   // ---------- NOTAS COMUNES: más continuidad armónica entre reataques ----------
   // No introduce ninguna nota fuera del acorde/grado ya elegido — solo
   // decide, entre varias combinaciones válidas de subconjunto +
@@ -9148,6 +9264,13 @@ function runAnalysis() {
     bassCells = bassCells.map(function(cell, bar){
       return ADDLITTLEPEACE.isPeaceBar(bar) ? [4] : cell;
     });
+    // Rapid runs: al final de la cadena de la melodía (pisa pool/
+    // MoreRep/acople en los compases sorteados). runMasks[bar][k] = true
+    // si la nota k de ese compás pertenece a una corrida.
+    var rr = RAPIDRUNS.apply(melodyCells);
+    melodyCells = rr.cells;
+    var runMasks = rr.masks;
+    var lastMelodyMidi = null; // Rapid runs: la corrida arranca cerca de la última nota de melodía
     var bassEvents = [], melodyEvents = [];
     var jazzPrevBass = null; // JAZZ: nota anterior del bajo, para caminar por grados conjuntos
     var patPos = 0, patStep = 0; // melodicPatterns: posición del contorno, persiste a lo largo de TODO el pasaje (nunca se resetea por compás/acorde)
@@ -9217,6 +9340,16 @@ function runAnalysis() {
       var mOffset = 0;
       var lastChordRef = null, segShift = 0;
       melodyCells[bar].forEach(function(dur, k){
+        var isRun = !!runMasks[bar][k];
+        if(isRun){
+          // Rapid runs: sin silencios, paso a paso por las notas del acorde vigente
+          if(k === 0 || !runMasks[bar][k-1]) RAPIDRUNS.startRun(lastMelodyMidi);
+          var runMidi = RAPIDRUNS.nextPitch(currentChordAt(slotChords[bar], mOffset));
+          melodyEvents.push({midi: runMidi, startBeat: barStart+mOffset, durBeats:dur, bar:bar});
+          lastMelodyMidi = runMidi;
+          mOffset += dur;
+          return;
+        }
         if(silenceOrder[k].silent){
           mOffset += dur;
           return;
@@ -9277,6 +9410,7 @@ function runAnalysis() {
           midi = clampMelodyRange(base + octAdd);
         }
         melodyEvents.push({midi: midi, startBeat: barStart+mOffset, durBeats:dur, bar:bar});
+        lastMelodyMidi = midi;
         mOffset += dur;
       });
     });
@@ -12212,6 +12346,12 @@ function runAnalysis() {
     document.getElementById("consolaAddLittlePeaceVal").textContent = this.value + "%";
   });
   document.getElementById("consolaAddLittlePeaceSlider").addEventListener("change", function(){
+    if(state.rootChord.length) regenerateConsola();
+  });
+  document.getElementById("consolaRapidRunsSlider").addEventListener("input", function(){
+    document.getElementById("consolaRapidRunsVal").textContent = this.value + "%";
+  });
+  document.getElementById("consolaRapidRunsSlider").addEventListener("change", function(){
     if(state.rootChord.length) regenerateConsola();
   });
   document.getElementById("consolaCommonNotesChk").addEventListener("change", function(){
