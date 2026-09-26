@@ -1160,6 +1160,11 @@
         <input type="range" id="consolaNotesComplexitySlider" min="0" max="100" value="50" step="1">
         <span class="consola-val" id="consolaNotesComplexityVal">50%</span>
       </div>
+      <div class="consola-field" title="Tresillos en TODAS las pistas (armonía, bajo, melodía, bebop, batería). 0% = como siempre (casi sin tresillos). 100% = ~80% del tiempo de cada pista en tresillos, al azar de blanca (3 en 4 tiempos), de negra (3 en 2 tiempos) o de corchea (3 en 1 tiempo). Solo mueve ataques: nunca cambia notas, así que el set no se traiciona. Cada pista tira sus propias ventanas (polirritmia). No afecta a Normalito.">
+        <label for="consolaTripletsSlider">Triplets</label>
+        <input type="range" id="consolaTripletsSlider" min="0" max="100" value="0" step="1">
+        <span class="consola-val" id="consolaTripletsVal">0%</span>
+      </div>
       <div class="consola-field consola-instruments">
         <label>Opciones del motor</label>
         <div class="consola-inst-row">
@@ -7623,6 +7628,170 @@ function runAnalysis() {
     return { prob: prob, apply: apply, startRun: startRun, nextPitch: nextPitch };
   })();
 
+  /* ================================================================
+     MÓDULO TRIPLETS — slider #consolaTripletsSlider (How to play, 0–100%,
+     default 0%). 0% = nada cambia (como antes). 100% = ~80% del tiempo
+     de cada pista cae en ventanas de tresillo.
+     Post-proceso de los eventos ya armados (nunca agrega ni cambia
+     alturas: solo MUEVE ataques). Por compás y por pista, recorre el
+     compás en ventanas alineadas de 4, 2 o 1 tiempo (al azar entre las
+     que entran): 4 = tresillo de blancas (3 en el espacio de 4 tiempos),
+     2 = tresillo de negras (3 en 2 tiempos), 1 = tresillo de corcheas
+     (3 en 1 tiempo). Cada ventana se vuelve tresillo con prob.
+     0.8 * slider. Dentro de una ventana elegida, cada ataque cae en la
+     rejilla de 3 puntos (w0, w0+W/3, w0+2W/3) según su posición
+     proporcional dentro de la ventana; los finales van al punto
+     siguiente de la misma rejilla. Cada pista tira sus propias ventanas
+     (independientes entre sí: polirritmia). Excepciones para que el set
+     no se traicione: (a) armonía mueve también sus reataques
+     (slotChords), y bajo/melodía/bebop nunca cruzan el límite del
+     reataque de armonía donde nacieron; (b) melodía → comping2 (deriva
+     de la melodía ya tresillada) y doblar melodía siguen 1:1.
+     No afecta a Normalito (setActive(false)).
+     ================================================================ */
+  var TRIPLETS = (function(){
+    var EPS = 1e-6, active = true, MAX_COVER = 0.8;
+    function prob(){
+      var sl = document.getElementById("consolaTripletsSlider");
+      var v = sl ? parseFloat(sl.value) : 0;
+      return isFinite(v) ? Math.max(0, Math.min(100, v)) / 100 * MAX_COVER : 0;
+    }
+    function on(){ return active && prob() > 0; }
+    function setActive(b){ active = !!b; }
+    function planBar(bar){
+      var p = prob(), beats = RHYTHM.beats(bar), wins = [], x = 0;
+      while(x < beats - EPS){
+        var opts = [4, 2, 1].filter(function(W){
+          return Math.abs(x/W - Math.round(x/W)) < EPS && x + W <= beats + EPS;
+        });
+        if(!opts.length) break; // resto del compás (< 1 tiempo): queda como estaba
+        var W = opts[randomInt(0, opts.length - 1)];
+        if(Math.random() < p) wins.push({ w0:x, w1:x + W, W:W });
+        x += W;
+      }
+      return wins.length ? wins : null;
+    }
+    function mapStart(wins, t){
+      for(var i=0;i<wins.length;i++){
+        var w = wins[i];
+        if(t >= w.w0 - EPS && t < w.w1 - EPS){
+          var s = Math.min(2, Math.round((t - w.w0) / w.W * 3 + 1e-9));
+          return w.w0 + s * w.W / 3;
+        }
+      }
+      return t;
+    }
+    function mapEnd(wins, t){
+      for(var i=0;i<wins.length;i++){
+        var w = wins[i];
+        if(t > w.w0 + EPS && t <= w.w1 + EPS){
+          var s = Math.max(1, Math.min(3, Math.ceil((t - w.w0) / w.W * 3 - 1e-6)));
+          return w.w0 + s * w.W / 3;
+        }
+      }
+      return t;
+    }
+    function planner(){
+      var cache = {};
+      return function(bar){ if(!(bar in cache)) cache[bar] = planBar(bar); return cache[bar]; };
+    }
+    // Armonía: mueve eventos Y reataques (slotChords, contiguos entre sí)
+    // para que bajo/melodía/bebop (que se arman DESPUÉS) vean los mismos
+    // límites de acorde que se van a escuchar.
+    function applyChords(built){
+      if(!on() || !built || !built.events) return built;
+      var plan = planner();
+      var newSlots = built.slotChords.map(function(slots, bar){
+        var wins = plan(bar);
+        if(!wins || !slots || !slots.length) return slots;
+        var starts = slots.map(function(sl){ return mapStart(wins, sl.startBeat); });
+        var barEnd = RHYTHM.beats(bar);
+        return slots.map(function(sl, i){
+          var s2 = starts[i], e2 = (i + 1 < slots.length) ? starts[i+1] : barEnd;
+          var n = Object.assign({}, sl);
+          n.startBeat = s2; n.durBeats = Math.max(0.05, e2 - s2);
+          return n;
+        });
+      });
+      var events = built.events.map(function(ev){
+        var wins = ev.bar != null ? plan(ev.bar) : null;
+        if(!wins) return ev;
+        var bs = RHYTHM.start(ev.bar), o = ev.startBeat - bs;
+        var s2 = mapStart(wins, o);
+        // no salirse del reataque donde nació (ni pisar el siguiente)
+        var oldSl = currentSlotAt(built.slotChords[ev.bar], o);
+        var idx = built.slotChords[ev.bar].indexOf(oldSl);
+        var nsl = idx >= 0 ? newSlots[ev.bar][idx] : null;
+        if(nsl) s2 = Math.max(nsl.startBeat, Math.min(s2, nsl.startBeat + nsl.durBeats - 0.05));
+        var e2 = mapEnd(wins, o + ev.durBeats);
+        var n = Object.assign({}, ev);
+        n.startBeat = bs + s2; n.durBeats = Math.max(0.05, bs + e2 - n.startBeat);
+        return n;
+      });
+      return { events: events, slotChords: newSlots };
+    }
+    // Líneas monofónicas (bajo, melodía, bebop): además no cruzan el
+    // límite de su reataque de armonía, y si dos notas caen en el mismo
+    // punto de la rejilla se queda la última (nunca dos notas a la vez).
+    function applyLine(events, slotChords){
+      if(!on() || !events || !events.length) return events;
+      var plan = planner(), out = [];
+      events.forEach(function(ev, i){
+        var wins = ev.bar != null ? plan(ev.bar) : null;
+        if(!wins){ var same = Object.assign({}, ev); same._i = i; same._oe = ev.startBeat + ev.durBeats; same._os = ev.startBeat; out.push(same); return; }
+        var bs = RHYTHM.start(ev.bar), o = ev.startBeat - bs;
+        var s2 = mapStart(wins, o);
+        if(slotChords && slotChords[ev.bar] && slotChords[ev.bar].length){
+          var sl = currentSlotAt(slotChords[ev.bar], o);
+          if(s2 < sl.startBeat - EPS || s2 >= sl.startBeat + sl.durBeats - EPS) s2 = o;
+        }
+        var e2 = mapEnd(wins, o + ev.durBeats);
+        var n = Object.assign({}, ev);
+        n._i = i; n._os = ev.startBeat; n._oe = ev.startBeat + ev.durBeats;
+        n.startBeat = bs + s2; n.durBeats = Math.max(0.05, bs + e2 - n.startBeat);
+        out.push(n);
+      });
+      out.sort(function(a, b){ return (a.startBeat - b.startBeat) || (a._i - b._i); });
+      var res = [];
+      out.forEach(function(n){
+        var prev = res[res.length - 1];
+        if(prev && Math.abs(prev.startBeat - n.startBeat) < 0.02) res.pop(); // colisión: gana la última
+        res.push(n);
+      });
+      for(var k=0;k<res.length;k++){
+        var cur = res[k], nx = res[k+1];
+        if(nx && cur._oe <= nx._os + EPS && cur.startBeat + cur.durBeats > nx.startBeat + EPS){
+          cur.durBeats = Math.max(0.02, nx.startBeat - cur.startBeat); // no había solape original: no lo creamos
+        }
+      }
+      res.forEach(function(n){ delete n._i; delete n._os; delete n._oe; });
+      return res;
+    }
+    // Batería: eventos sin duración ni "bar" — se ubican por tiempo absoluto.
+    function applyDrums(events){
+      if(!on() || !events || !events.length) return events;
+      var plan = planner(), bars = [];
+      for(var b=0;b<NUM_BARS;b++) bars.push({ bar:b, s:RHYTHM.start(b), e:RHYTHM.start(b) + RHYTHM.beats(b) });
+      var out = [], seen = {};
+      events.forEach(function(ev){
+        var t = ev.startBeat, hit = null;
+        for(var i=0;i<bars.length;i++){ if(t >= bars[i].s - 0.06 && t < bars[i].e - 0.06){ hit = bars[i]; break; } }
+        var wins = hit ? plan(hit.bar) : null;
+        var n = ev;
+        if(wins){
+          n = Object.assign({}, ev);
+          n.startBeat = hit.s + mapStart(wins, Math.max(0, t - hit.s));
+        }
+        var key = (n.type || "") + "|" + (n.midi != null ? n.midi : "") + "|" + (n.open ? 1 : 0) + "|" + n.startBeat.toFixed(4);
+        if(seen[key]) return; // 16avos que colapsan en el mismo punto de la rejilla
+        seen[key] = true;
+        out.push(n);
+      });
+      return out;
+    }
+    return { prob: prob, setActive: setActive, applyChords: applyChords, applyLine: applyLine, applyDrums: applyDrums };
+  })();
+
   // ---------- NOTAS COMUNES: más continuidad armónica entre reataques ----------
   // No introduce ninguna nota fuera del acorde/grado ya elegido — solo
   // decide, entre varias combinaciones válidas de subconjunto +
@@ -9590,20 +9759,21 @@ function runAnalysis() {
     MELODICSPACE.reset(NUM_BARS);
     HARMONICSPACE.reset(NUM_BARS);
     RHYTHMSPACE.reset(NUM_BARS);
+    TRIPLETS.setActive(true); // Triplets (How to play): aplica en el motor libre
     var built = buildProgressionRandom(rootChord, NUM_BARS);
     state.progression = built.progression;
     state.roles = built.roles;
-    var chordBuilt = buildChordEventsRandom(rootChord, NUM_BARS);
+    var chordBuilt = TRIPLETS.applyChords(buildChordEventsRandom(rootChord, NUM_BARS)); // Triplets: mueve armonía + sus reataques ANTES de armar bajo/melodía
     state.chordEvents = SUSTAINPEDAL.apply(chordBuilt.events, chordBuilt.slotChords); // Sustain (How to play): 50% de los cambios de acorde enlazados con pedal
     state.slotChords = chordBuilt.slotChords;
     var bm = buildBassMelodyEventsRandom(state.progression, built.meta, chordBuilt.slotChords);
-    state.bassEvents = bm.bassEvents;
-    state.melodyEvents = bm.melodyEvents;
+    state.bassEvents = TRIPLETS.applyLine(bm.bassEvents, chordBuilt.slotChords);
+    state.melodyEvents = TRIPLETS.applyLine(bm.melodyEvents, chordBuilt.slotChords);
     state.comping2Events = MORECOMPING.enabled()
-      ? MORECOMPING.buildEvents(bm.melodyEvents, function(bar, offset){ return currentChordAt(chordBuilt.slotChords[bar], offset); })
+      ? MORECOMPING.buildEvents(state.melodyEvents, function(bar, offset){ return currentChordAt(chordBuilt.slotChords[bar], offset); })
       : [];
     state.bebopEvents = BEBOPMELODY.enabled()
-      ? BEBOPMELODY.buildEvents(NUM_BARS, function(bar, offset){ return currentChordAt(chordBuilt.slotChords[bar], offset); })
+      ? TRIPLETS.applyLine(BEBOPMELODY.buildEvents(NUM_BARS, function(bar, offset){ return currentChordAt(chordBuilt.slotChords[bar], offset); }), chordBuilt.slotChords)
       : [];
     drumEvents = buildDrumEvents(NUM_BARS);
     renderRoll();
@@ -9620,6 +9790,7 @@ function runAnalysis() {
     NUM_BARS = desiredNumBars();
     MELODICPATTERNS.reset(); // melodicPatterns: también sortea contorno nuevo en Normalito
     RHYTHMSPACE.reset(0); // No afecta a Normalito: buildDrumEvents es compartida por los dos motores, así que se apaga a mano (reset(0) siempre deja range=null)
+    TRIPLETS.setActive(false); // idem Triplets: buildDrumEvents es compartida, Normalito no tresilla nada (regenerateConsola lo vuelve a prender)
     var invSeq = defaultInversionSeq(state.rootChord.length, NUM_BARS);
     var built = buildProgression(state.rootChord, invSeq);
     state.progression = built.progression;
@@ -11448,8 +11619,8 @@ function runAnalysis() {
     return { kick:kick, snare:snare, hihatHits:hihatHits };
   }
   function buildDrumEvents(numBars){
-    if(swingDrumsEnabled) return buildSwingDrumEvents(numBars);
-    if(modernJazzEnabled) return buildModernJazzEvents(numBars);
+    if(swingDrumsEnabled) return TRIPLETS.applyDrums(buildSwingDrumEvents(numBars)); // Triplets: también sobre estos patrones fijos/generados (0% = no-op)
+    if(modernJazzEnabled) return TRIPLETS.applyDrums(buildModernJazzEvents(numBars));
     // JAZZ: patrón de ride "spang-a-lang" en vez del hi-hat parejo —
     // la batería no tiene altura definida, así que acá no hay ninguna
     // restricción de set que respetar, es variedad rítmica pura.
@@ -11535,7 +11706,7 @@ function runAnalysis() {
       // eventos que se hayan sumado arriba (patrón base + capa aditiva).
       applyVelocityHumanize(events, base);
     }
-    return events;
+    return TRIPLETS.applyDrums(events); // Triplets (How to play): 0% = no-op
   }
   var drumEvents = buildDrumEvents(NUM_BARS);
 
@@ -12478,6 +12649,12 @@ function runAnalysis() {
     document.getElementById("consolaRapidRunsVal").textContent = this.value + "%";
   });
   document.getElementById("consolaRapidRunsSlider").addEventListener("change", function(){
+    if(state.rootChord.length) regenerateConsola();
+  });
+  document.getElementById("consolaTripletsSlider").addEventListener("input", function(){
+    document.getElementById("consolaTripletsVal").textContent = this.value + "%";
+  });
+  document.getElementById("consolaTripletsSlider").addEventListener("change", function(){
     if(state.rootChord.length) regenerateConsola();
   });
   document.getElementById("consolaCommonNotesChk").addEventListener("change", function(){
