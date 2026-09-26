@@ -663,6 +663,7 @@
   .mix-val{font-family:'JetBrains Mono',monospace;color:var(--ink-muted);font-size:11px;}
   .mix-val-row{display:flex;align-items:center;gap:6px;}
   .mix-focus{width:11px;height:11px;margin:0;accent-color:var(--gold);cursor:pointer;}
+  .mix-solo-lbl{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-muted);}
   .mix-solo{width:11px;height:11px;margin:0;accent-color:var(--red-warn);cursor:pointer;}
   .mix-presets{
     display:flex;flex-wrap:wrap;gap:20px 32px;justify-content:center;
@@ -1388,8 +1389,7 @@
           <input type="range" id="mixDrumVol" min="0" max="150" value="100" step="1">
           <div class="mix-val-row">
             <span class="mix-val" id="mixDrumVolVal">100%</span>
-            <input type="checkbox" class="mix-focus" data-track="drum" title="Foco: si lo tildás, baja el volumen de todas las demás pistas (este fader no cambia)" aria-label="Foco en Batería">
-            <input type="checkbox" class="mix-solo" data-track="drum" title="Solo: silencia TODAS las demás pistas mientras esté tildado (a diferencia de Foco, que solo las baja) — este fader no cambia. Al destildarlo, todo vuelve exactamente al nivel que tenía antes (no se pisa ningún valor)." aria-label="Solo en Batería">
+            <input type="checkbox" class="mix-solo" data-track="drum" title="Solo: silencia TODAS las demás pistas mientras esté tildado (a diferencia de Foco, que solo las baja) — este fader no cambia. Al destildarlo, todo vuelve exactamente al nivel que tenía antes (no se pisa ningún valor)." aria-label="Solo en Batería"><span class="mix-solo-lbl">solo</span>
           </div>
         </div>
         <div class="mix-channel">
@@ -1397,8 +1397,7 @@
           <input type="range" id="mixBassVol" min="0" max="150" value="40" step="1">
           <div class="mix-val-row">
             <span class="mix-val" id="mixBassVolVal">40%</span>
-            <input type="checkbox" class="mix-focus" data-track="bass" title="Foco: si lo tildás, baja el volumen de todas las demás pistas (este fader no cambia)" aria-label="Foco en Bajo">
-            <input type="checkbox" class="mix-solo" data-track="bass" title="Solo: silencia TODAS las demás pistas mientras esté tildado (a diferencia de Foco, que solo las baja) — este fader no cambia. Al destildarlo, todo vuelve exactamente al nivel que tenía antes (no se pisa ningún valor)." aria-label="Solo en Bajo">
+            <input type="checkbox" class="mix-solo" data-track="bass" title="Solo: silencia TODAS las demás pistas mientras esté tildado (a diferencia de Foco, que solo las baja) — este fader no cambia. Al destildarlo, todo vuelve exactamente al nivel que tenía antes (no se pisa ningún valor)." aria-label="Solo en Bajo"><span class="mix-solo-lbl">solo</span>
           </div>
         </div>
         <div class="mix-channel">
@@ -1406,8 +1405,7 @@
           <input type="range" id="mixChordVol" min="0" max="150" value="100" step="1">
           <div class="mix-val-row">
             <span class="mix-val" id="mixChordVolVal">100%</span>
-            <input type="checkbox" class="mix-focus" data-track="chord" title="Foco: si lo tildás, baja el volumen de todas las demás pistas (este fader no cambia)" aria-label="Foco en Armonía">
-            <input type="checkbox" class="mix-solo" data-track="chord" title="Solo: silencia TODAS las demás pistas mientras esté tildado (a diferencia de Foco, que solo las baja) — este fader no cambia. Al destildarlo, todo vuelve exactamente al nivel que tenía antes (no se pisa ningún valor)." aria-label="Solo en Armonía">
+            <input type="checkbox" class="mix-solo" data-track="chord" title="Solo: silencia TODAS las demás pistas mientras esté tildado (a diferencia de Foco, que solo las baja) — este fader no cambia. Al destildarlo, todo vuelve exactamente al nivel que tenía antes (no se pisa ningún valor)." aria-label="Solo en Armonía"><span class="mix-solo-lbl">solo</span>
           </div>
         </div>
         <div class="mix-channel">
@@ -1415,8 +1413,7 @@
           <input type="range" id="mixMelodyVol" min="0" max="150" value="100" step="1">
           <div class="mix-val-row">
             <span class="mix-val" id="mixMelodyVolVal">100%</span>
-            <input type="checkbox" class="mix-focus" data-track="melody" title="Foco: si lo tildás, baja el volumen de todas las demás pistas (este fader no cambia)" aria-label="Foco en Melodía">
-            <input type="checkbox" class="mix-solo" data-track="melody" title="Solo: silencia TODAS las demás pistas mientras esté tildado (a diferencia de Foco, que solo las baja) — este fader no cambia. Al destildarlo, todo vuelve exactamente al nivel que tenía antes (no se pisa ningún valor)." aria-label="Solo en Melodía">
+            <input type="checkbox" class="mix-solo" data-track="melody" title="Solo: silencia TODAS las demás pistas mientras esté tildado (a diferencia de Foco, que solo las baja) — este fader no cambia. Al destildarlo, todo vuelve exactamente al nivel que tenía antes (no se pisa ningún valor)." aria-label="Solo en Melodía"><span class="mix-solo-lbl">solo</span>
           </div>
         </div>
         <div class="mix-channel" title="Volumen de la pista bebopMelody (línea melódica independiente, chord-scale). Al prender el botón bebopMelody, este fader sube solo a 100% la primera vez — después queda a mano.">
@@ -1424,8 +1421,7 @@
           <input type="range" id="mixBebopVol" min="0" max="150" value="0" step="1">
           <div class="mix-val-row">
             <span class="mix-val" id="mixBebopVolVal">0%</span>
-            <input type="checkbox" class="mix-focus" data-track="bebop" title="Foco: si lo tildás, baja el volumen de todas las demás pistas (este fader no cambia)" aria-label="Foco en Bebop">
-            <input type="checkbox" class="mix-solo" data-track="bebop" title="Solo: silencia TODAS las demás pistas mientras esté tildado (a diferencia de Foco, que solo las baja) — este fader no cambia. Al destildarlo, todo vuelve exactamente al nivel que tenía antes (no se pisa ningún valor)." aria-label="Solo en Bebop">
+            <input type="checkbox" class="mix-solo" data-track="bebop" title="Solo: silencia TODAS las demás pistas mientras esté tildado (a diferencia de Foco, que solo las baja) — este fader no cambia. Al destildarlo, todo vuelve exactamente al nivel que tenía antes (no se pisa ningún valor)." aria-label="Solo en Bebop"><span class="mix-solo-lbl">solo</span>
           </div>
         </div>
         <div class="mix-channel" title="Volumen de Doblar melodía (repite la Melodía una octava — o una quinta con 'alt-melody' — abajo, con su propio timbre). Sin efecto mientras el selector 'Doblar melodía' esté en Mute.">
@@ -1433,8 +1429,7 @@
           <input type="range" id="mixMelodyDoubleVol" min="0" max="150" value="50" step="1">
           <div class="mix-val-row">
             <span class="mix-val" id="mixMelodyDoubleVolVal">50%</span>
-            <input type="checkbox" class="mix-focus" data-track="melodyDouble" title="Foco: si lo tildás, baja el volumen de todas las demás pistas (este fader no cambia)" aria-label="Foco en Doblar melodía">
-            <input type="checkbox" class="mix-solo" data-track="melodyDouble" title="Solo: silencia TODAS las demás pistas mientras esté tildado (a diferencia de Foco, que solo las baja) — este fader no cambia. Al destildarlo, todo vuelve exactamente al nivel que tenía antes (no se pisa ningún valor)." aria-label="Solo en Doblar melodía">
+            <input type="checkbox" class="mix-solo" data-track="melodyDouble" title="Solo: silencia TODAS las demás pistas mientras esté tildado (a diferencia de Foco, que solo las baja) — este fader no cambia. Al destildarlo, todo vuelve exactamente al nivel que tenía antes (no se pisa ningún valor)." aria-label="Solo en Doblar melodía"><span class="mix-solo-lbl">solo</span>
           </div>
         </div>
         <div class="mix-channel" title="Volumen de Doblar armonía (repite la Armonía con un segundo timbre). Sin efecto mientras el selector 'Doblar armonía' esté en Mute.">
@@ -1442,8 +1437,7 @@
           <input type="range" id="mixChordDoubleVol" min="0" max="150" value="50" step="1">
           <div class="mix-val-row">
             <span class="mix-val" id="mixChordDoubleVolVal">50%</span>
-            <input type="checkbox" class="mix-focus" data-track="chordDouble" title="Foco: si lo tildás, baja el volumen de todas las demás pistas (este fader no cambia)" aria-label="Foco en Doblar armonía">
-            <input type="checkbox" class="mix-solo" data-track="chordDouble" title="Solo: silencia TODAS las demás pistas mientras esté tildado (a diferencia de Foco, que solo las baja) — este fader no cambia. Al destildarlo, todo vuelve exactamente al nivel que tenía antes (no se pisa ningún valor)." aria-label="Solo en Doblar armonía">
+            <input type="checkbox" class="mix-solo" data-track="chordDouble" title="Solo: silencia TODAS las demás pistas mientras esté tildado (a diferencia de Foco, que solo las baja) — este fader no cambia. Al destildarlo, todo vuelve exactamente al nivel que tenía antes (no se pisa ningún valor)." aria-label="Solo en Doblar armonía"><span class="mix-solo-lbl">solo</span>
           </div>
         </div>
       </div>
