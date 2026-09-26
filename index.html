@@ -663,6 +663,7 @@
   .mix-val{font-family:'JetBrains Mono',monospace;color:var(--ink-muted);font-size:11px;}
   .mix-val-row{display:flex;align-items:center;gap:6px;}
   .mix-focus{width:11px;height:11px;margin:0;accent-color:var(--gold);cursor:pointer;}
+  .mix-solo{width:11px;height:11px;margin:0;accent-color:var(--red-warn);cursor:pointer;}
   .mix-presets{
     display:flex;flex-wrap:wrap;gap:20px 32px;justify-content:center;
     padding-top:14px;border-top:1px solid var(--line);
@@ -1161,8 +1162,10 @@
           <span class="consola-inst-toggle" title="Además del subset de siempre, a veces usa el COMPLEMENTO del set elegido (las notas que el set deja afuera dentro de la octava) — más variedad armónica, siempre derivada del mismo set."><input type="checkbox" id="consolaSupersetsChk"><label for="consolaSupersetsChk">&#8679; Supersets (variedad)</label></span>
           <span class="consola-inst-toggle" title="Cada compás de armonía, bajo, melodía y batería tiene un 40% extra de probabilidad de repetir exactamente el patrón del compás anterior; además, bajo y melodía tienen un 40% de probabilidad por compás de acoplar sus ataques a los de la armonía en vez de llevar su propio ritmo."><input type="checkbox" id="consolaMoreRepChk"><label for="consolaMoreRepChk">&#128257; More repetition</label></span>
           <span class="consola-inst-toggle" title="En cada reataque de armonía se sortean varias combinaciones válidas de subconjunto/transposición/inversión dentro del MISMO acorde/grado elegido (nunca de otro) y se elige la que comparte más notas con el acorde anterior — el doble de notas comunes en promedio que al azar puro, con la misma restricción de conjunto de siempre."><input type="checkbox" id="consolaCommonNotesChk"><label for="consolaCommonNotesChk">&#128279; Notas comunes</label></span>
-          <span class="consola-inst-toggle" title="Slider 0–100% (default 30%): probabilidad por variación de reservar 4 compases seguidos (elegidos al azar dentro de los 12) como un 'respiro': en esos 4 compases, un solo acorde por compás (una redonda, sin reataques extra) y el bajo también en redondas — nunca se aplica a menos de 4 compases ni se corta a la mitad. El resto del segmento sigue con el ritmo de siempre (Chromatism, Chords, ataque quebrado, etc.). No afecta a Normalito. 0% = nunca."><label for="consolaAddLittlePeaceSlider">&#128330;&#65039; AddLittlePeace</label><input type="range" class="consola-mini-range" id="consolaAddLittlePeaceSlider" min="0" max="100" value="30" step="1"><span class="consola-val" id="consolaAddLittlePeaceVal">30%</span></span>
-          <span class="consola-inst-toggle" title="Slider 0–100% (default 20%): probabilidad por compás de que la melodía haga una CORRIDA rápida — 1 compás entero o medio compás (al azar), todo en semicorcheas o todo en fusas (al azar). Las notas de la corrida suben/bajan por grados conjuntos usando SOLO las notas del acorde vigente en cada instante (nunca sale del set), sin silencios. El resto del compás (si la corrida es de medio compás) sigue con su ritmo de siempre. No afecta a Normalito. 0% = nunca."><label for="consolaRapidRunsSlider">&#9889; Rapid runs</label><input type="range" class="consola-mini-range" id="consolaRapidRunsSlider" min="0" max="100" value="20" step="1"><span class="consola-val" id="consolaRapidRunsVal">20%</span></span>
+          <span class="consola-inst-toggle" title="Slider 0–100% (default 30%, antes 'AddLittlePeace'): probabilidad por variación de reservar 4 compases seguidos (elegidos al azar dentro de los 12) como un 'respiro' de la MELODÍA: en esos 4 compases, la melodía queda en una sola nota sostenida por compás (redonda) en vez de su ritmo de siempre — pisa Rapid runs si coincide en el mismo compás. El resto del segmento sigue igual. No afecta a Normalito. 0% = nunca."><label for="consolaMelodicSpaceSlider">&#128330;&#65039; MelodicSpace</label><input type="range" class="consola-mini-range" id="consolaMelodicSpaceSlider" min="0" max="100" value="30" step="1"><span class="consola-val" id="consolaMelodicSpaceVal">30%</span></span>
+          <span class="consola-inst-toggle" title="Slider 0–100% (default 0%): mismo concepto que MelodicSpace pero aplicado a ARMONÍA y BAJO — durante el tramo de respiro sorteado, un solo acorde por compás (redonda, sin reataques extra) y el bajo también en redondas. Es el rol que antes cumplía 'AddLittlePeace'. No afecta a Normalito. 0% = nunca."><label for="consolaHarmonicSpaceSlider">&#127925; HarmonicSpace</label><input type="range" class="consola-mini-range" id="consolaHarmonicSpaceSlider" min="0" max="100" value="0" step="1"><span class="consola-val" id="consolaHarmonicSpaceVal">0%</span></span>
+          <span class="consola-inst-toggle" title="Slider 0–100% (default 0%): mismo concepto que MelodicSpace pero aplicado a BATERÍA — durante el tramo de respiro sorteado, la batería queda en un solo golpe suave por compás en vez de su patrón de siempre. No afecta a Normalito. 0% = nunca."><label for="consolaRhythmSpaceSlider">&#129345; RythmSpace</label><input type="range" class="consola-mini-range" id="consolaRhythmSpaceSlider" min="0" max="100" value="0" step="1"><span class="consola-val" id="consolaRhythmSpaceVal">0%</span></span>
+          <span class="consola-inst-toggle" title="Slider 0–100% (default 5%): probabilidad por compás de que la melodía haga una CORRIDA rápida — 1 compás entero o medio compás (al azar), todo en semicorcheas o todo en fusas (al azar). Las notas de la corrida suben/bajan por grados conjuntos usando SOLO las notas del acorde vigente en cada instante (nunca sale del set), sin silencios. El resto del compás (si la corrida es de medio compás) sigue con su ritmo de siempre. No afecta a Normalito. 0% = nunca."><label for="consolaRapidRunsSlider">&#9889; Rapid runs</label><input type="range" class="consola-mini-range" id="consolaRapidRunsSlider" min="0" max="100" value="5" step="1"><span class="consola-val" id="consolaRapidRunsVal">5%</span></span>
         </div>
       </div>
       <div class="consola-field consola-instruments" title="Bass function: de dónde saca sus notas el bajo en el modo libre (no afecta a ↺ Normalito, que usa su propio bajo fijo). Los dos checkboxes son excluyentes.">
@@ -1214,7 +1217,7 @@
         <input type="checkbox" id="consolaLoopChk" checked>
         <label for="consolaLoopChk">Loop</label>
       </div>
-      <div class="consola-field consola-loop" title="Duplica la duración del segmento a 24 compases en vez de los 12 de siempre — mismo motor, mismas reglas (Chromatism, Chords, Jazz, AddLittlePeace, Swing Drums, etc.), el doble de largo. Se aplica en el próximo Reproducir/Regenerar/Normalito.">
+      <div class="consola-field consola-loop" title="Duplica la duración del segmento a 24 compases en vez de los 12 de siempre — mismo motor, mismas reglas (Chromatism, Chords, Jazz, MelodicSpace/HarmonicSpace/RythmSpace, Swing Drums, etc.), el doble de largo. Se aplica en el próximo Reproducir/Regenerar/Normalito.">
         <input type="checkbox" id="consola24BarsChk" checked>
         <label for="consola24BarsChk">24 compases</label>
       </div>
@@ -1386,6 +1389,7 @@
           <div class="mix-val-row">
             <span class="mix-val" id="mixDrumVolVal">100%</span>
             <input type="checkbox" class="mix-focus" data-track="drum" title="Foco: si lo tildás, baja el volumen de todas las demás pistas (este fader no cambia)" aria-label="Foco en Batería">
+            <input type="checkbox" class="mix-solo" data-track="drum" title="Solo: silencia TODAS las demás pistas mientras esté tildado (a diferencia de Foco, que solo las baja) — este fader no cambia. Al destildarlo, todo vuelve exactamente al nivel que tenía antes (no se pisa ningún valor)." aria-label="Solo en Batería">
           </div>
         </div>
         <div class="mix-channel">
@@ -1394,6 +1398,7 @@
           <div class="mix-val-row">
             <span class="mix-val" id="mixBassVolVal">40%</span>
             <input type="checkbox" class="mix-focus" data-track="bass" title="Foco: si lo tildás, baja el volumen de todas las demás pistas (este fader no cambia)" aria-label="Foco en Bajo">
+            <input type="checkbox" class="mix-solo" data-track="bass" title="Solo: silencia TODAS las demás pistas mientras esté tildado (a diferencia de Foco, que solo las baja) — este fader no cambia. Al destildarlo, todo vuelve exactamente al nivel que tenía antes (no se pisa ningún valor)." aria-label="Solo en Bajo">
           </div>
         </div>
         <div class="mix-channel">
@@ -1402,6 +1407,7 @@
           <div class="mix-val-row">
             <span class="mix-val" id="mixChordVolVal">100%</span>
             <input type="checkbox" class="mix-focus" data-track="chord" title="Foco: si lo tildás, baja el volumen de todas las demás pistas (este fader no cambia)" aria-label="Foco en Armonía">
+            <input type="checkbox" class="mix-solo" data-track="chord" title="Solo: silencia TODAS las demás pistas mientras esté tildado (a diferencia de Foco, que solo las baja) — este fader no cambia. Al destildarlo, todo vuelve exactamente al nivel que tenía antes (no se pisa ningún valor)." aria-label="Solo en Armonía">
           </div>
         </div>
         <div class="mix-channel">
@@ -1410,6 +1416,7 @@
           <div class="mix-val-row">
             <span class="mix-val" id="mixMelodyVolVal">100%</span>
             <input type="checkbox" class="mix-focus" data-track="melody" title="Foco: si lo tildás, baja el volumen de todas las demás pistas (este fader no cambia)" aria-label="Foco en Melodía">
+            <input type="checkbox" class="mix-solo" data-track="melody" title="Solo: silencia TODAS las demás pistas mientras esté tildado (a diferencia de Foco, que solo las baja) — este fader no cambia. Al destildarlo, todo vuelve exactamente al nivel que tenía antes (no se pisa ningún valor)." aria-label="Solo en Melodía">
           </div>
         </div>
         <div class="mix-channel" title="Volumen de la pista bebopMelody (línea melódica independiente, chord-scale). Al prender el botón bebopMelody, este fader sube solo a 100% la primera vez — después queda a mano.">
@@ -1418,6 +1425,7 @@
           <div class="mix-val-row">
             <span class="mix-val" id="mixBebopVolVal">0%</span>
             <input type="checkbox" class="mix-focus" data-track="bebop" title="Foco: si lo tildás, baja el volumen de todas las demás pistas (este fader no cambia)" aria-label="Foco en Bebop">
+            <input type="checkbox" class="mix-solo" data-track="bebop" title="Solo: silencia TODAS las demás pistas mientras esté tildado (a diferencia de Foco, que solo las baja) — este fader no cambia. Al destildarlo, todo vuelve exactamente al nivel que tenía antes (no se pisa ningún valor)." aria-label="Solo en Bebop">
           </div>
         </div>
         <div class="mix-channel" title="Volumen de Doblar melodía (repite la Melodía una octava — o una quinta con 'alt-melody' — abajo, con su propio timbre). Sin efecto mientras el selector 'Doblar melodía' esté en Mute.">
@@ -1426,6 +1434,7 @@
           <div class="mix-val-row">
             <span class="mix-val" id="mixMelodyDoubleVolVal">50%</span>
             <input type="checkbox" class="mix-focus" data-track="melodyDouble" title="Foco: si lo tildás, baja el volumen de todas las demás pistas (este fader no cambia)" aria-label="Foco en Doblar melodía">
+            <input type="checkbox" class="mix-solo" data-track="melodyDouble" title="Solo: silencia TODAS las demás pistas mientras esté tildado (a diferencia de Foco, que solo las baja) — este fader no cambia. Al destildarlo, todo vuelve exactamente al nivel que tenía antes (no se pisa ningún valor)." aria-label="Solo en Doblar melodía">
           </div>
         </div>
         <div class="mix-channel" title="Volumen de Doblar armonía (repite la Armonía con un segundo timbre). Sin efecto mientras el selector 'Doblar armonía' esté en Mute.">
@@ -1434,6 +1443,7 @@
           <div class="mix-val-row">
             <span class="mix-val" id="mixChordDoubleVolVal">50%</span>
             <input type="checkbox" class="mix-focus" data-track="chordDouble" title="Foco: si lo tildás, baja el volumen de todas las demás pistas (este fader no cambia)" aria-label="Foco en Doblar armonía">
+            <input type="checkbox" class="mix-solo" data-track="chordDouble" title="Solo: silencia TODAS las demás pistas mientras esté tildado (a diferencia de Foco, que solo las baja) — este fader no cambia. Al destildarlo, todo vuelve exactamente al nivel que tenía antes (no se pisa ningún valor)." aria-label="Solo en Doblar armonía">
           </div>
         </div>
       </div>
@@ -7366,27 +7376,41 @@ function runAnalysis() {
   })();
 
   /* ================================================================
-     MÓDULO ADD LITTLE PEACE — slider #consolaAddLittlePeaceSlider
-     (0–100%, default 30%; 0% = apagado). Con esa probabilidad por cada
-     variación nueva (sorteado UNA vez en regenerateConsola/reset, no
-     por compás), reserva un tramo de SPAN (4) compases SEGUIDOS,
-     elegido al azar dentro de los NUM_BARS del segmento, como
-     "respiro": en esos compases se fuerza un solo reataque de armonía
-     por compás (una redonda — mismo mecanismo que ya usa el slider
-     Chords al forzar `[4]`) y el bajo también en redondas (un ataque
-     por compás). Fuera de ese tramo, todo sigue con el ritmo de
+     MÓDULOS "SPACE" — MelodicSpace / HarmonicSpace / RythmSpace.
+     Hasta acá esto era un solo módulo ("AddLittlePeace") que forzaba a
+     la vez armonía Y bajo en redondas durante un tramo de respiro. Se
+     partió en 3 sliders independientes, uno por sección, cada uno con
+     su propio sorteo (no comparten tramo entre sí salvo HarmonicSpace,
+     que sigue gobernando armonía+bajo JUNTOS como antes):
+       - MelodicSpace (#consolaMelodicSpaceSlider, default 30% — el
+         default que tenía AddLittlePeace): ahora se aplica a la
+         MELODÍA (antes no la tocaba).
+       - HarmonicSpace (#consolaHarmonicSpaceSlider, default 0%): el
+         rol que cumplía AddLittlePeace — armonía Y bajo juntos.
+       - RythmSpace (#consolaRhythmSpaceSlider, default 0%): batería.
+     Con esa probabilidad, por cada variación nueva (sorteado UNA vez en
+     regenerateConsola/reset, no por compás), cada módulo reserva su
+     PROPIO tramo de SPAN (4) compases SEGUIDOS, elegido al azar dentro
+     de los NUM_BARS del segmento, como "respiro": en esos compases se
+     fuerza un solo ataque por compás en la(s) pista(s) que gobierna
+     (una redonda — mismo mecanismo que ya usa el slider Chords al
+     forzar `[4]`). Fuera de ese tramo, todo sigue con el ritmo de
      siempre (Chromatism, Chords, More repetition, ataque quebrado,
-     etc. — este módulo solo pisa la CÉLULA rítmica de esos compases
-     puntuales, al final de la cadena, así siempre gana sobre lo que
-     hayan decidido los demás módulos). Solo aplica al motor libre
-     (buildChordEventsRandom / buildBassMelodyEventsRandom) — no toca
-     Normalito, que ya es un acorde fijo por compás sin ritmo variable.
+     Rapid runs, etc. — cada módulo solo pisa la CÉLULA rítmica de sus
+     compases puntuales, al final de la cadena de SU pista, así siempre
+     gana sobre lo que hayan decidido los demás módulos de esa pista).
+     Solo aplican al motor libre (buildChordEventsRandom /
+     buildBassMelodyEventsRandom / buildDrumEvents cuando lo llama
+     regenerateConsola) — no tocan Normalito, que ya es un acorde fijo
+     por compás sin ritmo variable (RythmSpace se resetea a "apagado"
+     explícitamente al entrar a Normalito, ver normalizeConsola, porque
+     buildDrumEvents es compartida por los dos motores).
      ================================================================ */
-  var ADDLITTLEPEACE = (function(){
+  function makeSpaceModule(sliderId, fallbackPct){
     function prob(){
-      var sl = document.getElementById("consolaAddLittlePeaceSlider");
-      var v = sl ? parseFloat(sl.value) : 30;
-      return isFinite(v) ? Math.max(0, Math.min(100, v)) / 100 : 0.30;
+      var sl = document.getElementById(sliderId);
+      var v = sl ? parseFloat(sl.value) : fallbackPct;
+      return isFinite(v) ? Math.max(0, Math.min(100, v)) / 100 : fallbackPct / 100;
     }
     function enabled(){ return prob() > 0; }
     var SPAN = 4;
@@ -7409,11 +7433,14 @@ function runAnalysis() {
       reset: reset,
       isPeaceBar: isPeaceBar
     };
-  })();
+  }
+  var MELODICSPACE = makeSpaceModule("consolaMelodicSpaceSlider", 30);
+  var HARMONICSPACE = makeSpaceModule("consolaHarmonicSpaceSlider", 0);
+  var RHYTHMSPACE = makeSpaceModule("consolaRhythmSpaceSlider", 0);
 
   /* ================================================================
      MÓDULO RAPID RUNS — slider #consolaRapidRunsSlider (0–100%,
-     default 20%; 0% = apagado). Por CADA compás del motor libre, con
+     default 5%; 0% = apagado). Por CADA compás del motor libre, con
      esa probabilidad, reemplaza la célula rítmica de la melodía por una
      corrida: 1 compás entero o medio compás (50/50; si es medio, 1ra o
      2da mitad al azar), toda en semicorcheas (0.25) o toda en fusas
@@ -7428,8 +7455,8 @@ function runAnalysis() {
   var RAPIDRUNS = (function(){
     function prob(){
       var sl = document.getElementById("consolaRapidRunsSlider");
-      var v = sl ? parseFloat(sl.value) : 20;
-      return isFinite(v) ? Math.max(0, Math.min(100, v)) / 100 : 0.20;
+      var v = sl ? parseFloat(sl.value) : 5;
+      return isFinite(v) ? Math.max(0, Math.min(100, v)) / 100 : 0.05;
     }
     function onsetsOf(cell){
       var out = [], t = 0;
@@ -8946,11 +8973,11 @@ function runAnalysis() {
         return Math.random() < chordDensityVariety ? cell : [4];
       });
     }
-    // AddLittlePeace: si esta variación sorteó un tramo de respiro, esos
+    // HarmonicSpace: si esta variación sorteó un tramo de respiro, esos
     // compases quedan SIEMPRE en un solo reataque (redonda) — pisa
     // cualquier decisión anterior (pool, MoreRep, Chords slider).
     cellsByBar = cellsByBar.map(function(cell, bar){
-      return ADDLITTLEPEACE.isPeaceBar(bar) ? [4] : cell;
+      return HARMONICSPACE.isPeaceBar(bar) ? [4] : cell;
     });
     var events = [];
     var slotChords = [];
@@ -9256,13 +9283,13 @@ function runAnalysis() {
         if (Math.random() < MOREREP.COUPLE_PROB) melodyCells[crBar] = chordCellForBar.slice();
       }
     }
-    // AddLittlePeace: en el tramo de respiro (si salió sorteado), el
+    // HarmonicSpace: en el tramo de respiro (si salió sorteado), el
     // bajo también queda en redondas — un solo ataque por compás, pisa
-    // cualquier ritmo anterior (pool, MoreRep/acople). La melodía NO se
-    // toca: sigue con su propio ritmo, solo que ahora contra un acorde
-    // sostenido todo el compás.
+    // cualquier ritmo anterior (pool, MoreRep/acople). Mismo tramo que
+    // usa buildChordEventsRandom para la armonía (comparten módulo, así
+    // que respiran juntos los mismos 4 compases).
     bassCells = bassCells.map(function(cell, bar){
-      return ADDLITTLEPEACE.isPeaceBar(bar) ? [4] : cell;
+      return HARMONICSPACE.isPeaceBar(bar) ? [4] : cell;
     });
     // Rapid runs: al final de la cadena de la melodía (pisa pool/
     // MoreRep/acople en los compases sorteados). runMasks[bar][k] = true
@@ -9270,6 +9297,18 @@ function runAnalysis() {
     var rr = RAPIDRUNS.apply(melodyCells);
     melodyCells = rr.cells;
     var runMasks = rr.masks;
+    // MelodicSpace: en su propio tramo de respiro (sorteo independiente
+    // del de HarmonicSpace), la melodía también queda en redondas — una
+    // sola nota sostenida por compás, pisa cualquier ritmo anterior
+    // INCLUIDO Rapid runs (si un compás cae en los dos a la vez, gana el
+    // respiro). runMasks se resetea a "no es corrida" en esos compases
+    // para no desalinearse con la nueva célula de 1 sola nota.
+    melodyCells = melodyCells.map(function(cell, bar){
+      return MELODICSPACE.isPeaceBar(bar) ? [4] : cell;
+    });
+    runMasks = runMasks.map(function(mask, bar){
+      return MELODICSPACE.isPeaceBar(bar) ? [false] : mask;
+    });
     var lastMelodyMidi = null; // Rapid runs: la corrida arranca cerca de la última nota de melodía
     var bassEvents = [], melodyEvents = [];
     var jazzPrevBass = null; // JAZZ: nota anterior del bajo, para caminar por grados conjuntos
@@ -9476,7 +9515,11 @@ function runAnalysis() {
     fixedIntervalOffset = 0; // modo test de intervalos fijos: cada variación nueva arranca el ciclo en C (offset 0)
     cyclesOffset = 0; // módulo Cycles (Modo A acumulativo): cada variación nueva arranca el ciclo en C también
     MELODICPATTERNS.reset(); // melodicPatterns: un contorno nuevo por variación, compartido por melodía principal y bebopMelody
-    ADDLITTLEPEACE.reset(NUM_BARS); // AddLittlePeace: sortea si esta variación tiene (slider, default 30%) un tramo de 4 compases de respiro, y dónde
+    // Space sliders: cada uno sortea, independiente, si esta variación
+    // tiene (según su propio %) un tramo de 4 compases de respiro, y dónde.
+    MELODICSPACE.reset(NUM_BARS);
+    HARMONICSPACE.reset(NUM_BARS);
+    RHYTHMSPACE.reset(NUM_BARS);
     var built = buildProgressionRandom(rootChord, NUM_BARS);
     state.progression = built.progression;
     state.roles = built.roles;
@@ -9506,6 +9549,7 @@ function runAnalysis() {
     if(state.rootChord.length === 0) return;
     NUM_BARS = desiredNumBars();
     MELODICPATTERNS.reset(); // melodicPatterns: también sortea contorno nuevo en Normalito
+    RHYTHMSPACE.reset(0); // No afecta a Normalito: buildDrumEvents es compartida por los dos motores, así que se apaga a mano (reset(0) siempre deja range=null)
     var invSeq = defaultInversionSeq(state.rootChord.length, NUM_BARS);
     var built = buildProgression(state.rootChord, invSeq);
     state.progression = built.progression;
@@ -9872,10 +9916,25 @@ function runAnalysis() {
   }
   function focusFactor(track){ return (!focusActive() || focusTracks[track]) ? 1 : FOCUS_DUCK; }
   function mixEffective(track){ return mixGains[track] * focusFactor(track); }
+  // ---------- Solo: checkbox chico junto a cada fader del mini mixer ----------
+  // Mismo patrón que Foco (arriba), pero en vez de bajar el resto a
+  // FOCUS_DUCK las SILENCIA del todo (factor 0) — como pedir "que se
+  // escuche SOLO batería". Nunca toca mixGains: es un factor más que se
+  // multiplica en audioGain(), así que al destildar todos los Solo el
+  // nivel de cada pista vuelve exactamente al que tenía antes (el fader
+  // real nunca se movió). Con dos o más Solo tildados a la vez, todas
+  // las tildadas suenan juntas y el resto queda mudo (mismo criterio que
+  // Foco cuando hay varias tildadas).
+  var soloTracks = {};
+  function soloActive(){
+    for(var k in soloTracks){ if(soloTracks[k]) return true; }
+    return false;
+  }
+  function soloFactor(track){ return (!soloActive() || soloTracks[track]) ? 1 : 0; }
   // onlydrums: silencia en el AUDIO todo menos la batería. No cambia mixGains
   // ni mixEffective (el export MIDI sigue igual); solo el nivel de los gain nodes.
   var onlyDrums = false;
-  function audioGain(track){ return (onlyDrums && track !== "drum") ? 0 : mixEffective(track); }
+  function audioGain(track){ return (onlyDrums && track !== "drum") ? 0 : mixEffective(track) * soloFactor(track); }
   // Defaults propios (no los de SF_DEFAULT_FILES): Bajo = "synthBass" (Bajo original sintetizado) y
   // Doblar melodía = "bassoon" (Fagot, Instruments.sf2). Doblar armonía = Nord Pad (SF_DEFAULT_FILES).
   // Las filas de "Bass default.sf2" y "Armonica.sf2" siguen en el catálogo, elegibles a mano.
@@ -11350,6 +11409,14 @@ function runAnalysis() {
     var events = [];
     for(var bar=0; bar<numBars; bar++){
       var base = RHYTHM.start(bar);
+      // RythmSpace: tramo de respiro sorteado (independiente de
+      // MelodicSpace/HarmonicSpace) — pisa TODO lo demás del compás con
+      // un solo golpe suave de bombo en el tiempo 1, mismo concepto de
+      // "un solo ataque por compás" que usan los otros dos Space.
+      if (RHYTHMSPACE.isPeaceBar(bar)){
+        events.push({type:"kick", startBeat: base, vel: 40});
+        continue;
+      }
       // Rhythm: los compases fuera de 4/4 llano no usan los patrones
       // curados (kick/snare/hihat pensados para 4 tiempos) — arman un
       // pulso genérico a la medida de su compás (de a 3 si es
@@ -12342,11 +12409,16 @@ function runAnalysis() {
   document.getElementById("consolaMoreRepChk").addEventListener("change", function(){
     if(state.rootChord.length) regenerateConsola();
   });
-  document.getElementById("consolaAddLittlePeaceSlider").addEventListener("input", function(){
-    document.getElementById("consolaAddLittlePeaceVal").textContent = this.value + "%";
-  });
-  document.getElementById("consolaAddLittlePeaceSlider").addEventListener("change", function(){
-    if(state.rootChord.length) regenerateConsola();
+  ["consolaMelodicSpaceSlider", "consolaHarmonicSpaceSlider", "consolaRhythmSpaceSlider"].forEach(function(id){
+    var el = document.getElementById(id);
+    if(!el) return;
+    var valEl = document.getElementById(id.replace(/Slider$/, "Val"));
+    el.addEventListener("input", function(){
+      if(valEl) valEl.textContent = this.value + "%";
+    });
+    el.addEventListener("change", function(){
+      if(state.rootChord.length) regenerateConsola();
+    });
   });
   document.getElementById("consolaRapidRunsSlider").addEventListener("input", function(){
     document.getElementById("consolaRapidRunsVal").textContent = this.value + "%";
@@ -12510,6 +12582,16 @@ function runAnalysis() {
     document.querySelectorAll(".mix-focus").forEach(function(cb){
       cb.addEventListener("change", function(){
         focusTracks[cb.getAttribute("data-track")] = cb.checked;
+        applyAllMixGains();
+      });
+    });
+  })();
+
+  // ---- Mini mixer: "Solo" — checkbox chico junto a cada fader ----
+  (function(){
+    document.querySelectorAll(".mix-solo").forEach(function(cb){
+      cb.addEventListener("change", function(){
+        soloTracks[cb.getAttribute("data-track")] = cb.checked;
         applyAllMixGains();
       });
     });
