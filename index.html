@@ -5118,7 +5118,7 @@ const SF_DEFAULT_FILES = [
   { mix: "melody",       file: "Flute default.sf2", bank: 0, program: 73, label: "Flute",                kind: "melodic", family: "flute" },
   { mix: "melodyDouble", file: "Extra v2/LEAD/Armonica.sf2", bank: 0, program: 0,  label: "Hohner C Harmonica",   kind: "melodic", family: "flute" },
   { mix: "bass",         file: "Bass default.sf2",  bank: 0, program: 32, label: "Acoust. Bass (Solar)", kind: "melodic", family: "bass"  },
-  { mix: "drum",         file: "Drums default.sf2", bank: 0, program: 0,  label: "JDRockKit",            kind: "drum" }
+  { mix: "drum",         file: "Drums default.sf2", bank: 128, program: 0, label: "hifidrum v2 GM",       kind: "drum" }
 ];
 function sfDefaultId(d) { return "x_" + encodeURIComponent(d.file); }
 function sfDefaultKey(d) { return "sf:" + sfDefaultId(d) + ":" + d.bank + ":" + d.program; }
@@ -5149,7 +5149,7 @@ const SF_LEGACY_FILES = {
   flute:       { file: "Flute default.sf2",                                     bank: 0, program: 73 },
   contrabass:  { file: "Extra v2/BASS/Instruments - 000-043 Contrabass.sf2",      bank: 0, program: 43 },
   jazzGuitar:  { file: "Extra v2/Instruments - 000-026 Jazz Guitar.sf2",      bank: 0, program: 26 },
-  kit:         { file: "Drums default.sf2",                                     bank: 0, program: 0  }
+  kit:         { file: "Drums default.sf2",                                     bank: 128, program: 0  }
 };
 function sfLegacyUrl(key) { const l = SF_LEGACY_FILES[key]; return l ? sfUrlForPath(SF_ROOT_DIR + "/" + l.file) : null; }
 function sfLegacyId(key) { const l = SF_LEGACY_FILES[key]; return l ? "x_" + encodeURIComponent(l.file) : null; }
@@ -11191,8 +11191,8 @@ function runAnalysis() {
   // reduce los compases de espacio. Excluyente con Swing Drums. Notas GM
   // (el Jazz Kit HIFI, que no es GM, se remapea en drumNoteForKit).
   var modernJazzEnabled = true; // prendido por defecto (2026-09-23)
-  // Drums default (JDRockKit) tiene solo 3 muestras de tom (41=45,
-  // 43=47, 48=50 — verificado en el .sf2): 50/47/45 son las 3 distintas.
+  // Drums default (hifidrum v2 GM, bank 128) tiene toms en 50/48/47/45/43/41
+  // (mapa GM propio); se usan 50/47/45 como toms de fill.
   var MJ_TOMS = [50, 47, 45];
   function mjRand(a, b){ return a + Math.floor(Math.random()*(b-a+1)); }
   function mjPick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
@@ -11541,7 +11541,7 @@ function runAnalysis() {
   }
   // Remapeo de notas por kit (verificado 2026-09-23 parseando las zonas
   // de cada .sf2, no asumido):
-  //  - "Drums default.sf2" (JDRockKit) y "Brush Kit" (GM 128-040) siguen
+  //  - "Drums default.sf2" (hifidrum v2 GM) y "Brush Kit" (GM 128-040) siguen
   //    el mapa GM: 51 ride, 53 campana, 44 pedal, etc. Sin remapeo.
   //  - "Jazz Kit - Jazz Traps" (HIFI) NO es GM: bombo 0-37, caja con
   //    escobilla 38-52, barridos 53-58, toms con escobilla 59-78,
