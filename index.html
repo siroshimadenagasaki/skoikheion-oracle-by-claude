@@ -1160,7 +1160,7 @@
         <input type="range" id="consolaNotesComplexitySlider" min="0" max="100" value="50" step="1">
         <span class="consola-val" id="consolaNotesComplexityVal">50%</span>
       </div>
-      <div class="consola-field" title="Tresillos en TODAS las pistas (armonía, bajo, melodía, bebop, batería). 0% = como siempre (casi sin tresillos). 100% = ~80% del tiempo de cada pista en tresillos, al azar de blanca (3 en 4 tiempos), de negra (3 en 2 tiempos) o de corchea (3 en 1 tiempo). Solo mueve ataques: nunca cambia notas, así que el set no se traiciona. Cada pista tira sus propias ventanas (polirritmia). No afecta a Normalito.">
+      <div class="consola-field" title="Tresillos en TODAS las pistas (armonía, bajo, melodía, bebop, batería). 0% = como siempre (casi sin tresillos). 100% = todo el compás en tresillos, al azar de blanca (3 en 4 tiempos), de negra (3 en 2 tiempos) o de corchea (3 en 1 tiempo). Solo mueve ataques: nunca cambia notas, así que el set no se traiciona. Cada pista tira sus propias ventanas (polirritmia). No afecta a Normalito.">
         <label for="consolaTripletsSlider">Triplets</label>
         <input type="range" id="consolaTripletsSlider" min="0" max="100" value="0" step="1">
         <span class="consola-val" id="consolaTripletsVal">0%</span>
@@ -7630,8 +7630,8 @@ function runAnalysis() {
 
   /* ================================================================
      MÓDULO TRIPLETS — slider #consolaTripletsSlider (How to play, 0–100%,
-     default 0%). 0% = nada cambia (como antes). 100% = ~80% del tiempo
-     de cada pista cae en ventanas de tresillo.
+     default 0%). 0% = nada cambia (como antes). 100% = TODO el compás
+     cae en ventanas de tresillo, en las 5 pistas.
      Post-proceso de los eventos ya armados (nunca agrega ni cambia
      alturas: solo MUEVE ataques). Por compás y por pista, recorre el
      compás en ventanas alineadas de 4, 2 o 1 tiempo (al azar entre las
@@ -7650,7 +7650,7 @@ function runAnalysis() {
      No afecta a Normalito (setActive(false)).
      ================================================================ */
   var TRIPLETS = (function(){
-    var EPS = 1e-6, active = true, MAX_COVER = 0.8;
+    var EPS = 1e-6, active = true, MAX_COVER = 1;
     function prob(){
       var sl = document.getElementById("consolaTripletsSlider");
       var v = sl ? parseFloat(sl.value) : 0;
