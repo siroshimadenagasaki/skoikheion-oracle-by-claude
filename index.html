@@ -280,6 +280,41 @@
   .examples-head{display:flex;align-items:center;justify-content:center;gap:10px;}
   .examples .examples-title{width:auto;margin-bottom:0;}
   .examples-chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;padding-top:12px;}
+
+  /* VECTOR DE INTERVALOS: mini tableta con 6 casilleros (uno por clase
+     de intervalo, ic1..ic6), al pie del reloj de entrada. Solo lectura
+     (checkbox tildado si esa clase aparece >=1 vez en el set actual) +
+     el conteo real, recalculado en cada runAnalysis() desde el mismo
+     r.ic_vector (getIntervalVector) que alimenta el panel de detalles
+     y, en la tabla estática, la columna "Vector de intervalos" de cada
+     clase Forte-Solomon — así el valor siempre coincide con el Anexo 1. */
+  .ivector-tablet{
+    margin-top:16px;padding-top:16px;border-top:1px solid var(--line);
+  }
+  .ivector-head{display:flex;align-items:center;justify-content:center;gap:10px;}
+  .ivector-title{
+    font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-muted);
+    letter-spacing:.14em;text-transform:uppercase;
+  }
+  .ivector-cells{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;padding-top:12px;}
+  .ivector-cell{
+    display:flex;flex-direction:column;align-items:center;gap:4px;
+    background:var(--surface-2);border:1px solid var(--line);border-radius:10px;
+    padding:8px 10px;min-width:54px;transition:border-color .15s ease;
+  }
+  .ivector-cell input[type="checkbox"]{accent-color:var(--gold);pointer-events:none;}
+  .ivector-cell.active{border-color:var(--gold-dim);}
+  .ivector-ic{
+    font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-muted);letter-spacing:.02em;
+  }
+  .ivector-count{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;color:var(--ink);}
+  .ivector-cell.active .ivector-count{color:var(--gold);}
+  .ivector-link{
+    display:block;width:100%;margin-top:10px;text-align:center;background:none;border:none;
+    font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--ink-muted);
+    cursor:pointer;text-decoration:underline;text-underline-offset:2px;
+  }
+  .ivector-link:hover{color:var(--gold);}
   /* ESTILOS (set de presets): ahora vive en el Mini mixer, arriba de los selectores */
   .mix-styles{
     display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center;
@@ -1052,6 +1087,23 @@
         <button class="chip toggle" id="sf2Btn" type="button" aria-pressed="false" title="Carga los SoundFonts default y clásicos (Soundfonts v2/*.sf2 + un .sf2 por instrumento) y reemplaza el sintetizador por muestras de instrumento y batería reales (incluye SetMusicBox). Un clic más para volver al sintetizador liviano.">🎼 Sonido real (SoundFont)</button>
         <input type="file" id="sf2LocalPicker" webkitdirectory directory multiple hidden aria-hidden="true">
         <button class="chip" id="loadExtraBtn" type="button" title="Carga los SoundFonts de la carpeta Soundfonts v2/Extra v2/ (Piano Steinway D, Warm Pad, Super Bass Electric, Jazz Kit… y cualquier .sf2 que subas ahí) y activa sus opciones (HIFI) en los selectores del mini mixer. Solo se nota con '🎼 Sonido real' activado. Si alguno falla, volvé a apretarlo para reintentar.">loadExtra</button>
+      </div>
+      <div class="ivector-tablet" id="ivectorTablet" title="Vector de intervalos del set actual (6 clases de intervalo) — se contrasta con la Tabla de Sets completa (Anexo 1)">
+        <div class="ivector-head">
+          <span class="ivector-title">Vector de intervalos</span>
+          <button type="button" class="subfield-toggle" aria-expanded="false" aria-controls="ivectorBody" onclick="toggleModule(this)" title="Mostrar/ocultar el vector de intervalos"></button>
+        </div>
+        <div class="collapsible-content collapsed" id="ivectorBody">
+          <div class="ivector-cells" id="ivectorCells">
+            <label class="ivector-cell"><input type="checkbox" id="ivChk1" disabled><span class="ivector-ic">m2 / M7</span><span class="ivector-count" id="ivCount1">0</span></label>
+            <label class="ivector-cell"><input type="checkbox" id="ivChk2" disabled><span class="ivector-ic">M2 / m7</span><span class="ivector-count" id="ivCount2">0</span></label>
+            <label class="ivector-cell"><input type="checkbox" id="ivChk3" disabled><span class="ivector-ic">m3 / M6</span><span class="ivector-count" id="ivCount3">0</span></label>
+            <label class="ivector-cell"><input type="checkbox" id="ivChk4" disabled><span class="ivector-ic">M3 / m6</span><span class="ivector-count" id="ivCount4">0</span></label>
+            <label class="ivector-cell"><input type="checkbox" id="ivChk5" disabled><span class="ivector-ic">4J / 5J</span><span class="ivector-count" id="ivCount5">0</span></label>
+            <label class="ivector-cell"><input type="checkbox" id="ivChk6" disabled><span class="ivector-ic">Tritono</span><span class="ivector-count" id="ivCount6">0</span></label>
+          </div>
+          <button type="button" class="ivector-link" id="ivectorAnexoLink">Ver en Anexo 1 · Tabla de Sets</button>
+        </div>
       </div>
       <div class="examples examples-module" id="examplesModule">
         <div class="examples-head">
@@ -5811,7 +5863,50 @@ document.addEventListener("click", (e) => {
   res.hidden = !res.hidden;
   document.querySelectorAll("[data-results-toggle]").forEach((b) => b.setAttribute("aria-expanded", String(!res.hidden)));
 });
+
+// ---- Mini tableta "Vector de intervalos" al pie del reloj de entrada ----
+// Reusa r.ic_vector (analyze() -> getIntervalVector sobre la prime form),
+// el mismo array que ya alimenta la fila "IC vector" del panel de
+// detalles — así el conteo que se ve acá es, número por número, el
+// mismo que aparece en la columna "Vector de intervalos" del Anexo 1
+// para la clase Forte-Solomon del set actual (nunca un cálculo aparte).
+function renderIntervalVectorTablet(r) {
+  const vec = r && Array.isArray(r.ic_vector) ? r.ic_vector : [0, 0, 0, 0, 0, 0];
+  for (let i = 1; i <= 6; i++) {
+    const chk = document.getElementById("ivChk" + i);
+    if (!chk) continue;
+    const cell = chk.closest(".ivector-cell");
+    const n = vec[i - 1] || 0;
+    chk.checked = n > 0;
+    const countEl = document.getElementById("ivCount" + i);
+    if (countEl) countEl.textContent = String(n);
+    if (cell) cell.classList.toggle("active", n > 0);
+  }
+  const tablet = document.getElementById("ivectorTablet");
+  if (tablet) tablet.dataset.forteCode = (r && r.forte_code) ? r.forte_code : "";
+}
+(function () {
+  const btn = document.getElementById("ivectorAnexoLink");
+  if (!btn) return;
+  btn.addEventListener("click", () => {
+    const tablet = document.getElementById("ivectorTablet");
+    const code = tablet ? tablet.dataset.forteCode : "";
+    const anexo = document.getElementById("anexo1");
+    if (!anexo) return;
+    const collapse = document.getElementById("anexo1Collapse");
+    const toggleBtn = document.getElementById("anexo1ToggleBtn");
+    if (collapse && collapse.hidden && toggleBtn) toggleBtn.click();
+    const filterInput = document.getElementById("anexo1Filter");
+    if (filterInput) {
+      filterInput.value = code || "";
+      filterInput.dispatchEvent(new Event("input"));
+    }
+    anexo.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+})();
+
 renderClockCenter(null);
+renderIntervalVectorTablet(null);
 
 function runAnalysis() {
   // MULTI SETS INPUT: tocar el reloj/piano a mano vuelve al modo de un solo set.
@@ -5832,6 +5927,7 @@ function runAnalysis() {
   if (pcs.length < 2) {
     results.innerHTML = '<div class="empty-state">Elegí al menos 2 notas para calcular un conjunto.</div>';
     renderClockCenter(null);
+    renderIntervalVectorTablet(null);
     renderSuperposicion(null);
     renderModosDelSet(null);
     renderSubSuper(null);
@@ -5895,6 +5991,7 @@ function runAnalysis() {
       if (src && dst) dst.innerHTML = src.innerHTML;
     })();
     renderClockCenter(r);
+    renderIntervalVectorTablet(r);
     statusEl.classList.remove("err");
     statusEl.textContent = `Listo · ${CHORDS_DATA.length} clases Forte-Solomon cargadas · elegí notas en el reloj`;
     renderSuperposicion(r);
@@ -5906,6 +6003,7 @@ function runAnalysis() {
     statusEl.classList.add("err");
     statusEl.textContent = "Error: " + (err && err.message ? err.message : err);
     renderClockCenter(null);
+    renderIntervalVectorTablet(null);
     renderSuperposicion(null);
     renderModosDelSet(null);
     renderSubSuper(null);
