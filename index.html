@@ -1341,6 +1341,21 @@
         </div>
         </div>
       </div>
+      <div class="consola-field consola-instruments" title="Ornaments: adornos sobre la melodía principal (~30% de las notas con figura lo bastante larga), en figuras muy rápidas (1/8 de tiempo) tomadas de la propia nota — nunca se superponen ni cambian el ritmo general. La vecina del adorno es la nota más cercana DENTRO del acorde vigente (hasta 2 semitonos arriba/abajo); si no hay, semitono cromático (única excepción a &quot;nunca una nota ajena al set&quot;, como Scales). La nota principal siempre es del acorde. Doblar melodía hereda los adornos; moreComping sigue a las notas principales. No aplica a Normalito. Todas destildadas = melodía de siempre.">
+        <div class="consola-subfield-head">
+          <label>Ornaments</label>
+          <button type="button" class="subfield-toggle" aria-expanded="false" aria-controls="ornBody" onclick="toggleModule(this)" title="Mostrar/ocultar Ornaments"></button>
+        </div>
+        <div class="collapsible-content collapsed" id="ornBody">
+        <div class="consola-inst-row">
+          <span class="consola-inst-toggle" title="Tilda o destilda todas las casillas de Ornaments."><input type="checkbox" id="consolaORN_all"><label for="consolaORN_all">all</label></span>
+          <span class="consola-inst-toggle" title="Nota de gracia: una vecina muy corta justo antes de la nota principal (necesita figura de 1/2 tiempo o más)."><input type="checkbox" id="consolaORN_grace"><label for="consolaORN_grace">grace</label></span>
+          <span class="consola-inst-toggle" title="Mordente: principal – vecina – principal, rápido (figura de 1/2 tiempo o más)."><input type="checkbox" id="consolaORN_mordent"><label for="consolaORN_mordent">mordent</label></span>
+          <span class="consola-inst-toggle" title="Trino: alterna principal/vecina en notas largas (figura de 1 tiempo o más); siempre termina en la principal."><input type="checkbox" id="consolaORN_trill"><label for="consolaORN_trill">trill</label></span>
+          <span class="consola-inst-toggle" title="Grupeto: vecina de arriba – principal – vecina de abajo – principal (figura de 3/4 de tiempo o más)."><input type="checkbox" id="consolaORN_turn"><label for="consolaORN_turn">turn</label></span>
+        </div>
+        </div>
+      </div>
       <div class="consola-field consola-instruments" title="Modo TEST: si tildás uno o más, la transposición cromática al azar (por compás y por reataque) deja de usar el rango del slider Chromatism y sortea SOLO entre los intervalos tildados acá. La dirección (Ascendente/Descendente) es global para todos — 2da m, 2da M, 3ra m, 3ra M, 4ta J y 5ta J transponen todos para el mismo lado a la vez; Descendente está tildado por defecto. Al tildar el primer intervalo, el slider Chromatism baja a 0% automáticamente (queda en 0% mientras uses esto). Destildando todos, Chromatism sigue en 0% hasta que lo subas vos a mano. No afecta el achique de subset (eso sigue atado solo a Chromatism).">
         <div class="consola-subfield-head">
           <label>Transposition intervals (test)</label>
@@ -8164,6 +8179,87 @@ function runAnalysis() {
   })();
 
   /* ================================================================
+     ORNAMENTS — casillas #consolaORN_* (grace, mordent, trill, turn + all), "Ornaments".
+     Post-proceso de la melodía principal (después de Triplets, antes
+     de moreComping): ~30% de las notas con figura suficiente reciben
+     un adorno tomado de SU PROPIA duración (nunca se corre el inicio
+     de la siguiente nota, nunca hay solapes). Tipos: nota de gracia,
+     mordente, trino, grupeto. Vecina = nota del acorde vigente a <=2
+     semitonos (arriba/abajo); si no hay, semitono cromático.
+     ================================================================ */
+  var ORNAMENTS = (function(){
+    var PROB = 0.3, T = 0.125, EPS = 1e-6;
+    var KEYS = ["grace", "mordent", "trill", "turn"];
+    function chosen(){
+      return KEYS.filter(function(k){ var e = document.getElementById("consolaORN_" + k); return e && e.checked; });
+    }
+    function enabled(){ return chosen().length > 0; }
+    function inRange(m){ return m >= MELODY_MIDI_FLOOR && m <= MELODY_MIDI_CEIL; }
+    function neighbor(main, dir, pcs){
+      var steps = dir > 0 ? [1, 2] : [-1, -2];
+      for(var i=0;i<steps.length;i++){
+        var m = main + steps[i];
+        if(pcs[((m % 12) + 12) % 12]) return m; // vecina dentro del set/acorde
+      }
+      return main + dir; // fallback: semitono cromático
+    }
+    function pickNeighbor(main, dir, pcs){
+      var n = neighbor(main, dir, pcs);
+      if(!inRange(n)) n = neighbor(main, -dir, pcs);
+      return inRange(n) ? n : null;
+    }
+    function apply(events, slotChords){
+      var want = chosen();
+      if(!want.length || !events || !events.length) return events;
+      var sorted = events.slice().sort(function(a, b){ return a.startBeat - b.startBeat; });
+      var out = [];
+      sorted.forEach(function(ev, i){
+        var nx = sorted[i+1];
+        var avail = ev.durBeats;
+        if(nx && nx.startBeat > ev.startBeat + EPS) avail = Math.min(avail, nx.startBeat - ev.startBeat);
+        var types = [];
+        if(avail >= 0.5 - EPS){ types.push("grace"); types.push("mordent"); }
+        if(avail >= 0.75 - EPS) types.push("turn");
+        if(avail >= 1 - EPS) types.push("trill");
+        types = types.filter(function(t){ return want.indexOf(t) >= 0; });
+        if(!types.length || Math.random() >= PROB){ out.push(ev); return; }
+        var pcs = {}, sl = slotChords && slotChords[ev.bar];
+        if(sl && sl.length){
+          currentChordAt(sl, ev.startBeat - RHYTHM.start(ev.bar)).forEach(function(m){ pcs[((m % 12) + 12) % 12] = true; });
+        }
+        pcs[((ev.midi % 12) + 12) % 12] = true;
+        var main = ev.midi, dir = Math.random() < 0.5 ? 1 : -1;
+        var up = pickNeighbor(main, 1, pcs), down = pickNeighbor(main, -1, pcs);
+        var nb = dir > 0 ? (up != null ? up : down) : (down != null ? down : up);
+        if(nb == null){ out.push(ev); return; }
+        var type = types[randomInt(0, types.length - 1)], pieces = [];
+        if(type === "grace"){
+          pieces = [[nb, T]];
+        } else if(type === "mordent"){
+          pieces = [[main, T], [nb, T]];
+        } else if(type === "turn"){
+          var u = up != null ? up : nb, d = down != null ? down : nb;
+          pieces = [[u, T], [main, T], [d, T]];
+        } else { // trill: alterna principal/vecina, siempre termina en la principal
+          var n = Math.floor(avail * 0.7 / T); n -= n % 2;
+          for(var k=0;k<n;k++) pieces.push([k % 2 === 0 ? main : nb, T]);
+        }
+        var used = 0;
+        pieces.forEach(function(pc){
+          var e = Object.assign({}, ev);
+          e.midi = pc[0]; e.startBeat = ev.startBeat + used; e.durBeats = pc[1]; e.orn = 1;
+          out.push(e); used += pc[1];
+        });
+        var last = Object.assign({}, ev);
+        last.startBeat = ev.startBeat + used; last.durBeats = Math.max(0.05, ev.durBeats - used);
+        out.push(last);
+      });
+      return out;
+    }
+    return { enabled: enabled, apply: apply };
+  })();
+
+  /* ================================================================
      MOTOR BARRY HARRIS — checkbox #consolaBebopHarrisChk, "🎼 Harris".
      Reconstruido a partir del doc de diseño guardado en el proyecto
      (claude/harris-melodic-engine.md): esos 3 patches se probaron una
@@ -10294,9 +10390,10 @@ function runAnalysis() {
     state.slotChords = chordBuilt.slotChords;
     var bm = buildBassMelodyEventsRandom(state.progression, built.meta, chordBuilt.slotChords);
     state.bassEvents = TRIPLETS.applyLine(bm.bassEvents, chordBuilt.slotChords);
-    state.melodyEvents = TRIPLETS.applyLine(bm.melodyEvents, chordBuilt.slotChords);
+    var melodyPlain = TRIPLETS.applyLine(bm.melodyEvents, chordBuilt.slotChords);
+    state.melodyEvents = ORNAMENTS.apply(melodyPlain, chordBuilt.slotChords); // Ornaments: adornos sobre la melodía principal (moreComping sigue a las notas sin adornar)
     state.comping2Events = MORECOMPING.enabled()
-      ? MORECOMPING.buildEvents(state.melodyEvents, function(bar, offset){ return currentChordAt(chordBuilt.slotChords[bar], offset); })
+      ? MORECOMPING.buildEvents(melodyPlain, function(bar, offset){ return currentChordAt(chordBuilt.slotChords[bar], offset); })
       : [];
     state.bebopEvents = BEBOPMELODY.enabled()
       ? TRIPLETS.applyLine(BEBOPMELODY.buildEvents(NUM_BARS, function(bar, offset){ return currentChordAt(chordBuilt.slotChords[bar], offset); }), chordBuilt.slotChords)
@@ -13422,6 +13519,32 @@ function runAnalysis() {
   document.getElementById("consolaMelodicPatternsChk").addEventListener("change", function(){
     if(state.rootChord.length) regenerateConsola();
   });
+  // Ornaments: mismo esquema que Harmony — cada casilla regenera, "all" tilda/destilda las otras y refleja su estado.
+  (function(){
+    var keys = ["grace","mordent","trill","turn"];
+    var allEl = document.getElementById("consolaORN_all");
+    function syncAll(){
+      if(!allEl) return;
+      var n = keys.filter(function(k){ var e = document.getElementById("consolaORN_" + k); return e && e.checked; }).length;
+      allEl.checked = (n === keys.length);
+      allEl.indeterminate = (n > 0 && n < keys.length);
+    }
+    keys.forEach(function(k){
+      var el = document.getElementById("consolaORN_" + k);
+      if(!el) return;
+      el.addEventListener("change", function(){
+        syncAll();
+        if(state.rootChord.length) regenerateConsola();
+      });
+    });
+    if(allEl) allEl.addEventListener("change", function(){
+      var on = allEl.checked;
+      allEl.indeterminate = false;
+      keys.forEach(function(k){ var e = document.getElementById("consolaORN_" + k); if(e) e.checked = on; });
+      if(state.rootChord.length) regenerateConsola();
+    });
+    syncAll();
+  })();
   // moreComping: botón, no checkbox — queda prendido/apagado (clase
   // "primary") hasta que se vuelve a tocar, y cada cambio de estado
   // regenera de una (mismo criterio que Jazz/More repetition/Notas
