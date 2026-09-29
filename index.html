@@ -1326,24 +1326,18 @@
           <span class="consola-inst-toggle" title="Reemplaza la selección de nota de la melodía (y de bebopMelody, si está prendido) por un CONTORNO fijo — un patrón de saltos tipo '2 arriba, 1 abajo' repetido, en vez de arpegio lineal en los compases densos o nota al azar en el resto. El patrón se sortea de un pool variado (ciclos de 2 a 4 movimientos) una vez por cada Reproducir/Regenerar, y siempre indexa dentro del acorde vigente (nunca una nota ajena al set) — si el salto se pasa del tamaño del acorde, sigue contando en la octava de al lado, igual que una 9na es un 2 una octava arriba."><input type="checkbox" id="consolaMelodicPatternsChk" checked><label for="consolaMelodicPatternsChk">&#127925; melodicPatterns</label></span>
         </div>
       </div>
-      <div class="consola-field consola-instruments" title="Harmony testing: si tildás al menos una casilla, la Armonía deja de usar el motor libre y toca SOLO el set elegido (sin subsets al azar, en bloque). Con Cycles tildado se transpone por ataque como el motor libre (ChangeDuration incluido). Cada casilla suma una capa. Bajo, melodía y cifrado siguen igual. No aplica a Normalito.">
+      <div class="consola-field consola-instruments" title="Harmony: si hay al menos una casilla tildada, la Armonía deja de usar el motor libre y toca SOLO el set elegido (sin subsets al azar, en bloque). Con Cycles tildado se transpone por ataque como el motor libre (ChangeDuration incluido). Bajo, melodía y cifrado siguen igual. No aplica a Normalito. Todas destildadas = motor libre de siempre.">
         <div class="consola-subfield-head">
-          <label>Harmony testing</label>
-          <button type="button" class="subfield-toggle" aria-expanded="false" aria-controls="harmTestBody" onclick="toggleModule(this)" title="Mostrar/ocultar Harmony testing"></button>
+          <label>Harmony</label>
+          <button type="button" class="subfield-toggle" aria-expanded="false" aria-controls="harmTestBody" onclick="toggleModule(this)" title="Mostrar/ocultar Harmony"></button>
         </div>
         <div class="collapsible-content collapsed" id="harmTestBody">
         <div class="consola-inst-row">
-          <span class="consola-inst-toggle" title="Acorde fijo (el set elegido), una redonda por compás."><input type="checkbox" id="consolaHT_base"><label for="consolaHT_base">base</label></span>
-          <span class="consola-inst-toggle" title="Célula con síncopas por compás (8 células que suman 4)."><input type="checkbox" id="consolaHT_sync"><label for="consolaHT_sync">sync</label></span>
-          <span class="consola-inst-toggle" title="Ciclo de 3 tiempos (1 · ½ · 1½) atravesando compases de 4, con ligadura entre barras. Reemplaza a sync."><input type="checkbox" id="consolaHT_poly"><label for="consolaHT_poly">poly</label></span>
-          <span class="consola-inst-toggle" title="Velocidad: 112 primer ataque, 88 tiempos, 62 contratiempos."><input type="checkbox" id="consolaHT_accent"><label for="consolaHT_accent">accent</label></span>
-          <span class="consola-inst-toggle" title="Alterna legato / staccato (30% de la duración)."><input type="checkbox" id="consolaHT_artic"><label for="consolaHT_artic">artic</label></span>
-        </div>
-        <div class="consola-inst-row">
-          <span class="consola-inst-toggle" title="Ataque fuerte = set completo; el resto, 1-2 notas del set."><input type="checkbox" id="consolaHT_subset"><label for="consolaHT_subset">subset</label></span>
-          <span class="consola-inst-toggle" title="~25% de los ataques en silencio, parejo, nunca el fuerte."><input type="checkbox" id="consolaHT_rests"><label for="consolaHT_rests">rests</label></span>
-          <span class="consola-inst-toggle" title="Contratiempos +1/6 de tiempo (swing) con un poco de jitter."><input type="checkbox" id="consolaHT_swing"><label for="consolaHT_swing">swing</label></span>
-          <span class="consola-inst-toggle" title="Cada ataque toca una inversión del set (fundamental, 1ª, 2ª…), con otra disposición de las voces (cerrada/abierta), a veces con una voz duplicada a la octava. Registro acotado: grave entre G3 y F#4, rango total hasta octava y quinta. Nunca repite la misma inversión seguida."><input type="checkbox" id="consolaHT_inversions"><label for="consolaHT_inversions">inversions</label></span>
+          <span class="consola-inst-toggle" title="Tilda o destilda todas las casillas de Harmony."><input type="checkbox" id="consolaHT_all" checked><label for="consolaHT_all">all</label></span>
+          <span class="consola-inst-toggle" title="Célula con síncopas por compás (8 células que suman 4)."><input type="checkbox" id="consolaHT_sync" checked><label for="consolaHT_sync">sync</label></span>
+          <span class="consola-inst-toggle" title="Ciclo de 3 tiempos (1 · ½ · 1½) atravesando compases de 4, con ligadura entre barras. Reemplaza a sync (con las dos tildadas manda poly)."><input type="checkbox" id="consolaHT_poly" checked><label for="consolaHT_poly">poly</label></span>
+          <span class="consola-inst-toggle" title="Velocidad: 112 primer ataque, 88 tiempos, 62 contratiempos."><input type="checkbox" id="consolaHT_accent" checked><label for="consolaHT_accent">accent</label></span>
+          <span class="consola-inst-toggle" title="Cada ataque toca una inversión del set (fundamental, 1ª, 2ª…), con otra disposición de las voces (cerrada/abierta), a veces con una voz duplicada a la octava. Registro acotado: grave entre G3 y F#4, rango total hasta octava y quinta. Nunca repite la misma inversión seguida."><input type="checkbox" id="consolaHT_inversions" checked><label for="consolaHT_inversions">inversions</label></span>
         </div>
         </div>
       </div>
@@ -9398,8 +9392,9 @@ function runAnalysis() {
   // reataque (sea cual sea su duración) se sortea de nuevo, por
   // separado, el subset + transposición + inversión.
   /* ================================================================
-     HARMONY TESTING (#harmTestBody, casillas #consolaHT_*, todas apagadas
-     por defecto = motor libre de siempre). Si hay AL MENOS una tildada,
+     HARMONY (antes "Harmony testing"; #harmTestBody, casillas #consolaHT_*:
+     sync, poly, accent, inversions + "all"; TODAS TILDADAS POR DEFECTO — con
+     todas destildadas vuelve el motor libre de siempre). Si hay AL MENOS una tildada,
      regenerateConsola arma la Armonía con HARMTEST.build en vez de
      buildChordEventsRandom: SOLO el set elegido (MULTISETS.rootForAttack),
      sin transposición, sin subsets al azar, en bloque (sin BROKENCHORD),
@@ -13362,15 +13357,33 @@ function runAnalysis() {
       if(state.rootChord.length && cyclesEnabled) regenerateConsola();
     });
   });
-  // Harmony testing: cada casilla regenera (si hay set elegido). poly reemplaza a sync (en build).
-  ["base","sync","poly","accent","artic","subset","rests","swing","inversions"].forEach(function(k){
-    var el = document.getElementById("consolaHT_" + k);
-    if(!el) return;
-    el.addEventListener("change", function(){
+  // Harmony: cada casilla regenera (si hay set elegido). poly reemplaza a sync (en build).
+  // "all" tilda/destilda las otras; y refleja su estado (tildada solo si están todas).
+  (function(){
+    var keys = ["sync","poly","accent","inversions"];
+    var allEl = document.getElementById("consolaHT_all");
+    function syncAll(){
+      if(!allEl) return;
+      var n = keys.filter(function(k){ var e = document.getElementById("consolaHT_" + k); return e && e.checked; }).length;
+      allEl.checked = (n === keys.length);
+      allEl.indeterminate = (n > 0 && n < keys.length);
+    }
+    keys.forEach(function(k){
+      var el = document.getElementById("consolaHT_" + k);
+      if(!el) return;
+      el.addEventListener("change", function(){
+        syncAll();
+        if(state.rootChord.length) regenerateConsola();
+      });
+    });
+    if(allEl) allEl.addEventListener("change", function(){
+      var on = allEl.checked;
+      allEl.indeterminate = false;
+      keys.forEach(function(k){ var e = document.getElementById("consolaHT_" + k); if(e) e.checked = on; });
       if(state.rootChord.length) regenerateConsola();
     });
-  });
-  refreshCyclesTotal();
+    syncAll();
+  })();
   document.getElementById("consolaMoreRepChk").addEventListener("change", function(){
     if(state.rootChord.length) regenerateConsola();
   });
