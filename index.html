@@ -1326,6 +1326,24 @@
           <span class="consola-inst-toggle" title="Reemplaza la selección de nota de la melodía (y de bebopMelody, si está prendido) por un CONTORNO fijo — un patrón de saltos tipo '2 arriba, 1 abajo' repetido, en vez de arpegio lineal en los compases densos o nota al azar en el resto. El patrón se sortea de un pool variado (ciclos de 2 a 4 movimientos) una vez por cada Reproducir/Regenerar, y siempre indexa dentro del acorde vigente (nunca una nota ajena al set) — si el salto se pasa del tamaño del acorde, sigue contando en la octava de al lado, igual que una 9na es un 2 una octava arriba."><input type="checkbox" id="consolaMelodicPatternsChk" checked><label for="consolaMelodicPatternsChk">&#127925; melodicPatterns</label></span>
         </div>
       </div>
+      <div class="consola-field consola-instruments" title="Harmony testing: pruebas de RITMO sobre el set elegido, una idea por checkbox. Si tildás cualquiera, la Armonía deja el motor libre y toca SOLO el set elegido (sin transposición, sin inversión, sin subsets al azar), en modo bloque. Con solo la base, un reataque (redonda) por compás; los demás checkboxes se suman por encima. Desactiva Triplets y Sustain para la Armonía mientras haya alguno tildado. Ninguno tildado = motor libre de siempre.">
+        <div class="consola-subfield-head">
+          <label>Harmony testing</label>
+          <button type="button" class="subfield-toggle" aria-expanded="false" aria-controls="harmTestBody" onclick="toggleModule(this)" title="Mostrar/ocultar Harmony testing"></button>
+        </div>
+        <div class="collapsible-content collapsed" id="harmTestBody">
+          <div class="consola-inst-row">
+            <span class="consola-inst-toggle" title="Base: set elegido completo, un solo reataque (redonda) por compás. Sin nada más tildado sirve de referencia sin ritmo."><input type="checkbox" id="consolaHT_base"><label for="consolaHT_base">Base: acorde fijo</label></span>
+            <span class="consola-inst-toggle" title="Cada compás elige una célula con síncopas (tresillo 3+3+2, contratiempos, charleston, anticipación...) en vez de la redonda."><input type="checkbox" id="consolaHT_sync"><label for="consolaHT_sync">Síncopas</label></span>
+            <span class="consola-inst-toggle" title="Velocity por ataque: fuerte en el primer ataque del compás, medio en el resto de los tiempos, suave en los contratiempos. Sin síncopas/polirritmia toca negras (o corcheas si Swing está tildado) para tener sobre qué acentuar."><input type="checkbox" id="consolaHT_accent"><label for="consolaHT_accent">Acentos (velocity)</label></span>
+            <span class="consola-inst-toggle" title="Alterna un ataque legato (dura todo) con uno staccato (30% de la duración), sobre el mismo ritmo."><input type="checkbox" id="consolaHT_artic"><label for="consolaHT_artic">Articulación stacc/legato</label></span>
+            <span class="consola-inst-toggle" title="El ataque fuerte toca el set completo; los demás tocan solo 1-2 notas del set. La melodía también queda limitada a esas notas."><input type="checkbox" id="consolaHT_subset"><label for="consolaHT_subset">Subset por ataque</label></span>
+            <span class="consola-inst-toggle" title="~25% de los ataques quedan en silencio, repartidos parejo (nunca el fuerte)."><input type="checkbox" id="consolaHT_rests"><label for="consolaHT_rests">Silencios</label></span>
+            <span class="consola-inst-toggle" title="La armonía repite un ciclo de 3 tiempos (1 + 0,5 + 1,5) atravesando las barras de compás de 4; el bajo y la melodía siguen en 4. Reemplaza a Síncopas."><input type="checkbox" id="consolaHT_poly"><label for="consolaHT_poly">Polirritmia (ciclo de 3)</label></span>
+            <span class="consola-inst-toggle" title="Swing 2:1: los ataques en contratiempo entran tarde (~1/6 de tiempo) más un jitter mínimo."><input type="checkbox" id="consolaHT_swing"><label for="consolaHT_swing">Swing / microtiming</label></span>
+          </div>
+        </div>
+      </div>
       <div class="consola-field consola-instruments" title="Modo TEST: si tildás uno o más, la transposición cromática al azar (por compás y por reataque) deja de usar el rango del slider Chromatism y sortea SOLO entre los intervalos tildados acá. La dirección (Ascendente/Descendente) es global para todos — 2da m, 2da M, 3ra m, 3ra M, 4ta J y 5ta J transponen todos para el mismo lado a la vez; Descendente está tildado por defecto. Al tildar el primer intervalo, el slider Chromatism baja a 0% automáticamente (queda en 0% mientras uses esto). Destildando todos, Chromatism sigue en 0% hasta que lo subas vos a mano. No afecta el achique de subset (eso sigue atado solo a Chromatism).">
         <div class="consola-subfield-head">
           <label>Transposition intervals (test)</label>
@@ -10008,6 +10026,145 @@ function runAnalysis() {
   // con subsets del set + inversión + transposición cromática por
   // compás, y pitch libre en bajo/melodía. Siempre dentro del mismo set
   // de Forte/Solomon, nunca notas ajenas.
+  /* ================================================================
+     MÓDULO HARMONY TESTING — checkboxes #consolaHT_* (todos apagados por
+     defecto = motor libre de siempre). Si hay AL MENOS uno tildado,
+     regenerateConsola arma la Armonía con HARMTEST.build en vez de
+     buildChordEventsRandom: SOLO el set elegido (rootChord de cada
+     compás, vía MULTISETS.rootForAttack), sin transposición, sin
+     inversión, sin subsets al azar y en bloque (sin BROKENCHORD), sin
+     Triplets ni Sustain sobre la armonía. Devuelve la misma forma que
+     buildChordEventsRandom ({events, slotChords}) así que bajo, melodía,
+     cifrado y piano roll no cambian. Cada checkbox agrega UNA idea:
+       sync    : célula rítmica con síncopas por compás (pool propio)
+       accent  : ev.vel por ataque (fuerte/medio/suave)
+       artic   : alterna legato/staccato
+       subset  : ataque fuerte = set completo, resto = 1-2 notas del set
+       rests   : ~25% de ataques en silencio, parejo (nunca el fuerte)
+       poly    : ciclo de 3 tiempos atravesando compases de 4 (con ligadura
+                 entre barras: la nota sigue sonando, no se reataca)
+       swing   : contratiempos tarde 1/6 de tiempo + jitter mínimo
+     Sin sync/poly, si hay alguna capa que necesita varios ataques
+     (accent/artic/subset/rests/swing) toca negras (corcheas con swing).
+     ================================================================ */
+  var HARMTEST = (function(){
+    var IDS = {base:"consolaHT_base", sync:"consolaHT_sync", accent:"consolaHT_accent", artic:"consolaHT_artic",
+               subset:"consolaHT_subset", rests:"consolaHT_rests", poly:"consolaHT_poly", swing:"consolaHT_swing"};
+    function on(k){ var c = document.getElementById(IDS[k]); return !!(c && c.checked); }
+    function active(){ for(var k in IDS){ if(on(k)) return true; } return false; }
+    // Pool propio: cada célula suma 4 tiempos.
+    var POOL = [
+      { val:[1.5,1.5,1],       w:3 },  // tresillo 3+3+2
+      { val:[1.5,0.5,1,1],     w:2 },
+      { val:[1,1.5,1.5],       w:2 },
+      { val:[0.5,1.5,0.5,1.5], w:2 },  // contratiempos
+      { val:[2,1.5,0.5],       w:2 },  // anticipación al compás siguiente
+      { val:[0.5,0.5,1,2],     w:1 },
+      { val:[1.5,0.5,1.5,0.5], w:2 },  // charleston / clave
+      { val:[1,0.5,1.5,1],     w:1 }
+    ];
+    var CYCLE = [1,0.5,1.5]; // ciclo de 3 tiempos
+    function onsetsFromCells(cellsByBar){
+      var out = [];
+      cellsByBar.forEach(function(cells, bar){
+        var t = RHYTHM.start(bar);
+        cells.forEach(function(d, i){ out.push({start:t, dur:d, first:i===0}); t += d; });
+      });
+      return out;
+    }
+    function makeOnsets(numBars){
+      var total = RHYTHM.total();
+      if(on("poly")){
+        var out = [], t = 0, i = 0;
+        while(t < total - 1e-9){
+          var d = Math.min(CYCLE[i%3], total - t);
+          out.push({start:t, dur:d, first:(i%3===0)});
+          t += CYCLE[i%3]; i++;
+        }
+        return out;
+      }
+      var cellsByBar;
+      if(on("sync")){
+        cellsByBar = avoidAdjacentDuplicates(distributeWeighted(POOL, numBars, function(cell){ return cell.length; }));
+        cellsByBar = cellsByBar.map(function(cell, bar){
+          return RHYTHM.isDefault4_4(bar) ? cell : genericBarCell(RHYTHM.beats(bar), RHYTHM.compound(bar), 0.7);
+        });
+      } else {
+        var needsMany = on("accent") || on("artic") || on("subset") || on("rests") || on("swing");
+        var step = on("swing") ? 0.5 : 1;
+        cellsByBar = [];
+        for(var b=0;b<numBars;b++){
+          var beats = RHYTHM.beats(b);
+          if(!needsMany){ cellsByBar.push([beats]); continue; }
+          var cell = [], left = beats;
+          while(left > 1e-9){ var dd = Math.min(step, left); cell.push(dd); left -= dd; }
+          cellsByBar.push(cell);
+        }
+      }
+      return onsetsFromCells(cellsByBar);
+    }
+    function frac(x){ return x - Math.floor(x + 1e-9); }
+    function levelOf(o, barStart){
+      if(o.first) return "strong";
+      return frac(o.start - barStart) < 1e-6 ? "mid" : "weak";
+    }
+    var VEL = { strong:112, mid:88, weak:62 };
+    function pickSubset(chord){
+      var n = chord.length;
+      if(n <= 1) return chord.slice();
+      var size = randomInt(1, Math.min(2, n-1));
+      var idx = [];
+      for(var i=0;i<n;i++) idx.push(i);
+      for(var j=idx.length-1;j>0;j--){ var k = randomInt(0,j); var tmp = idx[j]; idx[j]=idx[k]; idx[k]=tmp; }
+      return idx.slice(0,size).sort(function(a,b){return a-b;}).map(function(i){ return chord[i]; });
+    }
+    function build(rootChord, numBars){
+      var onsets = makeOnsets(numBars);
+      var events = [], slotChords = [];
+      var restAcc = 0, attackIdx = 0, prevChord = null;
+      for(var bar=0; bar<numBars; bar++){
+        var barStart = RHYTHM.start(bar), barEnd = barStart + RHYTHM.beats(bar);
+        var rc = MULTISETS.rootForAttack(bar, rootChord);
+        var inBar = onsets.filter(function(o){ return o.start >= barStart - 1e-9 && o.start < barEnd - 1e-9; });
+        var slots = [];
+        // Ligadura: si ningún ataque cae justo al inicio del compás (polirritmia),
+        // el acorde anterior sigue sonando hasta el primero de este compás.
+        if((!inBar.length || inBar[0].start > barStart + 1e-9) && prevChord){
+          var contEnd = inBar.length ? inBar[0].start : barEnd;
+          slots.push({chord:prevChord, startBeat:0, durBeats:contEnd - barStart, setNotes:rc});
+        }
+        inBar.forEach(function(o, oi){
+          var lvl = levelOf(o, barStart);
+          var voiced = (on("subset") && lvl !== "strong") ? pickSubset(rc) : rc.slice();
+          var nextStart = (oi+1 < inBar.length) ? inBar[oi+1].start : barEnd;
+          slots.push({chord:voiced, startBeat:o.start - barStart, durBeats:nextStart - o.start, setNotes:rc});
+          prevChord = voiced;
+          var isRest = false;
+          if(on("rests") && lvl !== "strong"){
+            restAcc += 0.25;
+            if(restAcc >= 1){ restAcc -= 1; isRest = true; }
+          }
+          var off = 0;
+          if(on("swing") && frac(o.start - barStart) > 0.25){
+            off = 1/6 + (Math.random()*2 - 1) * 0.015;
+          }
+          var dur = o.dur;
+          if(on("artic") && (attackIdx % 2 === 1)) dur = Math.max(0.1, o.dur * 0.3);
+          attackIdx++;
+          if(isRest) return;
+          voiced.forEach(function(note){
+            var ev = {midi:note, startBeat:o.start + off, durBeats:Math.max(0.05, dur - off), bar:bar};
+            if(on("accent")) ev.vel = VEL[lvl];
+            events.push(ev);
+          });
+        });
+        slotChords.push(slots);
+      }
+      return { events: events, slotChords: slotChords };
+    }
+    return { active: active, build: build, ids: IDS };
+  })();
+
   function regenerateConsola(){
     NUM_BARS = desiredNumBars();
     RHYTHM.recompute();
@@ -10060,8 +10217,15 @@ function runAnalysis() {
     var built = buildProgressionRandom(rootChord, NUM_BARS);
     state.progression = built.progression;
     state.roles = built.roles;
-    var chordBuilt = TRIPLETS.applyChords(buildChordEventsRandom(rootChord, NUM_BARS)); // Triplets: mueve armonía + sus reataques ANTES de armar bajo/melodía
-    state.chordEvents = SUSTAINPEDAL.apply(chordBuilt.events, chordBuilt.slotChords); // Sustain (How to play): 50% de los cambios de acorde enlazados con pedal
+    var chordBuilt, htActive = HARMTEST.active();
+    if(htActive){
+      // Harmony testing: set elegido tal cual, sin Triplets ni Sustain sobre la armonía.
+      chordBuilt = HARMTEST.build(rootChord, NUM_BARS);
+      state.chordEvents = chordBuilt.events;
+    } else {
+      chordBuilt = TRIPLETS.applyChords(buildChordEventsRandom(rootChord, NUM_BARS)); // Triplets: mueve armonía + sus reataques ANTES de armar bajo/melodía
+      state.chordEvents = SUSTAINPEDAL.apply(chordBuilt.events, chordBuilt.slotChords); // Sustain (How to play): 50% de los cambios de acorde enlazados con pedal
+    }
     state.slotChords = chordBuilt.slotChords;
     var bm = buildBassMelodyEventsRandom(state.progression, built.meta, chordBuilt.slotChords);
     state.bassEvents = TRIPLETS.applyLine(bm.bassEvents, chordBuilt.slotChords);
@@ -12091,8 +12255,12 @@ function runAnalysis() {
       (want("chord") ? state.chordEvents : []).forEach(function(ev){
         var t = loopStartTime + ev.startBeat*spb;
         var dur = ev.durBeats*spb;
-        if(sm2Active && playSM2Voice(ctx, gains.chord, mixPresets.harmony, ev.midi, t, dur*0.93, 0.2)) return;
-        chordFam.fn(ctx, gains.chord, ev.midi, t, dur*0.93, chordFam.mk(dur*0.93));
+        // ev.vel (0-127) solo lo trae Harmony testing → Acentos; sin él queda igual que siempre.
+        var chVelScale = ev.vel != null ? ev.vel/96 : 1;
+        if(sm2Active && playSM2Voice(ctx, gains.chord, mixPresets.harmony, ev.midi, t, dur*0.93, 0.2*chVelScale, ev.vel)) return;
+        var chOpts = chordFam.mk(dur*0.93);
+        if(ev.vel != null && chOpts && typeof chOpts.peakGain === "number") chOpts.peakGain *= chVelScale;
+        chordFam.fn(ctx, gains.chord, ev.midi, t, dur*0.93, chOpts);
       });
       // Doblar armonía: selector aparte (#chordDoublePresetSelect, "Mute"
       // por defecto) — repite exactamente las mismas notas y el mismo
@@ -13012,6 +13180,12 @@ function runAnalysis() {
   ["consolaVelocityHumanizeChk","consolaMicroTimingChk","consolaSectionVariationChk","consolaOtherRhythmVarChk","consolaMoreMelodicChk","consolaLessRepetitiveChk"].forEach(function(id){
     document.getElementById(id).addEventListener("change", function(){
       drumEvents = buildDrumEvents(NUM_BARS);
+    });
+  });
+  // Harmony testing: cada checkbox regenera (la armonía cambia de motor).
+  Object.keys(HARMTEST.ids).forEach(function(k){
+    document.getElementById(HARMTEST.ids[k]).addEventListener("change", function(){
+      if(state.rootChord.length) regenerateConsola();
     });
   });
   FIXED_INTERVAL_CHK_IDS.forEach(function(id){
