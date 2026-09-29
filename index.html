@@ -1326,7 +1326,7 @@
           <span class="consola-inst-toggle" title="Reemplaza la selección de nota de la melodía (y de bebopMelody, si está prendido) por un CONTORNO fijo — un patrón de saltos tipo '2 arriba, 1 abajo' repetido, en vez de arpegio lineal en los compases densos o nota al azar en el resto. El patrón se sortea de un pool variado (ciclos de 2 a 4 movimientos) una vez por cada Reproducir/Regenerar, y siempre indexa dentro del acorde vigente (nunca una nota ajena al set) — si el salto se pasa del tamaño del acorde, sigue contando en la octava de al lado, igual que una 9na es un 2 una octava arriba."><input type="checkbox" id="consolaMelodicPatternsChk" checked><label for="consolaMelodicPatternsChk">&#127925; melodicPatterns</label></span>
         </div>
       </div>
-      <div class="consola-field consola-instruments" title="Harmony testing: si tildás al menos una casilla, la Armonía deja de usar el motor libre y toca SOLO el set elegido (sin transposición, sin subsets al azar, en bloque). Cada casilla suma una capa. Bajo, melodía y cifrado siguen igual. No aplica a Normalito.">
+      <div class="consola-field consola-instruments" title="Harmony testing: si tildás al menos una casilla, la Armonía deja de usar el motor libre y toca SOLO el set elegido (sin subsets al azar, en bloque). Con Cycles tildado se transpone por ataque como el motor libre (ChangeDuration incluido). Cada casilla suma una capa. Bajo, melodía y cifrado siguen igual. No aplica a Normalito.">
         <div class="consola-subfield-head">
           <label>Harmony testing</label>
           <button type="button" class="subfield-toggle" aria-expanded="false" aria-controls="harmTestBody" onclick="toggleModule(this)" title="Mostrar/ocultar Harmony testing"></button>
@@ -1367,7 +1367,7 @@
         </div>
         </div>
       </div>
-      <div class="consola-field consola-instruments" title="Módulo aparte del modo TEST de arriba: mientras el checkbox 'Cycles' esté tildado, cada transposición cromática al azar (por compás y por reataque) se sortea por lotería ponderada entre este set de intervalos + la línea 'Chromatism (enlazado)' (que reserva su propio % del sorteo, y está enlazada con el slider Chromatism de más arriba — mover uno mueve el otro). El resto del sorteo (100% - Chromatism%) se reparte proporcionalmente entre los sliders de intervalo con valor mayor a 0. Si en 'Transposition intervals (test)' de arriba hay algún checkbox tildado, ESE modo manda (misma prioridad que ya tiene hoy sobre Chromatism) y Cycles no se aplica. Con Cycles destildado, la página se comporta exactamente igual que hoy.">
+      <div class="consola-field consola-instruments" title="Módulo aparte del modo TEST de arriba: mientras el checkbox 'Cycles' esté tildado, cada transposición cromática al azar (por compás y por reataque) se sortea al azar entre este set de intervalos. Los sliders de intervalo son % del sorteo y suman como máximo 100% (el que subís se frena para no pasarse); lo que falta hasta 100% lo completa la transposición libre (Chromatism, con la amplitud del slider Chromatism de más arriba). Con 100% en intervalos no hay Chromatism. Si en 'Transposition intervals (test)' de arriba hay algún checkbox tildado, ESE modo manda (misma prioridad que ya tiene hoy sobre Chromatism) y Cycles no se aplica. Con Cycles destildado, la página se comporta exactamente igual que hoy.">
         <div class="consola-subfield-head">
           <span class="consola-inst-toggle"><input type="checkbox" id="consolaCyclesChk" checked><label for="consolaCyclesChk">Cycles</label></span>
           <button type="button" class="subfield-toggle" aria-expanded="false" aria-controls="cyclesDetailBody" onclick="toggleModule(this)" title="Mostrar/ocultar Modo A/B y los sliders de intervalo de Cycles"></button>
@@ -1378,10 +1378,14 @@
           <span class="consola-inst-toggle"><input type="checkbox" id="consolaCyclesModeB"><label for="consolaCyclesModeB">Modo B (sin acumular)</label></span>
         </div>
         <div class="consola-cycles-body" id="consolaCyclesBody">
-          <div class="consola-cycles-line is-linked" title="Duplicado del slider Chromatism de más arriba, enlazado en las dos direcciones (mover uno mueve el otro). Reserva su propio % del sorteo antes de repartir el resto entre los intervalos de abajo.">
-            <label for="consolaCycleChroma">Chromatism (enlazado)</label>
-            <input type="range" id="consolaCycleChroma" min="0" max="100" value="15" step="1">
-            <span class="consola-val" id="consolaCycleChromaVal">15%</span>
+          <div class="consola-cycles-line is-linked" title="ChangeDuration: cada cuánto cambia la transposición del ciclo en la Armonía. 100% = en cada ataque (como antes); 0% = cada 4 ataques; en el medio se mezclan tramos de 1 a 4 ataques (promedio 1 + 3×(1−%)). Default 75%. La transposición libre completa el resto de los intervalos (100% - su suma), con la amplitud del slider Chromatism de arriba.">
+            <label for="consolaCycleChangeDur">ChangeDuration</label>
+            <input type="range" id="consolaCycleChangeDur" min="0" max="100" value="75" step="1">
+            <span class="consola-val" id="consolaCycleChangeDurVal">75%</span>
+          </div>
+          <div class="consola-cycles-line" title="Suma de los sliders de intervalo (tope 100%) y lo que completa Chromatism.">
+            <label>Total intervalos</label>
+            <span class="consola-val" id="consolaCyclesTotal">90% · Chromatism 10%</span>
           </div>
           <div class="consola-cycles-line">
             <label for="consolaCycle2mDown">2das menor descendentes</label>
@@ -9073,14 +9077,11 @@ function runAnalysis() {
   // aparte del modo TEST de arriba (#consolaInt*): en vez de un set de
   // checkboxes que sortean uniforme entre los tildados, acá cada línea
   // (dirección incluida) tiene su propio slider de %, más una línea
-  // "Chromatism (enlazado)" que es el MISMO valor que #consolaChromaSlider
-  // (sync en las dos direcciones, ver listeners más abajo). Cuando Cycles
-  // está prendido, cada sorteo de transposición es una lotería ponderada:
-  // Chromatism% se reserva para "transposición libre" (el mecanismo de
-  // siempre, maxDist=round(chromaVariety*6)); el resto (100-Chromatism%)
-  // se reparte PROPORCIONALMENTE entre los sliders de intervalo con
-  // valor > 0 (sus valores son pesos relativos entre sí, no tienen que
-  // sumar 100 — se renormalizan contra lo que le queda a Chromatism).
+  // ChangeDuration (ver CYCLEHOLD). Cuando Cycles está prendido, cada sorteo
+  // de transposición es una lotería: los sliders de intervalo son % ABSOLUTOS
+  // (suman como máximo 100%, se limitan en la UI) y lo que falta hasta 100%
+  // lo completa la "transposición libre" de siempre (Chromatism, con la
+  // amplitud maxDist=round(chromaVariety*6) del slider Chromatism de arriba).
   // Si Transposition intervals (test) tiene algún checkbox tildado, ESE
   // modo manda (misma prioridad que ya tenía sobre Chromatism) y Cycles
   // se ignora — ver la rama `if (fixed.length)` de abajo, sin cambios.
@@ -9107,30 +9108,73 @@ function runAnalysis() {
   // Cycles con todos los intervalos en 0% se comporta igual que Chromatism
   // solo, sin dividir por cero).
   function cyclesWeightedPick(){
-    var chromaPct = chromaVariety * 100; // ya sincronizado con #consolaCycleChroma
+    // Los sliders de intervalo son % ABSOLUTOS del sorteo (su suma, tope 100%,
+    // es cuánto de las transposiciones caen en intervalos de Cycles); el resto
+    // (100% - suma) se completa con transposición libre (Chromatism). Con la
+    // suma en 100% no hay Chromatism; con 0% en todos, todo es Chromatism.
+    // Ej.: 2da m ↓ 50% + 5ta J ↑ 50% → mitad y mitad, al azar, sin Chromatism.
     var entries = [];
-    var intervalTotal = 0;
+    var total = 0;
     CYCLES_INTERVAL_IDS.forEach(function(cfg){
       var el = document.getElementById(cfg.id);
       var v = el ? Number(el.value) : 0;
       if (v > 0){
         entries.push({semitones:cfg.semitones, direction:cfg.direction, weight:v});
-        intervalTotal += v;
+        total += v;
       }
     });
-    if (intervalTotal <= 0) return {type:"chroma"};
-    var remaining = Math.max(0, 100 - chromaPct);
+    if (total <= 0) return {type:"chroma"};
+    var scale = total > 100 ? 100 / total : 1; // defensivo: los sliders ya se limitan a 100 en total
     var r = Math.random() * 100;
-    if (r < chromaPct) return {type:"chroma"};
-    var acc = chromaPct;
+    var acc = 0;
     for (var i=0; i<entries.length; i++){
-      acc += (entries[i].weight / intervalTotal) * remaining;
+      acc += entries[i].weight * scale;
       if (r < acc) return {type:"interval", semitones:entries[i].semitones, direction:entries[i].direction};
     }
-    var last = entries[entries.length-1]; // resto de redondeo de punto flotante
-    return {type:"interval", semitones:last.semitones, direction:last.direction};
+    if (total * scale >= 100 - 1e-9){ // suma = 100%: nunca Chromatism (resto de redondeo de punto flotante)
+      var last = entries[entries.length-1];
+      return {type:"interval", semitones:last.semitones, direction:last.direction};
+    }
+    return {type:"chroma"};
   }
+  /* CYCLEHOLD (slider ChangeDuration, #consolaCycleChangeDur, default 75%):
+     cada cuántos ATAQUES de armonía cambia la transposición. 100% = en cada
+     ataque (comportamiento de siempre); 0% = cada 4 ataques; en el medio,
+     tramos de 1 a 4 ataques al azar con promedio 1 + 3*(1-%). Mientras dura
+     un tramo, randomChromaTransposition() devuelve el MISMO valor (subset e
+     inversión siguen sorteándose por ataque). Solo actúa entre beginAttack()
+     y end() (buildChordEventsRandom y Harmony testing) y con Cycles tildado
+     y sin intervalos del modo TEST; el resto de las llamadas (progresión de
+     referencia por compás, etc.) no cambia. */
+  var CYCLEHOLD = (function(){
+    var active = false, value = 0, counter = 0;
+    function enabled(){ return cyclesEnabled && !activeFixedIntervals().length; }
+    function slider(){
+      var el = document.getElementById("consolaCycleChangeDur");
+      var v = el ? Number(el.value) : 75;
+      return (isFinite(v) ? Math.max(0, Math.min(100, v)) : 75) / 100;
+    }
+    function runLength(){
+      var m = 3 * (1 - slider());
+      var base = Math.floor(m + 1e-9), frac = Math.max(0, m - base);
+      return 1 + base + (Math.random() < frac ? 1 : 0);
+    }
+    return {
+      reset: function(){ active = false; counter = 0; },
+      end: function(){ active = false; },
+      beginAttack: function(){
+        if(!enabled()){ active = false; return; }
+        if(counter <= 0){ active = false; value = randomChromaTransposition(); counter = runLength(); }
+        counter--; active = true;
+      },
+      isActive: function(){ return active; },
+      value: function(){ return value; },
+      runLength: runLength
+    };
+  })();
+  window.CYCLEHOLD = CYCLEHOLD;
   function randomChromaTransposition(){
+    if (CYCLEHOLD.isActive()) return CYCLEHOLD.value(); // tramo ChangeDuration en curso: misma transposición
     var fixed = activeFixedIntervals();
     if (fixed.length){
       var entry = fixed[randomInt(0, fixed.length-1)];
@@ -9464,8 +9508,14 @@ function runAnalysis() {
       var events = [], slotChords = [];
       for(var sb = 0; sb < numBars; sb++) slotChords.push([]);
       var prevInv = -1;
+      CYCLEHOLD.reset();
+      var htTranspose = cyclesEnabled || activeFixedIntervals().length > 0; // Cycles (o intervalos TEST) tildados: la armonía se transpone por ataque, como el motor libre
       attacks.forEach(function(a, i){
         var rc = MULTISETS.rootForAttack(a.bar, rootChord);
+        if(htTranspose){
+          CYCLEHOLD.beginAttack(); // ChangeDuration: mismo tramo de N ataques = misma transposición
+          rc = transposeChord(rc, CYCLEHOLD.isActive() ? CYCLEHOLD.value() : randomChromaTransposition());
+        }
         var voiced;
         if(on("inversions")){ var iv = invVoicing(rc, prevInv); voiced = iv.voiced; prevInv = iv.inv; }
         else voiced = rc.slice().sort(function(x,y){ return x-y; });
@@ -9474,7 +9524,7 @@ function runAnalysis() {
         while(remaining > 1e-9 && bi < numBars){
           var room = barLen[bi] - so;
           var take = Math.min(remaining, room);
-          slotChords[bi].push({chord:voiced, startBeat:so, durBeats:take, setNotes:MULTISETS.rootForAttack(bi, rootChord)});
+          slotChords[bi].push({chord:voiced, startBeat:so, durBeats:take, setNotes:rc});
           remaining -= take; bi++; so = 0;
         }
         if(a.silent) return;
@@ -9498,6 +9548,7 @@ function runAnalysis() {
           events.push(ev);
         });
       });
+      CYCLEHOLD.end();
       var out = { events: events, slotChords: slotChords };
       HARMTEST.last = out;
       return out;
@@ -9694,6 +9745,7 @@ function runAnalysis() {
     var events = [];
     var slotChords = [];
     var prevCombo = null;
+    CYCLEHOLD.reset(); // ChangeDuration: el primer ataque siempre estrena transposición
     var jazzPrevVoiced = null; // JAZZ: voicing del reataque anterior, para conducción de voces suave
     for(var bar=0; bar<numBars; bar++){
       var barStart = RHYTHM.start(bar);
@@ -9701,6 +9753,7 @@ function runAnalysis() {
       var slots = [];
       cellsByBar[bar].forEach(function(dur){
         var picked, t, inv, combo, voiced, strum;
+        CYCLEHOLD.beginAttack(); // ChangeDuration: ¿este ataque estrena transposición o sigue la del tramo?
         var rcAtk = MULTISETS.rootForAttack(bar, rootChord); // MULTI SETS INPUT: set de ESTE reataque (= rootChord si no hay multi)
         if (JAZZ.roll()){
           // JAZZ: variedad de voicing (cerrada/drop2/drop3/abierta con
@@ -9753,6 +9806,7 @@ function runAnalysis() {
       });
       slotChords.push(slots);
     }
+    CYCLEHOLD.end();
     return { events: events, slotChords: slotChords };
   }
   // Busca, dentro de los reataques de un compás (slots, con
@@ -10229,6 +10283,7 @@ function runAnalysis() {
     fixedIntervalOffset = 0; // modo test de intervalos fijos: cada variación nueva arranca el ciclo en C (offset 0)
     cyclesOffset = 0; // módulo Cycles (Modo A acumulativo): cada variación nueva arranca el ciclo en C también
     MELODICPATTERNS.reset(); // melodicPatterns: un contorno nuevo por variación, compartido por melodía principal y bebopMelody
+    CYCLEHOLD.reset();
     // Space sliders: cada uno sortea, independiente, si esta variación
     // tiene (según su propio %) un tramo de 4 compases de respiro, y dónde.
     MELODICSPACE.reset(NUM_BARS);
@@ -13265,37 +13320,43 @@ function runAnalysis() {
       onModeChange();
     });
   })();
-  // Línea "Chromatism (enlazado)" del módulo Cycles: mismo valor que
-  // #consolaChromaSlider, sincronizado en las dos direcciones (mover
-  // cualquiera de los dos mueve el otro y actualiza chromaVariety).
+  // Slider ChangeDuration del módulo Cycles (reemplaza a "Chromatism (enlazado)"):
+  // se lee en vivo dentro de CYCLEHOLD; acá solo etiqueta y regenerar al soltar.
   (function(){
-    var mainSl = document.getElementById("consolaChromaSlider");
-    var mainVal = document.getElementById("consolaChromaVal");
-    var cycleSl = document.getElementById("consolaCycleChroma");
-    var cycleVal = document.getElementById("consolaCycleChromaVal");
-    mainSl.addEventListener("input", function(){
-      cycleSl.value = this.value;
-      cycleVal.textContent = this.value + "%";
-    });
-    cycleSl.addEventListener("input", function(){
-      chromaVariety = this.value / 100;
-      mainSl.value = this.value;
-      mainVal.textContent = this.value + "%";
-      cycleVal.textContent = this.value + "%";
-    });
-    cycleSl.addEventListener("change", function(){
-      if(state.rootChord.length) regenerateConsola();
+    var sl = document.getElementById("consolaCycleChangeDur");
+    var val = document.getElementById("consolaCycleChangeDurVal");
+    sl.addEventListener("input", function(){ val.textContent = this.value + "%"; });
+    sl.addEventListener("change", function(){
+      if(state.rootChord.length && cyclesEnabled) regenerateConsola();
     });
   })();
   // Los 11 sliders de intervalo de Cycles: cada uno solo actualiza su
   // etiqueta de % y dispara regenerateConsola() al soltar — el peso en sí
   // se lee en vivo desde el DOM dentro de cyclesWeightedPick(), no hace
   // falta guardarlo en una variable aparte.
+  function cyclesSumExcept(exceptId){
+    var t = 0;
+    CYCLES_INTERVAL_IDS.forEach(function(cfg){
+      if(cfg.id === exceptId) return;
+      var e = document.getElementById(cfg.id);
+      t += e ? Number(e.value) : 0;
+    });
+    return t;
+  }
+  function refreshCyclesTotal(){
+    var t = Math.min(100, cyclesSumExcept(null));
+    var el = document.getElementById("consolaCyclesTotal");
+    if(el) el.textContent = t + "% · Chromatism " + (100 - t) + "%";
+  }
   CYCLES_INTERVAL_IDS.forEach(function(cfg){
     var el = document.getElementById(cfg.id);
     var valEl = document.getElementById(cfg.id + "Val");
     el.addEventListener("input", function(){
+      // tope: entre todos los intervalos no pasan de 100% (el que movés se frena)
+      var maxAllowed = Math.max(0, 100 - cyclesSumExcept(cfg.id));
+      if(Number(this.value) > maxAllowed) this.value = maxAllowed;
       valEl.textContent = this.value + "%";
+      refreshCyclesTotal();
     });
     el.addEventListener("change", function(){
       if(state.rootChord.length && cyclesEnabled) regenerateConsola();
@@ -13309,6 +13370,7 @@ function runAnalysis() {
       if(state.rootChord.length) regenerateConsola();
     });
   });
+  refreshCyclesTotal();
   document.getElementById("consolaMoreRepChk").addEventListener("change", function(){
     if(state.rootChord.length) regenerateConsola();
   });
