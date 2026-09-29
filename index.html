@@ -1304,6 +1304,11 @@
         <input type="checkbox" id="consolaLoopChk" checked>
         <label for="consolaLoopChk">Loop</label>
       </div>
+      <div class="consola-field consola-loop" title="Renderiza cada pista a audio antes de sonar y reproduce solo buffers (sin cortes en iPhone). Destildado = modo anterior en vivo, nota por nota. Cambiar instrumentos a mitad de reproducción se escucha al volver a darle Reproducir.">
+        <input type="checkbox" id="consolaPrerenderChk" checked>
+        <label for="consolaPrerenderChk">⚡ Prerender</label>
+        <span class="consola-val" id="consolaPrerenderStatus"></span>
+      </div>
       <div class="consola-field consola-loop" title="Duplica la duración del segmento a 24 compases en vez de los 12 de siempre — mismo motor, mismas reglas (Chromatism, Chords, Jazz, MelodicSpace/HarmonicSpace/RythmSpace, Swing Drums, etc.), el doble de largo. Se aplica en el próximo Reproducir/Regenerar/Normalito.">
         <input type="checkbox" id="consola24BarsChk" checked>
         <label for="consola24BarsChk">24 compases</label>
@@ -4384,6 +4389,10 @@ function getAudioCtx() {
     const Ctx = window.AudioContext || window.webkitAudioContext;
     if (!Ctx) return null;
     audioCtx = new Ctx();
+    // iOS puede dejar el contexto en "interrupted" (llamada, otra app, bloqueo).
+    audioCtx.onstatechange = function () {
+      if (audioCtx.state === "interrupted") { try { audioCtx.resume().catch(function(){}); } catch (e) {} }
+    };
   }
   if (audioCtx.state === "suspended") audioCtx.resume();
   return audioCtx;
@@ -4962,6 +4971,18 @@ function sf2ZonesFrom(bagArr, genArr, bagStart, bagEnd) {
   return zones;
 }
 
+// Caché por (font, preset, nota, velocidad): sf2ResolveNote recorre y arma
+// las zonas del preset en cada llamada (carísimo con kits de miles de zonas)
+// y el resultado es siempre el mismo. Solo lectura para los llamadores.
+const sf2ResolveCache = new WeakMap();
+function sf2ResolveNoteCached(font, presetIdx, note, vel) {
+  let m = sf2ResolveCache.get(font);
+  if (!m) { m = new Map(); sf2ResolveCache.set(font, m); }
+  const k = presetIdx * 16384 + note * 128 + vel;
+  let h = m.get(k);
+  if (!h) { h = sf2ResolveNote(font, presetIdx, note, vel); m.set(k, h); }
+  return h;
+}
 function sf2ResolveNote(font, presetIdx, note, vel) {
   const p = font.phdr[presetIdx], pNext = font.phdr[presetIdx + 1];
   const pZones = sf2ZonesFrom(font.pbag, font.pgen, p.bagIdx, pNext.bagIdx);
@@ -10466,6 +10487,7 @@ function runAnalysis() {
   // real de cada pista es reverbSendLevel * reverbMix[track].
   var reverbSendLevel = 0.5;
   var reverbMix = { chord: 1, bass: 1, melody: 1, melodyDouble: 1, chordDouble: 1, drum: 1, comping2: 1, bebop: 1 };
+  var dryRenderMode = false; // true solo mientras renderTrackDry arma el grafo offline
   var reverbBusGain = null, reverbConvolver = null, reverbReturnGain = null;
   var reverbSendGains = { chord: null, bass: null, melody: null, melodyDouble: null, chordDouble: null, drum: null, comping2: null, bebop: null };
 
@@ -10493,6 +10515,9 @@ function runAnalysis() {
   function ensureReverbBus(ctx){
     var master = ensureMasterGain(ctx);
     if(!reverbBusGain){
+      // Render seco (prerender): sin convolver — el reverb vive en el
+      // contexto en vivo. Bus sin salida, para que los envíos no rompan.
+      if(dryRenderMode){ reverbBusGain = ctx.createGain(); return reverbBusGain; }
       reverbBusGain = ctx.createGain();
       reverbBusGain.gain.value = 1;
       reverbConvolver = ctx.createConvolver();
@@ -10910,7 +10935,7 @@ function runAnalysis() {
     // vel (opcional, 1-127): elige la capa de velocidad real del .sf2
     // (ej. 36_soft_kick / 36_hard_kick en Drums default). Sin vel: 100,
     // como siempre.
-    var hits = sf2ResolveNote(font, presetIdx, midi, vel != null ? Math.max(1, Math.min(127, Math.round(vel))) : 100);
+    var hits = sf2ResolveNoteCached(font, presetIdx, midi, vel != null ? Math.max(1, Math.min(127, Math.round(vel))) : 100);
     if(!hits.length) return false;
     var perHitGain = gain / hits.length;
     hits.forEach(function(hit){
@@ -12052,7 +12077,10 @@ function runAnalysis() {
     if(gmNote === 38 && ev && ev.vel != null && ev.vel >= 75) return 47; // caja fuerte -> Hrd Brush Snare1
     return JAZZ_TRAPS_REMAP[gmNote] != null ? JAZZ_TRAPS_REMAP[gmNote] : gmNote;
   }
-  function scheduleLoopAt(ctx, dest, loopStartTime, spb){
+  function scheduleLoopAt(ctx, dest, loopStartTime, spb, only){
+    // only (opcional): nombre de UNA pista (chord, chordDouble, bass, melody,
+    // melodyDouble, drum, comping2, bebop). Sin él, programa todas (modo en vivo).
+    function want(t){ return !only || only === t; }
     // Mini mixer: un canal de ganancia por instrumento (independiente
     // del volumen general) y, para armonía/melodía/bajo, qué instrumento
     // usar según el preset elegido en su selector.
@@ -12060,7 +12088,7 @@ function runAnalysis() {
     var sm2Active = sm2UsingSF2();
     if(instEnabled("consolaChordChk")){
       var chordFam = voiceFamilyFor(mixPresets.harmony, "strings1");
-      state.chordEvents.forEach(function(ev){
+      (want("chord") ? state.chordEvents : []).forEach(function(ev){
         var t = loopStartTime + ev.startBeat*spb;
         var dur = ev.durBeats*spb;
         if(sm2Active && playSM2Voice(ctx, gains.chord, mixPresets.harmony, ev.midi, t, dur*0.93, 0.2)) return;
@@ -12070,7 +12098,7 @@ function runAnalysis() {
       // por defecto) — repite exactamente las mismas notas y el mismo
       // ritmo de la Armonía, con un segundo timbre. En Mute no
       // entra a este bloque: no genera ningún sonido nuevo ni dobla nada.
-      if(mixPresets.chordDouble !== "mute"){
+      if(mixPresets.chordDouble !== "mute" && want("chordDouble")){
         var chordDoubleFam = voiceFamilyFor(mixPresets.chordDouble, "strings1");
         state.chordEvents.forEach(function(ev){
           var t = loopStartTime + ev.startBeat*spb;
@@ -12082,7 +12110,7 @@ function runAnalysis() {
     }
     if(instEnabled("consolaBassChk")){
       var bassFam = voiceFamilyFor(mixPresets.bass, "contrabass");
-      state.bassEvents.forEach(function(ev){
+      (want("bass") ? state.bassEvents : []).forEach(function(ev){
         var t = loopStartTime + ev.startBeat*spb;
         var dur = ev.durBeats*spb;
         if(sm2Active && playSM2Voice(ctx, gains.bass, mixPresets.bass, ev.midi, t, dur*0.9, 0.24)) return;
@@ -12091,7 +12119,7 @@ function runAnalysis() {
     }
     if(instEnabled("consolaMelodyChk")){
       var melodyFam = voiceFamilyFor(mixPresets.melody, "flute");
-      state.melodyEvents.forEach(function(ev){
+      (want("melody") ? state.melodyEvents : []).forEach(function(ev){
         var t = loopStartTime + ev.startBeat*spb;
         var dur = ev.durBeats*spb;
         if(sm2Active && playSM2Voice(ctx, gains.melody, mixPresets.melody, ev.midi, t, dur*0.85, 0.2)) return;
@@ -12107,7 +12135,7 @@ function runAnalysis() {
       // generación de eventos), así que cambiarlo a mitad de loop se
       // escucha recién en la próxima repetición, igual que un cambio de
       // preset de instrumento.
-      if(mixPresets.melodyDouble !== "mute"){
+      if(mixPresets.melodyDouble !== "mute" && want("melodyDouble")){
         var melodyDoubleFam = voiceFamilyFor(mixPresets.melodyDouble, "flute");
         var altMelodyChk = document.getElementById("consolaAltMelodyChk");
         var melodyDoubleInterval = (altMelodyChk && altMelodyChk.checked) ? -7 : -12;
@@ -12120,7 +12148,7 @@ function runAnalysis() {
         });
       }
     }
-    if(instEnabled("consolaDrumChk")){
+    if(instEnabled("consolaDrumChk") && want("drum")){
       // Pasa mixPresets.drum tal cual (kit/percussion/kitHifi o
       // cualquier key nueva agregada vía manifest con target:"drum") —
       // playSM2Voice/sm2ResolveFontAndProgram ya resuelven por key
@@ -12155,7 +12183,7 @@ function runAnalysis() {
     // melodía con 1-2 notas más del acorde vigente. Vacía si el botón
     // #consolaMoreCompingBtn está apagado, así que este forEach no hace
     // nada en ese caso.
-    state.comping2Events.forEach(function(ev){
+    (want("comping2") ? state.comping2Events : []).forEach(function(ev){
       var t = loopStartTime + ev.startBeat*spb;
       var dur = ev.durBeats*spb;
       if(sm2Active && playSM2Voice(ctx, gains.comping2, "strings", ev.midi, t, dur*0.9, 0.14)) return;
@@ -12170,7 +12198,7 @@ function runAnalysis() {
     // lo auto-sube a 100% la primera vez que se prende (ver arriba),
     // así que se escucha de una sin pasos extra.
     var bebopFam = voiceFamilyFor(mixPresets.bebop, "sopranoSax");
-    state.bebopEvents.forEach(function(ev){
+    (want("bebop") ? state.bebopEvents : []).forEach(function(ev){
       var t = loopStartTime + ev.startBeat*spb;
       var dur = ev.durBeats*spb;
       if(sm2Active && playSM2Voice(ctx, gains.bebop, mixPresets.bebop, ev.midi, t, dur*0.85, 0.16)) return;
@@ -12222,7 +12250,170 @@ function runAnalysis() {
     rafId = requestAnimationFrame(step);
   }
 
+  /* ================================================================
+     PRERENDER (⚡) — renderiza cada pista a un AudioBuffer ANTES de
+     sonar y reproduce solo buffers en loop. Durante la reproducción no
+     se resuelven notas ni se crean nodos por nota (nada de trabajo en
+     el hilo principal), que es lo que trababa el audio en iPhone.
+     · Cada pista se renderiza SECA, mono, con el sampleRate del
+       contexto en vivo, sin master/limiter/reverb. El mixer (faders,
+       Solo, Foco), el limiter y el reverb siguen siendo los del
+       contexto en vivo → se comportan igual que en el modo anterior.
+     · La cola (release de notas) se pliega sobre el inicio para que el
+       empalme del loop sea continuo.
+     · Sin checkbox tildado (o si el render falla) se usa el modo
+       anterior en vivo (startPlaybackLive), sin cambios.
+     · Cambiar instrumentos/presets a mitad de reproducción se escucha
+       recién al volver a darle Reproducir (el audio ya está renderizado).
+     ================================================================ */
+  var prToken = 0;
+  function prOn(){
+    var c = document.getElementById("consolaPrerenderChk");
+    return !!(c && c.checked) && !!(window.OfflineAudioContext || window.webkitOfflineAudioContext);
+  }
+  function prStatus(msg){
+    var el = document.getElementById("consolaPrerenderStatus");
+    if(el) el.textContent = msg || "";
+  }
+  function prActiveTracks(){
+    var out = [];
+    var chordOn = instEnabled("consolaChordChk");
+    var melodyOn = instEnabled("consolaMelodyChk");
+    if(chordOn && state.chordEvents.length) out.push("chord");
+    if(chordOn && state.chordEvents.length && mixPresets.chordDouble !== "mute") out.push("chordDouble");
+    if(instEnabled("consolaBassChk") && state.bassEvents.length) out.push("bass");
+    if(melodyOn && state.melodyEvents.length) out.push("melody");
+    if(melodyOn && state.melodyEvents.length && mixPresets.melodyDouble !== "mute") out.push("melodyDouble");
+    if(instEnabled("consolaDrumChk") && drumEvents.length) out.push("drum");
+    if(state.comping2Events.length) out.push("comping2");
+    if(state.bebopEvents.length) out.push("bebop");
+    return out;
+  }
+  // Renderiza UNA pista, seca y mono. Mismo truco de apartar/restaurar el
+  // grafo de módulo que renderLoopOffline (todo sincrónico antes del await).
+  function renderTrackDry(track, sr, spb, loopDur){
+    var OCtx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+    var off = new OCtx(1, Math.ceil((loopDur + EXPORT_TAIL_SEC) * sr), sr);
+    var saved = {
+      masterGain:masterGain, masterBoost:masterBoost, masterLimiter:masterLimiter,
+      chordGainNode:chordGainNode, bassGainNode:bassGainNode, melodyGainNode:melodyGainNode, drumGainNode:drumGainNode,
+      melodyDoubleGainNode:melodyDoubleGainNode, chordDoubleGainNode:chordDoubleGainNode, comping2GainNode:comping2GainNode, bebopGainNode:bebopGainNode,
+      reverbBusGain:reverbBusGain, reverbConvolver:reverbConvolver, reverbReturnGain:reverbReturnGain, reverbSendGains:reverbSendGains, voices:voices
+    };
+    masterGain = masterBoost = masterLimiter = null;
+    chordGainNode = bassGainNode = melodyGainNode = drumGainNode = null;
+    melodyDoubleGainNode = chordDoubleGainNode = comping2GainNode = bebopGainNode = null;
+    reverbBusGain = reverbConvolver = reverbReturnGain = null;
+    reverbSendGains = { chord:null, bass:null, melody:null, melodyDouble:null, chordDouble:null, drum:null, comping2:null, bebop:null };
+    voices = [];
+    dryRenderMode = true;
+    try{
+      var m = ensureMasterGain(off);
+      // sin boost ni limiter: eso lo hace la cadena master del contexto en vivo
+      masterGain.gain.value = 1; masterBoost.gain.value = 1;
+      masterLimiter.disconnect(); masterBoost.disconnect(); masterBoost.connect(off.destination);
+      scheduleLoopAt(off, m, 0, spb, track);
+      // ganancias de pista a 1: el mixer vive en los GainNode en vivo
+      [chordGainNode, bassGainNode, melodyGainNode, drumGainNode, melodyDoubleGainNode, chordDoubleGainNode, comping2GainNode, bebopGainNode]
+        .forEach(function(g){ if(g) g.gain.value = 1; });
+    } finally {
+      dryRenderMode = false;
+      masterGain = saved.masterGain; masterBoost = saved.masterBoost; masterLimiter = saved.masterLimiter;
+      chordGainNode = saved.chordGainNode; bassGainNode = saved.bassGainNode; melodyGainNode = saved.melodyGainNode; drumGainNode = saved.drumGainNode;
+      melodyDoubleGainNode = saved.melodyDoubleGainNode; chordDoubleGainNode = saved.chordDoubleGainNode; comping2GainNode = saved.comping2GainNode; bebopGainNode = saved.bebopGainNode;
+      reverbBusGain = saved.reverbBusGain; reverbConvolver = saved.reverbConvolver; reverbReturnGain = saved.reverbReturnGain; reverbSendGains = saved.reverbSendGains;
+      voices = saved.voices;
+    }
+    return off.startRendering();
+  }
+  // Buffer en vivo de una vuelta. looping: pliega la cola sobre el inicio.
+  // Sin loop: una vuelta + 0.3 s de cola (mismo corte que el modo anterior).
+  function prMakeBuffer(ctx, rendered, sr, loopDur, looping){
+    var src = rendered.getChannelData(0);
+    var loopFrames = Math.round(loopDur * sr);
+    var len = looping ? loopFrames : Math.min(src.length, loopFrames + Math.round(0.3 * sr));
+    var out = new Float32Array(len);
+    out.set(src.subarray(0, Math.min(len, src.length)));
+    if(looping){
+      for(var i = loopFrames, j = 0; i < src.length && j < loopFrames; i++, j++) out[j] += src[i];
+    }
+    var ab = ctx.createBuffer(1, len, sr);
+    ab.copyToChannel(out, 0);
+    return ab;
+  }
+  function yieldToUI(){ return new Promise(function(r){ setTimeout(r, 0); }); }
+
+  function startPlaybackRendered(){
+    var ctx = getAudioCtx(); // síncrono, dentro del gesto del usuario (iOS)
+    if(!ctx) return;
+    var token = prToken = (prToken | 0) + 1;
+    var tempoEl = document.getElementById("consolaTempo");
+    var spb = 60 / parseInt(tempoEl.value, 10);
+    var loopDur = TOTAL_BEATS * spb;
+    var sr = ctx.sampleRate;
+    var looping = document.getElementById("consolaLoopChk").checked;
+    var tracks = prActiveTracks();
+    if(!tracks.length){ return startPlaybackLive(); }
+    document.getElementById("consolaPlayBtn").disabled = true;
+    document.getElementById("consolaStopBtn").disabled = false;
+    tempoEl.disabled = true;
+    var t0perf = performance.now();
+    var bufs = {};
+    (async function(){
+      try{
+        for(var k = 0; k < tracks.length; k++){
+          prStatus("⏳ Renderizando " + (k + 1) + "/" + tracks.length + "…");
+          await yieldToUI();
+          if(token !== prToken) return;
+          var rendered = await renderTrackDry(tracks[k], sr, spb, loopDur);
+          if(token !== prToken) return;
+          bufs[tracks[k]] = prMakeBuffer(ctx, rendered, sr, loopDur, looping);
+        }
+        if(token !== prToken) return;
+        var gains = ensureInstrumentGains(ctx);
+        voices = [];
+        var t0 = ctx.currentTime + 0.1;
+        var srcs = [];
+        tracks.forEach(function(tr){
+          var node = ctx.createBufferSource();
+          node.buffer = bufs[tr];
+          node.loop = looping;
+          node.connect(gains[tr]);
+          node.start(t0);
+          voices.push(node);
+          srcs.push(node);
+        });
+        playing = true;
+        prStatus("✓ render " + ((performance.now() - t0perf) / 1000).toFixed(1) + " s");
+        var loopChk = document.getElementById("consolaLoopChk");
+        if(looping){
+          schedulerTimer = setInterval(function(){
+            if(loopChk.checked) return;
+            clearInterval(schedulerTimer); schedulerTimer = null;
+            srcs.forEach(function(n){ try{ n.loop = false; }catch(e){} });
+            var rem = loopDur - ((ctx.currentTime - t0) % loopDur);
+            window._consolaStopTimer = setTimeout(stopPlayback, (rem + 0.3) * 1000);
+          }, 150);
+        } else {
+          window._consolaStopTimer = setTimeout(stopPlayback, (loopDur + 0.3) * 1000);
+        }
+        tickPlayhead(ctx, t0, spb, loopDur);
+      } catch(err){
+        console.error("Prerender falló; se usa el modo en vivo:", err);
+        if(token !== prToken) return;
+        prStatus("⚠ prerender falló → modo en vivo");
+        startPlaybackLive();
+      }
+    })();
+  }
+
   function startPlayback(){
+    if(state.chordEvents.length === 0) return;
+    if(prOn()) return startPlaybackRendered();
+    return startPlaybackLive();
+  }
+
+  function startPlaybackLive(){
     if(state.chordEvents.length === 0) return;
     var ctx = getAudioCtx();
     if(!ctx) return;
@@ -12595,6 +12786,9 @@ function runAnalysis() {
 
   function stopPlayback(){
     playing = false;
+    prToken = (prToken | 0) + 1; // cancela un prerender en curso
+    var prSt = document.getElementById("consolaPrerenderStatus");
+    if(prSt && prSt.textContent.indexOf("⏳") === 0) prSt.textContent = "";
     if(schedulerTimer){ clearInterval(schedulerTimer); schedulerTimer = null; }
     if(rafId){ cancelAnimationFrame(rafId); rafId = null; }
     if(window._consolaStopTimer){ clearTimeout(window._consolaStopTimer); window._consolaStopTimer = null; }
@@ -12685,6 +12879,15 @@ function runAnalysis() {
     e.preventDefault();
     regenerarYReproducir();
   });
+  (function(){
+    var c = document.getElementById("consolaPrerenderChk");
+    if(!c) return;
+    try{ if(localStorage.getItem("prerenderOn") === "0") c.checked = false; }catch(e){}
+    c.addEventListener("change", function(){
+      try{ localStorage.setItem("prerenderOn", c.checked ? "1" : "0"); }catch(e){}
+      prStatus("");
+    });
+  })();
   document.getElementById("consolaStopBtn").addEventListener("click", stopPlayback);
   document.getElementById("consolaResetBtn").addEventListener("click", stopPlayback);
   document.getElementById("consolaTempo").addEventListener("input", function(){
