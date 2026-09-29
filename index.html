@@ -1196,7 +1196,7 @@
       <div class="solomon-info" id="consolaSolomonReadout"></div>
       <div style="margin-top:10px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
         <button type="button" class="chip" id="consolaTryBtn">Probar con C E G B</button>
-        <button type="button" class="chip" id="consolaNormalBtn" disabled>&#8634; Normalito</button>
+        <span class="consola-inst-toggle" title="Tildado: versión simple de siempre — set completo, sin transposición ni subsets, solo inversiones al azar entre compases, bajo y melodía en patrón predecible. Se mantiene mientras siga tildado (cambiar notas o 🔀 sigue dando Normalito). Destildado: motor libre."><input type="checkbox" id="consolaNormalChk" disabled><label for="consolaNormalChk">&#8634; Normalito</label></span>
       </div>
     </div>
 
@@ -10014,7 +10014,7 @@ function runAnalysis() {
     TOTAL_BEATS = RHYTHM.total();
     var playBtn = document.getElementById("consolaPlayBtn");
     var regenPlayBtn = document.getElementById("consolaRegenPlayBtn");
-    var normalBtn = document.getElementById("consolaNormalBtn");
+    var normalBtn = document.getElementById("consolaNormalChk"); // checkbox Normalito (off por defecto)
     if(!playBtn) return; // sección todavía no está en el DOM
     var readout = document.getElementById("consolaNotesReadout");
     var solomonReadout = document.getElementById("consolaSolomonReadout");
@@ -10048,6 +10048,8 @@ function runAnalysis() {
       }
     }
     state.rootChord = rootChord;
+    // Normalito tildado: en vez del motor libre, arma la versión simple (no aplica a MULTI SETS).
+    if(!multi && normalBtn && normalBtn.checked){ normalizeConsola(); return; }
     fixedIntervalOffset = 0; // modo test de intervalos fijos: cada variación nueva arranca el ciclo en C (offset 0)
     cyclesOffset = 0; // módulo Cycles (Modo A acumulativo): cada variación nueva arranca el ciclo en C también
     MELODICPATTERNS.reset(); // melodicPatterns: un contorno nuevo por variación, compartido por melodía principal y bebopMelody
@@ -10077,11 +10079,11 @@ function runAnalysis() {
     renderBebopRoll();
   }
 
-  // ↺ Normalito (con botón): vuelve a la versión simple de siempre — el
-  // set completo, sin transposición ni subsets, solo inversiones
-  // mezcladas al azar entre compases, con bajo y melodía en su patrón
-  // predecible (sin pitch libre). Un solo click, no queda "activado":
-  // el próximo cambio de notas vuelve automáticamente al modo libre.
+  // ↺ Normalito (checkbox #consolaNormalChk, apagado por defecto): la versión
+  // simple de siempre — el set completo, sin transposición ni subsets, solo
+  // inversiones mezcladas al azar entre compases, con bajo y melodía en su
+  // patrón predecible (sin pitch libre). Mientras esté tildado,
+  // regenerateConsola() lo delega acá; destildado vuelve al motor libre.
   function normalizeConsola(){
     if(state.rootChord.length === 0) return;
     NUM_BARS = desiredNumBars();
@@ -12896,7 +12898,12 @@ function runAnalysis() {
   document.getElementById("consolaTryBtn").addEventListener("click", function(){
     setNotes([0,4,7,11]); // C E G B — dispara runAnalysis() -> regenerateConsola()
   });
-  document.getElementById("consolaNormalBtn").addEventListener("click", normalizeConsola);
+  // Normalito (checkbox): tildado → normalizeConsola (vía regenerateConsola, que lo respeta);
+  // destildado → vuelve al motor libre. Sin set elegido no hace nada.
+  document.getElementById("consolaNormalChk").addEventListener("change", function(){
+    if(state.rootChord.length === 0) return;
+    regenerateConsola();
+  });
   MULTISETS.init(); // MULTI SETS INPUT (debajo del reloj principal)
   // Bass function (How to play): Current set / Superset, mutuamente
   // excluyentes, mismo patrón que Modo A/Modo B de Cycles. Current set
