@@ -1367,7 +1367,7 @@
           <span class="consola-inst-toggle" title="Ciclo de 3 tiempos (1 · ½ · 1½) atravesando compases de 4, con ligadura entre barras. Reemplaza a sync (con las dos tildadas manda poly)."><input type="checkbox" id="consolaHT_poly"><label for="consolaHT_poly">poly</label></span>
           <span class="consola-inst-toggle" title="Velocidad: 112 primer ataque, 88 tiempos, 62 contratiempos."><input type="checkbox" id="consolaHT_accent"><label for="consolaHT_accent">accent</label></span>
           <span class="consola-inst-toggle" title="Cada ataque toca una inversión del set (fundamental, 1ª, 2ª…), con otra disposición de las voces (cerrada/abierta), a veces con una voz duplicada a la octava. Registro acotado: grave entre G3 y F#4, rango total hasta octava y quinta. Nunca repite la misma inversión seguida."><input type="checkbox" id="consolaHT_inversions"><label for="consolaHT_inversions">inversions</label></span>
-          <span class="consola-inst-toggle" title="Rythmicarmonies: el mismo acorde se reataca con ritmos aleatorios (distintos en cada compás) hasta que llega el próximo acorde, en vez de tocarse una sola vez. Usa el mismo voicing e inversiones, y el slider Chord simultaneity. Reemplaza a sync y poly."><input type="checkbox" id="consolaHT_rythmicarmonies"><label for="consolaHT_rythmicarmonies">rythmicarmonies</label></span>
+          <span class="consola-inst-toggle" title="Rythmicarmonies: el mismo acorde se reataca con ritmos aleatorios (distintos en cada compás) hasta que llega el próximo acorde, en vez de tocarse una sola vez. Usa el mismo voicing y, mientras el acorde no cambia, a veces reataca otra inversión o un subconjunto del mismo set; además del slider Chord simultaneity. Reemplaza a sync y poly."><input type="checkbox" id="consolaHT_rythmicarmonies"><label for="consolaHT_rythmicarmonies">rythmicarmonies</label></span>
         </div>
         </div>
       </div>
@@ -9660,7 +9660,7 @@ function runAnalysis() {
       // 3) eventos + slots
       var events = [], slotChords = [];
       for(var sb = 0; sb < numBars; sb++) slotChords.push([]);
-      var prevInv = -1;
+      var prevInv = -1, rhKey = null, rhInv = 0;
       CYCLEHOLD.reset();
       var htTranspose = cyclesEnabled || activeFixedIntervals().length > 0; // Cycles (o intervalos TEST) tildados: la armonía se transpone por ataque, como el motor libre
       attacks.forEach(function(a, i){
@@ -9669,9 +9669,28 @@ function runAnalysis() {
           CYCLEHOLD.beginAttack(); // ChangeDuration: mismo tramo de N ataques = misma transposición
           rc = transposeChord(rc, CYCLEHOLD.isActive() ? CYCLEHOLD.value() : randomChromaTransposition());
         }
-        var voiced;
+        var voiced, rhSub = null;
         if(on("inversions")){ var iv = invVoicing(rc, prevInv); voiced = iv.voiced; prevInv = iv.inv; }
-        else voiced = rc.slice().sort(function(x,y){ return x-y; });
+        else {
+          voiced = rc.slice().sort(function(x,y){ return x-y; });
+          // Rythmicarmonies: mientras el acorde no cambia, a veces (~35%) el reataque toca otra inversión del MISMO set
+          // (sube las k notas más graves una octava); al cambiar el acorde vuelve a la disposición base.
+          if(on("rythmicarmonies")){
+            var rcKey = voiced.join(",");
+            if(rcKey === rhKey && voiced.length > 1 && Math.random() < 0.35){
+              var k2, g2 = 0; do { k2 = randomInt(1, voiced.length-1); g2++; } while(k2 === rhInv && g2 < 20);
+              rhInv = k2;
+              voiced = voiced.slice(k2).concat(voiced.slice(0, k2).map(function(n){ return n + 12; }));
+            } else rhInv = 0;
+            // ...y a veces (~25%) toca solo un subconjunto (mín. 2 notas) del voicing; el acorde vigente (slots) sigue siendo el completo
+            if(rcKey === rhKey && voiced.length > 2 && Math.random() < 0.25){
+              var sz = randomInt(2, voiced.length-1), pool2 = voiced.slice(), sub = [];
+              while(sub.length < sz) sub.push(pool2.splice(randomInt(0, pool2.length-1), 1)[0]);
+              rhSub = sub.sort(function(x,y){ return x-y; });
+            }
+            rhKey = rcKey;
+          }
+        }
         // slots (con ligadura: si el ataque cruza la barra, el resto queda en el compás siguiente)
         var remaining = a.d, bi = a.bar, so = a.rel;
         while(remaining > 1e-9 && bi < numBars){
@@ -9688,7 +9707,7 @@ function runAnalysis() {
         endEff = Math.min(endEff, total);
         var dur = Math.max(0.05, endEff - startEff);
         if(on("artic") && (i % 2 === 1)) dur = Math.max(0.05, dur * 0.3); // staccato en los impares, legato en los pares
-        var notes = voiced;
+        var notes = rhSub || voiced;
         if(on("subset") && !a.strong){
           var pool = voiced.slice(), pick = [], want = randomInt(1, Math.min(2, pool.length));
           while(pick.length < want){ pick.push(pool.splice(randomInt(0, pool.length-1), 1)[0]); }
