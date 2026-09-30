@@ -1498,7 +1498,11 @@
         <button type="button" class="chip primary" id="consolaPlayBtn" title="Reproduce el segmento en loop — repite siempre la misma secuencia (la última generada) hasta que la cambies con 🔀 o elijas otras notas.">&#9658; Reproducir</button>
         <button type="button" class="chip chip-small" id="consolaRegenPlayBtn" disabled title="Atajo: tecla G. Detiene lo que suene, sortea una variación nueva del segmento (mismo set de notas elegido) y la reproduce de una — funciona también mientras está sonando.">&#128256;</button>
         <button type="button" class="chip" id="consolaStopBtn" disabled>&#9632; Detener</button>
-        <button type="button" class="chip" id="consolaMoreCompingBtn" title="Agrega una QUINTA pista MIDI, con timbre de cuerdas (strings), que dobla cada nota de la melodía junto con 1 o 2 notas más del acorde vigente en ese instante (siempre del mismo set, nunca una nota ajena) — el grupito entero queda siempre pegado a la nota de melodía, a lo sumo a una octava o dos de distancia.">moreComping</button>
+        <button type="button" class="chip" id="consolaMoreCompingBtn" title="Agrega una QUINTA pista MIDI (instrumento elegible en el selector de al lado; default Piano eléctrico), que dobla cada nota de la melodía junto con 1 o 2 notas más del acorde vigente en ese instante (siempre del mismo set, nunca una nota ajena) — el grupito entero queda siempre pegado a la nota de melodía, a lo sumo a una octava o dos de distancia.">moreComping</button>
+        <select class="mix-preset-select" id="comping2PresetSelect" title="Instrumento de la pista moreComping. Default: Piano eléctrico. (Antes era un timbre de cuerdas fijo.)" style="max-width:190px;">
+          <!-- Las opciones (todos los .sf2 y todos sus presets) las arma sfBuildPresetSelects() al cargar la página. -->
+          <option value="epiano" selected>Piano eléctrico</option>
+        </select>
       </div>
       <div class="consola-field consola-instruments" title="Línea melódica independiente (bebopMelody) y sus modos — agrupados y contraídos por defecto, mismo lugar de siempre.">
         <div class="consola-subfield-head">
@@ -10474,7 +10478,7 @@ function runAnalysis() {
   window.regenerateConsola = regenerateConsola;
 
   // ---------- piano roll (SVG) ----------
-  var PPB = 56, ROW_H = 20, MARGIN_L = 44, MARGIN_T = 40, MARGIN_B = 10;
+  var PPB = 39, ROW_H = 14, MARGIN_L = 44, MARGIN_T = 40, MARGIN_B = 10;
   var svgNS2 = "http://www.w3.org/2000/svg";
 
   function svgEl(tag, attrs){
@@ -10669,7 +10673,7 @@ function runAnalysis() {
       ["var(--c-bass)","Bajo"],
       ["var(--c-melody)","Melodía"]
     ];
-    if(state.comping2Events.length) items.push(["var(--c-comping2)","moreComping (cuerdas)"]);
+    if(state.comping2Events.length) items.push(["var(--c-comping2)","moreComping"]);
     // bebopMelody ya no lleva ítem acá: tiene su propio roll+label aparte.
     items.forEach(function(it){
       var span = document.createElement("span");
@@ -10840,7 +10844,7 @@ function runAnalysis() {
   // Defaults propios (no los de SF_DEFAULT_FILES): Bajo = "synthBass" (Bajo original sintetizado) y
   // Doblar melodía = "bassoon" (Fagot, Instruments.sf2). Doblar armonía = Nord Pad (SF_DEFAULT_FILES).
   // Las filas de "Bass default.sf2" y "Armonica.sf2" siguen en el catálogo, elegibles a mano.
-  var mixPresets = { harmony: sfDefaultKeyFor("harmony", "piano"), melody: sfDefaultKeyFor("melody", "flute"), melodyDouble: "bassoon", chordDouble: sfDefaultKeyFor("chordDouble", "mute"), bass: "synthBass", drum: sfDefaultKeyFor("drum", "kit"), bebop: "sopranoSax", modalVamps: sfDefaultKeyFor("harmony", "piano") };
+  var mixPresets = { harmony: sfDefaultKeyFor("harmony", "piano"), melody: sfDefaultKeyFor("melody", "flute"), melodyDouble: sfKeyForFile("Extra v2/bassoon.sf2", 0, 0), comping2: "epiano", chordDouble: sfDefaultKeyFor("chordDouble", "mute"), bass: "synthBass", drum: sfDefaultKeyFor("drum", "kit"), bebop: "sopranoSax", modalVamps: sfDefaultKeyFor("harmony", "piano") };
   var chordGainNode = null, bassGainNode = null, melodyGainNode = null, drumGainNode = null, melodyDoubleGainNode = null, chordDoubleGainNode = null, comping2GainNode = null, bebopGainNode = null;
 
   // ---------- Reverb: bus de envío compartido ----------
@@ -11070,6 +11074,7 @@ function runAnalysis() {
     { id:"melodyPresetSelect",       mix:"melody",       special:[] },
     { id:"melodyDoublePresetSelect", mix:"melodyDouble", special:[{ value:"mute", label:"Mute (apagado)" }] },
     { id:"bebopPresetSelect",        mix:"bebop",        special:[] },
+    { id:"comping2PresetSelect",     mix:"comping2",     special:[] },
     { id:"bassPresetSelect",         mix:"bass",         special:[{ value:"synthBass", label:"Bajo original (sintetizado)" }] },
     { id:"mvPresetSelect",           mix:"modalVamps",   special:[] }
   ];
@@ -12554,11 +12559,12 @@ function runAnalysis() {
     // melodía con 1-2 notas más del acorde vigente. Vacía si el botón
     // #consolaMoreCompingBtn está apagado, así que este forEach no hace
     // nada en ese caso.
+    var comping2Fam = voiceFamilyFor(mixPresets.comping2, "epiano");
     (want("comping2") ? state.comping2Events : []).forEach(function(ev){
       var t = loopStartTime + ev.startBeat*spb;
       var dur = ev.durBeats*spb;
-      if(sm2Active && playSM2Voice(ctx, gains.comping2, "strings", ev.midi, t, dur*0.9, 0.14)) return;
-      playStringsVoice(ctx, gains.comping2, ev.midi, t, dur*0.9, {attack: Math.min(0.09, dur*0.25), release: Math.min(0.5, dur*0.5), peakGain:0.1, cutoff:2600});
+      if(sm2Active && playSM2Voice(ctx, gains.comping2, mixPresets.comping2, ev.midi, t, dur*0.9, 0.16)) return;
+      comping2Fam.fn(ctx, gains.comping2, ev.midi, t, dur*0.9, comping2Fam.mk(dur*0.9));
     });
     // bebopMelody: sexta pista, línea melódica INDEPENDIENTE (no dobla a
     // la melodía principal — tiene su propia nota por evento, elegida
@@ -12976,7 +12982,7 @@ function runAnalysis() {
         add("Doblar melodia", "melodyDouble", 4, state.melodyEvents, (alt && alt.checked) ? -7 : -12, exportProgramFor(mixPresets.melodyDouble, 73));
       }
     }
-    add("moreComping", "comping2", 5, state.comping2Events, 0, 48);
+    add("moreComping", "comping2", 5, state.comping2Events, 0, exportProgramFor(mixPresets.comping2, 4));
     add("bebopMelody", "bebop", 6, state.bebopEvents, 0, exportProgramFor(mixPresets.bebop, 64));
     if(instEnabled("consolaDrumChk") && mixEffective("drum") > 0 && drumEvents.length){
       var drumEvs = drumEvents.map(function(ev){
@@ -13770,6 +13776,7 @@ function runAnalysis() {
       { id: "melodyPresetSelect",       key: "melody"       },
       { id: "melodyDoublePresetSelect", key: "melodyDouble" },
       { id: "bebopPresetSelect",        key: "bebop"        },
+      { id: "comping2PresetSelect",     key: "comping2"     },
       { id: "bassPresetSelect",         key: "bass"         },
       { id: "drumPresetSelect",         key: "drum"         },
       { id: "mvPresetSelect",           key: "modalVamps"   }
