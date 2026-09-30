@@ -7778,8 +7778,9 @@ function runAnalysis() {
      esa célula (recortados al borde de la mitad). Devuelve además una
      máscara por nota (true = nota de corrida) para que
      buildBassMelodyEventsRandom: (a) no las silencie, y (b) les asigne
-     altura con nextPitch() — paso a paso por la "escalera" de notas
-     del acorde vigente dentro del registro de melodía (solo clases de
+     altura con nextPitch() — células PERMUTADAS (3-5 notas en orden
+     mezclado, base que se desplaza) sobre la "escalera" de notas del
+     acorde vigente dentro del registro de melodía (solo clases de
      tono del acorde en curso → el set nunca se traiciona).
      ================================================================ */
   var RAPIDRUNS = (function(){
@@ -7884,8 +7885,16 @@ function runAnalysis() {
       });
       return { cells: outCells, masks: masks };
     }
-    // Estado de la corrida en curso (se resetea al empezar cada corrida).
-    var cur = null, dir = 1;
+    // ALTURAS — permutaciones en vez de escala. Estado de la corrida en
+    // curso (se resetea en startRun). La corrida se arma de CÉLULAS de 3 a
+    // 5 notas: cada célula toma m escalones de la escalera del acorde
+    // vigente (offsets 0..m+1 sobre una base: no siempre contiguos, así
+    // salen terceras/cuartas) y los toca en un ORDEN PERMUTADO (nunca
+    // ascendente ni descendente puro). Entre célula y célula la base se
+    // desplaza 1-2 escalones (sigue la dirección 60%, 40% la invierte) y
+    // la permutación se re-sortea el 50% de las veces. Solo clases de tono
+    // del acorde en curso → el set nunca se traiciona.
+    var baseMidi = null, lastMidi = null, sgn = 1, perm = [], pos = 0;
     function ladder(chord){
       var pcs = {};
       chord.forEach(function(m){ pcs[((m%12)+12)%12] = true; });
@@ -7893,34 +7902,59 @@ function runAnalysis() {
       for(var m=MELODY_MIDI_FLOOR; m<=MELODY_MIDI_CEIL; m++) if(pcs[m%12]) out.push(m);
       return out;
     }
-    function startRun(prevMidi){
-      cur = (typeof prevMidi === "number") ? prevMidi : null;
-      dir = Math.random() < 0.5 ? 1 : -1;
+    function fold(i, n){ // refleja el índice dentro de [0, n-1] (rebota en los bordes del registro)
+      if(n <= 1) return 0;
+      var p = 2*(n-1);
+      i = ((i % p) + p) % p;
+      return i < n ? i : p - i;
     }
-    // Próxima nota: el vecino (arriba/abajo según dir) de `cur` dentro de
-    // la escalera del acorde vigente; rebota en los bordes del registro y
-    // cambia de sentido al azar (12%) para que no sea una escala plana.
+    function nearestIdx(lad, midi){
+      var best = 0, bd = 1e9;
+      for(var i=0;i<lad.length;i++){ var d = Math.abs(lad[i]-midi); if(d < bd){ bd = d; best = i; } }
+      return best;
+    }
+    function newCell(){
+      var m = [3,4,4,4,5][randomInt(0,4)];
+      var pool = []; for(var o=1;o<=m+1;o++) pool.push(o);
+      for(var i=pool.length-1;i>0;i--){ var j=randomInt(0,i); var t=pool[i]; pool[i]=pool[j]; pool[j]=t; }
+      var offs = [0].concat(pool.slice(0, m-1)).sort(function(x,y){ return x-y; });
+      var p = offs.slice();
+      for(var tries=0; tries<12; tries++){
+        for(var a=p.length-1;a>0;a--){ var b=randomInt(0,a); var tmp=p[a]; p[a]=p[b]; p[b]=tmp; }
+        var asc = p.every(function(v,k){ return k===0 || v > p[k-1]; });
+        var desc = p.every(function(v,k){ return k===0 || v < p[k-1]; });
+        if(!asc && !desc) break;
+      }
+      perm = p; pos = 0;
+    }
+    function startRun(prevMidi){
+      baseMidi = (typeof prevMidi === "number") ? prevMidi : null;
+      lastMidi = baseMidi;
+      sgn = Math.random() < 0.5 ? 1 : -1;
+      newCell();
+    }
     function nextPitch(chord){
       var lad = ladder(chord);
       if(!lad.length) return clampMelodyRange(chord[0] + 12);
-      if(cur === null){
+      if(baseMidi === null){
         var mid = Math.floor(lad.length/2) + randomInt(-2, 2);
-        cur = lad[Math.min(lad.length-1, Math.max(0, mid))];
-        return cur;
+        baseMidi = lad[Math.min(lad.length-1, Math.max(0, mid))];
       }
-      if(Math.random() < 0.12) dir = -dir;
-      // índice del primer escalón estrictamente arriba/abajo de cur
-      var next = null;
-      if(dir > 0){ for(var i=0;i<lad.length;i++) if(lad[i] > cur){ next = lad[i]; break; } }
-      else { for(var j=lad.length-1;j>=0;j--) if(lad[j] < cur){ next = lad[j]; break; } }
-      if(next === null){ // borde del registro: rebota
-        dir = -dir;
-        if(dir > 0){ for(var i2=0;i2<lad.length;i2++) if(lad[i2] > cur){ next = lad[i2]; break; } }
-        else { for(var j2=lad.length-1;j2>=0;j2--) if(lad[j2] < cur){ next = lad[j2]; break; } }
-        if(next === null) next = lad[0];
+      var bi = nearestIdx(lad, baseMidi);
+      if(pos >= perm.length){ // célula terminada: desplaza la base y (50%) re-sortea la permutación
+        if(Math.random() > 0.6) sgn = -sgn;
+        bi = fold(bi + sgn*randomInt(1, 2), lad.length);
+        baseMidi = lad[bi];
+        if(Math.random() < 0.5) newCell(); else pos = 0;
       }
-      cur = next;
-      return cur;
+      var idx = fold(bi + sgn*perm[pos++], lad.length);
+      if(lad[idx] === lastMidi){ // nunca repetir la misma nota seguida
+        var alt = fold(idx + 1, lad.length);
+        if(lad[alt] === lastMidi) alt = fold(idx - 1, lad.length);
+        idx = alt;
+      }
+      lastMidi = lad[idx];
+      return lastMidi;
     }
     return { prob: prob, apply: apply, startRun: startRun, nextPitch: nextPitch };
   })();
