@@ -884,6 +884,19 @@
     object-fit:cover;
     display:block;
   }
+  /* Shortcuts: mismo estilo que el "+" de arriba a la derecha, pero arriba a la izquierda */
+  .shortcuts-panel{position:fixed;left:env(safe-area-inset-left,0px);top:env(safe-area-inset-top,0px);z-index:100;display:flex;flex-direction:column;gap:6px;background:var(--surface);padding:12px;border:1px solid var(--line);border-top:0;border-left:0;border-radius:0 0 8px 0;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.06em;color:var(--ink-muted);}
+  .shortcuts-panel.is-collapsed{padding:0;gap:0;width:32px;overflow:hidden;background:transparent;border:0;}
+  .shortcuts-panel.is-collapsed .shortcuts-label,.shortcuts-panel.is-collapsed .shortcuts-list{display:none;}
+  .shortcuts-header{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .shortcuts-label{text-transform:uppercase;}
+  .shortcuts-toggle{flex:0 0 auto;width:22px;height:22px;display:flex;align-items:center;justify-content:center;background:var(--surface-2);border:1px solid var(--line);color:var(--gold);border-radius:5px;font-size:15px;line-height:1;font-weight:700;cursor:pointer;padding:0;}
+  .shortcuts-toggle:hover{background:var(--surface);border-color:var(--gold);}
+  .shortcuts-toggle::after{content:"−";}
+  .shortcuts-panel.is-collapsed .shortcuts-toggle{width:32px;height:32px;font-size:18px;background:var(--surface);border:1px solid var(--line);border-top:0;border-left:0;border-radius:0 0 8px 0;}
+  .shortcuts-panel.is-collapsed .shortcuts-toggle::after{content:"+";}
+  .shortcuts-list{display:flex;flex-direction:column;gap:4px;}
+  .shortcuts-list kbd{display:inline-block;min-width:18px;text-align:center;padding:1px 6px;margin-right:8px;border:1px solid var(--line);border-radius:4px;color:var(--gold);background:var(--surface-2);font-family:inherit;}
   .nav-modules{
     position:fixed;
     right:env(safe-area-inset-right, 0px);
@@ -1043,6 +1056,22 @@
 
 <!-- Fondo de página: avatar detrás del texto -->
 <div class="page-bg-avatar"></div>
+
+<!-- Panel de Shortcuts (arriba a la izquierda) -->
+<div class="shortcuts-panel is-collapsed" id="shortcutsPanel">
+  <div class="shortcuts-header">
+    <span class="shortcuts-label">Shortcuts</span>
+    <button type="button" class="shortcuts-toggle" id="shortcutsToggle" aria-expanded="false" aria-controls="shortcutsList" title="Mostrar/ocultar Shortcuts"></button>
+  </div>
+  <div class="shortcuts-list" id="shortcutsList">
+    <div><kbd>G</kbd>Regenerate</div>
+    <div><kbd>F</kbd>Stop</div>
+    <div><kbd>H</kbd>Creatura</div>
+    <div><kbd>J</kbd>Random fill</div>
+    <div><kbd>S</kbd>Limpiar</div>
+    <div><kbd>D</kbd>Play</div>
+  </div>
+</div>
 
 <!-- Botonera de Navegación "Ir a:" -->
 <div class="nav-modules is-collapsed" id="navModules">
@@ -1468,9 +1497,7 @@
         <button type="button" class="chip primary" id="consolaPlayBtn" title="Reproduce el segmento en loop — repite siempre la misma secuencia (la última generada) hasta que la cambies con 🔀 o elijas otras notas.">&#9658; Reproducir</button>
         <button type="button" class="chip chip-small" id="consolaRegenPlayBtn" disabled title="Atajo: tecla G. Detiene lo que suene, sortea una variación nueva del segmento (mismo set de notas elegido) y la reproduce de una — funciona también mientras está sonando.">&#128256;</button>
         <button type="button" class="chip" id="consolaStopBtn" disabled>&#9632; Detener</button>
-        <button type="button" class="chip" id="consolaResetBtn" title="Pánico: corta de golpe cualquier nota que haya quedado sonando (MIDI all notes off) — a diferencia de Detener, funciona aunque no esté reproduciendo.">&#128721; Reset</button>
         <button type="button" class="chip" id="consolaMoreCompingBtn" title="Agrega una QUINTA pista MIDI, con timbre de cuerdas (strings), que dobla cada nota de la melodía junto con 1 o 2 notas más del acorde vigente en ese instante (siempre del mismo set, nunca una nota ajena) — el grupito entero queda siempre pegado a la nota de melodía, a lo sumo a una octava o dos de distancia.">moreComping</button>
-        <button type="button" class="chip" id="consolaSoloPianoBtn" title="Modo solo: pone Armonía, Melodía y Bajo en preset Piano, y muda Batería/moreComping/bebopMelody/Doblar melodía/Doblar armonía — sin tocar ningún otro ajuste. Volvé a apretarlo para restaurar los presets y volúmenes que tenías antes.">🎹 SoloPiano</button>
       </div>
       <div class="consola-field consola-instruments" title="Línea melódica independiente (bebopMelody) y sus modos — agrupados y contraídos por defecto, mismo lugar de siempre.">
         <div class="consola-subfield-head">
@@ -1604,6 +1631,7 @@
         <button class="chip" id="presetBaroqueBtn" type="button" title="Set de presets: Armonía → Clavecín, Bajo → Fagot, Melodía → Flauta, Melodía doblada → Clavecín (prende el doblaje).">Baroque</button>
         <button class="chip" id="presetJazzBtn" type="button" title="Set de presets: Armonía → Piano, Doblar armonía → Mute, Melodía → Sax soprano, Doblar melodía → Mute, Bajo → Bajo original (sintetizado). Además prende Swing Drums (groove real de jazz, en vez del patrón de batería aleatorio).">Jazz traditional</button>
         <button class="chip" id="presetJazzFusionBtn" type="button" title="Copia de Jazz traditional con Armonía → Piano eléctrico y Melodía → Ethan's Bassoon (Soundfonts v2/Extra v2/bassoon.sf2). Doblar armonía → Mute, Doblar melodía → Mute, Bajo → Bajo original (sintetizado). Además prende Swing Drums.">Jazz fusion</button>
+        <button class="chip" type="button" id="consolaSoloPianoBtn" title="Modo solo: pone Armonía, Melodía y Bajo en preset Piano, y muda Batería/moreComping/bebopMelody/Doblar melodía/Doblar armonía — sin tocar ningún otro ajuste. Volvé a apretarlo para restaurar los presets y volúmenes que tenías antes.">🎹 SoloPiano</button>
       </div>
       <div class="mix-presets">
         <div class="mix-preset-group" id="harmonyPresetGroup" data-mix-group="harmony">
@@ -13222,7 +13250,6 @@ function runAnalysis() {
     });
   })();
   document.getElementById("consolaStopBtn").addEventListener("click", stopPlayback);
-  document.getElementById("consolaResetBtn").addEventListener("click", stopPlayback);
   document.getElementById("consolaTempo").addEventListener("input", function(){
     document.getElementById("consolaTempoVal").textContent = this.value + " BPM";
   });
@@ -14622,6 +14649,29 @@ function runAnalysis() {
     }
 
     btn.addEventListener("click", function(){ runCreatura(); });
+  })();
+</script>
+<script>
+  // Shortcuts: G regenerate, F stop, H creatura, J random fill, S limpiar, D play.
+  (function(){
+    var panel=document.getElementById("shortcutsPanel"), tg=document.getElementById("shortcutsToggle");
+    if(tg) tg.addEventListener("click", function(){
+      var c=panel.classList.toggle("is-collapsed");
+      tg.setAttribute("aria-expanded", c?"false":"true");
+    });
+    var MAP={ f:"consolaStopBtn", h:"creaturaBtn", j:"multiSetsRandomFillBtn", s:"clearBtn", d:"consolaPlayBtn" };
+    document.addEventListener("keydown", function(e){
+      var k=(e.key||"").toLowerCase(), id=MAP[k];
+      if(!id) return;
+      if(e.ctrlKey||e.metaKey||e.altKey||e.repeat||e.isComposing) return;
+      var t=e.target, tag=t&&t.tagName;
+      if(tag==="TEXTAREA"||(t&&t.isContentEditable)) return;
+      if(tag==="INPUT" && ["checkbox","radio","range","button","submit","reset","color","file"].indexOf(t.type)===-1) return;
+      var b=document.getElementById(id);
+      if(!b||b.disabled) return;
+      e.preventDefault();
+      b.click();
+    });
   })();
 </script>
 </body>
