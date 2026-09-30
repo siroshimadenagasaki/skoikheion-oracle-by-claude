@@ -1367,6 +1367,7 @@
           <span class="consola-inst-toggle" title="Ciclo de 3 tiempos (1 · ½ · 1½) atravesando compases de 4, con ligadura entre barras. Reemplaza a sync (con las dos tildadas manda poly)."><input type="checkbox" id="consolaHT_poly"><label for="consolaHT_poly">poly</label></span>
           <span class="consola-inst-toggle" title="Velocidad: 112 primer ataque, 88 tiempos, 62 contratiempos."><input type="checkbox" id="consolaHT_accent"><label for="consolaHT_accent">accent</label></span>
           <span class="consola-inst-toggle" title="Cada ataque toca una inversión del set (fundamental, 1ª, 2ª…), con otra disposición de las voces (cerrada/abierta), a veces con una voz duplicada a la octava. Registro acotado: grave entre G3 y F#4, rango total hasta octava y quinta. Nunca repite la misma inversión seguida."><input type="checkbox" id="consolaHT_inversions"><label for="consolaHT_inversions">inversions</label></span>
+          <span class="consola-inst-toggle" title="Comping de piano: ataques cortos de la armonía en células tipo Charleston, Charleston inverso, anticipaciones y comping escaso, con silencios entre ataques. Solo notas del set. Reemplaza a sync y poly (con varias tildadas manda comping). Solo compases 4/4; los demás usan la célula genérica."><input type="checkbox" id="consolaHT_comping"><label for="consolaHT_comping">comping</label></span>
         </div>
         </div>
       </div>
@@ -9533,11 +9534,14 @@ function runAnalysis() {
   var HARMTEST = (function(){
     var IDS = { base:"consolaHT_base", sync:"consolaHT_sync", poly:"consolaHT_poly", accent:"consolaHT_accent",
                 artic:"consolaHT_artic", subset:"consolaHT_subset", rests:"consolaHT_rests", swing:"consolaHT_swing",
-                inversions:"consolaHT_inversions" };
+                inversions:"consolaHT_inversions", comping:"consolaHT_comping" };
     function on(k){ var e = document.getElementById(IDS[k]); return !!(e && e.checked); }
     function active(){ return Object.keys(IDS).some(on); }
     var SYNC_POOL = [ [1.5,1.5,1], [1,1.5,1.5], [1.5,1,1.5], [0.5,1.5,1.5,0.5],
                       [1,0.5,1.5,1], [1.5,0.5,1,1], [2,1.5,0.5], [0.5,1,1.5,1] ]; // todas suman 4
+    // Células de comping (4/4, suman 4). Duración positiva = ataque; negativa = silencio.
+    // charleston: 1 y "y" de 2 · charleston inverso: "y" de 1 y 3 · anticipación: 1, "y" de 3, "y" de 4 · escaso: solo el 1.
+    var COMP_POOL = [ [1.5,0.5,-2], [-0.5,1.5,2], [1.5,-1,1,0.5], [2,-2] ];
     function stepCell(beats, step){
       var out = [], rem = beats;
       while(rem > 1e-9){ var d = Math.min(step, rem); out.push(d); rem -= d; }
@@ -9583,7 +9587,7 @@ function runAnalysis() {
     }
     function build(rootChord, numBars){
       var total = RHYTHM.total();
-      var multi = on("accent") || on("artic") || on("subset") || on("rests") || on("swing") || on("sync") || on("poly");
+      var multi = on("comping") || on("accent") || on("artic") || on("subset") || on("rests") || on("swing") || on("sync") || on("poly");
       var barStart = [], barLen = [];
       for(var b = 0; b < numBars; b++){ barStart.push(RHYTHM.start(b)); barLen.push(RHYTHM.beats(b)); }
       function barOf(t){
@@ -9592,7 +9596,18 @@ function runAnalysis() {
       }
       // 1) ataques (t absoluto en tiempos, d duración nominal)
       var attacks = [];
-      if(on("poly")){
+      if(on("comping")){
+        var prevComp = -1;
+        for(var cb = 0; cb < numBars; cb++){
+          var ccell;
+          if(RHYTHM.isDefault4_4(cb)){
+            var ci2, g2 = 0; do { ci2 = randomInt(0, COMP_POOL.length-1); g2++; } while(ci2 === prevComp && g2 < 20);
+            prevComp = ci2; ccell = COMP_POOL[ci2];
+          } else ccell = genericBarCell(barLen[cb], RHYTHM.compound(cb), 0.7);
+          var coff = 0;
+          ccell.forEach(function(d){ attacks.push({t:barStart[cb] + coff, d:Math.abs(d), rest:d < 0}); coff += Math.abs(d); });
+        }
+      } else if(on("poly")){
         var cyc = [1, 0.5, 1.5], tt = 0, ci = 0;
         while(tt < total - 1e-9){ var dd = Math.min(cyc[ci % 3], total - tt); attacks.push({t:tt, d:dd}); tt += dd; ci++; }
       } else {
@@ -9620,7 +9635,7 @@ function runAnalysis() {
         a.onBeat = Math.abs(rel - Math.round(rel)) < 1e-6;
         var frac = rel - Math.floor(rel);
         a.shift = (on("swing") && Math.abs(frac - 0.5) < 1e-6) ? (1/6 + (Math.random()*2 - 1)*0.015) : 0;
-        a.silent = false;
+        a.silent = !!a.rest;
         if(on("rests") && !a.strong){ acc += 0.25; if(acc >= 1){ a.silent = true; acc -= 1; } }
       });
       // 3) eventos + slots
@@ -13484,7 +13499,7 @@ function runAnalysis() {
   // Harmony: cada casilla regenera (si hay set elegido). poly reemplaza a sync (en build).
   // "all" tilda/destilda las otras; y refleja su estado (tildada solo si están todas).
   (function(){
-    var keys = ["sync","poly","accent","inversions"];
+    var keys = ["sync","poly","accent","inversions","comping"];
     var allEl = document.getElementById("consolaHT_all");
     function syncAll(){
       if(!allEl) return;
