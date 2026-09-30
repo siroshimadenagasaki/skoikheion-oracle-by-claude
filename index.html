@@ -1038,6 +1038,18 @@
     padding:28px 24px 48px !important;
     box-sizing:border-box;
   }
+  /* ---- Piano rolls como fondo a pantalla completa (solo en Full screen de SetMusicBox) ----
+     Los rolls quedan fijos ocupando toda la ventana, detrás de todos los controles
+     (que pasan a z-index:1). Sin interacción (pointer-events:none) y atenuados para
+     que los controles se lean. El autoscroll del playhead sigue funcionando
+     (overflow-x:hidden igual permite scrollLeft por JS). */
+  #consolaCard.fs-active #consolaRollsLayer{
+    position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:0;
+    display:flex;flex-direction:column;justify-content:center;gap:10px;
+    overflow:hidden;pointer-events:none;opacity:.5;
+  }
+  #consolaCard.fs-active #consolaRollsLayer .consola-roll-wrap{overflow-x:hidden;border:none;border-radius:0;margin-bottom:0 !important;}
+  #consolaCard.fs-active #consolaContent > *:not(#consolaRollsLayer){position:relative;z-index:1;}
 </style>
 </head>
 <body>
@@ -1386,26 +1398,6 @@
         </div>
         </div>
       </div>
-      <div class="consola-field consola-instruments" title="Modo TEST: si tildás uno o más, la transposición cromática al azar (por compás y por reataque) deja de usar el rango del slider Chromatism y sortea SOLO entre los intervalos tildados acá. La dirección (Ascendente/Descendente) es global para todos — 2da m, 2da M, 3ra m, 3ra M, 4ta J y 5ta J transponen todos para el mismo lado a la vez; Descendente está tildado por defecto. Al tildar el primer intervalo, el slider Chromatism baja a 0% automáticamente (queda en 0% mientras uses esto). Destildando todos, Chromatism sigue en 0% hasta que lo subas vos a mano. No afecta el achique de subset (eso sigue atado solo a Chromatism).">
-        <div class="consola-subfield-head">
-          <label>Transposition intervals (test)</label>
-          <button type="button" class="subfield-toggle" aria-expanded="false" aria-controls="testIntervalsBody" onclick="toggleModule(this)" title="Mostrar/ocultar los intervalos de prueba"></button>
-        </div>
-        <div class="collapsible-content collapsed" id="testIntervalsBody">
-        <div class="consola-inst-row">
-          <span class="consola-inst-toggle"><input type="checkbox" id="consolaInt2m" data-semitones="1"><label for="consolaInt2m">2da m</label></span>
-          <span class="consola-inst-toggle"><input type="checkbox" id="consolaInt2M" data-semitones="2"><label for="consolaInt2M">2da M</label></span>
-          <span class="consola-inst-toggle"><input type="checkbox" id="consolaInt3m" data-semitones="3"><label for="consolaInt3m">3ra m</label></span>
-          <span class="consola-inst-toggle"><input type="checkbox" id="consolaInt3M" data-semitones="4"><label for="consolaInt3M">3ra M</label></span>
-          <span class="consola-inst-toggle"><input type="checkbox" id="consolaInt4J" data-semitones="5"><label for="consolaInt4J">4ta J</label></span>
-          <span class="consola-inst-toggle"><input type="checkbox" id="consolaInt5J" data-semitones="7"><label for="consolaInt5J">5ta J</label></span>
-        </div>
-        <div class="consola-inst-row" title="Dirección global de los intervalos tildados arriba. Son mutuamente excluyentes: tildar uno destilda el otro.">
-          <span class="consola-inst-toggle"><input type="checkbox" id="consolaIntDirUp"><label for="consolaIntDirUp">Ascendente &#8593;</label></span>
-          <span class="consola-inst-toggle"><input type="checkbox" id="consolaIntDirDown" checked><label for="consolaIntDirDown">Descendente &#8595;</label></span>
-        </div>
-        </div>
-      </div>
       <div class="consola-field consola-instruments" title="Módulo aparte del modo TEST de arriba: mientras el checkbox 'Cycles' esté tildado, cada transposición cromática al azar (por compás y por reataque) se sortea al azar entre este set de intervalos. Los sliders de intervalo son % del sorteo y suman como máximo 100% (el que subís se frena para no pasarse); lo que falta hasta 100% lo completa la transposición libre (Chromatism, con la amplitud del slider Chromatism de más arriba). Con 100% en intervalos no hay Chromatism. Si en 'Transposition intervals (test)' de arriba hay algún checkbox tildado, ESE modo manda (misma prioridad que ya tiene hoy sobre Chromatism) y Cycles no se aplica. Con Cycles destildado, la página se comporta exactamente igual que hoy.">
         <div class="consola-subfield-head">
           <span class="consola-inst-toggle"><input type="checkbox" id="consolaCyclesChk" checked><label for="consolaCyclesChk">Cycles</label></span>
@@ -1415,6 +1407,7 @@
         <div class="consola-inst-row consola-cycles-mode" title="Modo A: cada sorteo se acumula sobre el offset anterior (mismo mecanismo que el modo TEST de arriba — un recorrido continuo, tipo ciclo de quintas). Modo B: cada sorteo transpone siempre desde la tónica original del set, sin memoria del sorteo anterior. Mutuamente excluyentes. Modo A por defecto.">
           <span class="consola-inst-toggle"><input type="checkbox" id="consolaCyclesModeA" checked><label for="consolaCyclesModeA">Modo A (acumula)</label></span>
           <span class="consola-inst-toggle"><input type="checkbox" id="consolaCyclesModeB"><label for="consolaCyclesModeB">Modo B (sin acumular)</label></span>
+          <button type="button" class="chip" id="consolaCyclesResetBtn" style="padding:2px 8px;font-size:10px;" title="Pone en 0% todos los sliders de intervalo de Cycles (no toca ChangeDuration). Con todos en 0%, las transposiciones quedan solo con Chromatism.">reset</button>
         </div>
         <div class="consola-cycles-body" id="consolaCyclesBody">
           <div class="consola-cycles-line is-linked" title="ChangeDuration: cada cuánto cambia la transposición del ciclo en la Armonía. 100% = en cada ataque (como antes); 0% = cada 4 ataques; en el medio se mezclan tramos de 1 a 4 ataques (promedio 1 + 3×(1−%)). Por encima de 50% además se parten los ataques en mitades (más cambios por compás; 100% = cambio cada corchea). Default 75%. La transposición libre completa el resto de los intervalos (100% - su suma), con la amplitud del slider Chromatism de arriba.">
@@ -1702,9 +1695,11 @@
       </div>
     </div>
 
+    <div id="consolaRollsLayer">
     <div id="consolaBebopRollLabel" style="margin-bottom:6px;font-size:12px;font-weight:600;color:var(--ink-muted);padding-top:0;">🎷 bebopMelody — piano roll separado (aislado del principal)</div>
     <div class="consola-roll-wrap" id="consolaBebopRollHost" style="min-height:60px;margin-bottom:20px;"></div>
     <div class="consola-roll-wrap" id="consolaRollHost"></div>
+    </div>
 
     <div class="consola-export" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px;">
       <button type="button" class="chip" id="consolaExportMidiBtn" disabled title="Descarga el segmento actual como archivo MIDI (.mid): una pista por instrumento (armonía, dobles, bajo, melodía, moreComping, bebopMelody, batería en canal 10) con el tempo y los compases actuales.">&#11015; Export MIDI</button>
@@ -13443,38 +13438,6 @@ function runAnalysis() {
       drumEvents = buildDrumEvents(NUM_BARS);
     });
   });
-  FIXED_INTERVAL_CHK_IDS.forEach(function(id){
-    document.getElementById(id).addEventListener("change", function(){
-      if (activeFixedIntervals().length){
-        chromaVariety = 0;
-        var chromaSl = document.getElementById("consolaChromaSlider");
-        chromaSl.value = 0;
-        document.getElementById("consolaChromaVal").textContent = "0%";
-      }
-      if(state.rootChord.length) regenerateConsola();
-    });
-  });
-  // Ascendente / Descendente: mutuamente excluyentes (tildar uno destilda
-  // el otro) — currentFixedIntervalDirection() ya asume "down" si ninguno
-  // quedara tildado, pero el par de listeners de abajo evita que eso
-  // pase dejando siempre exactamente uno prendido.
-  (function(){
-    var upChk = document.getElementById("consolaIntDirUp");
-    var downChk = document.getElementById("consolaIntDirDown");
-    function onDirChange(){
-      if(state.rootChord.length && activeFixedIntervals().length) regenerateConsola();
-    }
-    upChk.addEventListener("change", function(){
-      if(this.checked) downChk.checked = false;
-      else downChk.checked = true; // no dejar los dos destildados
-      onDirChange();
-    });
-    downChk.addEventListener("change", function(){
-      if(this.checked) upChk.checked = false;
-      else upChk.checked = true; // no dejar los dos destildados
-      onDirChange();
-    });
-  })();
   // Módulo Cycles — checkbox principal: prende/apaga cyclesEnabled y
   // habilita visualmente el bloque de sliders (queda atenuado y sin
   // interacción mientras está apagado, ver .consola-cycles-body.is-disabled).
@@ -13544,6 +13507,17 @@ function runAnalysis() {
     el.addEventListener("change", function(){
       if(state.rootChord.length && cyclesEnabled) regenerateConsola();
     });
+  });
+  // Botón reset de Cycles: todos los sliders de intervalo a 0% (ChangeDuration no se toca).
+  document.getElementById("consolaCyclesResetBtn").addEventListener("click", function(){
+    CYCLES_INTERVAL_IDS.forEach(function(cfg){
+      var el = document.getElementById(cfg.id);
+      var valEl = document.getElementById(cfg.id + "Val");
+      if(el) el.value = 0;
+      if(valEl) valEl.textContent = "0%";
+    });
+    refreshCyclesTotal();
+    if(state.rootChord.length && cyclesEnabled) regenerateConsola();
   });
   // Harmony: cada casilla regenera (si hay set elegido). poly reemplaza a sync (en build).
   // "all" tilda/destilda las otras; y refleja su estado (tildada solo si están todas).
