@@ -1417,7 +1417,7 @@
           <span class="consola-inst-toggle"><input type="checkbox" id="consolaCyclesModeB"><label for="consolaCyclesModeB">Modo B (sin acumular)</label></span>
         </div>
         <div class="consola-cycles-body" id="consolaCyclesBody">
-          <div class="consola-cycles-line is-linked" title="ChangeDuration: cada cuánto cambia la transposición del ciclo en la Armonía. 100% = en cada ataque (como antes); 0% = cada 4 ataques; en el medio se mezclan tramos de 1 a 4 ataques (promedio 1 + 3×(1−%)). Default 75%. La transposición libre completa el resto de los intervalos (100% - su suma), con la amplitud del slider Chromatism de arriba.">
+          <div class="consola-cycles-line is-linked" title="ChangeDuration: cada cuánto cambia la transposición del ciclo en la Armonía. 100% = en cada ataque (como antes); 0% = cada 4 ataques; en el medio se mezclan tramos de 1 a 4 ataques (promedio 1 + 3×(1−%)). Por encima de 50% además se parten los ataques en mitades (más cambios por compás; 100% = cambio cada corchea). Default 75%. La transposición libre completa el resto de los intervalos (100% - su suma), con la amplitud del slider Chromatism de arriba.">
             <label for="consolaCycleChangeDur">ChangeDuration</label>
             <input type="range" id="consolaCycleChangeDur" min="0" max="100" value="75" step="1">
             <span class="consola-val" id="consolaCycleChangeDurVal">75%</span>
@@ -1450,6 +1450,11 @@
             <label for="consolaCycle3mDown">3ras menores descendentes</label>
             <input type="range" id="consolaCycle3mDown" min="0" max="100" value="10" step="1" data-semitones="3" data-direction="down">
             <span class="consola-val" id="consolaCycle3mDownVal">10%</span>
+          </div>
+          <div class="consola-cycles-line">
+            <label for="consolaCycle3mUp">3ras menores ascendentes</label>
+            <input type="range" id="consolaCycle3mUp" min="0" max="100" value="0" step="1" data-semitones="3" data-direction="up">
+            <span class="consola-val" id="consolaCycle3mUpVal">0%</span>
           </div>
           <div class="consola-cycles-line">
             <label for="consolaCycle3MDown">3ras mayores descendentes</label>
@@ -9217,6 +9222,7 @@ function runAnalysis() {
     {id:"consolaCycle2MDown", semitones:2, direction:"down"},
     {id:"consolaCycle2MUp",   semitones:2, direction:"up"},
     {id:"consolaCycle3mDown", semitones:3, direction:"down"},
+    {id:"consolaCycle3mUp",   semitones:3, direction:"up"},
     {id:"consolaCycle3MDown", semitones:4, direction:"down"},
     {id:"consolaCycle3MUp",   semitones:4, direction:"up"},
     {id:"consolaCycle4JDown", semitones:5, direction:"down"},
@@ -9270,7 +9276,7 @@ function runAnalysis() {
      y sin intervalos del modo TEST; el resto de las llamadas (progresión de
      referencia por compás, etc.) no cambia. */
   var CYCLEHOLD = (function(){
-    var active = false, value = 0, counter = 0;
+    var active = false, value = 0, counter = 0, SPLIT_MIN = 0.5;
     function enabled(){ return cyclesEnabled && !activeFixedIntervals().length; }
     function slider(){
       var el = document.getElementById("consolaCycleChangeDur");
@@ -9292,7 +9298,24 @@ function runAnalysis() {
       },
       isActive: function(){ return active; },
       value: function(){ return value; },
-      runLength: runLength
+      runLength: runLength,
+      /* Por encima de 50%, los ataques se PARTEN en mitades (mín. SPLIT_MIN beats)
+         para que haya más cambios de transposición por compás: prob. por nivel =
+         (slider-50%)*2 → 50% o menos = sin cambios; 100% = todo ataque queda en
+         figuras de SPLIT_MIN (corcheas) = cambio cada media negra. */
+      splitProb: function(){ return enabled() ? Math.max(0, (slider() - 0.5) * 2) : 0; },
+      splitCell: function(cell){
+        var p = this.splitProb();
+        if(p <= 0) return cell;
+        var out = [];
+        cell.forEach(function(d){
+          (function go(x){
+            if(x / 2 >= SPLIT_MIN - 1e-9 && Math.random() < p){ go(x/2); go(x/2); }
+            else out.push(x);
+          })(d);
+        });
+        return out;
+      }
     };
   })();
   window.CYCLEHOLD = CYCLEHOLD;
@@ -9875,6 +9898,12 @@ function runAnalysis() {
     cellsByBar = cellsByBar.map(function(cell, bar){
       return HARMONICSPACE.isPeaceBar(bar) ? [4] : cell;
     });
+    // ChangeDuration > 50%: más ataques (y por ende más cambios) por compás; los compases de respiro no se tocan.
+    if (CYCLEHOLD.splitProb() > 0){
+      cellsByBar = cellsByBar.map(function(cell, bar){
+        return HARMONICSPACE.isPeaceBar(bar) ? cell : CYCLEHOLD.splitCell(cell);
+      });
+    }
     var events = [];
     var slotChords = [];
     var prevCombo = null;
