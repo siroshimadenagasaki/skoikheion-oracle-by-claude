@@ -1186,7 +1186,7 @@
           </div>
           <div class="ivector-target-actions">
             <button type="button" class="chip" id="ivectorEditBtn" title="Habilita tildar a mano cada clase de intervalo (y editar los números), sin afectar la lectura en vivo del reloj">Editar objetivo</button>
-            <button type="button" class="chip primary" id="ivectorToMemoryBtn" disabled title="Llena los 5 casilleros de Multi Sets Input con sets al azar cuyo vector tenga SOLO las clases de intervalo tildadas (el conteo no importa)">To Memory</button>
+            <button type="button" class="chip primary" id="ivectorToMemoryBtn" disabled title="Llena los 5 casilleros de Multi Sets Input con sets al azar cuyo vector tenga AL MENOS las clases de intervalo tildadas (1 o más de cada una; el conteo no importa)">To Memory</button>
           </div>
           <div class="ivector-status" id="ivectorStatus"></div>
           <button type="button" class="ivector-link" id="ivectorAnexoLink">Ver en Anexo 1 · Tabla de Sets</button>
@@ -6093,9 +6093,11 @@ window.IVECTOR_EDIT = (function () {
     c.chk.addEventListener("change", () => {
       if (!editing) return;
       if (c.count) {
+        // To Memory solo mira el tilde (al menos 1): al tildar no se inventa
+        // un "1" en la cantidad, queda vacío con placeholder "≥1".
         const n = parseInt(c.count.value, 10);
-        if (c.chk.checked && !(n > 0)) c.count.value = "1";
-        if (!c.chk.checked) c.count.value = "0";
+        if (c.chk.checked && !(n > 0)) { c.count.value = ""; c.count.placeholder = "\u22651"; }
+        if (!c.chk.checked) { c.count.value = "0"; c.count.placeholder = ""; }
       }
       if (c.cell) c.cell.classList.toggle("active", c.chk.checked);
     });
@@ -8929,22 +8931,23 @@ function runAnalysis() {
       return { ok: true, message: msg };
     }
     // To Memory por clases de intervalo tildadas: elige al azar hasta 5 sets
-    // (entre los mismos 4082 candidatos) cuyo vector tenga >0 EXACTAMENTE en
-    // las clases tildadas y 0 en el resto. El conteo no importa.
+    // (entre los mismos 4082 candidatos) cuyo vector tenga >0 en TODAS las
+    // clases tildadas (al menos 1 de cada una). Las no tildadas no se filtran
+    // (pueden tener cualquier cantidad). El conteo exacto no importa.
     function fillByMask(mask){
       var names = ["m2","M2","m3","M3","4J","TT"];
       var chosen = [];
       for(var i = 0; i < 6; i++) if(mask && mask[i]) chosen.push(i);
       if(!chosen.length) return { ok: false, message: "Tild\u00e1 al menos una clase de intervalo." };
       var matches = ivectorPool().filter(function(c){
-        for(var i = 0; i < 6; i++){ if(((c.vec[i] || 0) > 0) !== !!mask[i]) return false; }
+        for(var i = 0; i < 6; i++){ if(mask[i] && !((c.vec[i] || 0) > 0)) return false; }
         return true;
       });
       var label = chosen.map(function(i){ return names[i]; }).join(" + ");
-      if(!matches.length) return { ok: false, message: "Ning\u00fan set tiene exactamente estas clases (" + label + ")." };
+      if(!matches.length) return { ok: false, message: "Ning\u00fan set tiene al menos estas clases (" + label + ")." };
       for(var b = matches.length - 1; b > 0; b--){ var j = randomInt(0, b); var t = matches[b]; matches[b] = matches[j]; matches[j] = t; }
       slots = matches.slice(0, MAX_SLOTS).map(function(c){ return c.pcs; });
-      var msg = "To Memory: " + slots.length + " set" + (slots.length === 1 ? "" : "s") + " solo con " + label + " (" + matches.length + " posibles).";
+      var msg = "To Memory: " + slots.length + " set" + (slots.length === 1 ? "" : "s") + " con al menos " + label + " (" + matches.length + " posibles).";
       status(msg);
       active = true;
       resetting = true;
