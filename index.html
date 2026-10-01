@@ -1162,7 +1162,7 @@
         <div class="clock-center clock-center-static" id="pianoSummary"></div>
       </div>
       <div class="clock-actions">
-        <button class="chip primary" id="creaturaBtn" type="button" title="Corre sola la secuencia: sortea Chromatism (2–40%), Chords (20–60%), Triplets (0–100%), Melodic/Harmonic/RythmSpace (0–100%) y Rapid runs (0–30%) → Random Fill (2–3/2–4/2–5 notas al azar, modo Mezcla) → Compose → tilda Mix time signatures → Detener → espera 2s → 🔀 Regenerar. Una sola pasada por click.">🪄 creatura</button>
+        <button class="chip primary" id="creaturaBtn" type="button" title="Corre sola la secuencia: sortea Chromatism (2–40%), Chords (20–60%), Triplets (0–100%), Melodic/Harmonic/RythmSpace (0–100%) y Rapid runs (0–30%) → Random Fill (5 o 2 sets al azar; 2–3/2–4/2–5 notas, modo Mezcla) → Compose → tilda Mix time signatures → Detener → espera 2s → 🔀 Regenerar. Una sola pasada por click.">🪄 creatura</button>
         <button class="chip" id="composeBtn" type="button" title="Toca el segmento de 12 compases de SetMusicBox con las notas actuales">🎹 Compose</button>
         <button class="chip" id="clearBtn">Limpiar</button>
         <button class="chip" id="multiSetsMemBtn2" type="button" disabled title="Mismo botón que To Memory de Multi Sets Input (copia acá para no tener que abrir esa tarjeta): guarda el set actual del reloj/piano en el próximo casillero libre y resetea el reloj. Entre paréntesis, cuántos sets van guardados.">To Memory (0/5)</button>
@@ -8852,17 +8852,18 @@ function runAnalysis() {
       for(var i = pool.length-1; i > 0; i--){ var j = randomInt(0, i); var t = pool[i]; pool[i] = pool[j]; pool[j] = t; }
       return pool.slice(0, k).sort(function(a,b){ return a-b; });
     }
-    function randomFill(){
+    function randomFill(count){
+      var cnt = (typeof count === "number" && count >= 1 && count <= MAX_SLOTS) ? count : MAX_SLOTS; // el click pasa un Event: se ignora y llena los 5
       var maxN = randomMaxNotes();
       var made = [], seen = {};
-      while(made.length < MAX_SLOTS){ // con maxN >= 3 hay 66+ sets posibles: no hay riesgo de quedarse sin distintos
+      while(made.length < cnt){ // con maxN >= 3 hay 66+ sets posibles: no hay riesgo de quedarse sin distintos
         var pcs = randomSet(maxN), key = pcs.join(",");
         if(seen[key]) continue;
         seen[key] = true;
         made.push(pcs);
       }
       slots = made;
-      status("Random Fill: 5 sets de 2\u2013" + maxN + " notas.");
+      status("Random Fill: " + cnt + " sets de 2\u2013" + maxN + " notas.");
       active = true;
       resetting = true;
       try{ clearNotes(); }finally{ resetting = false; }
@@ -8971,7 +8972,8 @@ function runAnalysis() {
       if(el("multiSetsMemBtn2")) el("multiSetsMemBtn2").addEventListener("click", toMemory);
       el("multiSetsComposeBtn").addEventListener("click", compose);
       el("multiSetsClearBtn").addEventListener("click", clearMemory);
-      if(el("multiSetsRandomFillBtn")) el("multiSetsRandomFillBtn").addEventListener("click", randomFill);
+      if(el("multiSetsRandomFillBtn")) el("multiSetsRandomFillBtn").addEventListener("click", function(){ randomFill(); });
+      window.__multiSetsRandomFillCount = randomFill; // creatura: llena solo N casilleros (1-5)
       if(el("multiSetsRandomMax")) el("multiSetsRandomMax").addEventListener("input", function(){
         var lab = el("multiSetsRandomMaxVal");
         if(lab) lab.textContent = "2\u2013" + randomMaxNotes() + " notas";
@@ -14744,9 +14746,12 @@ function runAnalysis() {
           maxSlider.dispatchEvent(new Event("input", { bubbles: true }));
         }
         setChecked("multiSetsModeMixed", true);
-        clickIfEnabled("multiSetsRandomFillBtn");
+        // Cantidad de sets al azar: 5 o 2 (multi set).
+        var nSets = Math.random() < 0.5 ? 5 : 2;
+        if(typeof window.__multiSetsRandomFillCount === "function") window.__multiSetsRandomFillCount(nSets);
+        else clickIfEnabled("multiSetsRandomFillBtn");
 
-        // 2) Compose: arma los 12 compases desde esos 5 sets y arranca
+        // 2) Compose: arma los 12 compases desde esos 5 o 2 sets y arranca
         // la reproducción (mismo botón 🎲 Compose de Multi Sets Input).
         clickIfEnabled("multiSetsComposeBtn");
 
