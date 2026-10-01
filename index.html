@@ -1401,6 +1401,7 @@
           <span class="consola-inst-toggle" title="Velocidad: 112 primer ataque, 88 tiempos, 62 contratiempos."><input type="checkbox" id="consolaHT_accent"><label for="consolaHT_accent">accent</label></span>
           <span class="consola-inst-toggle" title="Cada ataque toca una inversión del set (fundamental, 1ª, 2ª…), con otra disposición de las voces (cerrada/abierta), a veces con una voz duplicada a la octava. Registro acotado: grave entre G3 y F#4, rango total hasta octava y quinta. Nunca repite la misma inversión seguida."><input type="checkbox" id="consolaHT_inversions"><label for="consolaHT_inversions">inversions</label></span>
           <span class="consola-inst-toggle" title="Rythmicarmonies: el mismo acorde se reataca con ritmos aleatorios (distintos en cada compás) hasta que llega el próximo acorde, en vez de tocarse una sola vez. Usa el mismo voicing y, mientras el acorde no cambia, a veces reataca otra inversión o un subconjunto del mismo set; además del slider Chord simultaneity. Reemplaza a sync y poly."><input type="checkbox" id="consolaHT_rythmicarmonies"><label for="consolaHT_rythmicarmonies">rythmicarmonies</label></span>
+          <span class="consola-inst-toggle" title="In3rds: solo define QUÉ notas suenan en cada ataque (no el ritmo). En sets de 5+ notas toca acordes apilados en terceras del propio set (tríadas o 7mas, como el módulo Grados en Terceras), de un grado al azar y distinto en cada ataque, en vez del set entero. Con sets de menos de 5 notas no cambia nada. Se combina con inversions, subset, sync, etc."><input type="checkbox" id="consolaHT_in3rds"><label for="consolaHT_in3rds">in3rds</label></span>
         </div>
         </div>
       </div>
@@ -9615,13 +9616,14 @@ function runAnalysis() {
      No aplica a Normalito. Sin sync/poly, las capas que necesitan varios
      ataques (accent/artic/subset/rests/swing) tocan negras (corcheas con
      swing).
+     in3rds: lo que suena son acordes en terceras del set (5+ notas), solo voicing.
      Casillas: base · sync · poly (reemplaza a sync) · accent · artic ·
      subset · rests · swing · inversions.
      ================================================================ */
   var HARMTEST = (function(){
     var IDS = { base:"consolaHT_base", sync:"consolaHT_sync", poly:"consolaHT_poly", accent:"consolaHT_accent",
                 artic:"consolaHT_artic", subset:"consolaHT_subset", rests:"consolaHT_rests", swing:"consolaHT_swing",
-                inversions:"consolaHT_inversions", rythmicarmonies:"consolaHT_rythmicarmonies" };
+                inversions:"consolaHT_inversions", rythmicarmonies:"consolaHT_rythmicarmonies", in3rds:"consolaHT_in3rds" };
     function on(k){ var e = document.getElementById(IDS[k]); return !!(e && e.checked); }
     function active(){ return Object.keys(IDS).some(on); }
     var SYNC_POOL = [ [1.5,1.5,1], [1,1.5,1.5], [1.5,1,1.5], [0.5,1.5,1.5,0.5],
@@ -9668,6 +9670,26 @@ function runAnalysis() {
         if(voiced.indexOf(dup) === -1 && dup - bass <= INV_MAX_SPAN){ voiced.push(dup); voiced.sort(function(a,b){ return a-b; }); }
       }
       return { voiced: voiced, inv: inv };
+    }
+    // ---- in3rds: acorde apilado en terceras DEL set (misma lógica que gtApilar de "Grados en Terceras") ----
+    // El set (ordenado desde su nota más grave) es la "escala"; se elige un grado al azar y se apilan
+    // posiciones i, i+2, i+4(, i+6) con wrap a la octava. Solo para sets de 5+ notas distintas.
+    // Devuelve null si no aplica, o { notes, deg } (notes ascendente, en el registro del set).
+    function thirdsStack(rc, prevDeg){
+      var lowest = Math.min.apply(null, rc);
+      var scale = uniquePcs(rc).map(function(pc){ return { pc: pc, off: mod12(pc - lowest) }; })
+        .sort(function(a, b){ return a.off - b.off; });
+      var n = scale.length;
+      if(n < 5) return null;
+      var maxDistinct = (n % 2 === 1) ? n : n / 2; // con n par, i+2k repite tras n/2 notas
+      var size = Math.min(randomInt(3, 4), maxDistinct);
+      var deg, g = 0; do { deg = randomInt(0, n-1); g++; } while(deg === prevDeg && g < 20);
+      var notes = [];
+      for(var k = 0; k < size; k++){
+        var pos = deg + 2*k;
+        notes.push(lowest + scale[pos % n].off + 12*Math.floor(pos / n));
+      }
+      return { notes: notes.sort(function(a, b){ return a - b; }), deg: deg };
     }
     function build(rootChord, numBars){
       var total = RHYTHM.total();
@@ -9720,7 +9742,7 @@ function runAnalysis() {
       // 3) eventos + slots
       var events = [], slotChords = [];
       for(var sb = 0; sb < numBars; sb++) slotChords.push([]);
-      var prevInv = -1, rhKey = null, rhInv = 0;
+      var prevInv = -1, rhKey = null, rhInv = 0, prevDeg3 = -1, prevInv3 = -1;
       CYCLEHOLD.reset();
       var htTranspose = cyclesEnabled || activeFixedIntervals().length > 0; // Cycles (o intervalos TEST) tildados: la armonía se transpone por ataque, como el motor libre
       attacks.forEach(function(a, i){
@@ -9751,6 +9773,16 @@ function runAnalysis() {
             rhKey = rcKey;
           }
         }
+        // in3rds: lo que SUENA es un acorde en terceras del set; el acorde vigente (slots, bajo, melodía, cifrado) sigue siendo el set completo
+        var in3Sub = null;
+        if(on("in3rds")){
+          var st = thirdsStack(rc, prevDeg3);
+          if(st){
+            prevDeg3 = st.deg;
+            in3Sub = st.notes;
+            if(on("inversions")){ var iv3 = invVoicing(in3Sub, prevInv3); in3Sub = iv3.voiced; prevInv3 = iv3.inv; }
+          }
+        }
         // slots (con ligadura: si el ataque cruza la barra, el resto queda en el compás siguiente)
         var remaining = a.d, bi = a.bar, so = a.rel;
         while(remaining > 1e-9 && bi < numBars){
@@ -9767,9 +9799,9 @@ function runAnalysis() {
         endEff = Math.min(endEff, total);
         var dur = Math.max(0.05, endEff - startEff);
         if(on("artic") && (i % 2 === 1)) dur = Math.max(0.05, dur * 0.3); // staccato en los impares, legato en los pares
-        var notes = rhSub || voiced;
+        var notes = in3Sub || rhSub || voiced;
         if(on("subset") && !a.strong){
-          var pool = voiced.slice(), pick = [], want = randomInt(1, Math.min(2, pool.length));
+          var pool = (in3Sub || voiced).slice(), pick = [], want = randomInt(1, Math.min(2, pool.length));
           while(pick.length < want){ pick.push(pool.splice(randomInt(0, pool.length-1), 1)[0]); }
           notes = pick.sort(function(x,y){ return x-y; });
         }
@@ -13618,7 +13650,7 @@ function runAnalysis() {
   // Harmony: cada casilla regenera (si hay set elegido). poly reemplaza a sync (en build).
   // "all" tilda/destilda las otras; y refleja su estado (tildada solo si están todas).
   (function(){
-    var keys = ["sync","poly","accent","inversions","rythmicarmonies"];
+    var keys = ["sync","poly","accent","inversions","rythmicarmonies","in3rds"];
     var allEl = document.getElementById("consolaHT_all");
     function syncAll(){
       if(!allEl) return;
