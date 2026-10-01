@@ -1038,33 +1038,31 @@
     padding:28px 24px 48px !important;
     box-sizing:border-box;
   }
-  /* ---- Piano rolls como fondo a pantalla completa (solo en Full screen de SetMusicBox) ----
-     Los rolls quedan fijos ocupando toda la ventana, detrás de todos los controles
-     (que pasan a z-index:1). Sin interacción (pointer-events:none) y atenuados para
-     que los controles se lean. El autoscroll del playhead sigue funcionando
+  /* ---- Piano rolls como fondo fijo a pantalla completa (siempre) ----
+     La capa vive directo en <body>, detrás de .wrap. Solo visualización
+     (pointer-events:none). El autoscroll del playhead sigue funcionando
      (overflow-x:hidden igual permite scrollLeft por JS). */
-  #consolaCard.fs-active #consolaRollsLayer{
+  #consolaRollsLayer{
     position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:0;
     display:flex;flex-direction:column;justify-content:center;gap:10px;
-    overflow:hidden;pointer-events:none;opacity:.7;
+    overflow:hidden;pointer-events:none;opacity:.45;
   }
-  /* solo visualización: sin etiqueta, sin mensaje vacío del roll de bebop */
-  #consolaCard.fs-active #consolaBebopRollLabel{display:none;}
-  #consolaCard.fs-active #consolaRollsLayer .consola-empty{display:none;}
-  #consolaCard.fs-active #consolaRollsLayer .consola-roll-wrap{background-image:none;background-color:transparent;}
-  /* controles translúcidos para que el roll se vea detrás */
-  #consolaCard.fs-active .consola-controls,
-  #consolaCard.fs-active .mini-mixer,
-  #consolaCard.fs-active .consola-readout,
-  #consolaCard.fs-active .consola-field,
-  #consolaCard.fs-active .collapsible-content .collapsible-content{
-    background-color:rgba(20,18,29,.55) !important;background-image:none !important;
+  #consolaBebopRollLabel{display:none;}
+  #consolaRollsLayer .consola-empty{display:none;}
+  #consolaRollsLayer .consola-roll-wrap{overflow-x:hidden;border:none;border-radius:0;margin-bottom:0 !important;background-image:none;background-color:transparent;}
+  .wrap{position:relative;z-index:1;}
+  /* paneles translúcidos para que el roll se vea detrás */
+  .overlay-card,
+  .consola-controls,
+  .mini-mixer,
+  .consola-readout,
+  .consola-field{
+    background-color:rgba(20,18,29,.5) !important;background-image:none !important;
   }
-  #consolaCard.fs-active .consola-status,
-  #consolaCard.fs-active .consola-export ~ *{text-shadow:0 1px 3px #000;}
-  #consolaCard.fs-active .consola-field .consola-field{background-color:transparent !important;}
-  #consolaCard.fs-active #consolaRollsLayer .consola-roll-wrap{overflow-x:hidden;border:none;border-radius:0;margin-bottom:0 !important;}
-  #consolaCard.fs-active #consolaContent > *:not(#consolaRollsLayer){position:relative;z-index:1;}
+  .consola-field .consola-field{background-color:transparent !important;}
+  /* en Full screen el card pasa a ser transparente para dejar ver el fondo */
+  .fs-active{background:transparent !important;}
+  .consola-status{text-shadow:0 1px 3px #000;}
 </style>
 </head>
 <body>
@@ -1122,6 +1120,13 @@
     <button data-target="projectRulesCard" title="Ir a Reglas del Proyecto">Reglas del Proyecto</button>
   </div>
 </div>
+
+<!-- Piano rolls de SetMusicBox: fondo fijo a pantalla completa, siempre -->
+    <div id="consolaRollsLayer">
+    <div id="consolaBebopRollLabel" style="margin-bottom:6px;font-size:12px;font-weight:600;color:var(--ink-muted);padding-top:0;">🎷 bebopMelody — piano roll separado (aislado del principal)</div>
+    <div class="consola-roll-wrap" id="consolaBebopRollHost" style="min-height:60px;margin-bottom:20px;"></div>
+    <div class="consola-roll-wrap" id="consolaRollHost"></div>
+    </div>
 
 <div class="wrap">
   <header>
@@ -1710,11 +1715,6 @@
       </div>
     </div>
 
-    <div id="consolaRollsLayer">
-    <div id="consolaBebopRollLabel" style="margin-bottom:6px;font-size:12px;font-weight:600;color:var(--ink-muted);padding-top:0;">🎷 bebopMelody — piano roll separado (aislado del principal)</div>
-    <div class="consola-roll-wrap" id="consolaBebopRollHost" style="min-height:60px;margin-bottom:20px;"></div>
-    <div class="consola-roll-wrap" id="consolaRollHost"></div>
-    </div>
 
     <div class="consola-export" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px;">
       <button type="button" class="chip" id="consolaExportMidiBtn" disabled title="Descarga el segmento actual como archivo MIDI (.mid): una pista por instrumento (armonía, dobles, bajo, melodía, moreComping, bebopMelody, batería en canal 10) con el tempo y los compases actuales.">&#11015; Export MIDI</button>
