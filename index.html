@@ -12827,6 +12827,31 @@ function runAnalysis() {
     return ab;
   }
   function yieldToUI(){ return new Promise(function(r){ setTimeout(r, 0); }); }
+  // Los SoundFonts se bajan en segundo plano. En vivo, una nota cuyo .sf2 todavía
+  // no llegó cae al sintetizador y la vuelta siguiente ya suena bien; en
+  // prerender el audio se congela una sola vez, así que si se renderiza con
+  // un .sf2 a medio bajar queda con otro timbre (o distinto según cuándo se
+  // apretó Reproducir: "a veces anda, a veces no"). Por eso antes de
+  // renderizar se espera a que terminen de bajar los .sf2 de los presets en uso.
+  var PR_PRESET_OF_TRACK = { chord:"harmony", chordDouble:"chordDouble", bass:"bass", melody:"melody", melodyDouble:"melodyDouble", drum:"drum", comping2:"comping2", bebop:"bebop" };
+  function prPresetLoading(key){
+    if(!key || key === "mute") return false;
+    if(key.indexOf("sf:") === 0){
+      var id = key.split(":")[1];
+      for(var i = 0; i < sfExtraFiles.length; i++){
+        if(sfExtraFiles[i].id === id) return sfStateByUrl[sfExtraFiles[i].url] === "loading";
+      }
+      return false;
+    }
+    var hk = HIFI_ALIAS_KEY[key] || key;
+    if(hifiEnabled && hifiStateByKey[hk] === "loading") return true;
+    if(SF_LEGACY_FILES[key]) return sfStateByUrl[sfLegacyUrl(key)] === "loading";
+    return false;
+  }
+  function prFontsLoading(tracks){
+    if(sf2State === "loading") return true;
+    return tracks.some(function(tr){ return prPresetLoading(mixPresets[PR_PRESET_OF_TRACK[tr]]); });
+  }
 
   function startPlaybackRendered(){
     var ctx = getAudioCtx(); // síncrono, dentro del gesto del usuario (iOS)
@@ -12846,6 +12871,12 @@ function runAnalysis() {
     var bufs = {};
     (async function(){
       try{
+        var waitStart = performance.now();
+        while(prFontsLoading(tracks) && performance.now() - waitStart < 20000){
+          prStatus("⏳ Esperando SoundFonts…");
+          await new Promise(function(r){ setTimeout(r, 200); });
+          if(token !== prToken) return;
+        }
         for(var k = 0; k < tracks.length; k++){
           prStatus("⏳ Renderizando " + (k + 1) + "/" + tracks.length + "…");
           await yieldToUI();
