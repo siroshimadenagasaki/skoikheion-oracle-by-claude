@@ -1206,6 +1206,11 @@
           </div>
         </div>
       </div>
+      <div class="consola-field consola-loop prerender-field" style="margin-top:10px;" title="Renderiza cada pista a audio antes de sonar y reproduce solo buffers (sin cortes en iPhone). Destildado = modo anterior en vivo, nota por nota. Cambiar instrumentos a mitad de reproducción se escucha al volver a darle Reproducir.">
+        <input type="checkbox" id="consolaPrerenderChk">
+        <label for="consolaPrerenderChk">⚡ Prerender</label>
+        <span class="consola-val" id="consolaPrerenderStatus"></span>
+      </div>
     </div>
     <div class="clock-card multiset-card" id="multiSetsCard">
       <div class="multiset-head">
@@ -1365,11 +1370,6 @@
       <div class="consola-field consola-loop">
         <input type="checkbox" id="consolaLoopChk" checked>
         <label for="consolaLoopChk">Loop</label>
-      </div>
-      <div class="consola-field consola-loop" title="Renderiza cada pista a audio antes de sonar y reproduce solo buffers (sin cortes en iPhone). Destildado = modo anterior en vivo, nota por nota. Cambiar instrumentos a mitad de reproducción se escucha al volver a darle Reproducir.">
-        <input type="checkbox" id="consolaPrerenderChk">
-        <label for="consolaPrerenderChk">⚡ Prerender</label>
-        <span class="consola-val" id="consolaPrerenderStatus"></span>
       </div>
       <div class="consola-field consola-loop" title="Duplica la duración del segmento a 24 compases en vez de los 12 de siempre — mismo motor, mismas reglas (Chromatism, Chords, Jazz, MelodicSpace/HarmonicSpace/RythmSpace, Swing Drums, etc.), el doble de largo. Se aplica en el próximo Reproducir/Regenerar/Normalito.">
         <input type="checkbox" id="consola24BarsChk" checked>
