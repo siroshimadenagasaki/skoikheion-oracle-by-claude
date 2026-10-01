@@ -1655,6 +1655,7 @@
         <button class="chip" id="presetBaroqueBtn" type="button" title="Set de presets: Armonía → Clavecín, Bajo → Fagot, Melodía → Flauta, Melodía doblada → Clavecín (prende el doblaje).">Baroque</button>
         <button class="chip" id="presetJazzBtn" type="button" title="Set de presets: Armonía → Piano, Doblar armonía → Mute, Melodía → Sax soprano, Doblar melodía → Mute, Bajo → Bajo original (sintetizado). Además prende Swing Drums (groove real de jazz, en vez del patrón de batería aleatorio).">Jazz traditional</button>
         <button class="chip" id="presetJazzFusionBtn" type="button" title="Copia de Jazz traditional con Armonía → Piano eléctrico y Melodía → Ethan's Bassoon (Soundfonts v2/Extra v2/bassoon.sf2). Doblar armonía → Mute, Doblar melodía → Mute, Bajo → Bajo original (sintetizado). Además prende Swing Drums.">Jazz fusion</button>
+        <button class="chip" id="presetBrassSoloBtn" type="button" title="Set de presets tipo SoloPiano pero con metales: Armonía → Metales (Brass Section), Melodía → French Horns, Bajo → Metales. Muda Batería, moreComping, bebopMelody, Doblar melodía y Doblar armonía (gain 0).">Brass solo</button>
         <button class="chip" type="button" id="consolaSoloPianoBtn" title="Modo solo: pone Armonía, Melodía y Bajo en preset Piano, y muda Batería/moreComping/bebopMelody/Doblar melodía/Doblar armonía — sin tocar ningún otro ajuste. Volvé a apretarlo para restaurar los presets y volúmenes que tenías antes.">🎹 SoloPiano</button>
       </div>
       <div class="mix-presets">
@@ -5344,7 +5345,7 @@ const SF_LEGACY_FILES = {
 function sfLegacyUrl(key) { const l = SF_LEGACY_FILES[key]; return l ? sfUrlForPath(SF_ROOT_DIR + "/" + l.file) : null; }
 function sfLegacyId(key) { const l = SF_LEGACY_FILES[key]; return l ? "x_" + encodeURIComponent(l.file) : null; }
 // Otros .sf2 que usan los estilos (Jazz fusion → "sf:x_bassoon.sf2:0:0").
-const SF_ALWAYS_FILES = ["Extra v2/bassoon.sf2"];
+const SF_ALWAYS_FILES = ["Extra v2/bassoon.sf2", "Extra v2/Brass & Strings/French_Horns.sf2"];
 // Key "sf:..." de un archivo (ruta relativa a SF_ROOT_DIR) — para usar en PRESET_SETS.
 function sfKeyForFile(file, bank, program) { return "sf:x_" + encodeURIComponent(file) + ":" + (bank || 0) + ":" + (program || 0); }
 // Archivos que se bajan solos al abrir la página: defaults + clásicos.
@@ -13911,6 +13912,11 @@ function runAnalysis() {
     // data-preset-set="esaKey" (o cablearlo a mano como acá abajo).
     var PRESET_SETS = {
       baroque:    { harmony: "harpsichord", bass: "bassoon", melody: "flute",  melodyDouble: "harpsichord", gains: { drum: 0 } },
+      // Brass solo = como SoloPiano pero con metales: trío Armonía/Melodía/Bajo
+      // en Metales (brass1) / French Horns (Extra v2/Brass & Strings/French_Horns.sf2,
+      // único preset banco 0 / programa 0) / Metales, y el resto de las pistas a 0%.
+      brasssolo:  { harmony: "brass1", melody: sfKeyForFile("Extra v2/Brass & Strings/French_Horns.sf2", 0, 0), bass: "brass1",
+                    gains: { drum: 0, melodyDouble: 0, chordDouble: 0, comping2: 0, bebop: 0 } },
       jazz:       { harmony: "piano", chordDouble: "mute", melody: "sopranoSax", melodyDouble: "mute", bass: "synthBass", swingDrums: true },
       // Jazz fusion = copia de Jazz traditional con Armonía → Piano
       // eléctrico y Melodía → "Ethan's Bassoon" (Soundfonts v2/Extra v2/bassoon.sf2,
@@ -13961,6 +13967,8 @@ function runAnalysis() {
     }
     var baroqueBtn = document.getElementById("presetBaroqueBtn");
     if(baroqueBtn) baroqueBtn.addEventListener("click", function(){ applyPresetSet("baroque"); });
+    var brassSoloBtn = document.getElementById("presetBrassSoloBtn");
+    if(brassSoloBtn) brassSoloBtn.addEventListener("click", function(){ applyPresetSet("brasssolo"); });
     var jazzBtn = document.getElementById("presetJazzBtn");
     if(jazzBtn) jazzBtn.addEventListener("click", function(){ applyPresetSet("jazz"); });
     var jazzFusionBtn = document.getElementById("presetJazzFusionBtn");
