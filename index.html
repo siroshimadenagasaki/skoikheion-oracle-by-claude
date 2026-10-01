@@ -1403,7 +1403,7 @@
           <span class="consola-inst-toggle" title="Velocidad: 112 primer ataque, 88 tiempos, 62 contratiempos."><input type="checkbox" id="consolaHT_accent"><label for="consolaHT_accent">accent</label></span>
           <span class="consola-inst-toggle" title="Cada ataque toca una inversión del set (fundamental, 1ª, 2ª…), con otra disposición de las voces (cerrada/abierta), a veces con una voz duplicada a la octava. Registro acotado: grave entre G3 y F#4, rango total hasta octava y quinta. Nunca repite la misma inversión seguida."><input type="checkbox" id="consolaHT_inversions"><label for="consolaHT_inversions">inversions</label></span>
           <span class="consola-inst-toggle" title="Rythmicarmonies: el mismo acorde se reataca con ritmos aleatorios (distintos en cada compás) hasta que llega el próximo acorde, en vez de tocarse una sola vez. Usa el mismo voicing y, mientras el acorde no cambia, a veces reataca otra inversión o un subconjunto del mismo set; además del slider Chord simultaneity. Reemplaza a sync y poly."><input type="checkbox" id="consolaHT_rythmicarmonies"><label for="consolaHT_rythmicarmonies">rythmicarmonies</label></span>
-          <span class="consola-inst-toggle" title="In3rds: solo define QUÉ notas suenan en cada ataque (no el ritmo). En sets de 5+ notas toca acordes apilados en terceras del propio set (tríadas o 7mas, como el módulo Grados en Terceras), de un grado al azar y distinto en cada ataque, en vez del set entero. Con sets de menos de 5 notas no cambia nada. Se combina con inversions, subset, sync, etc."><input type="checkbox" id="consolaHT_in3rds"><label for="consolaHT_in3rds">in3rds</label></span>
+          <span class="consola-inst-toggle" title="In3rds: en sets de 5+ notas, en vez del set entero toca acordes en bloque de 4 notas apilados en terceras del propio set, de abajo para arriba (como el módulo Grados en Terceras: C E G B, D F A C…), de un grado al azar y distinto en cada ataque. Solo, toca 2 por compás dentro del mismo acorde; con sync/poly/rythmicarmonies etc. toca uno por ataque. Con sets de menos de 5 notas no cambia nada. Se combina con inversions, subset, sync, etc."><input type="checkbox" id="consolaHT_in3rds"><label for="consolaHT_in3rds">in3rds</label></span>
         </div>
         </div>
       </div>
@@ -9684,7 +9684,7 @@ function runAnalysis() {
       var n = scale.length;
       if(n < 5) return null;
       var maxDistinct = (n % 2 === 1) ? n : n / 2; // con n par, i+2k repite tras n/2 notas
-      var size = Math.min(randomInt(3, 4), maxDistinct);
+      var size = Math.min(4, maxDistinct); // acordes de 4 notas en terceras (7mas del set); con n par y chico, lo máximo que da
       var deg, g = 0; do { deg = randomInt(0, n-1); g++; } while(deg === prevDeg && g < 20);
       var notes = [];
       for(var k = 0; k < size; k++){
@@ -9723,6 +9723,7 @@ function runAnalysis() {
               prevSync = pi; cell = SYNC_POOL[pi];
             } else cell = genericBarCell(barLen[bar], RHYTHM.compound(bar), 0.7);
           } else if(multi) cell = stepCell(barLen[bar], on("swing") ? 0.5 : 1);
+          else if(on("in3rds") && uniquePcs(MULTISETS.rootForAttack(bar, rootChord)).length >= 5) cell = [barLen[bar]/2, barLen[bar]/2]; // in3rds solo: dos acordes en terceras (en bloque) dentro del mismo acorde, p. ej. C E G B | D F A C
           else cell = [barLen[bar]];
           var off = 0;
           cell.forEach(function(d){ attacks.push({t:barStart[bar] + off, d:d}); off += d; });
