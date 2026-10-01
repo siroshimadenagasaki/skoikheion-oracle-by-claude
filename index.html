@@ -1162,7 +1162,7 @@
         <div class="clock-center clock-center-static" id="pianoSummary"></div>
       </div>
       <div class="clock-actions">
-        <button class="chip primary" id="creaturaBtn" type="button" title="Corre sola la secuencia: Random Fill (2–3/2–4/2–5 notas al azar, modo Mezcla) → Compose → tilda Mix time signatures → Detener → espera 2s → 🔀 Regenerar. Una sola pasada por click.">🪄 creatura</button>
+        <button class="chip primary" id="creaturaBtn" type="button" title="Corre sola la secuencia: sortea Chromatism (2–40%), Chords (20–60%), Triplets (0–100%), Melodic/Harmonic/RythmSpace (0–100%) y Rapid runs (0–30%) → Random Fill (2–3/2–4/2–5 notas al azar, modo Mezcla) → Compose → tilda Mix time signatures → Detener → espera 2s → 🔀 Regenerar. Una sola pasada por click.">🪄 creatura</button>
         <button class="chip" id="composeBtn" type="button" title="Toca el segmento de 12 compases de SetMusicBox con las notas actuales">🎹 Compose</button>
         <button class="chip" id="clearBtn">Limpiar</button>
         <button class="chip" id="multiSetsMemBtn2" type="button" disabled title="Mismo botón que To Memory de Multi Sets Input (copia acá para no tener que abrir esa tarjeta): guarda el set actual del reloj/piano en el próximo casillero libre y resetea el reloj. Entre paréntesis, cuántos sets van guardados.">To Memory (0/5)</button>
@@ -14707,11 +14707,32 @@ function runAnalysis() {
       if(elm && !elm.disabled) elm.click();
     }
 
+    // Sortea un entero en [lo, hi] y lo vuelca en un slider disparando
+    // solo "input" (actualiza la variable interna y la etiqueta, sin
+    // regenerar: el 🔀 Regenerar del final ya sortea con los valores nuevos).
+    function randomizeSlider(id, lo, hi){
+      var sl = document.getElementById(id);
+      if(!sl) return;
+      sl.value = lo + Math.floor(Math.random() * (hi - lo + 1));
+      sl.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+
     async function runCreatura(){
       if(running) return; // no reentrar si ya está corriendo
       running = true;
       btn.disabled = true;
       try {
+        // 0) Variantes aleatorias (cada una se sortea por separado):
+        // Chromatism 2–40%, Chords 20–60%, Triplets 0–100%, Melodic/Harmonic/
+        // RythmSpace 0–100%, Rapid runs 0–30%.
+        randomizeSlider("consolaChromaSlider", 2, 40);
+        randomizeSlider("consolaChordsSlider", 20, 60);
+        randomizeSlider("consolaTripletsSlider", 0, 100);
+        randomizeSlider("consolaMelodicSpaceSlider", 0, 100);
+        randomizeSlider("consolaHarmonicSpaceSlider", 0, 100);
+        randomizeSlider("consolaRhythmSpaceSlider", 0, 100);
+        randomizeSlider("consolaRapidRunsSlider", 0, 30);
+
         // 1) Random Fill: rango de notas al azar entre las 3 opciones
         // pedidas (2–3 / 2–4 / 2–5), y modo Mezcla forzado aunque el
         // usuario haya dejado tildado Por compás o Por reataque.
