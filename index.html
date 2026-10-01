@@ -308,6 +308,7 @@
     padding:8px 10px;min-width:54px;transition:border-color .15s ease;
   }
   .ivector-cell input[type="checkbox"]{accent-color:var(--gold);pointer-events:none;}
+  .ivector-cell.editing input[type="checkbox"]{pointer-events:auto;cursor:pointer;}
   .ivector-cell.active{border-color:var(--gold-dim);}
   .ivector-cell.editing{border-color:var(--gold);}
   .ivector-ic{
@@ -1184,8 +1185,8 @@
             <label class="ivector-cell"><input type="checkbox" id="ivChk6" disabled><span class="ivector-ic">Tritono</span><input type="number" class="ivector-count" id="ivCount6" min="0" max="12" step="1" value="0" readonly></label>
           </div>
           <div class="ivector-target-actions">
-            <button type="button" class="chip" id="ivectorEditBtn" title="Copia el vector de arriba como punto de partida editable, sin afectar la lectura en vivo del reloj">Editar objetivo</button>
-            <button type="button" class="chip primary" id="ivectorToMemoryBtn" disabled title="Busca sets que cumplan el vector editado (o los más parecidos) y llena los 5 casilleros de Multi Sets Input">To Memory</button>
+            <button type="button" class="chip" id="ivectorEditBtn" title="Habilita tildar a mano cada clase de intervalo (y editar los números), sin afectar la lectura en vivo del reloj">Editar objetivo</button>
+            <button type="button" class="chip primary" id="ivectorToMemoryBtn" disabled title="Llena los 5 casilleros de Multi Sets Input con sets al azar cuyo vector tenga SOLO las clases de intervalo tildadas (el conteo no importa)">To Memory</button>
           </div>
           <div class="ivector-status" id="ivectorStatus"></div>
           <button type="button" class="ivector-link" id="ivectorAnexoLink">Ver en Anexo 1 · Tabla de Sets</button>
@@ -6063,6 +6064,7 @@ window.IVECTOR_EDIT = (function () {
     cells().forEach((c) => {
       if (!c.count) return;
       c.count.readOnly = !on;
+      if (c.chk) c.chk.disabled = !on; // en edición, los tildes se eligen a mano
       if (c.cell) c.cell.classList.toggle("editing", on);
     });
     if (editBtn) editBtn.textContent = on ? "− Cancelar edición" : "Editar objetivo";
@@ -6081,6 +6083,23 @@ window.IVECTOR_EDIT = (function () {
       return n > 12 ? 12 : n;
     });
   }
+  // Máscara de clases de intervalo tildadas (6 booleanos). To Memory usa
+  // solo esto: el conteo no importa, solo qué clases tiene el set.
+  function currentMask() { return cells().map((c) => !!(c.chk && c.chk.checked)); }
+  // Tildar/destildar a mano en modo edición: mantiene el número coherente
+  // (tildado => al menos 1, destildado => 0) y el resalte dorado.
+  cells().forEach((c) => {
+    if (!c.chk) return;
+    c.chk.addEventListener("change", () => {
+      if (!editing) return;
+      if (c.count) {
+        const n = parseInt(c.count.value, 10);
+        if (c.chk.checked && !(n > 0)) c.count.value = "1";
+        if (!c.chk.checked) c.count.value = "0";
+      }
+      if (c.cell) c.cell.classList.toggle("active", c.chk.checked);
+    });
+  });
   // Refleja en vivo (tildado + resalte dorado) lo que se va tipeando,
   // aunque el número esté a medio escribir.
   cells().forEach((c) => {
@@ -6092,7 +6111,7 @@ window.IVECTOR_EDIT = (function () {
       if (c.cell) c.cell.classList.toggle("active", active);
     });
   });
-  return { isEditing, setEditing, currentVector, status };
+  return { isEditing, setEditing, currentVector, currentMask, status };
 })();
 (function () {
   const editBtn = document.getElementById("ivectorEditBtn");
@@ -6104,9 +6123,9 @@ window.IVECTOR_EDIT = (function () {
   }
   if (memBtn) {
     memBtn.addEventListener("click", () => {
-      const vec = window.IVECTOR_EDIT.currentVector();
-      const result = (typeof window.__multiSetsFillByIntervalVector === "function")
-        ? window.__multiSetsFillByIntervalVector(vec)
+      const mask = window.IVECTOR_EDIT.currentMask();
+      const result = (typeof window.__multiSetsFillByIntervalMask === "function")
+        ? window.__multiSetsFillByIntervalMask(mask)
         : { ok: false, message: "Multi Sets Input no está disponible todavía." };
       window.IVECTOR_EDIT.status(result.message || "");
       if (result.ok) {
@@ -8908,6 +8927,30 @@ function runAnalysis() {
       refreshUI();
       return { ok: true, message: msg };
     }
+    // To Memory por clases de intervalo tildadas: elige al azar hasta 5 sets
+    // (entre los mismos 4082 candidatos) cuyo vector tenga >0 EXACTAMENTE en
+    // las clases tildadas y 0 en el resto. El conteo no importa.
+    function fillByMask(mask){
+      var names = ["m2","M2","m3","M3","4J","TT"];
+      var chosen = [];
+      for(var i = 0; i < 6; i++) if(mask && mask[i]) chosen.push(i);
+      if(!chosen.length) return { ok: false, message: "Tild\u00e1 al menos una clase de intervalo." };
+      var matches = ivectorPool().filter(function(c){
+        for(var i = 0; i < 6; i++){ if(((c.vec[i] || 0) > 0) !== !!mask[i]) return false; }
+        return true;
+      });
+      var label = chosen.map(function(i){ return names[i]; }).join(" + ");
+      if(!matches.length) return { ok: false, message: "Ning\u00fan set tiene exactamente estas clases (" + label + ")." };
+      for(var b = matches.length - 1; b > 0; b--){ var j = randomInt(0, b); var t = matches[b]; matches[b] = matches[j]; matches[j] = t; }
+      slots = matches.slice(0, MAX_SLOTS).map(function(c){ return c.pcs; });
+      var msg = "To Memory: " + slots.length + " set" + (slots.length === 1 ? "" : "s") + " solo con " + label + " (" + matches.length + " posibles).";
+      status(msg);
+      active = true;
+      resetting = true;
+      try{ clearNotes(); }finally{ resetting = false; }
+      refreshUI();
+      return { ok: true, message: msg };
+    }
     function compose(){
       if(!slots.length){ status("Guardá al menos un set con To Memory."); return; }
       status("");
@@ -8954,12 +8997,13 @@ function runAnalysis() {
       // (vive en otro <script>, fuera de este cierre) — mismo patrón que
       // __multiSetsOnClockChange, arriba.
       window.__multiSetsFillByIntervalVector = fillByTarget;
+      window.__multiSetsFillByIntervalMask = fillByMask;
       refreshUI();
     }
     return {
       init: init, isActive: isActive, assign: assign, rootForBar: rootForBar,
       rootForAttack: rootForAttack, tagFor: tagFor, firstRoot: firstRoot, readoutText: readoutText,
-      solomonReadoutHTML: solomonReadoutHTML, fillByTarget: fillByTarget
+      solomonReadoutHTML: solomonReadoutHTML, fillByTarget: fillByTarget, fillByMask: fillByMask
     };
   })();
 
