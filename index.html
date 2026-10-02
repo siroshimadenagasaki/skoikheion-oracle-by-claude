@@ -1406,6 +1406,9 @@
           <span class="consola-inst-toggle" title="In3rds: en sets de 5+ notas, en vez del set entero toca acordes en bloque de 4 notas apilados en terceras del propio set, de abajo para arriba (como el módulo Grados en Terceras: C E G B, D F A C…), de un grado al azar y distinto en cada ataque. Solo, toca 2 por compás dentro del mismo acorde; con sync/poly/rythmicarmonies etc. toca uno por ataque. Con sets de menos de 5 notas no cambia nada. Se combina con inversions, subset, sync, etc."><input type="checkbox" id="consolaHT_in3rds"><label for="consolaHT_in3rds">in3rds</label></span>
           <span class="consola-inst-toggle" title="Guitar comping: en vez del voicing de piano, cada ataque toca una DIGITACIÓN DE GUITARRA real del set (el mismo motor de la tarjeta Digitaciones de Guitarra: cuerdas, trastes y dedos tocables), con el grave del set como nota más grave y la posición más cercana a la digitación anterior. Pasa Armonía a Guitarra jazz (al destildar vuelve al preset anterior). El ritmo sale de las otras casillas (sync, poly, rythmicarmonies…). Pisa inversiones e in3rds. Sets de 7+ notas: toca 6 (el grave + 5 al azar). No entra en all."><input type="checkbox" id="consolaHT_guitar"><label for="consolaHT_guitar">guitar</label></span>
         </div>
+        <div class="consola-inst-row">
+          <span class="consola-inst-toggle" title="Arpegiador de armonía: 0% = nunca (Armonía de siempre). 100% = TODOS los compases se arpegian. Entre medio, cada compás se sortea: con probabilidad = el valor se reemplaza por un arpegio de las notas del acorde vigente (el set no se traiciona: solo sus notas, subiendo de octava si el patrón lo pide). En cada compás arpegiado se sortea de nuevo el patrón (casi siempre aleatorios o asimétricos: paseo aleatorio, permutación, célula irregular, convergente, pedal, saltos de 2 o 3… los lineales arriba/abajo salen poco, ~10%), la subdivisión (corcheas, semicorcheas o tresillos) y el largo de las notas. Con el slider por encima de 0 la Armonía deja el motor libre (como al tildar una casilla). Se combina con inversions, in3rds, guitar y accent; en los compases arpegiados reemplaza el ritmo de sync/poly/rythmicarmonies."><label for="consolaHT_arpSlider">&#127929; Arp</label><input type="range" class="consola-mini-range" id="consolaHT_arpSlider" min="0" max="100" value="0" step="1"><span class="consola-val" id="consolaHT_arpVal">0%</span></span>
+        </div>
         </div>
       </div>
       <div class="consola-field consola-instruments" title="Ornaments: adornos sobre la melodía principal (~30% de las notas con figura lo bastante larga), en figuras muy rápidas (1/8 de tiempo) tomadas de la propia nota — nunca se superponen ni cambian el ritmo general. La vecina del adorno es la nota más cercana DENTRO del acorde vigente (hasta 2 semitonos arriba/abajo); si no hay, semitono cromático (única excepción a &quot;nunca una nota ajena al set&quot;, como Scales). La nota principal siempre es del acorde. Doblar melodía hereda los adornos; moreComping sigue a las notas principales. No aplica a Normalito. Todas destildadas = melodía de siempre.">
@@ -9770,7 +9773,9 @@ function runAnalysis() {
                 artic:"consolaHT_artic", subset:"consolaHT_subset", rests:"consolaHT_rests", swing:"consolaHT_swing",
                 inversions:"consolaHT_inversions", rythmicarmonies:"consolaHT_rythmicarmonies", in3rds:"consolaHT_in3rds", guitar:"consolaHT_guitar" };
     function on(k){ var e = document.getElementById(IDS[k]); return !!(e && e.checked); }
-    function active(){ return Object.keys(IDS).some(on); }
+    // Arp: slider #consolaHT_arpSlider (0–100%) = probabilidad por compás de arpegiar la armonía. > 0 activa Harmony.
+    function arpProb(){ var e = document.getElementById("consolaHT_arpSlider"); var v = e ? parseFloat(e.value) : 0; return (v > 0) ? Math.min(1, v/100) : 0; }
+    function active(){ return Object.keys(IDS).some(on) || arpProb() > 0; }
     var SYNC_POOL = [ [1.5,1.5,1], [1,1.5,1.5], [1.5,1,1.5], [0.5,1.5,1.5,0.5],
                       [1,0.5,1.5,1], [1.5,0.5,1,1], [2,1.5,0.5], [0.5,1,1.5,1] ]; // todas suman 4
     function stepCell(beats, step){
@@ -9836,6 +9841,46 @@ function runAnalysis() {
       }
       return { notes: notes.sort(function(a, b){ return a - b; }), deg: deg };
     }
+    // ---- arp: patrones (índices dentro de las notas del acorde; i >= n sube de octava) ----
+    // Pocos lineales (arriba/abajo); la mayoría asimétricos o aleatorios. w = peso en el sorteo.
+    function arpUp(n){ var o = []; for(var i = 0; i < n; i++) o.push(i); return o; }
+    function arpDn(a, b){ var o = []; for(var i = a; i >= b; i--) o.push(i); return o; }
+    function arpShuffle(a){ for(var i = a.length-1; i > 0; i--){ var j = randomInt(0, i); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+    function arpConv(n){ var o = [], l = 0, h = n-1; while(l <= h){ o.push(l++); if(l <= h) o.push(h--); } return o; }
+    var ARP_PATS = [
+      { id:"up",      w:0.5, f:function(n){ return arpUp(n); } },
+      { id:"down",    w:0.5, f:function(n){ return arpDn(n-1, 0); } },
+      { id:"updown",  w:0.5, f:function(n){ return arpUp(n).concat(arpDn(n-2, 1)); } },
+      { id:"updown2", w:0.5, f:function(n){ return arpUp(n).concat(arpDn(n-1, 0)); } },
+      { id:"conv",    w:1,   f:function(n){ return arpConv(n); } },
+      { id:"div",     w:1,   f:function(n){ return arpConv(n).reverse(); } },
+      { id:"pedLow",  w:1,   f:function(n){ var o = []; for(var i = 1; i < n; i++) o.push(0, i); return o; } },
+      { id:"pedHigh", w:1,   f:function(n){ var o = []; for(var i = 0; i < n-1; i++) o.push(i, n-1); return o; } },
+      { id:"k2",      w:1.2, ok:function(n){ return n % 2 !== 0; }, f:function(n){ return arpUp(n).map(function(i){ return (i*2) % n; }); } },
+      { id:"k3",      w:1.2, ok:function(n){ return n % 3 !== 0; }, f:function(n){ return arpUp(n).map(function(i){ return (i*3) % n; }); } },
+      { id:"stairs",  w:1,   f:function(n){ return arpUp(n).map(function(i){ return i*2; }); } },
+      { id:"oct2",    w:0.5, f:function(n){ return arpUp(2*n); } },
+      { id:"win3",    w:1,   ok:function(n){ return n >= 4; }, f:function(n){ var o = []; for(var s = 0; s <= n-3; s++) o.push(s, s+1, s+2); return o; } },
+      { id:"walk",    w:2.5, f:function(n){ // paseo aleatorio, pasos de ±1 o ±2
+          var o = [], c = randomInt(0, n-1);
+          for(var k = 0; k < 2*n; k++){ o.push(c); var st = [-2,-1,1,2].filter(function(x){ return c+x >= 0 && c+x < n; }); c += st[randomInt(0, st.length-1)]; }
+          return o; } },
+      { id:"perm",    w:2.5, f:function(n){ // permutación al azar de las n notas (distinta de la lineal si n >= 3)
+          var p, g = 0; do { p = arpShuffle(arpUp(n)); g++; } while(n >= 3 && g < 20 && p.every(function(v, i){ return v === i; }));
+          return p; } },
+      { id:"pick",    w:2,   f:function(n){ // 2n notas al azar, sin repetir la anterior
+          var o = [], prev = -1; for(var k = 0; k < 2*n; k++){ var v, g = 0; do { v = randomInt(0, n-1); g++; } while(v === prev && g < 20); o.push(v); prev = v; } return o; } },
+      { id:"cell",    w:2.5, f:function(n){ // célula irregular de 3 a 7 notas (hasta media octava arriba), sin repetir seguidas: se desfasa contra el compás
+          var L = randomInt(3, 7), top = n - 1 + Math.floor(n/2), o = [], prev = -1;
+          for(var k = 0; k < L; k++){ var v, g = 0; do { v = randomInt(0, top); g++; } while(v === prev && g < 20); o.push(v); prev = v; }
+          return o; } }
+    ];
+    function arpPickWeighted(list, getW){
+      var tot = 0; list.forEach(function(x){ tot += getW(x); });
+      var r = Math.random()*tot;
+      for(var i = 0; i < list.length; i++){ r -= getW(list[i]); if(r <= 0) return list[i]; }
+      return list[list.length-1];
+    }
     function build(rootChord, numBars){
       var total = RHYTHM.total();
       var multi = on("rythmicarmonies") || on("accent") || on("artic") || on("subset") || on("rests") || on("swing") || on("sync") || on("poly");
@@ -9885,10 +9930,60 @@ function runAnalysis() {
         a.silent = !!a.rest;
         if(on("rests") && !a.strong){ acc += 0.25; if(acc >= 1){ a.silent = true; acc -= 1; } }
       });
+      // 2b) Arp: cada compás se sortea (prob = slider); los elegidos se reemplazan por UN ataque de compás entero
+      // marcado a.arp (el slot/acorde vigente sigue siendo el set completo; el arpegio sale en el paso 3).
+      var arpP = arpProb();
+      if(arpP > 0){
+        var arpBar = [];
+        for(var ab = 0; ab < numBars; ab++) arpBar.push(Math.random() < arpP);
+        attacks.forEach(function(a){ // una ligadura que entra a un compás arpegiado se corta en la barra
+          var be = barStart[a.bar] + barLen[a.bar];
+          if(a.t + a.d > be + 1e-9 && a.bar + 1 < numBars && arpBar[a.bar + 1]) a.d = be - a.t;
+        });
+        var keptAtt = attacks.filter(function(a){ return !arpBar[a.bar]; });
+        for(var ab2 = 0; ab2 < numBars; ab2++){
+          if(arpBar[ab2]) keptAtt.push({ t:barStart[ab2], d:barLen[ab2], bar:ab2, rel:0, strong:true, onBeat:true, shift:0, silent:false, arp:true });
+        }
+        keptAtt.sort(function(x, y){ return x.t - y.t; });
+        attacks = keptAtt;
+      }
       // 3) eventos + slots
       var events = [], slotChords = [];
       for(var sb = 0; sb < numBars; sb++) slotChords.push([]);
       var prevInv = -1, rhKey = null, rhInv = 0, prevDeg3 = -1, prevInv3 = -1, prevGuitar = null;
+      var arpPrev = null;
+      // Arp: toca el compás entero como arpegio sobre las notas de "src" (sin duplicados, ascendentes).
+      // Devuelve false si hay menos de 2 notas (entonces el compás suena como acorde en bloque).
+      function arpEmit(a, src){
+        var pool = [];
+        src.slice().sort(function(x, y){ return x - y; }).forEach(function(m){ if(pool.indexOf(m) < 0) pool.push(m); });
+        var n = pool.length;
+        if(n < 2) return false;
+        var cands = ARP_PATS.filter(function(p){ return !p.ok || p.ok(n); });
+        var pat = null;
+        if(arpPrev && Math.random() < 0.25){ // a veces sigue el mismo patrón del compás anterior
+          pat = cands.filter(function(p){ return p.id === arpPrev; })[0] || null;
+        }
+        if(!pat){
+          var g = 0;
+          do { pat = arpPickWeighted(cands, function(p){ return p.w; }); g++; } while(pat.id === arpPrev && g < 12 && cands.length > 1);
+        }
+        arpPrev = pat.id;
+        var stepB = arpPickWeighted([[0.5, 35], [0.25, 40], [1/3, 25]], function(x){ return x[1]; })[0]; // corcheas / semicorcheas / tresillos
+        var gate = arpPickWeighted([[0.9, 3], [1, 3], [1.6, 2], [2.4, 1]], function(x){ return x[1]; })[0];
+        var ns = Math.max(2, Math.round(barLen[a.bar] / stepB)), st = barLen[a.bar] / ns;
+        var cyc = [], pos = 0;
+        for(var s2 = 0; s2 < ns; s2++){
+          if(pos >= cyc.length){ cyc = pat.f(n); if(Math.random() < 0.25) cyc = cyc.slice().reverse(); pos = 0; }
+          var ix = cyc[pos++];
+          var midi = pool[((ix % n) + n) % n] + 12*Math.floor(ix / n);
+          var t0 = a.t + s2*st, dd = Math.max(0.05, Math.min(st*gate, a.t + a.d - t0));
+          var ev = { midi: midi, startBeat: t0, durBeats: dd, bar: a.bar };
+          if(on("accent")) ev.vel = (s2 === 0) ? 112 : (Math.abs(s2*st - Math.round(s2*st)) < 1e-6 ? 88 : 62);
+          events.push(ev);
+        }
+        return true;
+      }
       CYCLEHOLD.reset();
       var htTranspose = cyclesEnabled || activeFixedIntervals().length > 0; // Cycles (o intervalos TEST) tildados: la armonía se transpone por ataque, como el motor libre
       attacks.forEach(function(a, i){
@@ -9951,6 +10046,7 @@ function runAnalysis() {
         endEff = Math.min(endEff, total);
         var dur = Math.max(0.05, endEff - startEff);
         if(on("artic") && (i % 2 === 1)) dur = Math.max(0.05, dur * 0.3); // staccato en los impares, legato en los pares
+        if(a.arp && arpEmit(a, in3Sub || voiced)) return; // Arp: este compás es un arpegio
         var notes = in3Sub || rhSub || voiced;
         if(on("subset") && !a.strong){
           var pool = (in3Sub || voiced).slice(), pick = [], want = randomInt(1, Math.min(2, pool.length));
@@ -13883,6 +13979,12 @@ function runAnalysis() {
     hs.addEventListener("input", apply);
     apply();
   })();
+  document.getElementById("consolaHT_arpSlider").addEventListener("input", function(){
+    document.getElementById("consolaHT_arpVal").textContent = this.value + "%";
+  });
+  document.getElementById("consolaHT_arpSlider").addEventListener("change", function(){
+    if(state.rootChord.length) regenerateConsola();
+  });
   document.getElementById("consolaRapidRunsSlider").addEventListener("input", function(){
     document.getElementById("consolaRapidRunsVal").textContent = this.value + "%";
   });
