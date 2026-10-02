@@ -1657,7 +1657,7 @@
         <span>Estilos (set de presets)</span>
         <button class="chip" id="presetBaroqueBtn" type="button" title="Set de presets: Armonía → Clavecín, Bajo → Fagot, Melodía → Flauta, Melodía doblada → Clavecín (prende el doblaje).">Baroque</button>
         <button class="chip" id="presetJazzBtn" type="button" title="Set de presets: Armonía → Piano, Doblar armonía → Mute, Melodía → Sax soprano, Doblar melodía → Mute, Bajo → Bajo original (sintetizado). Además prende Swing Drums (groove real de jazz, en vez del patrón de batería aleatorio).">Jazz traditional</button>
-        <button class="chip" id="presetJazzFusionBtn" type="button" title="Copia de Jazz traditional con Armonía → Piano eléctrico y Melodía → Ethan's Bassoon (Soundfonts v2/Extra v2/bassoon.sf2). Doblar armonía → Mute, Doblar melodía → Mute, Bajo → Bajo original (sintetizado). Además prende Swing Drums.">Jazz fusion</button>
+        <button class="chip" id="presetJazzFusionBtn" type="button" title="Copia de Jazz traditional con Armonía → Piano eléctrico y Melodía → Ethan's Bassoon (Soundfonts v2/BasoonFlute.sf2). Doblar armonía → Mute, Doblar melodía → Mute, Bajo → Bajo original (sintetizado). Además prende Swing Drums.">Jazz fusion</button>
         <button class="chip" id="presetBrassSoloBtn" type="button" title="Set de presets tipo SoloPiano pero con metales: Armonía → Metales (Brass Section), Melodía → French Horns, Bajo → Metales. Muda Batería, moreComping, bebopMelody, Doblar melodía y Doblar armonía (gain 0).">Brass solo</button>
         <button class="chip" type="button" id="consolaSoloPianoBtn" title="Modo solo: pone Armonía, Melodía y Bajo en preset Piano, y muda Batería/moreComping/bebopMelody/Doblar melodía/Doblar armonía — sin tocar ningún otro ajuste. Volvé a apretarlo para restaurar los presets y volúmenes que tenías antes.">🎹 SoloPiano</button>
       </div>
@@ -5309,7 +5309,7 @@ const SF_BASE_URLS = []; // Instruments/Drums/Percussion.sf2 ya no existen (ver 
 const SF_DEFAULT_FILES = [
   { mix: "harmony",      file: "Piano default.sf2", bank: 0, program: 0,  label: "Grand Piano",          kind: "melodic", family: "piano" },
   { mix: "chordDouble",  file: "Nord Pad.sf2",      bank: 0, program: 0,  label: "Warm Pad Pro",         kind: "melodic", family: "pad"   },
-  { mix: "melody",       file: "Flute default.sf2", bank: 0, program: 73, label: "Flute",                kind: "melodic", family: "flute" },
+  { mix: "melody",       file: "BasoonFlute.sf2",   bank: 0, program: 0,  label: "Ethan's Bassoon",      kind: "melodic", family: "flute" },
   { mix: "melodyDouble", file: "Extra v2/LEAD/Armonica.sf2", bank: 0, program: 0,  label: "Hohner C Harmonica",   kind: "melodic", family: "flute" },
   { mix: "bass",         file: "Bass default.sf2",  bank: 0, program: 32, label: "Acoust. Bass (Solar)", kind: "melodic", family: "bass"  },
   { mix: "drum",         file: "Drums default.sf2", bank: 128, program: 0, label: "hifidrum v2 GM",       kind: "drum" }
@@ -13985,9 +13985,9 @@ function runAnalysis() {
                     gains: { drum: 0, melodyDouble: 0, chordDouble: 0, comping2: 0, bebop: 0 } },
       jazz:       { harmony: "piano", chordDouble: "mute", melody: "sopranoSax", melodyDouble: "mute", bass: "synthBass", swingDrums: true },
       // Jazz fusion = copia de Jazz traditional con Armonía → Piano
-      // eléctrico y Melodía → "Ethan's Bassoon" (Soundfonts v2/Extra v2/bassoon.sf2,
+      // eléctrico y Melodía → "Ethan's Bassoon" (Soundfonts v2/BasoonFlute.sf2,
       // único preset: banco 0 / programa 0, leído del phdr).
-      jazzfusion: { harmony: "epiano", chordDouble: "mute", melody: sfKeyForFile("Extra v2/bassoon.sf2", 0, 0), melodyDouble: "mute", bass: "synthBass", swingDrums: true }
+      jazzfusion: { harmony: "epiano", chordDouble: "mute", melody: sfKeyForFile("BasoonFlute.sf2", 0, 0), melodyDouble: "mute", bass: "synthBass", swingDrums: true }
     };
     function applyPresetSet(setKey){
       var set = PRESET_SETS[setKey];
