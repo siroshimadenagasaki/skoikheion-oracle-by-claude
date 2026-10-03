@@ -1389,7 +1389,9 @@
           <span class="consola-inst-toggle"><input type="checkbox" id="consolaBassChk" checked><label for="consolaBassChk">Bajo</label></span>
           <span class="consola-inst-toggle"><input type="checkbox" id="consolaMelodyChk" checked><label for="consolaMelodyChk">Melodía</label></span>
           <span class="consola-inst-toggle"><input type="checkbox" id="consolaDrumChk" checked><label for="consolaDrumChk">&#129345; Batería</label></span>
-          <span class="consola-inst-toggle" title="Melody n2: una segunda melodía ALTERNATIVA, independiente de la melodía principal (otro ritmo y otras notas, siempre dentro del set), que solo suena desde el compás 12. Tiene su propio fader, reverb e instrumento en el Mini mixer (Flauta por defecto). Apagada por defecto."><input type="checkbox" id="consolaMelody2Chk"><label for="consolaMelody2Chk">&#127925; Melody n2</label></span>
+          <span class="consola-inst-toggle" title="Mezcla figuras largas y cortas DENTRO del mismo compás de melodía, en vez del comportamiento de siempre (un compás entero de figuras largas y, cada tanto, un compás entero de fill de notas cortas). No cambia qué nota suena, solo el ritmo."><input type="checkbox" id="consolaMixDurChk" checked><label for="consolaMixDurChk">&#127925; Mix melody duration</label></span>
+          <span class="consola-inst-toggle" title="Reemplaza la selección de nota de la melodía (y de bebopMelody, si está prendido) por un CONTORNO fijo — un patrón de saltos tipo '2 arriba, 1 abajo' repetido, en vez de arpegio lineal en los compases densos o nota al azar en el resto. El patrón se sortea de un pool variado (ciclos de 2 a 4 movimientos) una vez por cada Reproducir/Regenerar, y siempre indexa dentro del acorde vigente (nunca una nota ajena al set) — si el salto se pasa del tamaño del acorde, sigue contando en la octava de al lado, igual que una 9na es un 2 una octava arriba."><input type="checkbox" id="consolaMelodicPatternsChk" checked><label for="consolaMelodicPatternsChk">&#127925; melodicPatterns</label></span>
+          <span class="consola-inst-toggle" title="Melody n2: una segunda melodía ALTERNATIVA, independiente de la melodía principal (otro ritmo y otras notas, siempre dentro del set), que suena en todos los compases, con silencios random de 1, 2 o 4 compases. Tiene su propio fader, reverb e instrumento en el Mini mixer (Flauta por defecto). Apagada por defecto."><input type="checkbox" id="consolaMelody2Chk"><label for="consolaMelody2Chk">&#127925; Melody n2</label></span>
         </div>
       </div>
       <div class="consola-field consola-instruments" title="Harmony: si hay al menos una casilla tildada, la Armonía deja de usar el motor libre y toca SOLO el set elegido (sin subsets al azar, en bloque). Con Cycles tildado se transpone por ataque como el motor libre (ChangeDuration incluido). Bajo, melodía y cifrado siguen igual. No aplica a Normalito. Todas destildadas = motor libre de siempre.">
@@ -1570,10 +1572,6 @@
         <button type="button" class="subfield-toggle" aria-expanded="false" aria-controls="miniMixerBody" onclick="toggleModule(this)" title="Mostrar/ocultar el mini mixer"></button>
       </div>
       <div class="collapsible-content collapsed" id="miniMixerBody">
-      <div class="consola-inst-row" style="justify-content:center;margin-bottom:10px;">
-        <span class="consola-inst-toggle" title="Mezcla figuras largas y cortas DENTRO del mismo compás de melodía, en vez del comportamiento de siempre (un compás entero de figuras largas y, cada tanto, un compás entero de fill de notas cortas). No cambia qué nota suena, solo el ritmo."><input type="checkbox" id="consolaMixDurChk" checked><label for="consolaMixDurChk">&#127925; Mix melody duration</label></span>
-        <span class="consola-inst-toggle" title="Reemplaza la selección de nota de la melodía (y de bebopMelody, si está prendido) por un CONTORNO fijo — un patrón de saltos tipo '2 arriba, 1 abajo' repetido, en vez de arpegio lineal en los compases densos o nota al azar en el resto. El patrón se sortea de un pool variado (ciclos de 2 a 4 movimientos) una vez por cada Reproducir/Regenerar, y siempre indexa dentro del acorde vigente (nunca una nota ajena al set) — si el salto se pasa del tamaño del acorde, sigue contando en la octava de al lado, igual que una 9na es un 2 una octava arriba."><input type="checkbox" id="consolaMelodicPatternsChk" checked><label for="consolaMelodicPatternsChk">&#127925; melodicPatterns</label></span>
-      </div>
       <div class="mix-grid">
         <div class="mix-channel">
           <label for="mixDrumVol">&#129345; Batería</label>
@@ -1607,7 +1605,7 @@
             <input type="checkbox" class="mix-solo" data-track="melody" title="Solo: silencia TODAS las demás pistas mientras esté tildado (a diferencia de Foco, que solo las baja) — este fader no cambia. Al destildarlo, todo vuelve exactamente al nivel que tenía antes (no se pisa ningún valor)." aria-label="Solo en Melodía"><span class="mix-solo-lbl">solo</span>
           </div>
         </div>
-        <div class="mix-channel" title="Volumen de Melody n2 (melodía alternativa independiente, solo desde el compás 12). Sin efecto mientras el checkbox Melody n2 esté apagado.">
+        <div class="mix-channel" title="Volumen de Melody n2 (melodía alternativa independiente, con silencios random de 1, 2 o 4 compases). Sin efecto mientras el checkbox Melody n2 esté apagado.">
           <label for="mixMelody2Vol">&#127925; Melody n2</label>
           <input type="range" id="mixMelody2Vol" min="0" max="150" value="100" step="1">
           <div class="mix-val-row">
@@ -1718,7 +1716,7 @@
             <input type="checkbox" id="consolaAltMelodyChk"><label for="consolaAltMelodyChk">alt-melody</label>
           </span>
         </div>
-        <div class="mix-preset-group" id="melody2PresetGroup" data-mix-group="melody2" title="Instrumento de Melody n2 (melodía alternativa independiente, solo desde el compás 12). Flauta por defecto.">
+        <div class="mix-preset-group" id="melody2PresetGroup" data-mix-group="melody2" title="Instrumento de Melody n2 (melodía alternativa independiente, con silencios random de 1, 2 o 4 compases). Flauta por defecto.">
           <label class="mix-preset-label" for="melody2PresetSelect">Melody n2</label>
           <select class="mix-preset-select" id="melody2PresetSelect">
             <!-- Las opciones (todos los .sf2 y todos sus presets) las arma sfBuildPresetSelects() al cargar la página. -->
@@ -10887,6 +10885,20 @@ function runAnalysis() {
 
   // ---------- estado / regeneración ----------
   var state = { rootChord: [], progression: [], roles: [], chordEvents: [], slotChords: [], bassEvents: [], melodyEvents: [], comping2Events: [], bebopEvents: [], melody2Events: [] };
+  // Silencios de Melody n2: alterna tramos tocando (2 a 5 compases) con silencios
+  // de 1, 2 o 4 compases al azar; arranca tocando. Devuelve {bar:true} de los compases mudos.
+  function melody2RestBars(numBars){
+    var rest = {}, bar = 0, playing = true;
+    while (bar < numBars){
+      if (playing){ bar += 2 + Math.floor(Math.random()*4); playing = false; }
+      else {
+        var len = [1, 2, 4][Math.floor(Math.random()*3)];
+        for (var i=0; i<len && bar+i<numBars; i++) rest[bar+i] = true;
+        bar += len; playing = true;
+      }
+    }
+    return rest;
+  }
   function melody2Enabled(){ var c = document.getElementById("consolaMelody2Chk"); return !!(c && c.checked); }
   window.__consolaState = state; // hook de diagnóstico (solo lectura)
 
@@ -10971,10 +10983,18 @@ function runAnalysis() {
     state.bebopEvents = BEBOPMELODY.enabled()
       ? TRIPLETS.applyLine(BEBOPMELODY.buildEvents(NUM_BARS, function(bar, offset){ return currentChordAt(chordBuilt.slotChords[bar], offset); }), chordBuilt.slotChords)
       : [];
-    // Melody n2: segunda melodía independiente (nuevo sorteo de ritmo y notas), solo desde el compás 12
+    // Melody n2: segunda melodía independiente (nuevo sorteo de ritmo y notas) en TODOS los
+    // compases, salvo silencios random de 1, 2 o 4 compases (ver melody2RestBars)
     state.melody2Events = melody2Enabled()
-      ? TRIPLETS.applyLine(buildBassMelodyEventsRandom(state.progression, built.meta, chordBuilt.slotChords).melodyEvents, chordBuilt.slotChords)
-          .filter(function(e){ return e.startBeat >= RHYTHM.start(11) - 1e-6; })
+      ? (function(){
+          var restBars = melody2RestBars(NUM_BARS);
+          function barOf(beat){
+            for (var b=NUM_BARS-1; b>=0; b--) if (beat >= RHYTHM.start(b) - 1e-6) return b;
+            return 0;
+          }
+          return TRIPLETS.applyLine(buildBassMelodyEventsRandom(state.progression, built.meta, chordBuilt.slotChords).melodyEvents, chordBuilt.slotChords)
+            .filter(function(e){ return !restBars[barOf(e.startBeat)]; });
+        })()
       : [];
     drumEvents = buildDrumEvents(NUM_BARS);
     renderRoll();
@@ -12618,6 +12638,49 @@ function runAnalysis() {
   var MJ_TOMS = [50, 47, 45];
   function mjRand(a, b){ return a + Math.floor(Math.random()*(b-a+1)); }
   function mjPick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+  // Contrapuntos rítmicos (Rhythm complexity 50% -> 100%): capa aditiva
+  // que SOLO actúa pasado el 50% (x = (cx-0.5)*2, 0..1; con x<=0 es no-op,
+  // o sea que <=50% suena exactamente igual que antes). Suma más golpes
+  // ENCIMA del patrón del compás, en slots de tresillo (3 por tiempo),
+  // con líneas que van "contra" el pulso:
+  //  A) ostinato cruzado de cowbell/side-stick cada 4/5/7 slots,
+  //  B) contramelodía de toms sincopada cada 5/7 slots (desde x>0.25),
+  //  C) ride extra en el 2º tresillo de cada tiempo (más densidad),
+  //  D) ráfagas de ghost notes de caja (desde x>0.6).
+  // `limit` = slot hasta donde se puede escribir (para no pisar el fill).
+  function addCounterRhythmLayer(push, base, slots, limit, x){
+    if (x <= 0) return;
+    var at = function(sl){ return base + sl/3; };
+    if (Math.random() < x*0.8){
+      var grp = mjPick([4, 5, 5, 7]);
+      var rim = Math.random() < 0.35;
+      for (var sa=mjRand(0, 2); sa<limit; sa+=grp){
+        push({type: rim ? "snare" : "hihat", midi: rim ? 37 : 56,
+              startBeat: at(sa)+microTimingOffset(), vel: mjRand(50, 74)});
+      }
+    }
+    if (x > 0.25 && Math.random() < (x-0.25)*0.9){
+      var tg = mjPick([5, 5, 7]);
+      var maxHits = 3 + Math.round(x*4);
+      var ti = mjRand(0, MJ_TOMS.length-1), hitsB = 0;
+      for (var sb=mjRand(1, 3); sb<limit && hitsB<maxHits; sb+=tg, hitsB++){
+        push({type:"kick", midi: MJ_TOMS[ti % MJ_TOMS.length],
+              startBeat: at(sb)+microTimingOffset(), vel: mjRand(54, 78)});
+        ti += mjPick([1, 2]);
+      }
+    }
+    for (var kb=0; kb*3+1<limit; kb++){
+      if (Math.random() < x*0.45){
+        push({type:"hihat", open:false, midi:51, startBeat: at(kb*3+1), vel: mjRand(44, 60)});
+      }
+    }
+    if (x > 0.6 && Math.random() < (x-0.6)*1.6){
+      var gs = mjRand(0, Math.max(0, limit-4)), gn = mjRand(2, 4);
+      for (var gi=0; gi<gn && gs+gi<limit; gi++){
+        push({type:"snare", startBeat: at(gs+gi), vel: mjRand(24, 40)});
+      }
+    }
+  }
   function buildModernJazzEvents(numBars){
     var events = [];
     var cx = rhythmComplexity;
@@ -12707,6 +12770,8 @@ function runAnalysis() {
           slot += mjPick([2, 2, 4, 5]);
         }
       }
+      // Contrapuntos rítmicos extra de 50% a 100% (no-op hasta 50%)
+      addCounterRhythmLayer(push, base, slots, fillStart, Math.max(0, (cx - 0.5)*2));
     }
     return events;
   }
@@ -12919,6 +12984,7 @@ function runAnalysis() {
       // styleByBar de arriba (ver sectionComplexity()).
       var barComplexity = sectionComplexity(bar, rhythmComplexity);
       addRhythmComplexityLayer(events, base, barComplexity, otherRhythmVariationsEnabled());
+      addCounterRhythmLayer(function(ev){ events.push(ev); }, base, Math.round(RHYTHM.beats(bar)*3), Math.round(RHYTHM.beats(bar)*3), Math.max(0, (rhythmComplexity - 0.5)*2));
       // Velocity humanizada: última pasada del compás, así ve todos los
       // eventos que se hayan sumado arriba (patrón base + capa aditiva).
       applyVelocityHumanize(events, base);
