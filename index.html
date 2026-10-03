@@ -1388,8 +1388,6 @@
         <input type="checkbox" id="consola24BarsChk" checked>
         <label for="consola24BarsChk">24 compases</label>
       </div>
-        </div>
-      </div>
       <div class="consola-field consola-instruments">
         <label>Instrumentos</label>
         <div class="consola-inst-row">
@@ -1419,6 +1417,8 @@
         <div class="consola-inst-row">
           <span class="consola-inst-toggle" title="Arpegiador de armonía: 0% = nunca (Armonía de siempre). 100% = TODOS los compases se arpegian. Entre medio, cada compás se sortea: con probabilidad = el valor se reemplaza por un arpegio de las notas del acorde vigente (el set no se traiciona: solo sus notas, subiendo de octava si el patrón lo pide). En cada compás arpegiado se sortea de nuevo el patrón (casi siempre aleatorios o asimétricos: paseo aleatorio, permutación, célula irregular, convergente, pedal, saltos de 2 o 3… los lineales arriba/abajo salen poco, ~10%), la subdivisión (corcheas, semicorcheas o tresillos) y el largo de las notas. Con el slider por encima de 0 la Armonía deja el motor libre (como al tildar una casilla). Se combina con inversions, in3rds, guitar y accent; en los compases arpegiados reemplaza el ritmo de sync/poly/rythmicarmonies."><label for="consolaHT_arpSlider">&#127929; Arp</label><input type="range" class="consola-mini-range" id="consolaHT_arpSlider" min="0" max="100" value="0" step="1"><span class="consola-val" id="consolaHT_arpVal">0%</span></span>
         </div>
+        </div>
+      </div>
         </div>
       </div>
       <div class="consola-field consola-instruments" title="Ornaments: adornos sobre la melodía principal (~30% de las notas con figura lo bastante larga), en figuras muy rápidas (1/8 de tiempo) tomadas de la propia nota — nunca se superponen ni cambian el ritmo general. La vecina del adorno es la nota más cercana DENTRO del acorde vigente (hasta 2 semitonos arriba/abajo); si no hay, semitono cromático (única excepción a &quot;nunca una nota ajena al set&quot;, como Scales). La nota principal siempre es del acorde. Doblar melodía hereda los adornos; moreComping sigue a las notas principales. No aplica a Normalito. Todas destildadas = melodía de siempre.">
