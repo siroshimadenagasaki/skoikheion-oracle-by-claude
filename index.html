@@ -1362,6 +1362,7 @@
           <span class="consola-inst-toggle" title="Agrupa variaciones extra: ghost notes de caja entre los golpes principales, síncopa ocasional del bombo fuera del grid, y cross-stick/rimshot en vez de caja en los compases más quietos."><input type="checkbox" id="consolaOtherRhythmVarChk" checked><label for="consolaOtherRhythmVarChk">other-rhythm-variations</label></span>
           <span class="consola-inst-toggle" title="Le da altura/contorno a la batería: colorea un golpe de bombo por compás con un tom (agudo/medio/grave, en un contorno que sube y baja a lo largo del segmento) y el golpe de hi-hat acentuado con campana/cowbell/pandereta, en vez de sonar siempre con las mismas 3 notas fijas (bombo/caja/hi-hat). No agrega golpes nuevos, solo cambia el timbre/altura de golpes que ya iban a sonar."><input type="checkbox" id="consolaMoreMelodicChk" checked><label for="consolaMoreMelodicChk">moreMelodic</label></span>
           <span class="consola-inst-toggle" title="Además de evitar que dos compases SEGUIDOS queden con el patrón idéntico (lo que ya hace el motor de siempre), evita que el mismo patrón vuelva a aparecer dentro de una ventana de 3 compases — tanto para el estilo de batería (basic/fill/sparse/etc.) como para la subdivisión de hi-hat."><input type="checkbox" id="consolaLessRepetitiveChk" checked><label for="consolaLessRepetitiveChk">lessRepetitive</label></span>
+          <span class="consola-inst-toggle" title="Fills asimétricos: en vez de fills parejos, agrega fills de toms con agrupaciones que no encajan en el pulso — 3+3+2 / 3+2+3 / 2+3+3 semicorcheas, quintillos (5 por tiempo), septillos (7 en 2 tiempos) y hemiola (3 contra 2) — sobre todo al final de frase, y con menos probabilidad en cualquier compás. Se suman al fill de siempre."><input type="checkbox" id="consolaAsymmetricChk" checked><label for="consolaAsymmetricChk">asymmetric</label></span>
         </div>
       </div>
       <div class="consola-field consola-instruments" title="Compás (time signature) de cada uno de los 12 compases del segmento. Dos campos de texto: numerador / denominador (3/4, 6/8, 12/8, 5/4, 7/4, 9/8...) — se aplica a los 12 compases por igual. 4/4 por defecto, igual que siempre. Un compás compuesto (denominador 8, numerador múltiplo de 3 mayor a 3: 6/8, 9/8, 12/8) se siente subdividido de a 3 en vez de a 2 — armonía, bajo y melodía lo respetan. Mix time signatures: sortea entre 2 y 4 compases distintos (el tipeado siempre es uno de ellos) y los reparte al azar entre los 12 compases del segmento — un compás distinto en cada Reproducir/Regenerar.">
@@ -10707,7 +10708,9 @@ function runAnalysis() {
       for (var crBar=0; crBar<numBars; crBar++){
         var chordCellForBar = slotChords[crBar].map(function(s){ return s.durBeats; });
         if (Math.random() < MOREREP.COUPLE_PROB) bassCells[crBar] = chordCellForBar.slice();
-        if (Math.random() < MOREREP.COUPLE_PROB) melodyCells[crBar] = chordCellForBar.slice();
+        // HarmonicSpace solo gobierna armonía+bajo: en su tramo de respiro slotChords trae
+        // redondas ([4]), y la melodía NO debe heredarlas por el acople.
+        if (Math.random() < MOREREP.COUPLE_PROB && !HARMONICSPACE.isPeaceBar(crBar)) melodyCells[crBar] = chordCellForBar.slice();
       }
     }
     // HarmonicSpace: en el tramo de respiro (si salió sorteado), el
@@ -12488,6 +12491,10 @@ function runAnalysis() {
     var c = document.getElementById("consolaOtherRhythmVarChk");
     return !!(c && c.checked);
   }
+  function asymmetricEnabled(){
+    var c = document.getElementById("consolaAsymmetricChk");
+    return !!(c && c.checked);
+  }
   function moreMelodicEnabled(){
     var c = document.getElementById("consolaMoreMelodicChk");
     return !!(c && c.checked);
@@ -12681,6 +12688,36 @@ function runAnalysis() {
       }
     }
   }
+  // Fills asimétricos (checkbox #consolaAsymmetricChk): fill de toms que
+  // TERMINA al final del compás con agrupaciones que no encajan en el pulso.
+  // Cada patrón es una lista de separaciones en tiempos (suma = duración
+  // del fill): 3+3+2 / 3+2+3 / 2+3+3 semicorcheas, quintillo (5 en 1
+  // tiempo), septillo (7 en 2 tiempos) y hemiola (3 en 2 tiempos).
+  // Los toms bajan de agudo a grave; acento al arranque. Devuelve el
+  // beat absoluto donde empieza el fill (o -1 si el compás no alcanza).
+  var ASYM_FILL_PATTERNS = [
+    [0.75, 0.75, 0.5], [0.75, 0.5, 0.75], [0.5, 0.75, 0.75],
+    [0.75, 0.75, 0.75, 0.25],
+    [0.2, 0.2, 0.2, 0.2, 0.2],
+    [2/7, 2/7, 2/7, 2/7, 2/7, 2/7, 2/7],
+    [2/3, 2/3, 2/3]
+  ];
+  function addAsymmetricFill(push, base, beats){
+    var fits = ASYM_FILL_PATTERNS.filter(function(g){
+      return g.reduce(function(a, b){ return a + b; }, 0) <= beats - 0.99;
+    });
+    if (!fits.length) return -1;
+    var gaps = mjPick(fits);
+    var span = gaps.reduce(function(a, b){ return a + b; }, 0);
+    var t = base + beats - span;
+    var first = t;
+    for (var gi=0; gi<gaps.length; gi++){
+      var tomIdx = Math.min(MJ_TOMS.length-1, Math.floor(gi*MJ_TOMS.length/gaps.length));
+      push({type:"kick", midi: MJ_TOMS[tomIdx], startBeat: t, vel: gi === 0 ? mjRand(96, 108) : mjRand(66, 90)});
+      t += gaps[gi];
+    }
+    return first;
+  }
   function buildModernJazzEvents(numBars){
     var events = [];
     var cx = rhythmComplexity;
@@ -12730,7 +12767,16 @@ function runAnalysis() {
 
       // Fill melódico de toms (fin de frase), arranque variable
       var fillStart = slots;
-      if (phraseEnd && Math.random() < 0.4 + cx*0.4){
+      var asymDone = false;
+      if (asymmetricEnabled() && !isPoly && Math.random() < (phraseEnd ? 0.3 + cx*0.4 : 0.05 + cx*0.12)){
+        var asymAt = addAsymmetricFill(push, base, beats);
+        if (asymAt >= 0){
+          asymDone = true;
+          fillStart = Math.max(1, Math.floor((asymAt - base)*3 + 1e-6));
+          if (phraseEnd) resolveNext = true;
+        }
+      }
+      if (!asymDone && phraseEnd && Math.random() < 0.4 + cx*0.4){
         fillStart = mjRand(Math.max(1, slots-9), slots-3);
         var hits = mjRand(3, 5);
         var zig = Math.random() < 0.35;
@@ -12984,6 +13030,9 @@ function runAnalysis() {
       // styleByBar de arriba (ver sectionComplexity()).
       var barComplexity = sectionComplexity(bar, rhythmComplexity);
       addRhythmComplexityLayer(events, base, barComplexity, otherRhythmVariationsEnabled());
+      if (asymmetricEnabled() && Math.random() < ((bar % 4 === 3) ? 0.3 + rhythmComplexity*0.4 : 0.05 + rhythmComplexity*0.15)){
+        addAsymmetricFill(function(ev){ events.push(ev); }, base, RHYTHM.beats(bar));
+      }
       addCounterRhythmLayer(function(ev){ events.push(ev); }, base, Math.round(RHYTHM.beats(bar)*3), Math.round(RHYTHM.beats(bar)*3), Math.max(0, (rhythmComplexity - 0.5)*2));
       // Velocity humanizada: última pasada del compás, así ve todos los
       // eventos que se hayan sumado arriba (patrón base + capa aditiva).
@@ -14046,7 +14095,7 @@ function runAnalysis() {
   // velocityHumanizeEnabled()/etc. junto a buildDrumEvents), así que acá
   // solo hace falta reconstruir drumEvents al toggle, mismo patrón que
   // Rhythm complexity y Swing Drums.
-  ["consolaVelocityHumanizeChk","consolaMicroTimingChk","consolaSectionVariationChk","consolaOtherRhythmVarChk","consolaMoreMelodicChk","consolaLessRepetitiveChk"].forEach(function(id){
+  ["consolaVelocityHumanizeChk","consolaMicroTimingChk","consolaSectionVariationChk","consolaOtherRhythmVarChk","consolaMoreMelodicChk","consolaLessRepetitiveChk","consolaAsymmetricChk"].forEach(function(id){
     document.getElementById(id).addEventListener("change", function(){
       drumEvents = buildDrumEvents(NUM_BARS);
     });
