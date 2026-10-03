@@ -1271,7 +1271,6 @@
       <div class="solomon-info" id="consolaSolomonReadout"></div>
       <div style="margin-top:10px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
         <button type="button" class="chip" id="consolaTryBtn">Probar con C E G B</button>
-        <span class="consola-inst-toggle" title="Tildado: versión simple de siempre — set completo, sin transposición ni subsets, solo inversiones al azar entre compases, bajo y melodía en patrón predecible. Se mantiene mientras siga tildado (cambiar notas o 🔀 sigue dando Normalito). Destildado: motor libre."><input type="checkbox" id="consolaNormalChk" disabled><label for="consolaNormalChk">&#8634; Normalito</label></span>
       </div>
     </div>
 
@@ -1286,6 +1285,11 @@
         <label for="consolaTempo">Tempo</label>
         <input type="range" id="consolaTempo" min="25" max="200" value="84" step="1">
         <span class="consola-val" id="consolaTempoVal">84 BPM</span>
+      </div>
+      <div class="consola-field" title="Normalito: 0% = motor libre de siempre (Normalito apagado). 100% = Normalito completo: versión simple, set completo sin transposición ni subsets, solo inversiones al azar entre compases, bajo y melodía en patrón predecible. En el medio, cada compás sale al azar de uno u otro motor (a mayor %, más compases Normalito). Se re-sortea en cada variación. No aplica a Multi Sets.">
+        <label for="consolaNormalSlider">&#8634; Normalito</label>
+        <input type="range" id="consolaNormalSlider" min="0" max="100" value="0" step="1" disabled>
+        <span class="consola-val" id="consolaNormalVal">0%</span>
       </div>
       <div class="consola-field" title="Controla, en conjunto, la transposición cromática al azar por compás y el achique automático del acorde (hasta 2 notas menos) que el motor libre aplicaba siempre a máxima intensidad. 0% = notas literales elegidas, sin transportar, set completo siempre. 100% = comportamiento de siempre.">
         <label for="consolaChromaSlider">Chromatism</label>
@@ -10059,6 +10063,34 @@ function runAnalysis() {
           cell.forEach(function(d, ck){ attacks.push({t:barStart[bar] + off, d:d, in3g:in3grp, in3k:ck}); off += d; });
         }
       }
+      // HarmonicSpace: en su tramo de respiro (si salió sorteado según su %), los compases del
+      // tramo quedan con UN solo ataque (el acorde entero sostenido), pisando cualquier célula
+      // anterior — incluidos los de in3rds / in4ths / in5ths. Los ataques ligados que cruzan el
+      // borde del tramo se recortan a la entrada o se retoman a la salida.
+      if(HARMONICSPACE.enabled()){
+        var hsOut = [];
+        attacks.forEach(function(at0){
+          var hb = barOf(at0.t), hEnd = at0.t + at0.d;
+          if(!HARMONICSPACE.isPeaceBar(hb)){
+            var kk = hb + 1;
+            while(kk < numBars && hEnd > barStart[kk] + 1e-9){
+              if(HARMONICSPACE.isPeaceBar(kk)){ at0.d = barStart[kk] - at0.t; break; }
+              kk++;
+            }
+            hsOut.push(at0);
+          } else {
+            var k2 = hb;
+            while(k2 < numBars && HARMONICSPACE.isPeaceBar(k2)) k2++;
+            if(k2 < numBars && hEnd > barStart[k2] + 1e-9){
+              hsOut.push({t:barStart[k2], d:hEnd - barStart[k2], in3g:null, in3k:0});
+            }
+          }
+        });
+        for(var pb = 0; pb < numBars; pb++){
+          if(HARMONICSPACE.isPeaceBar(pb)) hsOut.push({t:barStart[pb], d:barLen[pb], in3g:null, in3k:0});
+        }
+        attacks = hsOut.sort(function(x, y){ return x.t - y.t; });
+      }
       // 2) propiedades de cada ataque (compás, fuerte, contratiempo, swing, silencio)
       var acc = Math.random(); // rests: reparto parejo (~25% de los ataques no fuertes)
       attacks.forEach(function(a){
@@ -10922,13 +10954,20 @@ function runAnalysis() {
   // con subsets del set + inversión + transposición cromática por
   // compás, y pitch libre en bajo/melodía. Siempre dentro del mismo set
   // de Forte/Solomon, nunca notas ajenas.
+  // Normalito (slider #consolaNormalSlider, 0..100): probabilidad (0..1) de que cada
+  // compás salga de Normalito en vez del motor libre. 0 = libre, 1 = Normalito entero.
+  function normalitoProb(){
+    var sl = document.getElementById("consolaNormalSlider");
+    var v = sl ? parseFloat(sl.value) : 0;
+    return isFinite(v) ? Math.max(0, Math.min(100, v)) / 100 : 0;
+  }
   function regenerateConsola(){
     NUM_BARS = desiredNumBars();
     RHYTHM.recompute();
     TOTAL_BEATS = RHYTHM.total();
     var playBtn = document.getElementById("consolaPlayBtn");
     var regenPlayBtn = document.getElementById("consolaRegenPlayBtn");
-    var normalBtn = document.getElementById("consolaNormalChk"); // checkbox Normalito (off por defecto)
+    var normalBtn = document.getElementById("consolaNormalSlider"); // slider Normalito (0% = motor libre)
     if(!playBtn) return; // sección todavía no está en el DOM
     var readout = document.getElementById("consolaNotesReadout");
     var solomonReadout = document.getElementById("consolaSolomonReadout");
@@ -10963,7 +11002,7 @@ function runAnalysis() {
     }
     state.rootChord = rootChord;
     // Normalito tildado: en vez del motor libre, arma la versión simple (no aplica a MULTI SETS).
-    if(!multi && normalBtn && normalBtn.checked){ normalizeConsola(); return; }
+    if(!multi && normalitoProb() >= 1){ normalizeConsola(); return; }
     fixedIntervalOffset = 0; // modo test de intervalos fijos: cada variación nueva arranca el ciclo en C (offset 0)
     cyclesOffset = 0; // módulo Cycles (Modo A acumulativo): cada variación nueva arranca el ciclo en C también
     MELODICPATTERNS.reset(); // melodicPatterns: un contorno nuevo por variación, compartido por melodía principal y bebopMelody
@@ -11004,6 +11043,46 @@ function runAnalysis() {
             .filter(function(e){ return !restBars[barOf(e.startBeat)]; });
         })()
       : [];
+    // Normalito entre 0% y 100%: mezcla compás a compás. Cada compás sale de
+    // Normalito con probabilidad pN y del motor libre si no. Armonía, bajo y
+    // melodía se arman con ambos motores y se eligen por compás; moreComping,
+    // bebopMelody y Ornaments se recalculan sobre el resultado mezclado, y Melody n2
+    // (que no existe en Normalito) calla en los compases Normalito. La batería no cambia.
+    var pN = normalitoProb();
+    if(!multi && pN > 0 && pN < 1){
+      var nProg = buildProgression(rootChord, defaultInversionSeq(rootChord.length, NUM_BARS));
+      var nChord = buildChordEvents(nProg.progression);
+      var nChordEv = SUSTAINPEDAL.apply(nChord.events, nChord.slotChords);
+      var nBass = buildBassEvents(nProg.progression);
+      var nMel = buildMelodyEvents(nProg.progression);
+      var useN = [];
+      for(var ub=0; ub<NUM_BARS; ub++) useN.push(Math.random() < pN);
+      var mixBarOf = function(beat){
+        for(var mb=NUM_BARS-1; mb>=0; mb--) if(beat >= RHYTHM.start(mb) - 1e-6) return mb;
+        return 0;
+      };
+      var mixMerge = function(freeEv, normEv){
+        return freeEv.filter(function(e){ return !useN[mixBarOf(e.startBeat)]; })
+          .concat(normEv.filter(function(e){ return useN[mixBarOf(e.startBeat)]; }));
+      };
+      state.chordEvents = mixMerge(state.chordEvents, nChordEv);
+      state.bassEvents = mixMerge(state.bassEvents, nBass);
+      var melodyPlainMix = mixMerge(melodyPlain, nMel);
+      state.slotChords = state.slotChords.map(function(sl, b){ return useN[b] ? nChord.slotChords[b] : sl; });
+      state.progression = state.progression.map(function(c, b){ return useN[b] ? nProg.progression[b] : c; });
+      state.roles = state.roles.map(function(r, b){ return useN[b] ? nProg.roles[b] : r; });
+      state.melodyEvents = ORNAMENTS.apply(melodyPlainMix, state.slotChords);
+      var chordAtMix = function(bar, offset){ return currentChordAt(state.slotChords[bar], offset); };
+      state.comping2Events = MORECOMPING.enabled() ? MORECOMPING.buildEvents(melodyPlainMix, chordAtMix) : [];
+      if(BEBOPMELODY.enabled()){
+        var bebopRaw = BEBOPMELODY.buildEvents(NUM_BARS, chordAtMix);
+        state.bebopEvents = TRIPLETS.applyLine(bebopRaw, state.slotChords).filter(function(e){ return !useN[mixBarOf(e.startBeat)]; })
+          .concat(bebopRaw.filter(function(e){ return useN[mixBarOf(e.startBeat)]; }));
+      } else {
+        state.bebopEvents = [];
+      }
+      state.melody2Events = state.melody2Events.filter(function(e){ return !useN[mixBarOf(e.startBeat)]; });
+    }
     drumEvents = buildDrumEvents(NUM_BARS);
     renderRoll();
     renderBebopRoll();
@@ -13982,9 +14061,12 @@ function runAnalysis() {
   document.getElementById("consolaTryBtn").addEventListener("click", function(){
     setNotes([0,4,7,11]); // C E G B — dispara runAnalysis() -> regenerateConsola()
   });
-  // Normalito (checkbox): tildado → normalizeConsola (vía regenerateConsola, que lo respeta);
-  // destildado → vuelve al motor libre. Sin set elegido no hace nada.
-  document.getElementById("consolaNormalChk").addEventListener("change", function(){
+  // Normalito (slider 0–100%): 100% → normalizeConsola (vía regenerateConsola, que lo respeta);
+  // 0% → motor libre; en el medio, mezcla por compás. Se regenera al soltar el slider. Sin set elegido no hace nada.
+  document.getElementById("consolaNormalSlider").addEventListener("input", function(){
+    document.getElementById("consolaNormalVal").textContent = this.value + "%";
+  });
+  document.getElementById("consolaNormalSlider").addEventListener("change", function(){
     if(state.rootChord.length === 0) return;
     regenerateConsola();
   });
