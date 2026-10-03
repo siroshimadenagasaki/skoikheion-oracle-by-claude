@@ -1207,6 +1207,8 @@
           <button class="chip" data-ex="0,4,7,11" title="0 4 7 11">CMaj7</button>
           <button class="chip" data-ex="0,2,4,5,7,9,11" title="Escala mayor · 0 2 4 5 7 9 11">Diatonic</button>
           <button class="chip" data-ex="0,2,3,5,7,9,11" title="Escala menor melódica · 0 2 3 5 7 9 11">melodicMinor</button>
+          <button class="chip" data-ex="0,3,4,7,8,11" title="Escala aumentada · 0 3 4 7 8 11">Augmented</button>
+          <button class="chip" data-ex="0,2,4,7,9" title="Escala pentatónica · 0 2 4 7 9">Pentatonic</button>
           </div>
         </div>
       </div>
@@ -8941,6 +8943,12 @@ function runAnalysis() {
       el("multiSetsComposeBtn").disabled = slots.length === 0;
       el("multiSetsClearBtn").disabled = slots.length === 0;
     }
+    // To Memory abre solo la tarjeta Multi Sets Input (si estaba contraída) para ver los casilleros.
+    function openMultiSetsCard(){
+      var card = el("multiSetsCard");
+      var tb = card && card.querySelector("button[aria-expanded]");
+      if(tb && tb.getAttribute("aria-expanded") === "false") tb.click();
+    }
     function toMemory(){
       if(selected.size < 2){ status("Elegí al menos 2 notas en el reloj o el piano."); return; }
       if(slots.length >= MAX_SLOTS){ status("Los 5 casilleros están llenos. Borrá la memoria para empezar de nuevo."); return; }
@@ -8953,6 +8961,7 @@ function runAnalysis() {
       resetting = true;
       try{ clearNotes(); }finally{ resetting = false; } // resetea el reloj (y corta lo que suene, como Limpiar)
       refreshUI();
+      openMultiSetsCard();
     }
     function clearMemory(){
       var wasActive = isActive();
@@ -9050,6 +9059,7 @@ function runAnalysis() {
       resetting = true;
       try{ clearNotes(); }finally{ resetting = false; }
       refreshUI();
+      openMultiSetsCard();
       return { ok: true, message: msg };
     }
     // To Memory por clases de intervalo tildadas: elige al azar hasta 5 sets
@@ -9075,6 +9085,7 @@ function runAnalysis() {
       resetting = true;
       try{ clearNotes(); }finally{ resetting = false; }
       refreshUI();
+      openMultiSetsCard();
       return { ok: true, message: msg };
     }
     function compose(){
@@ -10112,6 +10123,10 @@ function runAnalysis() {
         }
         return true;
       }
+      // in3rds/in4ths/in5ths con varias tildadas: ~1/3 de cada una. Mitad de los ataques sortean al azar (suelto)
+      // y la otra mitad siguen el paso sorteado para su compás (secciones: compases en 3ras, en 4tas, en 5tas).
+      var barStride = [];
+      for(var bs = 0; bs < numBars; bs++) barStride.push(stackOn() ? pickStride() : 2);
       CYCLEHOLD.reset();
       var htTranspose = cyclesEnabled || activeFixedIntervals().length > 0; // Cycles (o intervalos TEST) tildados: la armonía se transpone por ataque, como el motor libre
       attacks.forEach(function(a, i){
@@ -10151,7 +10166,7 @@ function runAnalysis() {
         // in3rds: lo que SUENA es un acorde en terceras del set; el acorde vigente (slots, bajo, melodía, cifrado) sigue siendo el set completo
         var in3Sub = null;
         if(stackOn() && !gv){
-          var st = thirdsStack(rc, prevDeg3, a, a.in3g ? a.in3g.stride : pickStride());
+          var st = thirdsStack(rc, prevDeg3, a, a.in3g ? a.in3g.stride : (Math.random() < 0.5 ? barStride[a.bar] : pickStride()));
           if(st){
             prevDeg3 = a.in3g ? a.in3g.base : st.deg;
             in3Sub = st.notes;
