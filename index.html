@@ -7833,7 +7833,7 @@ function runAnalysis() {
      esa célula (recortados al borde de la mitad). Devuelve además una
      máscara por nota (true = nota de corrida) para que
      buildBassMelodyEventsRandom: (a) no las silencie, y (b) les asigne
-     altura con nextPitch() — paso a paso por la "escalera" de notas
+     altura con nextPitch() — células asimétricas sobre la "escalera" de notas
      del acorde vigente dentro del registro de melodía (solo clases de
      tono del acorde en curso → el set nunca se traiciona).
      ================================================================ */
@@ -7939,8 +7939,24 @@ function runAnalysis() {
       });
       return { cells: outCells, masks: masks };
     }
-    // Estado de la corrida en curso (se resetea al empezar cada corrida).
-    var cur = null, dir = 1;
+    // ---- Alturas: células asimétricas sobre la escalera del acorde ----
+    // Cada célula = offsets (en escalones de la escalera del acorde
+    // vigente) respecto de una base. Largos desparejos, contornos que
+    // no son escala ni arpegio parejo. Solo clases de tono del acorde
+    // vigente → el set nunca se traiciona.
+    var RUN_CELLS = [
+      { c:[0,2,1,3,2],     w:2 }, // zigzag que avanza (3+2)
+      { c:[0,4,3,2,1],     w:2 }, // salto grande + relleno por grado
+      { c:[1,-1,0],        w:2 }, // cerco: arriba, abajo, objetivo
+      { c:[0,1,2,4],       w:2 }, // 1-2-3-5 estilo Coltrane
+      { c:[0,2,0,3,0,4],   w:1 }, // nota pedal con extremos que se abren
+      { c:[0,1,2,3,2,0],   w:1 }, // arco: subida larga, bajada brusca
+      { c:[0,3,1,4,2],     w:1 }, // cuartas/terceras alternadas
+      { c:[0,-2,1,-1,2],   w:1 }  // abanico
+    ];
+    var BASE_SHIFTS = [-3,-2,-1,1,2,3];
+    var MUTATE_PROB = 0.25;
+    var cellQ = [], cellBase = null, lastCell = null, lastLen = 0, lastMidi = null, shiftDir = 1;
     function ladder(chord){
       var pcs = {};
       chord.forEach(function(m){ pcs[((m%12)+12)%12] = true; });
@@ -7948,34 +7964,77 @@ function runAnalysis() {
       for(var m=MELODY_MIDI_FLOOR; m<=MELODY_MIDI_CEIL; m++) if(pcs[m%12]) out.push(m);
       return out;
     }
-    function startRun(prevMidi){
-      cur = (typeof prevMidi === "number") ? prevMidi : null;
-      dir = Math.random() < 0.5 ? 1 : -1;
+    function pcCount(chord){
+      var pcs = {};
+      chord.forEach(function(m){ pcs[((m%12)+12)%12] = true; });
+      return Object.keys(pcs).length;
     }
-    // Próxima nota: el vecino (arriba/abajo según dir) de `cur` dentro de
-    // la escalera del acorde vigente; rebota en los bordes del registro y
-    // cambia de sentido al azar (12%) para que no sea una escala plana.
+    // Índice reflejado en [0, n-1] (rebota en los bordes del registro).
+    function fold(i, n){
+      if(n <= 1) return 0;
+      var p = 2*(n-1);
+      i = ((i % p) + p) % p;
+      return i < n ? i : p - i;
+    }
+    function nearestIdx(lad, midi){
+      var best = 0, bd = 1e9;
+      for(var i=0;i<lad.length;i++){ var d = Math.abs(lad[i]-midi); if(d < bd){ bd = d; best = i; } }
+      return best;
+    }
+    function pickCell(chord){
+      var total = 0;
+      RUN_CELLS.forEach(function(o){ total += o.w; });
+      var pick = null;
+      for(var tries=0; tries<8 && !pick; tries++){
+        var r = Math.random()*total, cand = RUN_CELLS[0];
+        for(var i=0;i<RUN_CELLS.length;i++){ r -= RUN_CELLS[i].w; if(r <= 0){ cand = RUN_CELLS[i]; break; } }
+        // nunca la misma célula dos veces seguidas; evita el mismo largo si hay alternativa
+        if(cand === lastCell) continue;
+        if(cand.c.length === lastLen && tries < 6) continue;
+        pick = cand;
+      }
+      if(!pick) pick = RUN_CELLS[randomInt(0, RUN_CELLS.length-1)];
+      lastCell = pick; lastLen = pick.c.length;
+      var c = pick.c.slice();
+      if(Math.random() < MUTATE_PROB){
+        var kind = randomInt(0, 2);
+        if(kind === 0 && c.length > 3) c.splice(randomInt(0, c.length-1), 1);         // saca una nota
+        else if(kind === 1) c.reverse();                                                // invierte
+        else { var k = randomInt(0, c.length-1); c[k] += (Math.random()<0.5?1:-1) * pcCount(chord); } // salto de octava
+      }
+      return c;
+    }
+    function startRun(prevMidi){
+      cellBase = (typeof prevMidi === "number") ? prevMidi : null;
+      cellQ = []; lastCell = null; lastLen = 0; lastMidi = null;
+      shiftDir = Math.random() < 0.5 ? 1 : -1;
+    }
     function nextPitch(chord){
       var lad = ladder(chord);
       if(!lad.length) return clampMelodyRange(chord[0] + 12);
-      if(cur === null){
-        var mid = Math.floor(lad.length/2) + randomInt(-2, 2);
-        cur = lad[Math.min(lad.length-1, Math.max(0, mid))];
-        return cur;
+      if(!cellQ.length){
+        if(cellBase === null){
+          var mid = Math.floor(lad.length/2) + randomInt(-2, 2);
+          cellBase = lad[Math.min(lad.length-1, Math.max(0, mid))];
+        } else if(lastMidi !== null){
+          // desplazamiento irregular de la base (60% sigue el sentido, 40% lo invierte)
+          if(Math.random() < 0.4) shiftDir = -shiftDir;
+          var opts = BASE_SHIFTS.filter(function(s){ return s*shiftDir > 0; });
+          var bi = nearestIdx(lad, lastMidi) + opts[randomInt(0, opts.length-1)];
+          cellBase = lad[fold(bi, lad.length)];
+        }
+        cellQ = pickCell(chord);
       }
-      if(Math.random() < 0.12) dir = -dir;
-      // índice del primer escalón estrictamente arriba/abajo de cur
-      var next = null;
-      if(dir > 0){ for(var i=0;i<lad.length;i++) if(lad[i] > cur){ next = lad[i]; break; } }
-      else { for(var j=lad.length-1;j>=0;j--) if(lad[j] < cur){ next = lad[j]; break; } }
-      if(next === null){ // borde del registro: rebota
-        dir = -dir;
-        if(dir > 0){ for(var i2=0;i2<lad.length;i2++) if(lad[i2] > cur){ next = lad[i2]; break; } }
-        else { for(var j2=lad.length-1;j2>=0;j2--) if(lad[j2] < cur){ next = lad[j2]; break; } }
-        if(next === null) next = lad[0];
+      var off = cellQ.shift();
+      var idx = fold(nearestIdx(lad, cellBase) + off, lad.length);
+      var midi = lad[idx];
+      if(midi === lastMidi && lad.length > 1){ // nunca la misma nota seguida
+        idx = fold(idx + (Math.random()<0.5 ? 1 : -1), lad.length);
+        if(lad[idx] === lastMidi) idx = fold(idx + 1, lad.length);
+        midi = lad[idx];
       }
-      cur = next;
-      return cur;
+      lastMidi = midi;
+      return midi;
     }
     return { prob: prob, apply: apply, startRun: startRun, nextPitch: nextPitch };
   })();
