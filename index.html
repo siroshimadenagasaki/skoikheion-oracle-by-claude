@@ -1405,6 +1405,8 @@
           <span class="consola-inst-toggle" title="Cada ataque toca una inversión del set (fundamental, 1ª, 2ª…), con otra disposición de las voces (cerrada/abierta), a veces con una voz duplicada a la octava. Registro acotado: grave entre G3 y F#4, rango total hasta octava y quinta. Nunca repite la misma inversión seguida."><input type="checkbox" id="consolaHT_inversions"><label for="consolaHT_inversions">inversions</label></span>
           <span class="consola-inst-toggle" title="Rythmicarmonies: el mismo acorde se reataca con ritmos aleatorios (distintos en cada compás) hasta que llega el próximo acorde, en vez de tocarse una sola vez. Usa el mismo voicing y, mientras el acorde no cambia, a veces reataca otra inversión o un subconjunto del mismo set; además del slider Chord simultaneity. Reemplaza a sync y poly."><input type="checkbox" id="consolaHT_rythmicarmonies"><label for="consolaHT_rythmicarmonies">rythmicarmonies</label></span>
           <span class="consola-inst-toggle" title="In3rds: en sets de 5+ notas, en vez del set entero toca acordes en bloque de 4 notas apilados en terceras del propio set, de abajo para arriba (como el módulo Grados en Terceras: C E G B, D F A C…), de un grado al azar y distinto en cada ataque. Solo, toca 2 por compás dentro del mismo acorde; con sync/poly/rythmicarmonies etc. toca uno por ataque. Con sets de menos de 5 notas no cambia nada. Se combina con inversions, subset, sync, etc."><input type="checkbox" id="consolaHT_in3rds"><label for="consolaHT_in3rds">in3rds</label></span>
+          <span class="consola-inst-toggle" title="In4ths: en sets de 5+ notas, en vez del set entero toca acordes en bloque de 4 notas apilados en cuartas DIATÓNICAS del propio set (de grado en grado del set, posiciones i, i+3, i+6, i+9: C F B E en un set mayor), de un grado al azar y distinto en cada ataque. Solo, toca 2 por compás dentro del mismo acorde (o 4 con la fundamental moviéndose por grados del set); con sync/poly/rythmicarmonies etc. toca uno por ataque. Si el set no da al menos 3 notas distintas apiladas así (p. ej. 6 notas en cuartas), no cambia nada. Se combina con inversions, subset, sync, in3rds y las otras (si hay varias tildadas, sortea una por acorde)."><input type="checkbox" id="consolaHT_in4ths"><label for="consolaHT_in4ths">In4ths</label></span>
+          <span class="consola-inst-toggle" title="In5ths: en sets de 5+ notas, en vez del set entero toca acordes en bloque de 4 notas apilados en quintas DIATÓNICAS del propio set (de grado en grado del set, posiciones i, i+4, i+8, i+12: C G D A en un set mayor), de un grado al azar y distinto en cada ataque. Solo, toca 2 por compás dentro del mismo acorde (o 4 con la fundamental moviéndose por grados del set); con sync/poly/rythmicarmonies etc. toca uno por ataque. Si el set no da al menos 3 notas distintas apiladas así (p. ej. 6 notas en cuartas), no cambia nada. Se combina con inversions, subset, sync, in3rds y las otras (si hay varias tildadas, sortea una por acorde)."><input type="checkbox" id="consolaHT_in5ths"><label for="consolaHT_in5ths">In5ths</label></span>
           <span class="consola-inst-toggle" title="Guitar comping: en vez del voicing de piano, cada ataque toca una DIGITACIÓN DE GUITARRA real del set (el mismo motor de la tarjeta Digitaciones de Guitarra: cuerdas, trastes y dedos tocables), con el grave del set como nota más grave y la posición más cercana a la digitación anterior. Pasa Armonía a Guitarra jazz (al destildar vuelve al preset anterior). El ritmo sale de las otras casillas (sync, poly, rythmicarmonies…). Pisa inversiones e in3rds. Sets de 7+ notas: toca 6 (el grave + 5 al azar). No entra en all."><input type="checkbox" id="consolaHT_guitar"><label for="consolaHT_guitar">guitar</label></span>
         </div>
         <div class="consola-inst-row">
@@ -9734,7 +9736,7 @@ function runAnalysis() {
      No aplica a Normalito. Sin sync/poly, las capas que necesitan varios
      ataques (accent/artic/subset/rests/swing) tocan negras (corcheas con
      swing).
-     in3rds: lo que suena son acordes en terceras del set (5+ notas), solo voicing.
+     in3rds / in4ths / in5ths: lo que suena son acordes en terceras / cuartas / quintas diatónicas del set (5+ notas), solo voicing.
      Casillas: base · sync · poly (reemplaza a sync) · accent · artic ·
      subset · rests · swing · inversions.
      ================================================================ */
@@ -9876,7 +9878,7 @@ function runAnalysis() {
   var HARMTEST = (function(){
     var IDS = { base:"consolaHT_base", sync:"consolaHT_sync", poly:"consolaHT_poly", accent:"consolaHT_accent",
                 artic:"consolaHT_artic", subset:"consolaHT_subset", rests:"consolaHT_rests", swing:"consolaHT_swing",
-                inversions:"consolaHT_inversions", rythmicarmonies:"consolaHT_rythmicarmonies", in3rds:"consolaHT_in3rds", guitar:"consolaHT_guitar" };
+                inversions:"consolaHT_inversions", rythmicarmonies:"consolaHT_rythmicarmonies", in3rds:"consolaHT_in3rds", in4ths:"consolaHT_in4ths", in5ths:"consolaHT_in5ths", guitar:"consolaHT_guitar" };
     function on(k){ var e = document.getElementById(IDS[k]); return !!(e && e.checked); }
     // Arp: slider #consolaHT_arpSlider (0–100%) = probabilidad por compás de arpegiar la armonía. > 0 activa Harmony.
     function arpProb(){ var e = document.getElementById("consolaHT_arpSlider"); var v = e ? parseFloat(e.value) : 0; return (v > 0) ? Math.min(1, v/100) : 0; }
@@ -9930,14 +9932,21 @@ function runAnalysis() {
     // El set (ordenado desde su nota más grave) es la "escala"; se elige un grado al azar y se apilan
     // posiciones i, i+2, i+4(, i+6) con wrap a la octava. Solo para sets de 5+ notas distintas.
     // Devuelve null si no aplica, o { notes, deg } (notes ascendente, en el registro del set).
-    function thirdsStack(rc, prevDeg, att){
+    // in4ths / in5ths: lo mismo pero apilando de a 3 / 4 grados del set (cuartas / quintas diatónicas al set).
+    function gcd(a, b){ return b ? gcd(b, a % b) : a; }
+    function stackStrides(){ var o = []; if(on("in3rds")) o.push(2); if(on("in4ths")) o.push(3); if(on("in5ths")) o.push(4); return o; }
+    function stackOn(){ return stackStrides().length > 0; }
+    function pickStride(){ var l = stackStrides(); return l[randomInt(0, l.length-1)]; }
+    function thirdsStack(rc, prevDeg, att, stride){
+      stride = stride || 2; // 2 = terceras, 3 = cuartas, 4 = quintas (en grados del set)
       var lowest = Math.min.apply(null, rc);
       var scale = uniquePcs(rc).map(function(pc){ return { pc: pc, off: mod12(pc - lowest) }; })
         .sort(function(a, b){ return a.off - b.off; });
       var n = scale.length;
       if(n < 5) return null;
-      var maxDistinct = (n % 2 === 1) ? n : n / 2; // con n par, i+2k repite tras n/2 notas
-      var size = Math.min(4, maxDistinct); // acordes de 4 notas en terceras (7mas del set); con n par y chico, lo máximo que da
+      var maxDistinct = n / gcd(n, stride); // i+stride*k repite tras n/gcd(n,stride) notas
+      var size = Math.min(4, maxDistinct); // acordes de 4 notas (7mas del set en terceras); con n par y chico, lo máximo que da
+      if(size < 3) return null; // 2 notas apiladas no hacen acorde: el set suena entero
       var deg, g = 0;
       if(att && att.in3g){
         // compás de 4 acordes: la fundamental se mueve por grados del set (2 arriba 1 abajo, o 1 abajo 2 arriba)
@@ -9947,7 +9956,7 @@ function runAnalysis() {
       } else { do { deg = randomInt(0, n-1); g++; } while(deg === prevDeg && g < 20); }
       var notes = [];
       for(var k = 0; k < size; k++){
-        var pos = deg + 2*k;
+        var pos = deg + stride*k;
         notes.push(lowest + scale[pos % n].off + 12*Math.floor(pos / n));
       }
       return { notes: notes.sort(function(a, b){ return a - b; }), deg: deg };
@@ -10022,13 +10031,13 @@ function runAnalysis() {
               prevSync = pi; cell = SYNC_POOL[pi];
             } else cell = genericBarCell(barLen[bar], RHYTHM.compound(bar), 0.7);
           } else if(multi) cell = stepCell(barLen[bar], on("swing") ? 0.5 : 1);
-          else if(on("in3rds") && uniquePcs(MULTISETS.rootForAttack(bar, rootChord)).length >= 5){
+          else if(stackOn() && uniquePcs(MULTISETS.rootForAttack(bar, rootChord)).length >= 5){
             // in3rds solo: dos acordes en terceras (en bloque) dentro del mismo acorde, p. ej. C E G B | D F A C;
             // el 50% de los compases, en cambio, 4 acordes con la fundamental moviéndose por grados del set:
             // 2 arriba 1 abajo (0,1,2,1) o 1 abajo 2 arriba (1,0,1,2)
             if(Math.random() < 0.5){
               var q4 = barLen[bar]/4; cell = [q4, q4, q4, q4];
-              in3grp = { base: null, pat: (Math.random() < 0.5) ? [0, 1, 2, 1] : [1, 0, 1, 2] };
+              in3grp = { base: null, stride: pickStride(), pat: (Math.random() < 0.5) ? [0, 1, 2, 1] : [1, 0, 1, 2] };
             } else cell = [barLen[bar]/2, barLen[bar]/2];
           }
           else cell = [barLen[bar]];
@@ -10141,8 +10150,8 @@ function runAnalysis() {
         }
         // in3rds: lo que SUENA es un acorde en terceras del set; el acorde vigente (slots, bajo, melodía, cifrado) sigue siendo el set completo
         var in3Sub = null;
-        if(on("in3rds") && !gv){
-          var st = thirdsStack(rc, prevDeg3, a);
+        if(stackOn() && !gv){
+          var st = thirdsStack(rc, prevDeg3, a, a.in3g ? a.in3g.stride : pickStride());
           if(st){
             prevDeg3 = a.in3g ? a.in3g.base : st.deg;
             in3Sub = st.notes;
@@ -14043,7 +14052,7 @@ function runAnalysis() {
   // Harmony: cada casilla regenera (si hay set elegido). poly reemplaza a sync (en build).
   // "all" tilda/destilda las otras; y refleja su estado (tildada solo si están todas).
   (function(){
-    var keys = ["sync","poly","accent","inversions","rythmicarmonies","in3rds"];
+    var keys = ["sync","poly","accent","inversions","rythmicarmonies","in3rds","in4ths","in5ths"];
     var allEl = document.getElementById("consolaHT_all");
     function syncAll(){
       if(!allEl) return;
