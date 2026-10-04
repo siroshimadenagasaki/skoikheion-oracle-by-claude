@@ -599,7 +599,7 @@
     --c-bar3:#c4696f;
     --c-bar4:#7fa88f;
     --c-bass:#6f6a85;
-    --c-melody:var(--ink);
+    --c-melody:#ff00aa; /* Melodía principal: rosa fucsia */
     --c-comping2:#6f9bd8;
     --c-melody2:#e6ff00; /* Melody n2: amarillo flúor */
     --c-bebop:#cf7a3c;
@@ -3844,6 +3844,183 @@ const CHORDS_DATA = JSON.parse(`[{"forte-code":"3-1","pitch-classes":[0,1,2],"na
 {"forte-code":"11-1","pitch-classes":[0,1,2,3,4,5,6,7,8,9,10],"name":"Undecatonic scale","carter-number":null,"complement-forte-code":"1-1","documentation-link":null,"*":true,"Z":false},
 {"forte-code":"12-1","pitch-classes":[0,1,2,3,4,5,6,7,8,9,10,11],"name":"Chromatic scale","carter-number":null,"complement-forte-code":"0-1","documentation-link":"https://drive.google.com/file/d/1IoxblakSfNSRHwpfG-AGaC2rzJNXeoA2/view?usp=drive_link","*":true,"Z":false}]
 `);
+
+/* ============================================================
+   JERARQUÍA DE SETS (índice del libro Stoikheion)
+   Orden de aparición de cada set dentro de su cardinalidad: rank 1 =
+   mayor jerarquía (p. ej. Tríada Mayor, Tetrada Maj7). Se indexa por
+   código Solomon (el mismo que devuelve analyze().solomon_code y que
+   usa CHORDS_DATA), así que se cruza directo con cualquier set elegido.
+   Funciones: setHierarchyOf, setHierarchyForPcs, setsByHierarchy,
+   compareByHierarchy. Los sets que no figuran en el índice devuelven null.
+   ============================================================ */
+const SET_HIERARCHY_DATA = Object.freeze([
+  {card:3, rank:1, code:"3-11B", name:"Triada Mayor / Triada menor 6b (no5)"},
+  {card:3, rank:2, code:"3-11", name:"Triada menor / Triada Mayor 6 (no5)"},
+  {card:3, rank:3, code:"3-9", name:"Triada Cuartal"},
+  {card:3, rank:4, code:"3-12", name:"Triada Aumentada"},
+  {card:3, rank:5, code:"3-5B", name:"Triada Tritono-Cuarta / Triada Frigia 2"},
+  {card:3, rank:6, code:"3-5", name:"Triada Cuarta-Tritono / Triada Lidia"},
+  {card:3, rank:7, code:"3-4", name:"Triada Maj7(no5)"},
+  {card:3, rank:8, code:"3-3", name:"Triada mMaj7(no5)"},
+  {card:3, rank:9, code:"3-7", name:"Triada m7(no5)"},
+  {card:3, rank:10, code:"3-7B", name:"Triada 7(no5) [1 5 7b]"},
+  {card:3, rank:11, code:"3-8", name:"Triada 7(no5) [1 3 7b]"},
+  {card:3, rank:12, code:"3-8B", name:"Triada 5b"},
+  {card:3, rank:13, code:"3-10", name:"Triada Disminuida / m6(no5) / Triada menor 6"},
+  {card:3, rank:14, code:"3-6", name:"Triada tonal"},
+  {card:3, rank:15, code:"3-1", name:"Triada cromatica"},
+  {card:4, rank:1, code:"4-20", name:"Tetrada Maj7 / [Db/C] / [Em/C]"},
+  {card:4, rank:2, code:"4-27B", name:"Tetrada 7 / [C/Bb]"},
+  {card:4, rank:3, code:"4-26", name:"Tetrada m7 / [C/A] / Tetrada Mayor 6"},
+  {card:4, rank:4, code:"4-27", name:"Tetrada menor 6 / m7(5b) / [Ebm/C]"},
+  {card:4, rank:5, code:"4-28", name:"Tetrada Septima Disminuida"},
+  {card:4, rank:6, code:"4-23", name:"Tetracordio Cuartal / m7(11 no5) / 7 Sus4"},
+  {card:4, rank:7, code:"4-25", name:"Tetrada C7(5b) / Sexta francesa"},
+  {card:4, rank:8, code:"4-24", name:"Tetracordio Septima aumentado / 7+"},
+  {card:4, rank:9, code:"4-22", name:"Tetrada Mayor 9 / [Bb/C]"},
+  {card:4, rank:10, code:"4-14", name:"Tetrada Menor add2 / Maj7(6 no5) / [Bbm/C]"},
+  {card:4, rank:11, code:"4-22B", name:"Tetrada m(11) / [Gm/C]"},
+  {card:4, rank:12, code:"4-19B", name:"Tetrada Maj7+ / [E/C]"},
+  {card:4, rank:13, code:"4-19", name:"Tetrada mMaj7 / [Dbm/C]"},
+  {card:4, rank:14, code:"4-10", name:"Tetracordio menor / m9 11 (no5)"},
+  {card:4, rank:15, code:"4-14B", name:"Tetrada Maj9(no3) / Mayor add4 / [G/C]"},
+  {card:4, rank:16, code:"4-11", name:"Tetracordio Frigio / Maj9(no5)"},
+  {card:4, rank:17, code:"4-11B", name:"Tetracordio Mayor / Jonico / m9(no5) / [C/E]"},
+  {card:4, rank:18, code:"4-15", name:"Tetrada mMaj7(4 no5) / Todos los intervalos 1"},
+  {card:4, rank:19, code:"4-15B", name:"Tetrada 7(9#no5) / Todos los intervalos 2"},
+  {card:4, rank:20, code:"4-21", name:"Tetracordio Tonal / Lidio"},
+  {card:4, rank:21, code:"4-12", name:"Tetrada 7(9b no5) / Hungaro menor / Tetrada mMaj7(6 no5)"},
+  {card:4, rank:22, code:"4-12B", name:"Tetrada Disminuido 4b / Hungaro mayor"},
+  {card:4, rank:23, code:"4-13B", name:"Tetrada menor 6/9"},
+  {card:4, rank:24, code:"4-13", name:"Tetrada m7 (6 no5)"},
+  {card:4, rank:25, code:"4-16", name:"Tetrada Maj7(4#)"},
+  {card:4, rank:26, code:"4-16B", name:"Tetrada 7(11)"},
+  {card:4, rank:27, code:"4-17", name:"Tetrada Bitonal / Arpegio Blues / [A/C] / [Abm/C]"},
+  {card:4, rank:28, code:"4-29", name:"Tetrada 7(6 no5) / Todos los intervalos 3 / [Bm/C]"},
+  {card:4, rank:29, code:"4-29B", name:"Tetrada Mayor (11#) / Todos los intervalos 4 / [C/Gb]"},
+  {card:4, rank:30, code:"4-18", name:"Tetrada Disminuido Maj7 / Mayor disminuido / [B/C]"},
+  {card:4, rank:31, code:"4-18B", name:"Tetrada menor disminuido / [F#m/C]"},
+  {card:4, rank:32, code:"4-3", name:"Tetracordio Alternado / mMaj9 (no5)"},
+  {card:4, rank:33, code:"4-8", name:"Tetrada Maj7 (4# no3) / Frigia(2b 6b no3)"},
+  {card:4, rank:34, code:"4-4", name:"Tetracordio Maj7(2b no5)"},
+  {card:4, rank:35, code:"4-5B", name:"Tetracordio Frigio Maj7"},
+  {card:4, rank:36, code:"4-9", name:"Tetrada Doble tritono"},
+  {card:4, rank:37, code:"4-7", name:"Tetracordio Arabe Maj7(2# no5) / Tetracordio armonico"},
+  {card:4, rank:38, code:"4-1", name:"Tetracordio cromatico"},
+  {card:5, rank:1, code:"5-35", name:"Pentatonica Mayor Tradicional / Pentatonica menor Tradicional"},
+  {card:5, rank:2, code:"5-34", name:"Pentatonica Prometeo / m(4 6)"},
+  {card:5, rank:3, code:"5-29B", name:"Pentatonica Kumoi I"},
+  {card:5, rank:4, code:"5-29", name:"Pentatonica Kumoi II"},
+  {card:5, rank:5, code:"5-30", name:"Pentatonica Enigmatica"},
+  {card:5, rank:6, code:"5-30B", name:"Pentatonica Enigmatica II"},
+  {card:5, rank:7, code:"5-32", name:"Pentatonica Napolitana"},
+  {card:5, rank:8, code:"5-32B", name:"Pentatonica Alterada I"},
+  {card:5, rank:9, code:"5-18", name:"Pentatonica Gypsy I"},
+  {card:5, rank:10, code:"5-18B", name:"Pentatonica Gypsy II"},
+  {card:5, rank:11, code:"5-19B", name:"Pentatonica Balinesa"},
+  {card:5, rank:12, code:"5-20", name:"Pentatonica Pelog"},
+  {card:5, rank:13, code:"5-20B", name:"Pentatonica Hirajoshi"},
+  {card:5, rank:14, code:"5-21", name:"Pentatonica Siria"},
+  {card:5, rank:15, code:"5-21B", name:"Pentatonica Libanesa"},
+  {card:5, rank:16, code:"5-27", name:"Pentatonica Maj9"},
+  {card:5, rank:17, code:"5-27B", name:"Pentatonica m9 / Pentatonica Maj7(6)"},
+  {card:5, rank:18, code:"5-17", name:"Pentatonica Maj7+(6)"},
+  {card:5, rank:19, code:"5-22", name:"Pentatonica Persa"},
+  {card:5, rank:20, code:"5-31", name:"Pentatonica Disminuida 9b"},
+  {card:5, rank:21, code:"5-31B", name:"Pentatonica 7(9b) / Disminuida Maj7"},
+  {card:5, rank:22, code:"5-28", name:"Pentatonica Aumentada - Sexta"},
+  {card:5, rank:23, code:"5-23B", name:"Pentatonica mayor / m11(no5)"},
+  {card:5, rank:24, code:"5-26", name:"Pentatonica Disminuida 9# / mMaj7(6)"},
+  {card:5, rank:25, code:"5-8", name:"Pentatonica espejo / Tritono simetrico"},
+  {card:6, rank:1, code:"6-35", name:"Hexatonica Tonal"},
+  {card:6, rank:2, code:"6-20", name:"Hexatonica Aumentada (Modo 1 / Modo 2)"},
+  {card:6, rank:3, code:"6-24B", name:"Hexatonica mMaj9(6)"},
+  {card:6, rank:4, code:"6-25", name:"Hexacordio Jonica no6 / Locrio no7"},
+  {card:6, rank:5, code:"6-25B", name:"Hexatonica Dorica no4 / m9(6)"},
+  {card:6, rank:6, code:"6-26", name:"Hexatonica Lidia no6 / Maj9(4#)"},
+  {card:6, rank:7, code:"6-32", name:"Hexatonica m11"},
+  {card:6, rank:8, code:"6-33B", name:"Hexatonica Lidia no7 / 9(6)"},
+  {card:6, rank:9, code:"6-33", name:"Hexatonica Lidia no5 / Maj9(4# 6)"},
+  {card:6, rank:10, code:"6-34", name:"Hexatonica Prometeo / Mixolidia 4# no5 / 9(4# 6 no5)"},
+  {card:6, rank:11, code:"6-34B", name:"Hexatonica Mixolidia 4# no6 / 9(4#)"},
+  {card:6, rank:12, code:"6-19", name:"Hexatonica mMaj9(4#) / (Pseudo Aumentada menor)"},
+  {card:6, rank:13, code:"6-19B", name:"Hexatonica Maj7(2# 4#)"},
+  {card:6, rank:14, code:"6-30", name:"Hexatonica Menor Bitonal"},
+  {card:6, rank:15, code:"6-30B", name:"Hexatonica Mayor Bitonal"},
+  {card:6, rank:16, code:"6-47B", name:"Hexatonica Blues"},
+  {card:6, rank:17, code:"6-49", name:"Hexatonica Napolitana Prometeo"},
+  {card:6, rank:18, code:"6-50", name:"Hexatonica C + F#m"},
+  {card:6, rank:19, code:"6-7", name:"Hexatonica Messiaen Modo 5"},
+  {card:6, rank:20, code:"6-27B", name:"Hexatonica Piramide / 7(2b 2#)"},
+  {card:7, rank:1, code:"7-35", name:"Septatonica Diatonica / Mayor Jonica / Septatonica Diatonica - Menor Eolica"},
+  {card:7, rank:2, code:"7-32", name:"Septatonica Menor Armonica"},
+  {card:7, rank:3, code:"7-34", name:"Septatonica Menor Melodica / Septatonica Alterada"},
+  {card:7, rank:4, code:"7-32B", name:"Septatonica Mayor Armonica"},
+  {card:7, rank:5, code:"7-22", name:"Septatonica Hungara Menor (Gypsy) / Doble Armonica"},
+  {card:7, rank:6, code:"7-31", name:"Septatonica Hungara Mayor"},
+  {card:7, rank:7, code:"7-30", name:"Septatonica Napolitana Menor"},
+  {card:7, rank:8, code:"7-33", name:"Septatonica Napolitana Mayor"},
+  {card:7, rank:9, code:"7-24", name:"Septatonica Enigmatica Mayor"},
+  {card:7, rank:10, code:"7-18", name:"Septatonica Enigmatica menor"},
+  {card:7, rank:11, code:"7-20", name:"Septatonica Persa"},
+  {card:7, rank:12, code:"7-20B", name:"Septatonica Chalanata"},
+  {card:7, rank:13, code:"7-21B", name:"Septatonica Gypsy"},
+  {card:7, rank:14, code:"7-12", name:"Septatonica Blues Afroamericana"},
+  {card:7, rank:15, code:"7-25", name:"Septatonica Blues"},
+  {card:8, rank:1, code:"8-28", name:"Octatonica Disminuida (Modo 1 / Modo 2)"},
+  {card:8, rank:2, code:"8-22", name:"Octatonica Jonica Bebop (2b-2)"},
+  {card:8, rank:3, code:"8-23", name:"Octatonica Mixolidia Bebop (7b-7) / Dorica(3b-3) Bebop"},
+  {card:8, rank:4, code:"8-26", name:"Octatonica Mayor 6ta disminuida / Jonica(5-5#) Bebop"},
+  {card:8, rank:5, code:"8-27", name:"Octatonica Menor 6ta disminuida / Menor melodica (5-5#) Bebop"},
+  {card:8, rank:6, code:"8-27B", name:"Octatonica Dominante disminuida"},
+  {card:8, rank:7, code:"8-9", name:"Octatonica Messiaen Modo 4"},
+  {card:8, rank:8, code:"8-25", name:"Octatonica Dominante 5b disminuida / Messiaen Modo 6"},
+  {card:9, rank:1, code:"9-12", name:"Nonatonica Tcherepnin (Messiaen Modo 3)"},
+  {card:9, rank:2, code:"9-7", name:"Nonatonica Mayor Barry Harris / Nonatonica Blues"},
+  {card:10, rank:1, code:"10-6", name:"Messiaen Modo 7"},
+  {card:12, rank:1, code:"12-1", name:"Dodecatonica / Cromatica"}
+]);
+const SET_HIERARCHY_BY_CODE = (function () {
+  const totals = {};
+  SET_HIERARCHY_DATA.forEach(function (e) { totals[e.card] = (totals[e.card] || 0) + 1; });
+  const map = new Map();
+  SET_HIERARCHY_DATA.forEach(function (e) {
+    map.set(e.code, Object.freeze({ code: e.code, card: e.card, rank: e.rank, total: totals[e.card], name: e.name }));
+  });
+  return map;
+})();
+
+// {code, card, rank, total, name} | null — por código Solomon, ej. "3-11B".
+function setHierarchyOf(code) {
+  return SET_HIERARCHY_BY_CODE.get(code) || null;
+}
+
+// Igual, pero a partir de pitch classes (0-11), vía analyze().
+function setHierarchyForPcs(pcs) {
+  if (!pcs || pcs.length < 2) return null;
+  try { return setHierarchyOf(analyze(CHORDS_DATA, pcs).solomon_code); }
+  catch (e) { return null; }
+}
+
+// Sets del índice de una cardinalidad, de mayor a menor jerarquía.
+// Sin argumento devuelve todos (por cardinalidad y luego rank).
+function setsByHierarchy(card) {
+  return Array.from(SET_HIERARCHY_BY_CODE.values())
+    .filter(function (e) { return card == null || e.card === card; })
+    .sort(function (a, b) { return a.card - b.card || a.rank - b.rank; });
+}
+
+// Comparador para Array.sort sobre códigos Solomon: primero los de mayor
+// jerarquía (rank menor). Los que no están en el índice van al final.
+function compareByHierarchy(codeA, codeB) {
+  const a = setHierarchyOf(codeA), b = setHierarchyOf(codeB);
+  if (!a && !b) return 0;
+  if (!a) return 1;
+  if (!b) return -1;
+  return a.card - b.card || a.rank - b.rank;
+}
+
 
 /* ============================================================
    SUPERPOSICIÓN CROMÁTICA SOBRE TÓNICA INMÓVIL
