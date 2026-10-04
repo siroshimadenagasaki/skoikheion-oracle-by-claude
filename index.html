@@ -634,6 +634,7 @@
     margin-bottom:18px;
   }
   .consola-field{display:flex;flex-direction:column;gap:6px;}
+  .consola-stack{flex:0 0 100%;box-sizing:border-box;}
   .consola-field label{
     font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.1em;
     text-transform:uppercase;color:var(--ink-muted);
@@ -1338,9 +1339,6 @@
           <span class="consola-inst-toggle" title="Además del subset de siempre, a veces usa el COMPLEMENTO del set elegido (las notas que el set deja afuera dentro de la octava) — más variedad armónica, siempre derivada del mismo set."><input type="checkbox" id="consolaSupersetsChk"><label for="consolaSupersetsChk">&#8679; Supersets (variedad)</label></span>
           <span class="consola-inst-toggle" title="Cada compás de armonía, bajo, melodía y batería tiene un 40% extra de probabilidad de repetir exactamente el patrón del compás anterior; además, bajo y melodía tienen un 40% de probabilidad por compás de acoplar sus ataques a los de la armonía en vez de llevar su propio ritmo."><input type="checkbox" id="consolaMoreRepChk"><label for="consolaMoreRepChk">&#128257; More repetition</label></span>
           <span class="consola-inst-toggle" title="En cada reataque de armonía se sortean varias combinaciones válidas de subconjunto/transposición/inversión dentro del MISMO acorde/grado elegido (nunca de otro) y se elige la que comparte más notas con el acorde anterior — el doble de notas comunes en promedio que al azar puro, con la misma restricción de conjunto de siempre."><input type="checkbox" id="consolaCommonNotesChk"><label for="consolaCommonNotesChk">&#128279; Notas comunes</label></span>
-          <span class="consola-inst-toggle" title="Slider 0–100% (default 30%, antes 'AddLittlePeace'): probabilidad por variación de reservar 4 compases seguidos (elegidos al azar dentro de los 12) como un 'respiro' de la MELODÍA: en esos 4 compases, la melodía queda en una sola nota sostenida por compás (redonda) en vez de su ritmo de siempre — pisa Rapid runs si coincide en el mismo compás. El resto del segmento sigue igual. No afecta a Normalito. 0% = nunca."><label for="consolaMelodicSpaceSlider">&#128330;&#65039; MelodicSpace</label><input type="range" class="consola-mini-range" id="consolaMelodicSpaceSlider" min="0" max="100" value="30" step="1"><span class="consola-val" id="consolaMelodicSpaceVal">30%</span></span>
-          <span class="consola-inst-toggle" title="Slider 0–100% (default 0%): mismo concepto que MelodicSpace pero aplicado a ARMONÍA y BAJO — durante el tramo de respiro sorteado, un solo acorde por compás (redonda, sin reataques extra) y el bajo también en redondas. Es el rol que antes cumplía 'AddLittlePeace'. No afecta a Normalito. 0% = nunca."><label for="consolaHarmonicSpaceSlider">&#127925; HarmonicSpace</label><input type="range" class="consola-mini-range" id="consolaHarmonicSpaceSlider" min="0" max="100" value="0" step="1"><span class="consola-val" id="consolaHarmonicSpaceVal">0%</span></span>
-          <span class="consola-inst-toggle" title="Slider 0–100% (default 0%): mismo concepto que MelodicSpace pero aplicado a BATERÍA — durante el tramo de respiro sorteado, la batería queda en un solo golpe suave por compás en vez de su patrón de siempre. No afecta a Normalito. 0% = nunca."><label for="consolaRhythmSpaceSlider">&#129345; RythmSpace</label><input type="range" class="consola-mini-range" id="consolaRhythmSpaceSlider" min="0" max="100" value="0" step="1"><span class="consola-val" id="consolaRhythmSpaceVal">0%</span></span>
           <span class="consola-inst-toggle" title="Slider 0–100% (default 5%): probabilidad por compás de que la melodía tenga notas rápidas (semicorcheas o fusas, al azar). 70% de esas veces: 1 a 3 grupitos de 2, 4 o 6 notas cortas repartidos al azar dentro de la melodía del compás. 30%: una CORRIDA en bloque de 1 compás entero o medio compás. Las notas de la corrida suben/bajan por grados conjuntos usando SOLO las notas del acorde vigente en cada instante (nunca sale del set), sin silencios. El resto del compás (si la corrida es de medio compás) sigue con su ritmo de siempre. No afecta a Normalito. 0% = nunca."><label for="consolaRapidRunsSlider">&#9889; Rapid runs</label><input type="range" class="consola-mini-range" id="consolaRapidRunsSlider" min="0" max="100" value="5" step="1"><span class="consola-val" id="consolaRapidRunsVal">5%</span></span>
         </div>
       </div>
@@ -1367,12 +1365,17 @@
       </div>
         </div>
       </div>
-      <div class="consola-field consola-instruments" title="Todo lo de ritmo agrupado y contraído por defecto: Rhythm complexity, Variaciones de ritmo (Velocity humanizada, Micro-timing, Variación por sección, other-rhythm-variations), Rhythm — Time signature (con Mix time signatures) y Loop — mismos controles de siempre, solo reubicados.">
+      <div class="consola-field consola-instruments consola-stack" title="Todo lo de ritmo agrupado y contraído por defecto: Rhythm complexity, Variaciones de ritmo (Velocity humanizada, Micro-timing, Variación por sección, other-rhythm-variations), Rhythm — Time signature (con Mix time signatures) y Loop — mismos controles de siempre, solo reubicados.">
         <div class="consola-subfield-head">
           <label>Rhythm</label>
           <button type="button" class="subfield-toggle" aria-expanded="false" aria-controls="rhythmBody" onclick="toggleModule(this)" title="Mostrar/ocultar los controles de ritmo"></button>
         </div>
         <div class="collapsible-content collapsed" id="rhythmBody" style="display:flex;flex-wrap:wrap;gap:20px 30px;">
+      <div class="consola-field">
+        <div class="consola-inst-row">
+          <span class="consola-inst-toggle" title="Slider 0–100% (default 0%): mismo concepto que MelodicSpace pero aplicado a BATERÍA — durante el tramo de respiro sorteado, la batería queda en un solo golpe suave por compás en vez de su patrón de siempre. No afecta a Normalito. 0% = nunca."><label for="consolaRhythmSpaceSlider">&#129345; RythmSpace</label><input type="range" class="consola-mini-range" id="consolaRhythmSpaceSlider" min="0" max="100" value="0" step="1"><span class="consola-val" id="consolaRhythmSpaceVal">0%</span></span>
+        </div>
+      </div>
       <div class="consola-field" title="Complejidad de la pista de Batería (motor libre/aleatorio — no afecta a Swing Drums, que es un groove fijo). A más %: más probabilidad de compases con patrones densos (ghostSnare/synKick/fill en vez de breath/sparse), hi-hat con subdivisión más rápida (llega hasta semicorcheas en vez de negras/corcheas), y de que se sumen más 'cuerpos' del kit encima del patrón de siempre — fill de toms sobre el último tiempo del compás, platillo crash en el primer tiempo, y el hi-hat cerrado reemplazado por ride/campana del ride en compases enteros. 50% por defecto (comportamiento intermedio); 0% = siempre lo más quieto/simple, sin toms/crash/ride extra.">
         <label for="consolaRhythmComplexitySlider">Rhythm complexity</label>
         <input type="range" id="consolaRhythmComplexitySlider" min="0" max="100" value="50" step="1">
@@ -1408,12 +1411,15 @@
       </div>
         </div>
       </div>
-      <div class="consola-field consola-instruments" title="Harmony: si hay al menos una casilla tildada, la Armonía deja de usar el motor libre y toca SOLO el set elegido (sin subsets al azar, en bloque). Con Cycles tildado se transpone por ataque como el motor libre (ChangeDuration incluido). Bajo, melodía y cifrado siguen igual. No aplica a Normalito. Todas destildadas = motor libre de siempre.">
+      <div class="consola-field consola-instruments consola-stack" title="Harmony: si hay al menos una casilla tildada, la Armonía deja de usar el motor libre y toca SOLO el set elegido (sin subsets al azar, en bloque). Con Cycles tildado se transpone por ataque como el motor libre (ChangeDuration incluido). Bajo, melodía y cifrado siguen igual. No aplica a Normalito. Todas destildadas = motor libre de siempre.">
         <div class="consola-subfield-head">
           <label>Harmony</label>
           <button type="button" class="subfield-toggle" aria-expanded="false" aria-controls="harmTestBody" onclick="toggleModule(this)" title="Mostrar/ocultar Harmony"></button>
         </div>
         <div class="collapsible-content collapsed" id="harmTestBody">
+        <div class="consola-inst-row">
+          <span class="consola-inst-toggle" title="Slider 0–100% (default 0%): mismo concepto que MelodicSpace pero aplicado a ARMONÍA y BAJO — durante el tramo de respiro sorteado, un solo acorde por compás (redonda, sin reataques extra) y el bajo también en redondas. Es el rol que antes cumplía 'AddLittlePeace'. No afecta a Normalito. 0% = nunca."><label for="consolaHarmonicSpaceSlider">&#127925; HarmonicSpace</label><input type="range" class="consola-mini-range" id="consolaHarmonicSpaceSlider" min="0" max="100" value="0" step="1"><span class="consola-val" id="consolaHarmonicSpaceVal">0%</span></span>
+        </div>
         <div class="consola-inst-row">
           <span class="consola-inst-toggle" title="Tilda o destilda todas las casillas de Harmony."><input type="checkbox" id="consolaHT_all"><label for="consolaHT_all">all</label></span>
           <span class="consola-inst-toggle" title="Célula con síncopas por compás (8 células que suman 4)."><input type="checkbox" id="consolaHT_sync"><label for="consolaHT_sync">sync</label></span>
@@ -1438,12 +1444,15 @@
         </div>
         </div>
       </div>
-      <div class="consola-field consola-instruments" title="Melody: opciones de la melodía principal (por ahora, Ornaments).">
+      <div class="consola-field consola-instruments consola-stack" title="Melody: opciones de la melodía principal (por ahora, Ornaments).">
         <div class="consola-subfield-head">
           <label>Melody</label>
           <button type="button" class="subfield-toggle" aria-expanded="false" aria-controls="melodyBody" onclick="toggleModule(this)" title="Mostrar/ocultar Melody"></button>
         </div>
         <div class="collapsible-content collapsed" id="melodyBody">
+        <div class="consola-inst-row">
+          <span class="consola-inst-toggle" title="Slider 0–100% (default 30%, antes 'AddLittlePeace'): probabilidad por variación de reservar 4 compases seguidos (elegidos al azar dentro de los 12) como un 'respiro' de la MELODÍA: en esos 4 compases, la melodía queda en una sola nota sostenida por compás (redonda) en vez de su ritmo de siempre — pisa Rapid runs si coincide en el mismo compás. El resto del segmento sigue igual. No afecta a Normalito. 0% = nunca."><label for="consolaMelodicSpaceSlider">&#128330;&#65039; MelodicSpace</label><input type="range" class="consola-mini-range" id="consolaMelodicSpaceSlider" min="0" max="100" value="30" step="1"><span class="consola-val" id="consolaMelodicSpaceVal">30%</span></span>
+        </div>
       <div class="consola-field consola-instruments" title="Ornaments: adornos sobre la melodía principal (~30% de las notas con figura lo bastante larga), en figuras muy rápidas (1/8 de tiempo) tomadas de la propia nota — nunca se superponen ni cambian el ritmo general. La vecina del adorno es la nota más cercana DENTRO del acorde vigente (hasta 2 semitonos arriba/abajo); si no hay, semitono cromático (única excepción a &quot;nunca una nota ajena al set&quot;, como Scales). La nota principal siempre es del acorde. Doblar melodía hereda los adornos; moreComping sigue a las notas principales. No aplica a Normalito. Todas destildadas = melodía de siempre.">
         <div class="consola-subfield-head">
           <label>Ornaments</label>
@@ -1489,7 +1498,7 @@
       </div>
         </div>
       </div>
-      <div class="consola-field consola-instruments" title="Módulo aparte del modo TEST de arriba: mientras el checkbox 'Cycles' esté tildado, cada transposición cromática al azar (por compás y por reataque) se sortea al azar entre este set de intervalos. Los sliders de intervalo son % del sorteo y suman como máximo 100% (el que subís se frena para no pasarse); lo que falta hasta 100% lo completa la transposición libre (Chromatism, con la amplitud del slider Chromatism de más arriba). Con 100% en intervalos no hay Chromatism. Si en 'Transposition intervals (test)' de arriba hay algún checkbox tildado, ESE modo manda (misma prioridad que ya tiene hoy sobre Chromatism) y Cycles no se aplica. Con Cycles destildado, la página se comporta exactamente igual que hoy.">
+      <div class="consola-field consola-instruments consola-stack" title="Módulo aparte del modo TEST de arriba: mientras el checkbox 'Cycles' esté tildado, cada transposición cromática al azar (por compás y por reataque) se sortea al azar entre este set de intervalos. Los sliders de intervalo son % del sorteo y suman como máximo 100% (el que subís se frena para no pasarse); lo que falta hasta 100% lo completa la transposición libre (Chromatism, con la amplitud del slider Chromatism de más arriba). Con 100% en intervalos no hay Chromatism. Si en 'Transposition intervals (test)' de arriba hay algún checkbox tildado, ESE modo manda (misma prioridad que ya tiene hoy sobre Chromatism) y Cycles no se aplica. Con Cycles destildado, la página se comporta exactamente igual que hoy.">
         <div class="consola-subfield-head">
           <span class="consola-inst-toggle"><input type="checkbox" id="consolaCyclesChk" checked><label for="consolaCyclesChk">Cycles</label></span>
           <button type="button" class="subfield-toggle" aria-expanded="false" aria-controls="cyclesDetailBody" onclick="toggleModule(this)" title="Mostrar/ocultar Modo A/B y los sliders de intervalo de Cycles"></button>
