@@ -2027,13 +2027,15 @@
     <button type="button" class="module-fs-toggle fullscreen-btn" data-fs-card="progresionCard" title="Pantalla completa">⛶ Full screen</button>
     <h2>Generador de progresiones aleatorio</h2>
     <div class="collapsible-content collapsed" id="progresionContent">
-    <p class="consola-status">Arma al azar una de las seis progresiones, respetando el grado y el bajo fijo de cada acorde. <b>V</b> / <b>VI</b> siempre con bajo en G / A, <b>I</b> / <b>Im</b> con bajo en C, <b>II</b> / <b>IIø</b> / <b>VIø</b> con bajo en D / D / A. Para cada grado se sortea un set de la Tabla de Sets (Anexo 1 &middot; las clases Forte/Solomon, en cualquiera de sus rotaciones, filtradas por el switch de cantidad de notas) que cumpla <em>únicamente</em> las categorías admitidas para ese grado: V / VI &rarr; Mayor alt, Jónica/Lidia (no3), Dominante, Alterada y/o Frigia &middot; I &rarr; Mayor, Frigia (no3), Frigia (3) &middot; Im &rarr; Menor, Frigia (no3), Frigia (3b) &middot; II &rarr; Menor, Dominante &middot; IIø / VIø &rarr; Locria, Menor, Dominante. La categoría se evalúa siempre desde el bajo, como pide la tabla. Los acordes se realizan como voicings reales — mismo criterio que el Voicing Explorer y el modo &#127927; Jazz: registro tocable, disposición cerrada / abierta / extendida y, entre un acorde y el siguiente, la que menos mueve las voces — pero <b>sin invertir</b>: el bajo del grado siempre queda como nota más grave. Arriba de cada acorde se muestra el detalle completo del set elegido. &#128256; Regenerar sortea sets nuevos; &#9658; Reproducir toca la progresión en orden.</p>
+    <p class="consola-status">Arma al azar una de las ocho progresiones, respetando el grado y el bajo fijo de cada acorde. <b>V</b> / <b>VI</b> siempre con bajo en G / A, <b>I</b> / <b>Im</b> con bajo en C, <b>II</b> / <b>IIø</b> / <b>VIø</b> con bajo en D / D / A. Para cada grado se sortea un set de la Tabla de Sets (Anexo 1 &middot; las clases Forte/Solomon, en cualquiera de sus rotaciones, filtradas por el switch de cantidad de notas) que cumpla <em>únicamente</em> las categorías admitidas para ese grado: V / VI &rarr; Mayor alt, Jónica/Lidia (no3), Dominante, Alterada y/o Frigia &middot; I &rarr; Mayor, Frigia (no3), Frigia (3) &middot; Im &rarr; Menor, Frigia (no3), Frigia (3b) &middot; II &rarr; Menor, Dominante &middot; IIø / VIø &rarr; Locria, Menor, Dominante. La categoría se evalúa siempre desde el bajo, como pide la tabla. Los acordes se realizan como voicings reales — mismo criterio que el Voicing Explorer y el modo &#127927; Jazz: registro tocable, disposición cerrada / abierta / extendida y, entre un acorde y el siguiente, la que menos mueve las voces — pero <b>sin invertir</b>: el bajo del grado siempre queda como nota más grave. Arriba de cada acorde se muestra el detalle completo del set elegido. &#128256; Regenerar sortea sets nuevos; &#9658; Reproducir toca la progresión en orden.</p>
     <div class="progresion-controls">
       <label for="progresionTipo">Progresión:
         <select id="progresionTipo">
           <option value="V-I" selected>V - I</option>
           <option value="V-Im">V - Im</option>
+          <option value="II-V">II - V (sin el I)</option>
           <option value="II-V-I">II - V - I</option>
+          <option value="IIo-V">IIø - V (sin el I)</option>
           <option value="IIo-V-Im">IIø - V - Im</option>
           <option value="II-V-I-VI">II - V - I - VI</option>
           <option value="IIo-V-Im-VIo">IIø - V - Im - VIø</option>
@@ -6602,6 +6604,8 @@ function runAnalysis() {
   var PROGRESIONES = {
     "V-I":      [{ grado: "V",   bajo: 7, acepta: MATCH_V },   { grado: "I",  bajo: 0, acepta: MATCH_I }],
     "V-Im":     [{ grado: "V",   bajo: 7, acepta: MATCH_V },   { grado: "Im", bajo: 0, acepta: MATCH_IM }],
+    "II-V":     [{ grado: "II",  bajo: 2, acepta: MATCH_II },  { grado: "V",  bajo: 7, acepta: MATCH_V }],
+    "IIo-V":    [{ grado: "IIø", bajo: 2, acepta: MATCH_IIO }, { grado: "V",  bajo: 7, acepta: MATCH_V }],
     "II-V-I":   [{ grado: "II",  bajo: 2, acepta: MATCH_II },  { grado: "V",  bajo: 7, acepta: MATCH_V }, { grado: "I",  bajo: 0, acepta: MATCH_I }],
     "IIo-V-Im": [{ grado: "IIø", bajo: 2, acepta: MATCH_IIO }, { grado: "V",  bajo: 7, acepta: MATCH_V }, { grado: "Im", bajo: 0, acepta: MATCH_IM }],
     // VI usa las mismas categorías que V (Mayor alt, Jónica/Lidia no3,
