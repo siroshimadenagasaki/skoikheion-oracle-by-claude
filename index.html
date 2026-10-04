@@ -1096,7 +1096,8 @@
   <div class="shortcuts-list" id="shortcutsList">
     <div><kbd>G</kbd>Regenerate</div>
     <div><kbd>F</kbd>Stop</div>
-    <div><kbd>H</kbd>Creatura</div>
+    <div><kbd>H</kbd>CreaturaRandom</div>
+    <div><kbd>B</kbd>CreaturaBella</div>
     <div><kbd>J</kbd>Random fill</div>
     <div><kbd>S</kbd>Limpiar</div>
     <div><kbd>D</kbd>Play</div>
@@ -1164,7 +1165,10 @@
         <div class="clock-center clock-center-static" id="pianoSummary"></div>
       </div>
       <div class="clock-actions">
-        <button class="chip primary" id="creaturaBtn" type="button" title="Corre sola la secuencia: sortea Chromatism (2–40%), Chords (20–60%), Triplets (0–100%), Melodic/Harmonic/RythmSpace (0–100%) y Rapid runs (0–30%) → Random Fill (5 o 2 sets al azar; 2–3/2–4/2–5 notas, modo Mezcla) → Compose → tilda Mix time signatures → Detener → espera 2s → 🔀 Regenerar. Una sola pasada por click.">🪄 creatura</button>
+        <div style="display:flex;flex-direction:column;align-items:stretch;gap:6px;">
+          <button class="chip primary" id="creaturaBtn" type="button" title="Corre sola la secuencia: sortea Chromatism (2–40%), Chords (20–60%), Triplets (0–100%), Melodic/Harmonic/RythmSpace (0–100%) y Rapid runs (0–30%) → Random Fill (5 o 2 sets al azar; 2–3/2–4/2–5 notas, modo Mezcla) → Compose → tilda Mix time signatures → Detener → espera 2s → 🔀 Regenerar. Una sola pasada por click.">🪄 CreaturaRandom</button>
+          <button class="chip primary" id="creaturaBellaBtn" type="button" title="Igual que CreaturaRandom (mismos sliders, Compose, Mix time signatures, Detener, espera 2s y Regenerar), pero los 5 o 2 sets salen SOLO del índice del libro (jerarquías de sets) y con más probabilidad cuanto mayor es su jerarquía: dentro de cada cardinalidad (3 hasta el máximo del slider, el índice no tiene sets de 2 notas) el set 1 del índice es el más probable y el último el menos probable. Cada set sale transportado a una tónica al azar.">🪄 CreaturaBella</button>
+        </div>
         <button class="chip" id="composeBtn" type="button" title="Toca el segmento de 12 compases de SetMusicBox con las notas actuales">🎹 Compose</button>
         <button class="chip" id="clearBtn">Limpiar</button>
         <button class="chip" id="rotateMinusBtn" type="button" title="Rotate set −: rota los intervalos del set hacia atrás (modo anterior), manteniendo la primera nota. Ej. C E G = 4-3-5 → 3-5-4: C D# G#. Tras una vuelta completa regresa al set original.">Rotate set −</button>
@@ -4009,6 +4013,33 @@ function setsByHierarchy(card) {
   return Array.from(SET_HIERARCHY_BY_CODE.values())
     .filter(function (e) { return card == null || e.card === card; })
     .sort(function (a, b) { return a.card - b.card || a.rank - b.rank; });
+}
+
+// Peso de elección: lineal dentro de su cardinalidad (rank 1 pesa `total`,
+// el último pesa 1). Cambiar solo esta línea cambia la curva de probabilidad.
+function setHierarchyWeight(entry) { return entry.total - entry.rank + 1; }
+
+// Sortea un set del índice con cardinalidad `card`: más probable cuanto
+// mayor jerarquía. `exclude` = objeto {codigo:true} de códigos ya usados.
+// Devuelve {code, card, rank, total, name} | null.
+function pickSetByHierarchy(card, exclude) {
+  const pool = setsByHierarchy(card).filter(function (e) { return !(exclude && exclude[e.code]); });
+  if (!pool.length) return null;
+  let r = Math.random() * pool.reduce(function (acc, e) { return acc + setHierarchyWeight(e); }, 0);
+  for (let i = 0; i < pool.length; i++) {
+    r -= setHierarchyWeight(pool[i]);
+    if (r < 0) return pool[i];
+  }
+  return pool[pool.length - 1];
+}
+
+// Pitch classes (0-11) de la clase `code`, transportadas n semitonos
+// (n al azar si no se indica). Misma clase de conjuntos, otra tónica.
+function setHierarchyPcs(code, n) {
+  const c = CHORDS_DATA.find(function (x) { return x["forte-code"] === code; });
+  if (!c) return null;
+  const t = (n == null) ? Math.floor(Math.random() * 12) : n;
+  return c["pitch-classes"].map(function (p) { return (p + t) % 12; }).sort(function (a, b) { return a - b; });
 }
 
 // Comparador para Array.sort sobre códigos Solomon: primero los de mayor
@@ -9198,6 +9229,27 @@ function runAnalysis() {
       try{ clearNotes(); }finally{ resetting = false; }
       refreshUI();
     }
+    // Random Fill Bella: igual que randomFill pero los sets salen SOLO del índice del
+    // libro (ver SET_HIERARCHY_DATA) y con más probabilidad cuanto mayor jerarquía.
+    // Cardinalidad al azar entre 3 y el máximo del slider (el índice no tiene sets de 2
+    // notas); cada clase sale con una tónica al azar; sin repetir clase entre casilleros.
+    function randomFillBella(count){
+      var cnt = (typeof count === "number" && count >= 1 && count <= MAX_SLOTS) ? count : MAX_SLOTS;
+      var maxN = randomMaxNotes();
+      var made = [], used = {}, guard = 0;
+      while(made.length < cnt && guard++ < 500){
+        var pick = pickSetByHierarchy(randomInt(3, maxN), used);
+        if(!pick) continue;
+        used[pick.code] = true;
+        made.push(setHierarchyPcs(pick.code));
+      }
+      slots = made;
+      status("Random Fill Bella: " + made.length + " sets del \u00edndice (3\u2013" + maxN + " notas), m\u00e1s probables los de mayor jerarqu\u00eda.");
+      active = true;
+      resetting = true;
+      try{ clearNotes(); }finally{ resetting = false; }
+      refreshUI();
+    }
     // ---------- To Memory por vector de intervalos (tableta del reloj) ----------
     // Busca, entre TODOS los subconjuntos de 2 a 11 notas del universo
     // crom\u00e1tico (4082 candidatos \u2014 se generan una sola vez y se cachean,
@@ -9306,6 +9358,7 @@ function runAnalysis() {
       el("multiSetsClearBtn").addEventListener("click", clearMemory);
       if(el("multiSetsRandomFillBtn")) el("multiSetsRandomFillBtn").addEventListener("click", function(){ randomFill(); });
       window.__multiSetsRandomFillCount = randomFill; // creatura: llena solo N casilleros (1-5)
+      window.__multiSetsBellaFillCount = randomFillBella; // CreaturaBella: igual, pero solo sets del índice por jerarquía
       if(el("multiSetsRandomMax")) el("multiSetsRandomMax").addEventListener("input", function(){
         var lab = el("multiSetsRandomMaxVal");
         if(lab) lab.textContent = "2\u2013" + randomMaxNotes() + " notas";
@@ -15630,6 +15683,7 @@ function runAnalysis() {
   // refreshUI/regenerateConsola tal cual, sin duplicarla acá.
   (function(){
     var btn = document.getElementById("creaturaBtn");
+    var btnBella = document.getElementById("creaturaBellaBtn");
     if(!btn) return;
     var running = false;
 
@@ -15659,10 +15713,13 @@ function runAnalysis() {
       sl.dispatchEvent(new Event("input", { bubbles: true }));
     }
 
-    async function runCreatura(){
+    // bella=false: CreaturaRandom (sets al azar). bella=true: CreaturaBella (misma
+    // secuencia, pero los sets salen del índice del libro ponderados por jerarquía).
+    async function runCreatura(bella){
       if(running) return; // no reentrar si ya está corriendo
       running = true;
       btn.disabled = true;
+      if(btnBella) btnBella.disabled = true;
       try {
         // 0) Variantes aleatorias (cada una se sortea por separado):
         // Chromatism 2–40%, Chords 20–60%, Triplets 0–100%, Melodic/Harmonic/
@@ -15688,8 +15745,9 @@ function runAnalysis() {
         setChecked("multiSetsModeMixed", true);
         // Cantidad de sets al azar: 5 o 2 (multi set).
         var nSets = Math.random() < 0.5 ? 5 : 2;
-        if(typeof window.__multiSetsRandomFillCount === "function") window.__multiSetsRandomFillCount(nSets);
-        else clickIfEnabled("multiSetsRandomFillBtn");
+        var fillFn = bella ? window.__multiSetsBellaFillCount : window.__multiSetsRandomFillCount;
+        if(typeof fillFn === "function") fillFn(nSets);
+        else if(!bella) clickIfEnabled("multiSetsRandomFillBtn");
 
         // 2) Compose: arma los 12 compases desde esos 5 o 2 sets y arranca
         // la reproducción (mismo botón 🎲 Compose de Multi Sets Input).
@@ -15708,11 +15766,13 @@ function runAnalysis() {
         clickIfEnabled("consolaRegenPlayBtn");
       } finally {
         btn.disabled = false;
+        if(btnBella) btnBella.disabled = false;
         running = false;
       }
     }
 
-    btn.addEventListener("click", function(){ runCreatura(); });
+    btn.addEventListener("click", function(){ runCreatura(false); });
+    if(btnBella) btnBella.addEventListener("click", function(){ runCreatura(true); });
   })();
 </script>
 <script>
@@ -15723,7 +15783,7 @@ function runAnalysis() {
       var c=panel.classList.toggle("is-collapsed");
       tg.setAttribute("aria-expanded", c?"false":"true");
     });
-    var MAP={ f:"consolaStopBtn", h:"creaturaBtn", j:"multiSetsRandomFillBtn", s:"clearBtn", d:"consolaPlayBtn" };
+    var MAP={ f:"consolaStopBtn", h:"creaturaBtn", b:"creaturaBellaBtn", j:"multiSetsRandomFillBtn", s:"clearBtn", d:"consolaPlayBtn" };
     document.addEventListener("keydown", function(e){
       var k=(e.key||"").toLowerCase(), id=MAP[k];
       if(!id) return;
