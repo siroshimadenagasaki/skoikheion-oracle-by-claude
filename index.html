@@ -1419,6 +1419,13 @@
         <div class="consola-inst-row">
           <span class="consola-inst-toggle" title="Arpegiador de armonía: 0% = nunca (Armonía de siempre). 100% = TODOS los compases se arpegian. Entre medio, cada compás se sortea: con probabilidad = el valor se reemplaza por un arpegio de las notas del acorde vigente (el set no se traiciona: solo sus notas, subiendo de octava si el patrón lo pide). En cada compás arpegiado se sortea de nuevo el patrón (casi siempre aleatorios o asimétricos: paseo aleatorio, permutación, célula irregular, convergente, pedal, saltos de 2 o 3… los lineales arriba/abajo salen poco, ~10%), la subdivisión (corcheas, semicorcheas o tresillos) y el largo de las notas. Con el slider por encima de 0 la Armonía deja el motor libre (como al tildar una casilla). Se combina con inversions, in3rds, guitar y accent; en los compases arpegiados reemplaza el ritmo de sync/poly/rythmicarmonies."><label for="consolaHT_arpSlider">&#127929; Arp</label><input type="range" class="consola-mini-range" id="consolaHT_arpSlider" min="0" max="100" value="0" step="1"><span class="consola-val" id="consolaHT_arpVal">0%</span></span>
         </div>
+        <div class="consola-inst-row" style="align-items:center;gap:8px;">
+          <button type="button" class="chip" id="consolaMoreCompingBtn" title="Agrega una QUINTA pista MIDI (instrumento elegible en el selector de al lado; default Piano eléctrico), que dobla cada nota de la melodía junto con 1 o 2 notas más del acorde vigente en ese instante (siempre del mismo set, nunca una nota ajena) — el grupito entero queda siempre pegado a la nota de melodía, a lo sumo a una octava o dos de distancia.">moreComping</button>
+          <select class="mix-preset-select" id="comping2PresetSelect" title="Instrumento de la pista moreComping. Default: Piano eléctrico. (Antes era un timbre de cuerdas fijo.)" style="max-width:190px;">
+            <!-- Las opciones (todos los .sf2 y todos sus presets) las arma sfBuildPresetSelects() al cargar la página. -->
+            <option value="epiano" selected>Piano eléctrico</option>
+          </select>
+        </div>
         </div>
       </div>
       <div class="consola-field consola-instruments" title="Melody: opciones de la melodía principal (por ahora, Ornaments).">
@@ -1560,11 +1567,6 @@
         <button type="button" class="chip primary" id="consolaPlayBtn" title="Reproduce el segmento en loop — repite siempre la misma secuencia (la última generada) hasta que la cambies con 🔀 o elijas otras notas.">&#9658; Reproducir</button>
         <button type="button" class="chip chip-small" id="consolaRegenPlayBtn" disabled title="Atajo: tecla G. Detiene lo que suene, sortea una variación nueva del segmento (mismo set de notas elegido) y la reproduce de una — funciona también mientras está sonando.">&#128256;</button>
         <button type="button" class="chip" id="consolaStopBtn" disabled>&#9632; Detener</button>
-        <button type="button" class="chip" id="consolaMoreCompingBtn" title="Agrega una QUINTA pista MIDI (instrumento elegible en el selector de al lado; default Piano eléctrico), que dobla cada nota de la melodía junto con 1 o 2 notas más del acorde vigente en ese instante (siempre del mismo set, nunca una nota ajena) — el grupito entero queda siempre pegado a la nota de melodía, a lo sumo a una octava o dos de distancia.">moreComping</button>
-        <select class="mix-preset-select" id="comping2PresetSelect" title="Instrumento de la pista moreComping. Default: Piano eléctrico. (Antes era un timbre de cuerdas fijo.)" style="max-width:190px;">
-          <!-- Las opciones (todos los .sf2 y todos sus presets) las arma sfBuildPresetSelects() al cargar la página. -->
-          <option value="epiano" selected>Piano eléctrico</option>
-        </select>
       </div>
     </div>
 
