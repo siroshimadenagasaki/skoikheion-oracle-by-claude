@@ -1396,6 +1396,8 @@
         <input type="checkbox" id="consola24BarsChk" checked>
         <label for="consola24BarsChk">24 compases</label>
       </div>
+        </div>
+      </div>
       <div class="consola-field consola-instruments" title="Harmony: si hay al menos una casilla tildada, la Armonía deja de usar el motor libre y toca SOLO el set elegido (sin subsets al azar, en bloque). Con Cycles tildado se transpone por ataque como el motor libre (ChangeDuration incluido). Bajo, melodía y cifrado siguen igual. No aplica a Normalito. Todas destildadas = motor libre de siempre.">
         <div class="consola-subfield-head">
           <label>Harmony</label>
@@ -1419,8 +1421,12 @@
         </div>
         </div>
       </div>
+      <div class="consola-field consola-instruments" title="Melody: opciones de la melodía principal (por ahora, Ornaments).">
+        <div class="consola-subfield-head">
+          <label>Melody</label>
+          <button type="button" class="subfield-toggle" aria-expanded="false" aria-controls="melodyBody" onclick="toggleModule(this)" title="Mostrar/ocultar Melody"></button>
         </div>
-      </div>
+        <div class="collapsible-content collapsed" id="melodyBody">
       <div class="consola-field consola-instruments" title="Ornaments: adornos sobre la melodía principal (~30% de las notas con figura lo bastante larga), en figuras muy rápidas (1/8 de tiempo) tomadas de la propia nota — nunca se superponen ni cambian el ritmo general. La vecina del adorno es la nota más cercana DENTRO del acorde vigente (hasta 2 semitonos arriba/abajo); si no hay, semitono cromático (única excepción a &quot;nunca una nota ajena al set&quot;, como Scales). La nota principal siempre es del acorde. Doblar melodía hereda los adornos; moreComping sigue a las notas principales. No aplica a Normalito. Todas destildadas = melodía de siempre.">
         <div class="consola-subfield-head">
           <label>Ornaments</label>
@@ -1434,6 +1440,36 @@
           <span class="consola-inst-toggle" title="Trino: alterna principal/vecina en notas largas (figura de 1 tiempo o más); siempre termina en la principal."><input type="checkbox" id="consolaORN_trill"><label for="consolaORN_trill">trill</label></span>
           <span class="consola-inst-toggle" title="Grupeto: vecina de arriba – principal – vecina de abajo – principal (figura de 3/4 de tiempo o más)."><input type="checkbox" id="consolaORN_turn"><label for="consolaORN_turn">turn</label></span>
         </div>
+        </div>
+      </div>
+      <div class="consola-field consola-instruments" title="Línea melódica independiente (bebopMelody) y sus modos — agrupados y contraídos por defecto, mismo lugar de siempre.">
+        <div class="consola-subfield-head">
+          <label>bebopMelody</label>
+          <button type="button" class="subfield-toggle" aria-expanded="false" aria-controls="bebopModeBody" onclick="toggleModule(this)" title="Mostrar/ocultar bebopMelody y sus modos"></button>
+        </div>
+        <div class="collapsible-content collapsed" id="bebopModeBody">
+        <div class="consola-inst-row" style="align-items:center;">
+        <button type="button" class="chip" id="consolaBebopBtn" title="Agrega una SEXTA pista MIDI: una línea melódica INDEPENDIENTE (no dobla a la melodía principal, tiene su propia nota en cada instante) en corcheas fijas, en el modo (o modos) que elijas con los checkboxes Arpeggios/Scales de al lado. Instrumento elegible abajo en el mini mixer (Sax soprano por defecto). Apagada por defecto — tiene su propio volumen en el mini mixer (🎷 Bebop, en 0% por defecto).">bebopMelody</button>
+        <span class="consola-bebop-mode" style="display:inline-flex;flex-wrap:wrap;align-items:center;gap:10px;margin-left:2px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.04em;color:var(--ink-muted);">
+          <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;" title="bebopMelody arpegia en corcheas las notas del acorde vigente (ascendente en compases pares, descendente en impares) — siempre dentro del set elegido, nunca una nota ajena.">
+            <input type="checkbox" id="consolaBebopArpChk" checked> Arpeggios
+          </label>
+          <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;" title="bebopMelody toca en corcheas la escala mayor completa de la tónica del acorde vigente. ÚNICA excepción del motor a &quot;nunca nota ajena al set&quot;: la escala mayor casi siempre trae alguna nota fuera del set de Solomon elegido, y se toca sin filtrar, a pedido explícito. Si Arpeggios también está tildado, alterna por compás (impar=arpegio, par=escala); si ninguno está tildado, bebopMelody no suena.">
+            <input type="checkbox" id="consolaBebopScaleChk"> Scales
+          </label>
+          <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;" title="bebopMelody recorre la escala fija de Barry Harris (Major 6th diminished / Bebop Dominant). SOLO suena si el set completo de 8 notas elegido arriba es exactamente una de esas dos escalas (Forte 8-26 u 8-23) — con cualquier otro set, este checkbox no hace nada. A diferencia de Arpeggios/Scales, la escala no cambia con el acorde: es fija para todo el pasaje.">
+            <input type="checkbox" id="consolaBebopHarrisChk"> 🎼 Harris
+          </label>
+          <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;" title="Cambia el RITMO de bebopMelody (aplica con Arpeggios, Scales, Harris o cualquier combinación): en vez de 8 corcheas por compás, toca 16 semicorcheas por compás (100% semicorcheas, sin mezcla). No afecta qué notas suenan, solo su duración.">
+            <input type="checkbox" id="consolaBebopSemiChk"> Semicorcheas
+          </label>
+          <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;" title="Restringe el registro de bebopMelody a 2 octavas: toda nota que caiga fuera de ese rango se transpone una octava arriba o abajo (la que corresponda) hasta entrar en rango — misma clase de altura, más cerca del resto de la línea. No cambia qué notas ni ritmo, solo evita saltos de octava grandes.">
+            <input type="checkbox" id="consolaBebopNarrowChk"> narrowRegister
+          </label>
+        </span>
+        </div>
+        </div>
+      </div>
         </div>
       </div>
       <div class="consola-field consola-instruments" title="Módulo aparte del modo TEST de arriba: mientras el checkbox 'Cycles' esté tildado, cada transposición cromática al azar (por compás y por reataque) se sortea al azar entre este set de intervalos. Los sliders de intervalo son % del sorteo y suman como máximo 100% (el que subís se frena para no pasarse); lo que falta hasta 100% lo completa la transposición libre (Chromatism, con la amplitud del slider Chromatism de más arriba). Con 100% en intervalos no hay Chromatism. Si en 'Transposition intervals (test)' de arriba hay algún checkbox tildado, ESE modo manda (misma prioridad que ya tiene hoy sobre Chromatism) y Cycles no se aplica. Con Cycles destildado, la página se comporta exactamente igual que hoy.">
@@ -1529,34 +1565,6 @@
           <!-- Las opciones (todos los .sf2 y todos sus presets) las arma sfBuildPresetSelects() al cargar la página. -->
           <option value="epiano" selected>Piano eléctrico</option>
         </select>
-      </div>
-      <div class="consola-field consola-instruments" title="Línea melódica independiente (bebopMelody) y sus modos — agrupados y contraídos por defecto, mismo lugar de siempre.">
-        <div class="consola-subfield-head">
-          <label>bebopMelody</label>
-          <button type="button" class="subfield-toggle" aria-expanded="false" aria-controls="bebopModeBody" onclick="toggleModule(this)" title="Mostrar/ocultar bebopMelody y sus modos"></button>
-        </div>
-        <div class="collapsible-content collapsed" id="bebopModeBody">
-        <div class="consola-inst-row" style="align-items:center;">
-        <button type="button" class="chip" id="consolaBebopBtn" title="Agrega una SEXTA pista MIDI: una línea melódica INDEPENDIENTE (no dobla a la melodía principal, tiene su propia nota en cada instante) en corcheas fijas, en el modo (o modos) que elijas con los checkboxes Arpeggios/Scales de al lado. Instrumento elegible abajo en el mini mixer (Sax soprano por defecto). Apagada por defecto — tiene su propio volumen en el mini mixer (🎷 Bebop, en 0% por defecto).">bebopMelody</button>
-        <span class="consola-bebop-mode" style="display:inline-flex;flex-wrap:wrap;align-items:center;gap:10px;margin-left:2px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.04em;color:var(--ink-muted);">
-          <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;" title="bebopMelody arpegia en corcheas las notas del acorde vigente (ascendente en compases pares, descendente en impares) — siempre dentro del set elegido, nunca una nota ajena.">
-            <input type="checkbox" id="consolaBebopArpChk" checked> Arpeggios
-          </label>
-          <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;" title="bebopMelody toca en corcheas la escala mayor completa de la tónica del acorde vigente. ÚNICA excepción del motor a &quot;nunca nota ajena al set&quot;: la escala mayor casi siempre trae alguna nota fuera del set de Solomon elegido, y se toca sin filtrar, a pedido explícito. Si Arpeggios también está tildado, alterna por compás (impar=arpegio, par=escala); si ninguno está tildado, bebopMelody no suena.">
-            <input type="checkbox" id="consolaBebopScaleChk"> Scales
-          </label>
-          <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;" title="bebopMelody recorre la escala fija de Barry Harris (Major 6th diminished / Bebop Dominant). SOLO suena si el set completo de 8 notas elegido arriba es exactamente una de esas dos escalas (Forte 8-26 u 8-23) — con cualquier otro set, este checkbox no hace nada. A diferencia de Arpeggios/Scales, la escala no cambia con el acorde: es fija para todo el pasaje.">
-            <input type="checkbox" id="consolaBebopHarrisChk"> 🎼 Harris
-          </label>
-          <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;" title="Cambia el RITMO de bebopMelody (aplica con Arpeggios, Scales, Harris o cualquier combinación): en vez de 8 corcheas por compás, toca 16 semicorcheas por compás (100% semicorcheas, sin mezcla). No afecta qué notas suenan, solo su duración.">
-            <input type="checkbox" id="consolaBebopSemiChk"> Semicorcheas
-          </label>
-          <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;" title="Restringe el registro de bebopMelody a 2 octavas: toda nota que caiga fuera de ese rango se transpone una octava arriba o abajo (la que corresponda) hasta entrar en rango — misma clase de altura, más cerca del resto de la línea. No cambia qué notas ni ritmo, solo evita saltos de octava grandes.">
-            <input type="checkbox" id="consolaBebopNarrowChk"> narrowRegister
-          </label>
-        </span>
-        </div>
-        </div>
       </div>
     </div>
 
