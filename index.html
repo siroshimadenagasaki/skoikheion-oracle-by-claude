@@ -1414,6 +1414,7 @@
           <span class="consola-inst-toggle" title="Le da altura/contorno a la batería: colorea un golpe de bombo por compás con un tom (agudo/medio/grave, en un contorno que sube y baja a lo largo del segmento) y el golpe de hi-hat acentuado con campana/cowbell/pandereta, en vez de sonar siempre con las mismas 3 notas fijas (bombo/caja/hi-hat). No agrega golpes nuevos, solo cambia el timbre/altura de golpes que ya iban a sonar."><input type="checkbox" id="consolaMoreMelodicChk" checked><label for="consolaMoreMelodicChk">moreMelodic</label></span>
           <span class="consola-inst-toggle" title="Además de evitar que dos compases SEGUIDOS queden con el patrón idéntico (lo que ya hace el motor de siempre), evita que el mismo patrón vuelva a aparecer dentro de una ventana de 3 compases — tanto para el estilo de batería (basic/fill/sparse/etc.) como para la subdivisión de hi-hat."><input type="checkbox" id="consolaLessRepetitiveChk" checked><label for="consolaLessRepetitiveChk">lessRepetitive</label></span>
           <span class="consola-inst-toggle" title="Fills asimétricos: en vez de fills parejos, agrega fills de toms con agrupaciones que no encajan en el pulso — 3+3+2 / 3+2+3 / 2+3+3 semicorcheas, quintillos (5 por tiempo), septillos (7 en 2 tiempos) y hemiola (3 contra 2) — sobre todo al final de frase, y con menos probabilidad en cualquier compás. Se suman al fill de siempre."><input type="checkbox" id="consolaAsymmetricChk" checked><label for="consolaAsymmetricChk">asymmetric</label></span>
+          <span class="consola-inst-toggle" title="Displacement (radical): 3 voces de percusión (cowbell, toms, side-stick/madera) tocan cada una un patrón asimétrico propio (ciclos de 3, 5, 7, 9, 11 o 13 semicorcheas, agrupados 3+2+2, 3+3+2, etc.) que se repite SIN respetar la barra de compás y cada pocos ciclos se desplaza una subdivisión (los acentos migran por el compás). Una voz puede ir en base de tresillo. Resultado: polirritmia que se va corriendo y recién realinea al cabo de muchos compases. Se suma al resto de la batería. Test — si suena bien pasa a slider."><input type="checkbox" id="consolaDisplacementChk"><label for="consolaDisplacementChk">displacement</label></span>
         </div>
       </div>
       <div class="consola-field consola-instruments" title="Compás (time signature) de cada uno de los 12 compases del segmento. Dos campos de texto: numerador / denominador (3/4, 6/8, 12/8, 5/4, 7/4, 9/8...) — se aplica a los 12 compases por igual. 4/4 por defecto, igual que siempre. Un compás compuesto (denominador 8, numerador múltiplo de 3 mayor a 3: 6/8, 9/8, 12/8) se siente subdividido de a 3 en vez de a 2 — armonía, bajo y melodía lo respetan. Mix time signatures: sortea entre 2 y 4 compases distintos (el tipeado siempre es uno de ellos) y los reparte al azar entre los 12 compases del segmento — un compás distinto en cada Reproducir/Regenerar.">
@@ -14005,7 +14006,74 @@ function runAnalysis() {
     if(beats > (compound ? 4.5 : 4)+1e-6) kick.push(Math.floor(beats*0.6/pulse)*pulse);
     return { kick:kick, snare:snare, hihatHits:hihatHits };
   }
-  function buildDrumEvents(numBars){ return DYNAMICS.applyDrums(buildDrumEventsRaw(numBars)); } // Dynamics (0% = no-op)
+  // Displacement (checkbox #consolaDisplacementChk, OFF por defecto, test
+  // radical -> si suena bien pasa a slider). Capa aditiva sobre TODA la
+  // batería ya generada: 3 voces de percusión, cada una con una célula
+  // asimétrica (ciclo de n subdivisiones agrupado en 2/3/4, ej. 7=3+2+2)
+  // que se repite de corrido por todo el segmento SIN reiniciarse en la
+  // barra de compás, así los ciclos de las voces (3/5/7/9/11/13) caen
+  // desfasados entre sí y contra el compás = polirritmia. Además cada
+  // `rep` ciclos la célula se desplaza +/-1 subdivisión (displacement
+  // propiamente dicho: el acento migra dentro del compás). Una voz puede
+  // usar base de tresillo (1/3 de tiempo) en vez de semicorchea.
+  var DISP_CYCLES = [3, 5, 7, 9, 10, 11, 13];
+  function dispCell(n){
+    // parte n en grupos de 2/3/4 (mezclados) -> posiciones de ataque
+    var groups = [], left = n;
+    while (left > 0){
+      var g = mjPick(n >= 7 ? [2, 3, 3] : [2, 3, 3, 4]);
+      if (g > left) g = left;
+      if (left - g === 1) g = left;        // no dejar un grupo suelto de 1
+      groups.push(g); left -= g;
+    }
+    for (var i=groups.length-1; i>0; i--){ var j = mjRand(0, i); var t = groups[i]; groups[i] = groups[j]; groups[j] = t; }
+    var pos = [], acc = 0;
+    groups.forEach(function(g){ pos.push(acc); acc += g; });
+    return pos;
+  }
+  function addDisplacementLayer(events){
+    var total = RHYTHM.total();
+    if (!(total > 0)) return events;
+    var cycles = DISP_CYCLES.slice();
+    for (var i=cycles.length-1; i>0; i--){ var j = mjRand(0, i); var t = cycles[i]; cycles[i] = cycles[j]; cycles[j] = t; }
+    var voices = [
+      { kind:"cow",  unit:0.25, n:cycles[0] },
+      { kind:"tom",  unit:0.25, n:cycles[1] },
+      { kind:"stick",unit: Math.random() < 0.5 ? 1/3 : 0.25, n:cycles[2] }
+    ];
+    voices.forEach(function(v, vi){
+      var cell = dispCell(v.n);
+      var rep = mjRand(2, 3);              // cada cuántos ciclos se corre
+      var dir = Math.random() < 0.5 ? 1 : -1;
+      var shift = 0, cyc = 0, tomIdx = mjRand(0, MJ_TOMS.length-1);
+      var woodblock = Math.random() < 0.5;
+      for (var start = 0; start < total - 1e-6; start += v.n * v.unit, cyc++){
+        if (cyc > 0 && cyc % rep === 0) shift = (shift + dir + v.n) % v.n;
+        for (var k=0; k<cell.length; k++){
+          var beat = start + ((cell[k] + shift) % v.n) * v.unit;
+          if (beat < 0 || beat >= total - 1e-6) continue;
+          var acc = (k === 0);
+          var vel = acc ? mjRand(98, 112) : mjRand(62, 88);
+          if (v.kind === "cow")        events.push({type:"hihat", midi:56, startBeat:beat, vel:vel});
+          else if (v.kind === "tom"){
+            events.push({type:"kick", midi: MJ_TOMS[tomIdx % MJ_TOMS.length], startBeat:beat, vel:vel});
+            tomIdx += mjPick([1, 1, 2]);
+          }
+          else events.push({type:"snare", midi: woodblock ? 77 : 37, startBeat:beat, vel:vel});
+        }
+      }
+    });
+    return events;
+  }
+  function displacementEnabled(){
+    var c = document.getElementById("consolaDisplacementChk");
+    return !!(c && c.checked);
+  }
+  function buildDrumEvents(numBars){
+    var ev = buildDrumEventsRaw(numBars);
+    if (displacementEnabled()) addDisplacementLayer(ev);
+    return DYNAMICS.applyDrums(ev); // Dynamics (0% = no-op)
+  }
   function buildDrumEventsRaw(numBars){
     if(swingDrumsEnabled) return TRIPLETS.applyDrums(buildSwingDrumEvents(numBars)); // Triplets: también sobre estos patrones fijos/generados (0% = no-op)
     if(modernJazzEnabled) return TRIPLETS.applyDrums(buildModernJazzEvents(numBars));
@@ -15303,7 +15371,7 @@ function runAnalysis() {
   // velocityHumanizeEnabled()/etc. junto a buildDrumEvents), así que acá
   // solo hace falta reconstruir drumEvents al toggle, mismo patrón que
   // Rhythm complexity y Swing Drums.
-  ["consolaVelocityHumanizeChk","consolaMicroTimingChk","consolaSectionVariationChk","consolaOtherRhythmVarChk","consolaMoreMelodicChk","consolaLessRepetitiveChk","consolaAsymmetricChk"].forEach(function(id){
+  ["consolaVelocityHumanizeChk","consolaMicroTimingChk","consolaSectionVariationChk","consolaOtherRhythmVarChk","consolaMoreMelodicChk","consolaLessRepetitiveChk","consolaAsymmetricChk","consolaDisplacementChk"].forEach(function(id){
     document.getElementById(id).addEventListener("change", function(){
       drumEvents = buildDrumEvents(NUM_BARS);
     });
