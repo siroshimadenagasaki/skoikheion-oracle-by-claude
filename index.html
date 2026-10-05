@@ -1418,7 +1418,7 @@
           <span class="consola-inst-toggle" title="Le da altura/contorno a la batería: colorea un golpe de bombo por compás con un tom (agudo/medio/grave, en un contorno que sube y baja a lo largo del segmento) y el golpe de hi-hat acentuado con campana/cowbell/pandereta, en vez de sonar siempre con las mismas 3 notas fijas (bombo/caja/hi-hat). No agrega golpes nuevos, solo cambia el timbre/altura de golpes que ya iban a sonar."><input type="checkbox" id="consolaMoreMelodicChk" checked><label for="consolaMoreMelodicChk">moreMelodic</label></span>
           <span class="consola-inst-toggle" title="Además de evitar que dos compases SEGUIDOS queden con el patrón idéntico (lo que ya hace el motor de siempre), evita que el mismo patrón vuelva a aparecer dentro de una ventana de 3 compases — tanto para el estilo de batería (basic/fill/sparse/etc.) como para la subdivisión de hi-hat."><input type="checkbox" id="consolaLessRepetitiveChk" checked><label for="consolaLessRepetitiveChk">lessRepetitive</label></span>
           <span class="consola-inst-toggle" title="Fills asimétricos: en vez de fills parejos, agrega fills de toms con agrupaciones que no encajan en el pulso — 3+3+2 / 3+2+3 / 2+3+3 semicorcheas, quintillos (5 por tiempo), septillos (7 en 2 tiempos) y hemiola (3 contra 2) — sobre todo al final de frase, y con menos probabilidad en cualquier compás. Se suman al fill de siempre."><input type="checkbox" id="consolaAsymmetricChk" checked><label for="consolaAsymmetricChk">asymmetric</label></span>
-          <span class="consola-inst-toggle" title="Displacement (radical): 3 voces de percusión (cowbell, toms, side-stick/madera) tocan cada una un patrón asimétrico propio (ciclos de 3, 5, 7, 9, 11 o 13 semicorcheas, agrupados 3+2+2, 3+3+2, etc.) que se repite SIN respetar la barra de compás y cada pocos ciclos se desplaza una subdivisión (los acentos migran por el compás). Una voz puede ir en base de tresillo. Resultado: polirritmia que se va corriendo y recién realinea al cabo de muchos compases. Se suma al resto de la batería. Test — si suena bien pasa a slider."><input type="checkbox" id="consolaDisplacementChk"><label for="consolaDisplacementChk">displacement</label></span>
+          <span class="consola-inst-toggle" title="Displacement (radical): dos capas de percusión (cowbell, campana, pandereta, pedal, toms, bongós, side-stick, woodblock, claves, caja fantasma…). Cada capa toca una célula asimétrica (ciclo de 3, 5, 7, 9, 10, 11 o 13 subdivisiones, agrupado 3+2+2, 3+3+2, etc.) una o varias veces —a veces corrida una subdivisión entre repeticiones—, en uno o dos cuerpos de la batería, y después pasa a OTRA célula con otro largo y otro timbre, o a un silencio. No se reinicia en la barra: polirritmia que cambia sola, sin sonar repetitiva. Se suma al resto de la batería. Test — si suena bien pasa a slider."><input type="checkbox" id="consolaDisplacementChk"><label for="consolaDisplacementChk">displacement</label></span>
         </div>
       </div>
       <div class="consola-field consola-instruments" title="Compás (time signature) de cada uno de los 12 compases del segmento. Dos campos de texto: numerador / denominador (3/4, 6/8, 12/8, 5/4, 7/4, 9/8...) — se aplica a los 12 compases por igual. 4/4 por defecto, igual que siempre. Un compás compuesto (denominador 8, numerador múltiplo de 3 mayor a 3: 6/8, 9/8, 12/8) se siente subdividido de a 3 en vez de a 2 — armonía, bajo y melodía lo respetan. Mix time signatures: sortea entre 2 y 4 compases distintos (el tipeado siempre es uno de ellos) y los reparte al azar entre los 12 compases del segmento — un compás distinto en cada Reproducir/Regenerar.">
@@ -14035,38 +14035,75 @@ function runAnalysis() {
     groups.forEach(function(g){ pos.push(acc); acc += g; });
     return pos;
   }
+  // Cuerpos de la batería disponibles para displacement (GM; type decide el
+  // canal, midi la nota). Cada episodio elige uno (o dos: acento + resto) y
+  // rota entre sus notas, así el timbre cambia de un patrón al siguiente.
+  var DISP_BODIES = [
+    { t:"hihat", m:[56] },                 // cowbell
+    { t:"hihat", m:[53] },                 // campana del ride
+    { t:"hihat", m:[54] },                 // pandereta
+    { t:"hihat", m:[44, 42] },             // pedal / hi-hat cerrado
+    { t:"kick",  m:[50, 47, 45, 43, 41] }, // toms (contorno)
+    { t:"kick",  m:[60, 61] },             // bongós
+    { t:"snare", m:[37] },                 // side-stick
+    { t:"snare", m:[77, 76] },             // woodblock
+    { t:"snare", m:[75] },                 // claves
+    { t:"snare", m:[38], soft:true }       // caja fantasma
+  ];
+  function dispBodyHit(body, ev, beat, vel, state){
+    var midi = body.m[state.i % body.m.length];
+    if (body.m.length > 1) state.i += mjPick([1, 1, 2]);
+    if (body.soft) vel = Math.min(vel, mjRand(40, 62));
+    ev.push({type: body.t, midi: midi, startBeat: beat, vel: vel});
+  }
+  // Una capa = secuencia de EPISODIOS sin repetirse: cada episodio es una
+  // célula asimétrica (ciclo n, agrupado 2/3/4) tocada 1 a 4 veces (a veces
+  // corrida 1 subdivisión entre repeticiones), en uno o dos cuerpos de la
+  // batería; después viene OTRA célula, otro n, otro timbre (o un silencio).
+  // No se reinicia en la barra: polirritmia que cambia sola.
   function addDisplacementLayer(events){
     var total = RHYTHM.total();
     if (!(total > 0)) return events;
-    var cycles = DISP_CYCLES.slice();
-    for (var i=cycles.length-1; i>0; i--){ var j = mjRand(0, i); var t = cycles[i]; cycles[i] = cycles[j]; cycles[j] = t; }
-    var voices = [
-      { kind:"cow",  unit:0.25, n:cycles[0] },
-      { kind:"tom",  unit:0.25, n:cycles[1] },
-      { kind:"stick",unit: Math.random() < 0.5 ? 1/3 : 0.25, n:cycles[2] }
-    ];
-    voices.forEach(function(v, vi){
-      var cell = dispCell(v.n);
-      var rep = mjRand(2, 3);              // cada cuántos ciclos se corre
-      var dir = Math.random() < 0.5 ? 1 : -1;
-      var shift = 0, cyc = 0, tomIdx = mjRand(0, MJ_TOMS.length-1);
-      var woodblock = Math.random() < 0.5;
-      for (var start = 0; start < total - 1e-6; start += v.n * v.unit, cyc++){
-        if (cyc > 0 && cyc % rep === 0) shift = (shift + dir + v.n) % v.n;
-        for (var k=0; k<cell.length; k++){
-          var beat = start + ((cell[k] + shift) % v.n) * v.unit;
-          if (beat < 0 || beat >= total - 1e-6) continue;
-          var acc = (k === 0);
-          var vel = acc ? mjRand(98, 112) : mjRand(62, 88);
-          if (v.kind === "cow")        events.push({type:"hihat", midi:56, startBeat:beat, vel:vel});
-          else if (v.kind === "tom"){
-            events.push({type:"kick", midi: MJ_TOMS[tomIdx % MJ_TOMS.length], startBeat:beat, vel:vel});
-            tomIdx += mjPick([1, 1, 2]);
-          }
-          else events.push({type:"snare", midi: woodblock ? 77 : 37, startBeat:beat, vel:vel});
+    var nLayers = 2;
+    var lastBodies = [];
+    for (var layer = 0; layer < nLayers; layer++){
+      var t = layer === 0 ? 0 : mjPick([0.5, 1, 1.5, 2.25, 3]);
+      var prevN = -1, prevBody = -1;
+      var guard = 0;
+      while (t < total - 1e-6 && guard++ < 400){
+        if (Math.random() < 0.22){ t += mjPick([1.5, 2, 3, 4, 6]); continue; } // respiro
+        var n; do { n = mjPick(DISP_CYCLES); } while (n === prevN);
+        prevN = n;
+        var bi; do { bi = mjRand(0, DISP_BODIES.length-1); } while (bi === prevBody || lastBodies.indexOf(bi) !== -1 && Math.random() < 0.8);
+        prevBody = bi;
+        var bodyA = DISP_BODIES[bi], bodyB = bodyA;
+        if (Math.random() < 0.35){
+          var bj; do { bj = mjRand(0, DISP_BODIES.length-1); } while (bj === bi);
+          bodyB = DISP_BODIES[bj];
         }
+        var unit = Math.random() < 0.3 ? 1/3 : (Math.random() < 0.15 ? 0.5 : 0.25);
+        var cell = dispCell(n);
+        var reps = mjPick([1, 1, 2, 2, 3, 4]);
+        var dir = Math.random() < 0.5 ? 1 : -1;
+        var shiftOn = Math.random() < 0.55;
+        var stA = { i: mjRand(0, 4) }, stB = { i: mjRand(0, 4) };
+        var shift = 0;
+        for (var r = 0; r < reps && t < total - 1e-6; r++){
+          if (r > 0 && shiftOn) shift = (shift + dir + n) % n;
+          for (var k = 0; k < cell.length; k++){
+            var beat = t + ((cell[k] + shift) % n) * unit;
+            if (beat < 0 || beat >= total - 1e-6) continue;
+            var acc = (k === 0);
+            var vel = acc ? mjRand(96, 112) : mjRand(58, 86);
+            dispBodyHit(acc ? bodyA : bodyB, events, beat, vel, acc ? stA : stB);
+          }
+          t += n * unit;
+        }
+        lastBodies = [bi]; // la otra capa evita (casi siempre) el cuerpo que acaba de sonar
+        if (Math.random() < 0.3) t += mjPick([0.5, 1, 2]); // pausa corta entre episodios
       }
-    });
+      lastBodies = [prevBody];
+    }
     return events;
   }
   function displacementEnabled(){
