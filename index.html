@@ -1431,10 +1431,12 @@
           <span class="consola-inst-toggle" title="In4ths: en sets de 5+ notas, en vez del set entero toca acordes en bloque de 4 notas apilados en cuartas DIATÓNICAS del propio set (de grado en grado del set, posiciones i, i+3, i+6, i+9: C F B E en un set mayor), de un grado al azar y distinto en cada ataque. Solo, toca 2 por compás dentro del mismo acorde (o 4 con la fundamental moviéndose por grados del set); con sync/poly/rythmicarmonies etc. toca uno por ataque. Si el set no da al menos 3 notas distintas apiladas así (p. ej. 6 notas en cuartas), no cambia nada. Se combina con inversions, subset, sync, in3rds y las otras (si hay varias tildadas, sortea una por acorde)."><input type="checkbox" id="consolaHT_in4ths" checked><label for="consolaHT_in4ths">In4ths</label></span>
           <span class="consola-inst-toggle" title="In5ths: en sets de 5+ notas, en vez del set entero toca acordes en bloque de 4 notas apilados en quintas DIATÓNICAS del propio set (de grado en grado del set, posiciones i, i+4, i+8, i+12: C G D A en un set mayor), de un grado al azar y distinto en cada ataque. Solo, toca 2 por compás dentro del mismo acorde (o 4 con la fundamental moviéndose por grados del set); con sync/poly/rythmicarmonies etc. toca uno por ataque. Si el set no da al menos 3 notas distintas apiladas así (p. ej. 6 notas en cuartas), no cambia nada. Se combina con inversions, subset, sync, in3rds y las otras (si hay varias tildadas, sortea una por acorde)."><input type="checkbox" id="consolaHT_in5ths" checked><label for="consolaHT_in5ths">In5ths</label></span>
           <span class="consola-inst-toggle" title="Guitar comping: en vez del voicing de piano, cada ataque toca una DIGITACIÓN DE GUITARRA real del set (el mismo motor de la tarjeta Digitaciones de Guitarra: cuerdas, trastes y dedos tocables), con el grave del set como nota más grave y la posición más cercana a la digitación anterior. Pasa Armonía a Guitarra jazz (al destildar vuelve al preset anterior). El ritmo sale de las otras casillas (sync, poly, rythmicarmonies…). Pisa inversiones e in3rds. Sets de 7+ notas: toca 6 (el grave + 5 al azar). No entra en all."><input type="checkbox" id="consolaHT_guitar"><label for="consolaHT_guitar">guitar</label></span>
+          <span class="consola-inst-toggle" title="One chord test: la canción tiene UN solo acorde. Se sortea el primer acorde del algoritmo (con su transposición) y TODOS los ataques de Harmony repiten ese mismo set, en todos los compases. Bajo y melodía quedan sobre ese set. El ritmo y las demás casillas (inversions, arp, in3rds…) siguen funcionando sobre ese único acorde. No entra en all."><input type="checkbox" id="consolaHT_onechord"><label for="consolaHT_onechord">One chord test</label></span>
         </div>
         <div class="consola-inst-row">
           <span class="consola-inst-toggle" title="Arpegiador de armonía: 0% = nunca (Armonía de siempre). 100% = TODOS los compases se arpegian. Entre medio, cada compás se sortea: con probabilidad = el valor se reemplaza por un arpegio de las notas del acorde vigente (el set no se traiciona: solo sus notas, subiendo de octava si el patrón lo pide). En cada compás arpegiado se sortea de nuevo el patrón (casi siempre aleatorios o asimétricos: paseo aleatorio, permutación, célula irregular, convergente, pedal, saltos de 2 o 3… los lineales arriba/abajo salen poco, ~10%), la subdivisión (corcheas, semicorcheas o tresillos) y el largo de las notas. Con el slider por encima de 0 la Armonía deja el motor libre (como al tildar una casilla). Se combina con inversions, in3rds, guitar y accent; en los compases arpegiados reemplaza el ritmo de sync/poly/rythmicarmonies."><label for="consolaHT_arpSlider">&#127929; Arp</label><input type="range" class="consola-mini-range" id="consolaHT_arpSlider" min="0" max="100" value="0" step="1"><span class="consola-val" id="consolaHT_arpVal">0%</span></span>
-          <span class="consola-inst-toggle" title="3/4/5: intensidad de in3rds / in4ths / in5ths (las casillas eligen CUÁLES entran). 0% = apagado (suena el set entero, como si ninguna estuviera tildada). 100% = encendido: todos los acordes salen apilados en terceras / cuartas / quintas del set. Entre medio, cada acorde sortea al azar entre los dos estados: con probabilidad = el valor suena apilado, si no suena el set entero. Solo afecta a sets de 5+ notas."><label for="consolaHT_stackSlider">3/4/5</label><input type="range" class="consola-mini-range" id="consolaHT_stackSlider" min="0" max="100" value="75" step="1"><span class="consola-val" id="consolaHT_stackVal">75%</span></span>
+          <span class="consola-inst-toggle" title="3/4/5: intensidad de in3rds / in4ths / in5ths (las casillas eligen CUÁLES entran). 0% = apagado (suena el set entero, como si ninguna estuviera tildada). 100% = encendido: todos los acordes salen apilados en terceras / cuartas / quintas del set. Entre medio, cada acorde sortea al azar entre los dos estados: con probabilidad = el valor suena apilado, si no suena el set entero. Solo afecta a sets de 5+ notas."><label for="consolaHT_stackSlider">3/4/5</label><input type="range" class="consola-mini-range" id="consolaHT_stackSlider" min="0" max="100" value="75" step="1"><span class="consola-val" id="consolaHT_stackVal">75%</span>
+          <span class="consola-inst-toggle" title="251: progresiones al azar (presets del Generador de progresiones: V-I, V-Im, II-V, IIø-V, II-V-I, IIø-V-Im, II-V-I-VI, IIø-V-Im-VIø) tratadas como UN acorde: cada progresión dura de medio a 4 compases (se sortea 0.5 / 1 / 2 / 3 / 4, repartido en partes iguales entre sus acordes; no menos de 1 tiempo por acorde). 0% = sin progresiones. 100% = solo progresiones. Entre medio, cada tramo se sortea: con probabilidad = el valor arranca una progresión. Combinado con Chromatism / Cycles, la progresión ENTERA se transpone junta (en vez de un acorde, una progresión). Ojo: los acordes de la progresión salen de la tabla de sets del generador, no del set elegido. Los compases de HarmonicSpace (respiro) no llevan progresión."><label for="consolaHT_progSlider">251</label><input type="range" class="consola-mini-range" id="consolaHT_progSlider" min="0" max="100" value="0" step="1"><span class="consola-val" id="consolaHT_progVal">0%</span></span></span>
         </div>
         <div class="consola-inst-row" style="align-items:center;gap:8px;">
           <button type="button" class="chip" id="consolaMoreCompingBtn" title="Agrega una QUINTA pista MIDI (instrumento elegible en el selector de al lado; default Piano eléctrico), que dobla cada nota de la melodía junto con 1 o 2 notas más del acorde vigente en ese instante (siempre del mismo set, nunca una nota ajena) — el grupito entero queda siempre pegado a la nota de melodía, a lo sumo a una octava o dos de distancia.">moreComping</button>
@@ -6870,6 +6872,27 @@ function runAnalysis() {
     return { pick: pick, limitado: !filtrado.length };
   }
 
+  // PROGGEN: API para Harmony (slider 251). Arma una progresión al azar
+  // (un preset cualquiera de PROGRESIONES) con los mismos pools, bajos
+  // fijos y voice leading de siempre. Devuelve { tipo, chords:[{grado,
+  // notes(MIDI ascendente)}] }, sin tocar el estado ni el DOM del módulo.
+  window.PROGGEN = {
+    generate: function () {
+      var tipos = Object.keys(PROGRESIONES);
+      var tipo = tipos[Math.floor(Math.random() * tipos.length)];
+      var prevKey = null, prevV = null, prevS = null, out = [];
+      PROGRESIONES[tipo].forEach(function (paso) {
+        var cand = sortearCandidato(paso, prevKey).pick;
+        var pcs = cand.rel.map(function (iv) { return mod12(iv + paso.bajo); });
+        var v = elegirVoicing(pcs, paso.bajo, prevV, prevS);
+        prevKey = cand.entry["forte-code"] + "|" + cand.rel.join(",");
+        prevV = v; prevS = classifyShape(v);
+        out.push({ grado: paso.grado, notes: v.slice() });
+      });
+      return { tipo: tipo, chords: out };
+    }
+  };
+
   function regenerarProgresion() {
     var tipo = document.getElementById("progresionTipo").value;
     var pasos = PROGRESIONES[tipo] || PROGRESIONES["V-I"];
@@ -10162,13 +10185,15 @@ function runAnalysis() {
   var HARMTEST = (function(){
     var IDS = { base:"consolaHT_base", sync:"consolaHT_sync", poly:"consolaHT_poly", accent:"consolaHT_accent",
                 artic:"consolaHT_artic", subset:"consolaHT_subset", rests:"consolaHT_rests", swing:"consolaHT_swing",
-                inversions:"consolaHT_inversions", rythmicarmonies:"consolaHT_rythmicarmonies", in3rds:"consolaHT_in3rds", in4ths:"consolaHT_in4ths", in5ths:"consolaHT_in5ths", guitar:"consolaHT_guitar" };
+                inversions:"consolaHT_inversions", rythmicarmonies:"consolaHT_rythmicarmonies", in3rds:"consolaHT_in3rds", in4ths:"consolaHT_in4ths", in5ths:"consolaHT_in5ths", guitar:"consolaHT_guitar", onechord:"consolaHT_onechord" };
     // 3/4/5: slider #consolaHT_stackSlider (0–100%) = probabilidad (por acorde) de que in3rds/in4ths/in5ths apilen. 0 = esas casillas quedan apagadas.
     function stackProb(){ var e = document.getElementById("consolaHT_stackSlider"); var v = e ? parseFloat(e.value) : 75; return isNaN(v) ? 0.75 : Math.max(0, Math.min(1, v/100)); }
     function on(k){ var e = document.getElementById(IDS[k]); if(!(e && e.checked)) return false; if((k === "in3rds" || k === "in4ths" || k === "in5ths") && stackProb() === 0) return false; return true; }
     // Arp: slider #consolaHT_arpSlider (0–100%) = probabilidad por compás de arpegiar la armonía. > 0 activa Harmony.
     function arpProb(){ var e = document.getElementById("consolaHT_arpSlider"); var v = e ? parseFloat(e.value) : 0; return (v > 0) ? Math.min(1, v/100) : 0; }
-    function active(){ return Object.keys(IDS).some(on) || arpProb() > 0; }
+    // 251: slider #consolaHT_progSlider (0–100%) = probabilidad de que cada tramo sea una progresión (PROGGEN). > 0 activa Harmony.
+    function progProb(){ var e = document.getElementById("consolaHT_progSlider"); var v = e ? parseFloat(e.value) : 0; return (v > 0) ? Math.min(1, v/100) : 0; }
+    function active(){ return Object.keys(IDS).some(on) || arpProb() > 0 || progProb() > 0; }
     var SYNC_POOL = [ [1.5,1.5,1], [1,1.5,1.5], [1.5,1,1.5], [0.5,1.5,1.5,0.5],
                       [1,0.5,1.5,1], [1.5,0.5,1,1], [2,1.5,0.5], [0.5,1,1.5,1] ]; // todas suman 4
     function stepCell(beats, step){
@@ -10359,6 +10384,37 @@ function runAnalysis() {
         }
         attacks = hsOut.sort(function(x, y){ return x.t - y.t; });
       }
+      // 251: tramos de progresión. Recorre los ataques en orden; en cada uno, con prob = slider, arranca una
+      // progresión (PROGGEN) que dura 0.5/1/2/3/4 compases (>= 1 tiempo por acorde) repartidos en partes iguales.
+      // Los ataques que arrancan dentro del tramo se reemplazan por los acordes de la progresión; el último acorde
+      // se estira hasta el próximo ataque que queda (sin huecos). No entra en compases de respiro de HarmonicSpace.
+      var progP = progProb();
+      if(progP > 0 && window.PROGGEN){
+        var pOut = [], pi2 = 0, songEnd = barStart[numBars-1] + barLen[numBars-1];
+        while(pi2 < attacks.length){
+          var pa = attacks[pi2], pbar = barOf(pa.t);
+          if(HARMONICSPACE.enabled() && HARMONICSPACE.isPeaceBar(pbar)){ pOut.push(pa); pi2++; continue; }
+          if(Math.random() >= progP){ pOut.push(pa); pi2++; continue; }
+          var pg = window.PROGGEN.generate(), pn = pg.chords.length;
+          var opts = [0.5, 1, 2, 3, 4].filter(function(nb){ return nb*barLen[pbar] / pn >= 1 - 1e-9; });
+          var pBars = opts[randomInt(0, opts.length-1)];
+          var pEnd = Math.min(pa.t + pBars*barLen[pbar], songEnd);
+          if(HARMONICSPACE.enabled()){ // el tramo no entra en un compás de respiro
+            for(var qb = pbar + 1; qb < numBars; qb++){ if(HARMONICSPACE.isPeaceBar(qb) && barStart[qb] < pEnd){ pEnd = barStart[qb]; break; } }
+          }
+          var pj = pi2 + 1;
+          while(pj < attacks.length && attacks[pj].t < pEnd - 1e-9) pj++;
+          var nextT = (pj < attacks.length) ? attacks[pj].t : songEnd;
+          var pgrp = { t: null };
+          var seg = (pEnd - pa.t) / pn;
+          pg.chords.forEach(function(ch, ci){
+            var t0 = pa.t + ci*seg, t1 = (ci === pn-1) ? nextT : pa.t + (ci+1)*seg;
+            pOut.push({ t:t0, d:t1 - t0, in3g:null, in3k:0, prog:{ grp:pgrp, notes:ch.notes, grado:ch.grado, tipo:pg.tipo } });
+          });
+          pi2 = pj;
+        }
+        attacks = pOut;
+      }
       // 2) propiedades de cada ataque (compás, fuerte, contratiempo, swing, silencio)
       var acc = Math.random(); // rests: reparto parejo (~25% de los ataques no fuertes)
       attacks.forEach(function(a){
@@ -10384,7 +10440,10 @@ function runAnalysis() {
         });
         var keptAtt = attacks.filter(function(a){ return !arpBar[a.bar]; });
         for(var ab2 = 0; ab2 < numBars; ab2++){
-          if(arpBar[ab2]) keptAtt.push({ t:barStart[ab2], d:barLen[ab2], bar:ab2, rel:0, strong:true, onBeat:true, shift:0, silent:false, arp:true });
+          if(arpBar[ab2]){
+            var abFirst = attacks.filter(function(a){ return a.bar === ab2; })[0]; // 251: el arpegio toma el acorde de la progresión vigente al inicio del compás
+            keptAtt.push({ t:barStart[ab2], d:barLen[ab2], bar:ab2, rel:0, strong:true, onBeat:true, shift:0, silent:false, arp:true, prog: abFirst ? abFirst.prog : null });
+          }
         }
         keptAtt.sort(function(x, y){ return x.t - y.t; });
         attacks = keptAtt;
@@ -10432,12 +10491,27 @@ function runAnalysis() {
       for(var bs = 0; bs < numBars; bs++) barStride.push(stackOn() ? pickStride() : 2);
       CYCLEHOLD.reset();
       var htTranspose = cyclesEnabled || activeFixedIntervals().length > 0; // Cycles (o intervalos TEST) tildados: la armonía se transpone por ataque, como el motor libre
+      var oneRc = null; // One chord test: el primer acorde del algoritmo, fijo para toda la canción
       attacks.forEach(function(a, i){
-        var rc = MULTISETS.rootForAttack(a.bar, rootChord);
-        if(htTranspose){
-          CYCLEHOLD.beginAttack(); // ChangeDuration: mismo tramo de N ataques = misma transposición
-          rc = transposeChord(rc, CYCLEHOLD.isActive() ? CYCLEHOLD.value() : randomChromaTransposition());
+        var rc;
+        if(oneRc){ rc = oneRc.slice(); }
+        else if(a.prog){
+          // 251: la progresión ENTERA comparte una transposición (Chromatism / Cycles), sorteada en su primer acorde
+          var pgp = a.prog.grp;
+          if(pgp.t == null){
+            if(htTranspose){ CYCLEHOLD.beginAttack(); pgp.t = CYCLEHOLD.isActive() ? CYCLEHOLD.value() : randomChromaTransposition(); }
+            else pgp.t = 0;
+            pgp.t = mod12(pgp.t); if(pgp.t > 6) pgp.t -= 12; // misma clase de altura, registro más cerca de la tónica
+          }
+          rc = transposeChord(a.prog.notes, pgp.t);
+        } else {
+          rc = MULTISETS.rootForAttack(a.bar, rootChord);
+          if(htTranspose){
+            CYCLEHOLD.beginAttack(); // ChangeDuration: mismo tramo de N ataques = misma transposición
+            rc = transposeChord(rc, CYCLEHOLD.isActive() ? CYCLEHOLD.value() : randomChromaTransposition());
+          }
         }
+        if(on("onechord") && !oneRc) oneRc = rc.slice();
         var voiced, rhSub = null;
         if(on("inversions")){ var iv = invVoicing(rc, prevInv); voiced = iv.voiced; prevInv = iv.inv; }
         else {
@@ -14745,6 +14819,15 @@ function runAnalysis() {
     document.getElementById("consolaHT_stackVal").textContent = this.value + "%";
   });
   document.getElementById("consolaHT_stackSlider").addEventListener("change", function(){
+    if(state.rootChord.length) regenerateConsola();
+  });
+  document.getElementById("consolaHT_progSlider").addEventListener("input", function(){
+    document.getElementById("consolaHT_progVal").textContent = this.value + "%";
+  });
+  document.getElementById("consolaHT_progSlider").addEventListener("change", function(){
+    if(state.rootChord.length) regenerateConsola();
+  });
+  document.getElementById("consolaHT_onechord").addEventListener("change", function(){
     if(state.rootChord.length) regenerateConsola();
   });
   document.getElementById("consolaHT_arpSlider").addEventListener("input", function(){
