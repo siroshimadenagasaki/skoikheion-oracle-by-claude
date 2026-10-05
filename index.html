@@ -13555,16 +13555,39 @@ function runAnalysis() {
     var sm2Active = sm2UsingSF2();
     if(instEnabled("consolaChordChk")){
       var chordFam = voiceFamilyFor(mixPresets.harmony, "strings1");
+      var hdSm2 = 0, hdFb = 0; // diagnóstico Armonía muda (solo lectura)
       (want("chord") ? state.chordEvents : []).forEach(function(ev){
         var t = loopStartTime + ev.startBeat*spb;
         var dur = ev.durBeats*spb;
         // ev.vel (solo Harmony testing/accent): escala el volumen y elige capa de velocidad del .sf2
         var cvk = ev.vel != null ? ev.vel/96 : 1;
-        if(sm2Active && playSM2Voice(ctx, gains.chord, mixPresets.harmony, ev.midi, t, dur*0.93, 0.2*cvk, ev.vel != null ? ev.vel : undefined)) return;
+        if(sm2Active && playSM2Voice(ctx, gains.chord, mixPresets.harmony, ev.midi, t, dur*0.93, 0.2*cvk, ev.vel != null ? ev.vel : undefined)){ hdSm2++; return; }
+        hdFb++;
         var cdest = gains.chord;
         if(ev.vel != null){ cdest = ctx.createGain(); cdest.gain.value = cvk; cdest.connect(gains.chord); }
         chordFam.fn(ctx, cdest, ev.midi, t, dur*0.93, chordFam.mk(dur*0.93));
       });
+      // Diagnóstico "Armonía muda": solo lee estado (no cambia el audio). Si hay notas pero el
+      // audio está parado o el canal de Armonía quedó en 0, lo avisa en pantalla.
+      if(want("chord") && ctx === audioCtx && state.chordEvents.length){
+        (function(nEv, nSm2, nFb, sm2On, sfState, synthNow, presetNow){
+          setTimeout(function(){
+            try{
+              var gv = gains.chord && gains.chord.gain ? gains.chord.gain.value : null;
+              var d = { eventos:nEv, conSoundfont:nSm2, conRespaldo:nFb, sm2Activo:sm2On, sf2State:sfState, synth:synthNow, preset:presetNow, ctx:ctx.state, gainArmonia:gv, mixer:audioGain("chord"), t:new Date().toISOString() };
+              window.__harmDiag = d;
+              var why = null;
+              if(ctx.state !== "running") why = "audio " + ctx.state;
+              else if(gv !== null && gv < 0.0001 && audioGain("chord") > 0) why = "volumen del canal en 0 (mixer " + audioGain("chord") + ")";
+              if(why){
+                console.warn("[Armonía muda] " + why, d);
+                var stEl = document.getElementById("consolaPrerenderStatus");
+                if(stEl) stEl.textContent = "⚠ Armonía muda: " + why;
+              }
+            }catch(e){}
+          }, 400);
+        })(state.chordEvents.length, hdSm2, hdFb, sm2Active, (typeof sf2State !== "undefined" ? sf2State : null), (typeof currentSynth !== "undefined" ? currentSynth : null), mixPresets.harmony);
+      }
       // Doblar armonía: selector aparte (#chordDoublePresetSelect, "Mute"
       // por defecto) — repite exactamente las mismas notas y el mismo
       // ritmo de la Armonía, con un segundo timbre. En Mute no
