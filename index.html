@@ -9201,17 +9201,15 @@ function runAnalysis() {
     return { enabled: enabled, buildEvents: buildEvents };
   })();
 
-  var voices = [];
-  // Cada nodo de voz se quita de `voices` cuando termina (evento "ended"). Antes la
-  // lista solo crecía: en loop en vivo acumulaba miles de nodos ya apagados hasta Detener.
+  var voices = new Set();
+  // Cada nodo de voz se quita de `voices` cuando termina (evento "ended").
+  // Set: alta/baja O(1) — con arrays, indexOf+splice por cada nota terminada
+  // costaba O(n) en el hilo principal con cientos de voces vivas.
   function trackVoice(node){
-    var arr = voices;
-    arr.push(node);
+    var set = voices;
+    set.add(node);
     try{
-      node.addEventListener("ended", function(){
-        var i = arr.indexOf(node);
-        if(i >= 0) arr.splice(i, 1);
-      }, { once:true });
+      node.addEventListener("ended", function(){ set.delete(node); }, { once:true });
     }catch(e){}
   }
   var playing = false;
@@ -13981,36 +13979,60 @@ function runAnalysis() {
   // Dynamics: ev.vel (0-127, neutra 96) escala la ganancia y elige la capa de velocity del .sf2; sin ev.vel, igual que siempre.
   function velK(ev){ return ev.vel != null ? ev.vel/96 : 1; }
   function velL(ev){ return ev.vel != null ? ev.vel : undefined; }
-  function velDest(ctx, dest, ev){
-    if(ev.vel == null) return dest;
-    var g = ctx.createGain(); g.gain.value = ev.vel/96; g.connect(dest); return g;
+  // Sintetizador de respaldo: la velocity escala opts.peakGain (todas las familias
+  // la usan como ganancia pico de la voz) en vez de crear un GainNode extra por nota,
+  // que además quedaba conectado al bus para siempre.
+  function velOpts(fam, d, ev){
+    var o = fam.mk(d);
+    if(ev.vel != null) o.peakGain = (o.peakGain != null ? o.peakGain : 0.15) * ev.vel/96;
+    return o;
   }
-  function scheduleLoopAt(ctx, dest, loopStartTime, spb, only){
+  // Foto de lo que suena en UNA vuelta (eventos + presets + alt-melody). Los
+  // arrays de eventos se reemplazan (nunca se mutan) al regenerar, así que
+  // guardar la referencia alcanza. El scheduler en vivo la toma al empezar cada
+  // vuelta: igual que antes, un cambio de preset/notas a mitad de vuelta se
+  // escucha recién en la próxima repetición.
+  function liveSnap(){
+    var altMelodyChk = document.getElementById("consolaAltMelodyChk");
+    return {
+      chord: state.chordEvents, bass: state.bassEvents, melody: state.melodyEvents,
+      comping2: state.comping2Events, bebop: state.bebopEvents, melody2: state.melody2Events,
+      drum: drumEvents, presets: Object.assign({}, mixPresets),
+      mdInterval: (altMelodyChk && altMelodyChk.checked) ? -7 : -12
+    };
+  }
+  function scheduleLoopAt(ctx, dest, loopStartTime, spb, only, win){
     // only (opcional): nombre de UNA pista (chord, chordDouble, bass, melody,
     // melodyDouble, drum, comping2, bebop). Sin él, programa todas (modo en vivo).
+    // win (opcional): { from, to, snap } — programa SOLO los eventos con
+    // from <= startBeat < to (ventana del scheduler en vivo). Sin win, la vuelta
+    // entera (prerender / export MP3).
     function want(t){ return !only || only === t; }
+    var S = (win && win.snap) || liveSnap();
+    var P = S.presets;
+    var wFrom = win ? win.from : -Infinity, wTo = win ? win.to : Infinity;
+    function inWin(ev){ return ev.startBeat >= wFrom && ev.startBeat < wTo; }
     // Mini mixer: un canal de ganancia por instrumento (independiente
     // del volumen general) y, para armonía/melodía/bajo, qué instrumento
     // usar según el preset elegido en su selector.
     var gains = ensureInstrumentGains(ctx);
     var sm2Active = sm2UsingSF2();
     if(instEnabled("consolaChordChk")){
-      var chordFam = voiceFamilyFor(mixPresets.harmony, "strings1");
+      var chordFam = voiceFamilyFor(P.harmony, "strings1");
       var hdSm2 = 0, hdFb = 0; // diagnóstico Armonía muda (solo lectura)
-      (want("chord") ? state.chordEvents : []).forEach(function(ev){
+      (want("chord") ? S.chord : []).forEach(function(ev){
+        if(!inWin(ev)) return;
         var t = loopStartTime + ev.startBeat*spb;
         var dur = ev.durBeats*spb;
         // ev.vel (solo Harmony testing/accent): escala el volumen y elige capa de velocidad del .sf2
-        var cvk = ev.vel != null ? ev.vel/96 : 1;
-        if(sm2Active && playSM2Voice(ctx, gains.chord, mixPresets.harmony, ev.midi, t, dur*0.93, 0.2*cvk, ev.vel != null ? ev.vel : undefined)){ hdSm2++; return; }
+        if(sm2Active && playSM2Voice(ctx, gains.chord, P.harmony, ev.midi, t, dur*0.93, 0.2*velK(ev), velL(ev))){ hdSm2++; return; }
         hdFb++;
-        var cdest = gains.chord;
-        if(ev.vel != null){ cdest = ctx.createGain(); cdest.gain.value = cvk; cdest.connect(gains.chord); }
-        chordFam.fn(ctx, cdest, ev.midi, t, dur*0.93, chordFam.mk(dur*0.93));
+        chordFam.fn(ctx, gains.chord, ev.midi, t, dur*0.93, velOpts(chordFam, dur*0.93, ev));
       });
       // Diagnóstico "Armonía muda": solo lee estado (no cambia el audio). Si hay notas pero el
       // audio está parado o el canal de Armonía quedó en 0, lo avisa en pantalla.
-      if(want("chord") && ctx === audioCtx && state.chordEvents.length){
+      // Una vez por vuelta (la ventana que arranca en el beat 0).
+      if(want("chord") && ctx === audioCtx && S.chord.length && wFrom <= 0){
         (function(nEv, nSm2, nFb, sm2On, sfState, synthNow, presetNow){
           setTimeout(function(){
             try{
@@ -14027,80 +14049,76 @@ function runAnalysis() {
               }
             }catch(e){}
           }, 400);
-        })(state.chordEvents.length, hdSm2, hdFb, sm2Active, (typeof sf2State !== "undefined" ? sf2State : null), (typeof currentSynth !== "undefined" ? currentSynth : null), mixPresets.harmony);
+        })(S.chord.length, hdSm2, hdFb, sm2Active, (typeof sf2State !== "undefined" ? sf2State : null), (typeof currentSynth !== "undefined" ? currentSynth : null), P.harmony);
       }
       // Doblar armonía: selector aparte (#chordDoublePresetSelect, "Mute"
       // por defecto) — repite exactamente las mismas notas y el mismo
       // ritmo de la Armonía, con un segundo timbre. En Mute no
       // entra a este bloque: no genera ningún sonido nuevo ni dobla nada.
-      if(mixPresets.chordDouble !== "mute" && want("chordDouble")){
-        var chordDoubleFam = voiceFamilyFor(mixPresets.chordDouble, "strings1");
-        state.chordEvents.forEach(function(ev){
+      if(P.chordDouble !== "mute" && want("chordDouble")){
+        var chordDoubleFam = voiceFamilyFor(P.chordDouble, "strings1");
+        S.chord.forEach(function(ev){
+          if(!inWin(ev)) return;
           var t = loopStartTime + ev.startBeat*spb;
           var dur = ev.durBeats*spb;
-          var dvk = ev.vel != null ? ev.vel/96 : 1;
-          if(sm2Active && playSM2Voice(ctx, gains.chordDouble, mixPresets.chordDouble, ev.midi, t, dur*0.93, 0.2*dvk, ev.vel != null ? ev.vel : undefined)) return;
-          var ddest = gains.chordDouble;
-          if(ev.vel != null){ ddest = ctx.createGain(); ddest.gain.value = dvk; ddest.connect(gains.chordDouble); }
-          chordDoubleFam.fn(ctx, ddest, ev.midi, t, dur*0.93, chordDoubleFam.mk(dur*0.93));
+          if(sm2Active && playSM2Voice(ctx, gains.chordDouble, P.chordDouble, ev.midi, t, dur*0.93, 0.2*velK(ev), velL(ev))) return;
+          chordDoubleFam.fn(ctx, gains.chordDouble, ev.midi, t, dur*0.93, velOpts(chordDoubleFam, dur*0.93, ev));
         });
       }
     }
     if(instEnabled("consolaBassChk")){
-      var bassFam = voiceFamilyFor(mixPresets.bass, "contrabass");
-      (want("bass") ? state.bassEvents : []).forEach(function(ev){
+      var bassFam = voiceFamilyFor(P.bass, "contrabass");
+      (want("bass") ? S.bass : []).forEach(function(ev){
+        if(!inWin(ev)) return;
         var t = loopStartTime + ev.startBeat*spb;
         var dur = ev.durBeats*spb;
-        if(sm2Active && playSM2Voice(ctx, gains.bass, mixPresets.bass, ev.midi, t, dur*0.9, 0.24*velK(ev), velL(ev))) return;
-        bassFam.fn(ctx, velDest(ctx, gains.bass, ev), ev.midi, t, dur*0.9, bassFam.mk(dur*0.9));
+        if(sm2Active && playSM2Voice(ctx, gains.bass, P.bass, ev.midi, t, dur*0.9, 0.24*velK(ev), velL(ev))) return;
+        bassFam.fn(ctx, gains.bass, ev.midi, t, dur*0.9, velOpts(bassFam, dur*0.9, ev));
       });
     }
     if(instEnabled("consolaMelodyChk")){
-      var melodyFam = voiceFamilyFor(mixPresets.melody, "flute");
-      (want("melody") ? state.melodyEvents : []).forEach(function(ev){
+      var melodyFam = voiceFamilyFor(P.melody, "flute");
+      (want("melody") ? S.melody : []).forEach(function(ev){
+        if(!inWin(ev)) return;
         var t = loopStartTime + ev.startBeat*spb;
         var dur = ev.durBeats*spb;
-        if(sm2Active && playSM2Voice(ctx, gains.melody, mixPresets.melody, ev.midi, t, dur*0.85, 0.2*velK(ev), velL(ev))) return;
-        melodyFam.fn(ctx, velDest(ctx, gains.melody, ev), ev.midi, t, dur*0.85, melodyFam.mk(dur*0.85));
+        if(sm2Active && playSM2Voice(ctx, gains.melody, P.melody, ev.midi, t, dur*0.85, 0.2*velK(ev), velL(ev))) return;
+        melodyFam.fn(ctx, gains.melody, ev.midi, t, dur*0.85, velOpts(melodyFam, dur*0.85, ev));
       });
       // Doblar melodía: selector aparte (#melodyDoublePresetSelect, "Mute"
       // por defecto) — repite el mismo ritmo de la melodía, con un
       // segundo timbre, transportada hacia abajo (nunca las mismas notas
       // exactas): una OCTAVA abajo por defecto, o una QUINTA abajo si
       // #consolaAltMelodyChk está tildado ("alt-melody"). En Mute
-      // (default) no entra a este bloque: no genera ningún sonido nuevo
-      // ni dobla nada. El checkbox se lee en vivo acá (no en la
-      // generación de eventos), así que cambiarlo a mitad de loop se
+      // (default) no entra a este bloque. El checkbox se lee al empezar
+      // cada vuelta (liveSnap), así que cambiarlo a mitad de loop se
       // escucha recién en la próxima repetición, igual que un cambio de
       // preset de instrumento.
-      if(mixPresets.melodyDouble !== "mute" && want("melodyDouble")){
-        var melodyDoubleFam = voiceFamilyFor(mixPresets.melodyDouble, "flute");
-        var altMelodyChk = document.getElementById("consolaAltMelodyChk");
-        var melodyDoubleInterval = (altMelodyChk && altMelodyChk.checked) ? -7 : -12;
-        state.melodyEvents.forEach(function(ev){
+      if(P.melodyDouble !== "mute" && want("melodyDouble")){
+        var melodyDoubleFam = voiceFamilyFor(P.melodyDouble, "flute");
+        var melodyDoubleInterval = S.mdInterval;
+        S.melody.forEach(function(ev){
+          if(!inWin(ev)) return;
           var t = loopStartTime + ev.startBeat*spb;
           var dur = ev.durBeats*spb;
           var mdMidi = ev.midi + melodyDoubleInterval;
-          if(sm2Active && playSM2Voice(ctx, gains.melodyDouble, mixPresets.melodyDouble, mdMidi, t, dur*0.85, 0.2*velK(ev), velL(ev))) return;
-          melodyDoubleFam.fn(ctx, velDest(ctx, gains.melodyDouble, ev), mdMidi, t, dur*0.85, melodyDoubleFam.mk(dur*0.85));
+          if(sm2Active && playSM2Voice(ctx, gains.melodyDouble, P.melodyDouble, mdMidi, t, dur*0.85, 0.2*velK(ev), velL(ev))) return;
+          melodyDoubleFam.fn(ctx, gains.melodyDouble, mdMidi, t, dur*0.85, velOpts(melodyDoubleFam, dur*0.85, ev));
         });
       }
     }
     if(instEnabled("consolaDrumChk") && want("drum")){
-      // Pasa mixPresets.drum tal cual (kit/percussion/kitHifi o
+      // Pasa P.drum tal cual (kit/percussion/kitHifi o
       // cualquier key nueva agregada vía manifest con target:"drum") —
       // playSM2Voice/sm2ResolveFontAndProgram ya resuelven por key
       // genérica, no hace falta enumerar acá los valores posibles.
-      var drumKitKey = mixPresets.drum || "kit";
-      var kitIsJazzTraps = sm2Active && drumKitIsJazzTraps(drumKitKey);
-      drumEvents.forEach(function(ev){
+      var drumKitKey = P.drum || "kit";
+      var drumWin = S.drum.filter(inWin);
+      var kitIsJazzTraps = sm2Active && drumWin.length > 0 && drumKitIsJazzTraps(drumKitKey);
+      drumWin.forEach(function(ev){
         var t = loopStartTime + ev.startBeat*spb;
-        // Swing Drums trae velocidad real (ev.vel, 0-127); Velocity
-        // humanizada y las ghost notes de other-rhythm-variations
-        // también la traen ahora (ver humanizeVelocity/
-        // addRhythmComplexityLayer) — todo pasa por el mismo velScale,
-        // que escala la ganancia de siempre en vez de reemplazarla. Sin
-        // ev.vel (checkboxes apagados) queda en 1, igual que siempre.
+        // Swing Drums / Velocity humanizada / ghost notes traen ev.vel
+        // (0-127): escala la ganancia de siempre. Sin ev.vel queda en 1.
         var velScale = ev.vel != null ? ev.vel/96 : 1;
         var sm2Gain = (ev.type === "kick" ? 0.34 : ev.type === "snare" ? 0.26 : ev.type === "rimshot" ? 0.2 : (ev.open ? 0.2 : 0.15)) * velScale;
         var sm2Dur = ev.type === "kick" ? 0.3 : ev.type === "snare" ? 0.25 : ev.type === "rimshot" ? 0.12 : (ev.open ? 0.5 : 0.15);
@@ -14116,91 +14134,93 @@ function runAnalysis() {
         else if(ev.type === "hihat") playHihat(ctx, gains.drum, t, ev.open, velScale);
       });
     }
-    // moreComping: quinta pista, timbre de cuerdas fijo (no es parte del
-    // mini mixer de presets — siempre suena en strings), doblando la
-    // melodía con 1-2 notas más del acorde vigente. Vacía si el botón
-    // #consolaMoreCompingBtn está apagado, así que este forEach no hace
-    // nada en ese caso.
-    var comping2Fam = voiceFamilyFor(mixPresets.comping2, "epiano");
-    (want("comping2") ? state.comping2Events : []).forEach(function(ev){
+    // moreComping: quinta pista, doblando la melodía con 1-2 notas más del
+    // acorde vigente. Vacía si #consolaMoreCompingBtn está apagado.
+    var comping2Fam = voiceFamilyFor(P.comping2, "epiano");
+    (want("comping2") ? S.comping2 : []).forEach(function(ev){
+      if(!inWin(ev)) return;
       var t = loopStartTime + ev.startBeat*spb;
       var dur = ev.durBeats*spb;
-      if(sm2Active && playSM2Voice(ctx, gains.comping2, mixPresets.comping2, ev.midi, t, dur*0.9, 0.16*velK(ev), velL(ev))) return;
-      comping2Fam.fn(ctx, velDest(ctx, gains.comping2, ev), ev.midi, t, dur*0.9, comping2Fam.mk(dur*0.9));
+      if(sm2Active && playSM2Voice(ctx, gains.comping2, P.comping2, ev.midi, t, dur*0.9, 0.16*velK(ev), velL(ev))) return;
+      comping2Fam.fn(ctx, gains.comping2, ev.midi, t, dur*0.9, velOpts(comping2Fam, dur*0.9, ev));
     });
-    // bebopMelody: sexta pista, línea melódica INDEPENDIENTE (no dobla a
-    // la melodía principal — tiene su propia nota por evento, elegida
-    // por CHORDSCALE), con selector de instrumento propio
-    // (#bebopPresetSelect, igual patrón que Armonía/Melodía/Bajo —
-    // Sax soprano por defecto). Vacía si el botón #consolaBebopBtn está
-    // apagado. #mixBebopVol arranca en 0%, pero el listener del botón
-    // lo auto-sube a 100% la primera vez que se prende (ver arriba),
-    // así que se escucha de una sin pasos extra.
-    var bebopFam = voiceFamilyFor(mixPresets.bebop, "sopranoSax");
-    (want("bebop") ? state.bebopEvents : []).forEach(function(ev){
+    // bebopMelody: sexta pista, línea melódica INDEPENDIENTE (CHORDSCALE),
+    // con selector propio (#bebopPresetSelect). Vacía si #consolaBebopBtn
+    // está apagado.
+    var bebopFam = voiceFamilyFor(P.bebop, "sopranoSax");
+    (want("bebop") ? S.bebop : []).forEach(function(ev){
+      if(!inWin(ev)) return;
       var t = loopStartTime + ev.startBeat*spb;
       var dur = ev.durBeats*spb;
-      if(sm2Active && playSM2Voice(ctx, gains.bebop, mixPresets.bebop, ev.midi, t, dur*0.85, 0.16*velK(ev), velL(ev))) return;
-      bebopFam.fn(ctx, velDest(ctx, gains.bebop, ev), ev.midi, t, dur*0.85, bebopFam.mk(dur*0.85));
+      if(sm2Active && playSM2Voice(ctx, gains.bebop, P.bebop, ev.midi, t, dur*0.85, 0.16*velK(ev), velL(ev))) return;
+      bebopFam.fn(ctx, gains.bebop, ev.midi, t, dur*0.85, velOpts(bebopFam, dur*0.85, ev));
     });
     // Melody n2: melodía alternativa independiente (solo desde el compás 12),
     // con su propio instrumento (#melody2PresetSelect, Flauta por defecto).
-    var melody2Fam = voiceFamilyFor(mixPresets.melody2, "flute");
-    (want("melody2") ? state.melody2Events : []).forEach(function(ev){
+    var melody2Fam = voiceFamilyFor(P.melody2, "flute");
+    (want("melody2") ? S.melody2 : []).forEach(function(ev){
+      if(!inWin(ev)) return;
       var t = loopStartTime + ev.startBeat*spb;
       var dur = ev.durBeats*spb;
-      if(sm2Active && playSM2Voice(ctx, gains.melody2, mixPresets.melody2, ev.midi, t, dur*0.9, 0.16*velK(ev), velL(ev))) return;
-      melody2Fam.fn(ctx, velDest(ctx, gains.melody2, ev), ev.midi, t, dur*0.9, melody2Fam.mk(dur*0.9));
+      if(sm2Active && playSM2Voice(ctx, gains.melody2, P.melody2, ev.midi, t, dur*0.9, 0.16*velK(ev), velL(ev))) return;
+      melody2Fam.fn(ctx, gains.melody2, ev.midi, t, dur*0.9, velOpts(melody2Fam, dur*0.9, ev));
     });
   }
 
   function tickPlayhead(ctx, loopAnchor, spb, loopDur){
+    // Optimizado: los elementos se buscan una vez y el ancho scrolleable
+    // (scrollWidth/clientWidth, que fuerzan layout) se mide cada ~0.5 s en
+    // vez de en cada frame; scrollLeft solo se escribe si cambió. Antes eran
+    // hasta 3 reflows por frame, que competían con el scheduler de audio.
     var ph = document.getElementById("consolaPlayhead");
     var host = document.getElementById("consolaRollHost");
-    // Playhead propio del roll de bebop (separado) — se mueve en el
-    // mismo instante que el del roll principal (mismo grid de beats),
-    // pero con su propio scroll porque vive en otro <div> aparte.
+    // Playhead propio del roll de bebop (separado) — mismo grid de beats,
+    // con su propio scroll porque vive en otro <div> aparte.
     var phBebop = document.getElementById("consolaBebopPlayhead");
     var hostBebop = document.getElementById("consolaBebopRollHost");
     var AUTOSCROLL_MARGIN = 80; // deja este margen visible a la izquierda del playhead
-    function step(){
+    var phDrum = null, hostDrum = null;
+    var maxS = 0, maxSD = 0, maxSB = 0, lastMeasure = -1e9;
+    var lastS = -1, lastSD = -1, lastSB = -1;
+    var shown = false;
+    function measure(){
+      // el roll de batería se puede volver a dibujar mientras suena
+      phDrum = document.getElementById("consolaDrumPlayhead");
+      hostDrum = document.getElementById("drumRollHost");
+      maxS = host ? Math.max(0, host.scrollWidth - host.clientWidth) : 0;
+      maxSD = (hostDrum && !hostDrum.hidden) ? Math.max(0, hostDrum.scrollWidth - hostDrum.clientWidth) : 0;
+      maxSB = (hostBebop && !hostBebop.hidden) ? Math.max(0, hostBebop.scrollWidth - hostBebop.clientWidth) : 0;
+      shown = false;
+    }
+    function step(ts){
       if(!playing) return;
       var elapsed = ctx.currentTime - loopAnchor;
       if(elapsed >= 0){
+        if(ts - lastMeasure > 500){ measure(); lastMeasure = ts; }
         var inLoop = elapsed % loopDur;
         var beats = inLoop/spb;
         var x = MARGIN_L + beats*PPB;
-        if(ph){
-          ph.setAttribute("x1", x); ph.setAttribute("x2", x);
-          ph.setAttribute("visibility", "visible");
+        var xs = x.toFixed(1);
+        if(ph){ ph.setAttribute("x1", xs); ph.setAttribute("x2", xs); }
+        if(phDrum){ phDrum.setAttribute("x1", xs); phDrum.setAttribute("x2", xs); }
+        if(phBebop){ phBebop.setAttribute("x1", xs); phBebop.setAttribute("x2", xs); }
+        if(!shown){
+          if(ph) ph.setAttribute("visibility", "visible");
+          if(phDrum) phDrum.setAttribute("visibility", "visible");
+          if(phBebop) phBebop.setAttribute("visibility", "visible");
+          shown = true;
         }
         // Auto-scroll horizontal: sigue al playhead para que siempre
-        // quede a la vista, sin importar cuán ancho sea el segmento —
-        // al reiniciar el loop, el playhead vuelve al principio y el
-        // scroll salta con él (no hace falta tocar nada a mano).
-        if(host){
-          var maxScroll = Math.max(0, host.scrollWidth - host.clientWidth);
-          var target = Math.min(maxScroll, Math.max(0, x - AUTOSCROLL_MARGIN));
-          host.scrollLeft = target;
-        }
-        var phDrum = document.getElementById("consolaDrumPlayhead");
-        if(phDrum){
-          phDrum.setAttribute("x1", x); phDrum.setAttribute("x2", x);
-          phDrum.setAttribute("visibility", "visible");
-          var hostDrum = document.getElementById("drumRollHost");
-          if(hostDrum && !hostDrum.hidden){
-            var maxScrollD = Math.max(0, hostDrum.scrollWidth - hostDrum.clientWidth);
-            hostDrum.scrollLeft = Math.min(maxScrollD, Math.max(0, x - AUTOSCROLL_MARGIN));
-          }
-        }
-        if(phBebop){
-          phBebop.setAttribute("x1", x); phBebop.setAttribute("x2", x);
-          phBebop.setAttribute("visibility", "visible");
+        // quede a la vista; al reiniciar el loop el scroll salta con él.
+        var target = Math.round(Math.min(maxS, Math.max(0, x - AUTOSCROLL_MARGIN)));
+        if(host && target !== lastS){ host.scrollLeft = target; lastS = target; }
+        if(hostDrum && !hostDrum.hidden){
+          var tD = Math.round(Math.min(maxSD, Math.max(0, x - AUTOSCROLL_MARGIN)));
+          if(tD !== lastSD){ hostDrum.scrollLeft = tD; lastSD = tD; }
         }
         if(hostBebop && !hostBebop.hidden){
-          var maxScrollB = Math.max(0, hostBebop.scrollWidth - hostBebop.clientWidth);
-          var targetB = Math.min(maxScrollB, Math.max(0, x - AUTOSCROLL_MARGIN));
-          hostBebop.scrollLeft = targetB;
+          var tB = Math.round(Math.min(maxSB, Math.max(0, x - AUTOSCROLL_MARGIN)));
+          if(tB !== lastSB){ hostBebop.scrollLeft = tB; lastSB = tB; }
         }
       }
       rafId = requestAnimationFrame(step);
@@ -14264,7 +14284,7 @@ function runAnalysis() {
     melodyDoubleGainNode = chordDoubleGainNode = comping2GainNode = bebopGainNode = melody2GainNode = null;
     reverbBusGain = reverbConvolver = reverbReturnGain = null;
     reverbSendGains = { chord:null, bass:null, melody:null, melodyDouble:null, chordDouble:null, drum:null, comping2:null, bebop:null, melody2:null };
-    voices = [];
+    voices = new Set();
     dryRenderMode = true;
     try{
       var m = ensureMasterGain(off);
@@ -14361,7 +14381,7 @@ function runAnalysis() {
         }
         if(token !== prToken) return;
         var gains = ensureInstrumentGains(ctx);
-        voices = [];
+        voices = new Set();
         var t0 = ctx.currentTime + 0.1;
         var srcs = [];
         tracks.forEach(function(tr){
@@ -14408,7 +14428,7 @@ function runAnalysis() {
     var ctx = getAudioCtx();
     if(!ctx) return;
     var dest = ensureMasterGain(ctx);
-    voices = [];
+    voices = new Set();
     var tempoEl = document.getElementById("consolaTempo");
     var bpm = parseInt(tempoEl.value, 10);
     var spb = 60/bpm;
@@ -14422,42 +14442,62 @@ function runAnalysis() {
     var rollHost = document.getElementById("consolaRollHost");
     if(rollHost) rollHost.scrollLeft = 0;
 
+    // Scheduler por ventanas (patrón "lookahead" de Web Audio): cada TICK_MS
+    // se programan SOLO las notas que empiezan en los próximos `ahead`
+    // segundos. Antes se armaba la vuelta ENTERA de una (cientos/miles de
+    // nodos creados en un solo frame y vivos en el grafo hasta sonar): pico
+    // de CPU en el hilo principal al empezar cada vuelta y mucho más trabajo
+    // en el hilo de audio. Ahora hay pocos nodos vivos a la vez.
+    // Pestaña en segundo plano: el navegador frena setInterval a ~1 s, así
+    // que ahí la ventana se agranda para no dejar huecos.
+    var TICK_MS = 50, AHEAD_FG = 0.8, AHEAD_BG = 1.6;
+    var LOOP_BEATS = TOTAL_BEATS; // fijo durante la reproducción, igual que loopDur
     var loopAnchor = ctx.currentTime + 0.1;
-    var nextLoopTime = loopAnchor;
-    scheduleLoopAt(ctx, dest, nextLoopTime, spb);
-    nextLoopTime += loopDur;
-
-    if(document.getElementById("consolaLoopChk").checked){
-      var SCHEDULE_AHEAD = 1.0; // segundos
-      schedulerTimer = setInterval(function(){
-        if(!document.getElementById("consolaLoopChk").checked){
-          clearInterval(schedulerTimer); schedulerTimer = null;
-          var waitMs = Math.max(50, (nextLoopTime - ctx.currentTime + 0.3)*1000);
-          window._consolaStopTimer = setTimeout(stopPlayback, waitMs);
-          return;
-        }
-        // Si nos atrasamos varias vueltas (pestaña en segundo plano:
-        // el navegador frena este setInterval, pero el reloj del
-        // AudioContext sigue corriendo solo) NO recuperamos vuelta por
-        // vuelta — antes este while agendaba TODAS las vueltas
-        // perdidas de una, y como cada scheduleLoopAt arma decenas de
-        // voces, eso bloqueaba el hilo principal (la música se
-        // "trababa" y ni Detener/Reset respondían hasta refrescar la
-        // página). Si nos atrasamos más de un par de vueltas,
-        // saltamos directo al presente y seguimos desde ahí.
-        var MAX_CATCHUP_LOOPS = 2;
-        var behindLoops = Math.floor((ctx.currentTime - nextLoopTime) / loopDur);
-        if(behindLoops > MAX_CATCHUP_LOOPS){
-          nextLoopTime += behindLoops * loopDur;
-        }
-        while(nextLoopTime - ctx.currentTime < SCHEDULE_AHEAD){
-          scheduleLoopAt(ctx, dest, nextLoopTime, spb);
-          nextLoopTime += loopDur;
-        }
-      }, 150);
-    } else {
-      window._consolaStopTimer = setTimeout(stopPlayback, (loopDur + 0.3)*1000);
+    var schedLoopStart = loopAnchor;  // inicio (en el reloj de audio) de la vuelta en curso
+    var schedBeat = 0;                // próximo beat sin programar dentro de esa vuelta
+    var snap = liveSnap();            // foto de la vuelta en curso (notas/presets)
+    var loopChk = document.getElementById("consolaLoopChk");
+    var ending = false;
+    function endAfterCurrentLoop(){
+      if(schedulerTimer){ clearInterval(schedulerTimer); schedulerTimer = null; }
+      var waitMs = Math.max(50, (schedLoopStart + loopDur - ctx.currentTime + 0.3)*1000);
+      window._consolaStopTimer = setTimeout(stopPlayback, waitMs);
     }
+    function pump(){
+      if(!playing || ending) return;
+      var now = ctx.currentTime;
+      // Atrasados (pestaña dormida, hilo trabado): no se recuperan notas
+      // viejas — Web Audio las tocaría todas juntas. Se salta al presente,
+      // manteniendo la grilla de vueltas (loopAnchor + k*loopDur).
+      if(schedLoopStart + schedBeat*spb < now - 0.02){
+        var nowBeatAbs = (now - schedLoopStart) / spb;
+        if(nowBeatAbs >= LOOP_BEATS){
+          if(!loopChk.checked){ ending = true; endAfterCurrentLoop(); return; }
+          var skip = Math.floor(nowBeatAbs / LOOP_BEATS);
+          schedLoopStart += skip * loopDur;
+          nowBeatAbs -= skip * LOOP_BEATS;
+          snap = liveSnap();
+        }
+        schedBeat = nowBeatAbs;
+      }
+      var horizon = now + (document.hidden ? AHEAD_BG : AHEAD_FG);
+      var guard = 0;
+      while(schedLoopStart + schedBeat*spb < horizon && guard++ < 64){
+        var toBeat = Math.min(LOOP_BEATS, (horizon - schedLoopStart) / spb);
+        if(toBeat > schedBeat){
+          scheduleLoopAt(ctx, dest, schedLoopStart, spb, null, { from: schedBeat, to: (toBeat >= LOOP_BEATS ? Infinity : toBeat), snap: snap });
+          schedBeat = toBeat;
+        }
+        if(schedBeat < LOOP_BEATS) break;
+        // fin de la vuelta: ¿sigue el loop?
+        if(!loopChk.checked){ ending = true; endAfterCurrentLoop(); return; }
+        schedLoopStart += loopDur;
+        schedBeat = 0;
+        snap = liveSnap(); // cambios de notas/presets entran en la vuelta nueva
+      }
+    }
+    pump();
+    if(playing && !ending) schedulerTimer = setInterval(pump, TICK_MS);
 
     tickPlayhead(ctx, loopAnchor, spb, loopDur);
   }
@@ -14703,7 +14743,7 @@ function runAnalysis() {
     melodyDoubleGainNode = chordDoubleGainNode = comping2GainNode = bebopGainNode = melody2GainNode = null;
     reverbBusGain = reverbConvolver = reverbReturnGain = null;
     reverbSendGains = { chord:null, bass:null, melody:null, melodyDouble:null, chordDouble:null, drum:null, comping2:null, bebop:null, melody2:null };
-    voices = [];
+    voices = new Set();
     try{
       scheduleLoopAt(off, ensureMasterGain(off), 0, spb);
     } finally {
@@ -14802,7 +14842,7 @@ function runAnalysis() {
     // agendado a futuro — no queda nada pendiente para cuando se
     // vuelva a pulsar Reproducir.
     voices.forEach(function(o){ try{ o.stop(now + FADE); }catch(e){} });
-    voices = [];
+    voices = new Set();
 
     // Los buses quedaron en 0 tras el fade — se restauran a los niveles
     // del mixer / volumen general para que la próxima reproducción
