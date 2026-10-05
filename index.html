@@ -1065,7 +1065,7 @@
     overflow:hidden;pointer-events:none;opacity:.45;
   }
   #consolaBebopRollLabel{display:none;}
-  #consolaRollsLayer > *{transform:translateY(var(--roll-shift,0vh));}
+  #consolaRollsLayer > *{transform:translateY(var(--roll-shift,0vh));flex:none;}
   #rollVScroll{position:fixed;left:3px;top:50%;transform:translateY(-50%);z-index:50;width:10px;height:55px;margin:0;padding:0;opacity:.55;cursor:pointer;writing-mode:vertical-lr;direction:rtl;accent-color:var(--gold);}
   #rollVScroll:hover{opacity:1;}
   #consolaRollsLayer .consola-empty{display:none;}
@@ -1363,11 +1363,19 @@
           <span class="consola-inst-toggle" title="Slider 0–100% (default 5%): probabilidad por compás de que la melodía tenga notas rápidas (semicorcheas o fusas, al azar). 70% de esas veces: 1 a 3 grupitos de 2, 4 o 6 notas cortas repartidos al azar dentro de la melodía del compás. 30%: una CORRIDA en bloque de 1 compás entero o medio compás. Las notas de la corrida suben/bajan por grados conjuntos usando SOLO las notas del acorde vigente en cada instante (nunca sale del set), sin silencios. El resto del compás (si la corrida es de medio compás) sigue con su ritmo de siempre. No afecta a Simplicity. 0% = nunca."><label for="consolaRapidRunsSlider">&#9889; Rapid runs</label><input type="range" class="consola-mini-range" id="consolaRapidRunsSlider" min="0" max="100" value="5" step="1"><span class="consola-val" id="consolaRapidRunsVal">5%</span></span>
         </div>
       </div>
-      <div class="consola-field consola-instruments" title="Bass function: de dónde saca sus notas el bajo en el modo libre (no afecta a ↺ Simplicity, que usa su propio bajo fijo). Los dos checkboxes son excluyentes.">
-        <label>Bass function</label>
+      <div class="consola-field consola-instruments consola-stack" title="Bass: opciones del bajo. Bass function = de dónde saca sus notas el bajo en el modo libre (Current set / Superset, excluyentes; no afecta a ↺ Simplicity, que usa su propio bajo fijo).">
+        <div class="consola-subfield-head">
+          <label>Bass</label>
+          <button type="button" class="subfield-toggle" aria-expanded="false" aria-controls="bassBody" onclick="toggleModule(this)" title="Mostrar/ocultar Bass"></button>
+        </div>
+        <div class="collapsible-content collapsed" id="bassBody">
+        <div class="consola-inst-row" style="margin-bottom:2px;"><label style="font-size:11px;color:var(--ink-muted);">Bass function</label></div>
+        <div title="Bass function: de dónde saca sus notas el bajo en el modo libre (no afecta a ↺ Simplicity, que usa su propio bajo fijo). Los dos checkboxes son excluyentes." style="display:contents;">
         <div class="consola-inst-row">
           <span class="consola-inst-toggle" title="Current set (default): el bajo toca SOLO notas del acorde en curso — el voicing de armonía que está sonando en ese instante exacto (mismo criterio que la melodía). Nunca una nota ajena al set elegido."><input type="checkbox" id="consolaBassFnCurrentChk" checked><label for="consolaBassFnCurrentChk">Current set</label></span>
           <span class="consola-inst-toggle" title="Superset: en cada ataque del bajo, 50% de las veces toca una nota del acorde en curso y el otro 50% una nota de AFUERA del set de ese reataque (una clase de tono que no pertenece al set transportado). Es el único modo del motor que sale del set elegido."><input type="checkbox" id="consolaBassFnSupersetChk"><label for="consolaBassFnSupersetChk">Superset</label></span>
+        </div>
+        </div>
         </div>
       </div>
       <div class="consola-field consola-instruments" title="Pedal de sustain de la Armonía (motor libre y Simplicity): en cada cambio de acorde se tira un dado al 50%. Si sale, el pedal se pisa antes de que termine el acorde y se suelta después del ataque del próximo — las notas del acorde que termina siguen sonando por encima del ataque siguiente y se cortan un instante después, enlazando un acorde con otro (legato). Una nota que se repite igual en el acorde siguiente no se estira (se vuelve a atacar, como en un piano real). No cambia QUÉ notas suenan, solo cuánto duran. Prendido por defecto.">
@@ -1714,6 +1722,14 @@
             <input type="checkbox" class="mix-solo" data-track="chordDouble" title="Solo: silencia TODAS las demás pistas mientras esté tildado (a diferencia de Foco, que solo las baja) — este fader no cambia. Al destildarlo, todo vuelve exactamente al nivel que tenía antes (no se pisa ningún valor)." aria-label="Solo en Doblar armonía"><span class="mix-solo-lbl">solo</span>
           </div>
         </div>
+        <div class="mix-channel" title="Volumen de BassDuplicated (repite el Bajo con un segundo timbre). Sin efecto mientras el selector 'BassDuplicated' esté en Empty.">
+          <label for="mixBassDoubleVol">BassDuplicated</label>
+          <input type="range" id="mixBassDoubleVol" min="0" max="150" value="40" step="1">
+          <div class="mix-val-row">
+            <span class="mix-val" id="mixBassDoubleVolVal">40%</span>
+            <input type="checkbox" class="mix-solo" data-track="bassDouble" title="Solo: silencia TODAS las demás pistas mientras esté tildado (a diferencia de Foco, que solo las baja) — este fader no cambia. Al destildarlo, todo vuelve exactamente al nivel que tenía antes (no se pisa ningún valor)." aria-label="Solo en BassDuplicated"><span class="mix-solo-lbl">solo</span>
+          </div>
+        </div>
       </div>
       <div class="mix-preset-label" style="width:100%;text-align:center;margin:2px 0 -6px;">Reverb (envío por pista)</div>
       <div class="mix-grid" title="Multiplicador de esta pista sobre el slider maestro Reverb (arriba, junto a Volume master). 100% = usa el nivel general tal cual; 0% = esta pista nunca llega al reverb.">
@@ -1812,6 +1828,13 @@
           <select class="mix-preset-select" id="bassPresetSelect">
             <!-- Las opciones (todos los .sf2 y todos sus presets) las arma sfBuildPresetSelects() al cargar la página. -->
             <option value="synthBass" selected>Bajo original (sintetizado)</option>
+          </select>
+        </div>
+        <div class="mix-preset-group" id="bassDoublePresetGroup" data-mix-group="bassDouble" title="BassDuplicated: repite exactamente las mismas notas y el mismo ritmo del Bajo con un segundo timbre. Default: Acoust. Bass (Solar). El primer preset, Empty, lo apaga.">
+          <label class="mix-preset-label" for="bassDoublePresetSelect">BassDuplicated</label>
+          <select class="mix-preset-select" id="bassDoublePresetSelect">
+            <!-- Las opciones (todos los .sf2 y todos sus presets) las arma sfBuildPresetSelects() al cargar la página. -->
+            <option value="mute" selected>Empty (apagado)</option>
           </select>
         </div>
         <div class="mix-preset-group" id="drumPresetGroup" data-mix-group="drum">
@@ -11696,6 +11719,51 @@ function runAnalysis() {
   }
   window.regenerateConsola = regenerateConsola;
 
+  // Ajuste vertical de los piano rolls de fondo: si el roll principal (con el bajo abajo de todo)
+  // + el de bebop no entran en la altura de la pantalla, se comprimen verticalmente (solo el alto
+  // de las filas; el ancho/scroll horizontal no cambia) para que SIEMPRE se vea hasta la nota más grave.
+  (function(){
+    var layer = null, pending = false;
+    function fit(){
+      pending = false;
+      layer = layer || document.getElementById("consolaRollsLayer");
+      if(!layer) return;
+      var svgs = Array.prototype.slice.call(layer.querySelectorAll(".consola-roll-wrap svg"));
+      if(!svgs.length) return;
+      var total = 0, vis = 0;
+      svgs.forEach(function(sv){
+        sv.style.height = ""; sv.setAttribute("preserveAspectRatio", "xMinYMin meet");
+        total += parseFloat(sv.getAttribute("height")) || 0; vis++;
+      });
+      // alto que ocupa TODO lo que no es el svg (min-height/márgenes de los contenedores y gaps)
+      var kids = Array.prototype.slice.call(layer.children).filter(function(k){ return k.offsetHeight > 0; });
+      var used = 0;
+      kids.forEach(function(k){ used += k.offsetHeight + (parseFloat(getComputedStyle(k).marginBottom) || 0); });
+      used += Math.max(0, kids.length - 1) * 10;
+      var svgNow = 0;
+      svgs.forEach(function(sv){ svgNow += sv.getBoundingClientRect().height; });
+      var extra = Math.max(0, used - svgNow) + 12;
+      var avail = window.innerHeight * 0.99 - extra;
+      if(total <= avail || avail <= 100) return;
+      var f = avail / total;
+      svgs.forEach(function(sv){
+        var h = parseFloat(sv.getAttribute("height")) || 0;
+        sv.setAttribute("preserveAspectRatio", "none");
+        sv.style.height = Math.floor(h * f) + "px";
+      });
+    }
+    function schedule(){ if(!pending){ pending = true; requestAnimationFrame(fit); } }
+    function init(){
+      ["consolaRollHost", "consolaBebopRollHost"].forEach(function(id){
+        var el = document.getElementById(id);
+        if(el) new MutationObserver(schedule).observe(el, { childList:true });
+      });
+      window.addEventListener("resize", schedule);
+      schedule();
+    }
+    if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
+  })();
+
   // ---------- piano roll (SVG) ----------
   var PPB = 39, ROW_H = 14, MARGIN_L = 44, MARGIN_T = 40, MARGIN_B = 10;
   var svgNS2 = "http://www.w3.org/2000/svg";
@@ -12339,7 +12407,7 @@ function runAnalysis() {
   // presets deciden qué instrumento usar en armonía/melodía/bajo (los
   // 12 de Instruments.sf2, con sintetizador de siempre como respaldo)
   // y qué muestras usar en batería (kit real o percusión/congas).
-  var mixGains = { drum: 1, bass: 0.4, chord: 1, melody: 1, melodyDouble: 0.5, chordDouble: 0.5, comping2: 1, bebop: 0, melody2: 1 }; // Bajo: 40% por defecto. Doblar melodía / Doblar armonía: 50% por defecto
+  var mixGains = { drum: 1, bass: 0.4, chord: 1, melody: 1, melodyDouble: 0.5, chordDouble: 0.5, bassDouble: 0.4, comping2: 1, bebop: 0, melody2: 1 }; // Bajo: 40% por defecto. Doblar melodía / Doblar armonía: 50% por defecto
   // ---------- Foco: checkbox chico junto a cada fader del mini mixer ----------
   // mixGains sigue guardando SIEMPRE el valor crudo del fader. El nivel real
   // que llega al gain node es mixGains * focusFactor: 1 para las pistas
@@ -12375,8 +12443,8 @@ function runAnalysis() {
   // Defaults propios (no los de SF_DEFAULT_FILES): Bajo = "synthBass" (Bajo original sintetizado) y
   // Doblar melodía = "bassoon" (Fagot, Instruments.sf2). Doblar armonía = Nord Pad (SF_DEFAULT_FILES).
   // Las filas de "Bass default.sf2" y "Armonica.sf2" siguen en el catálogo, elegibles a mano.
-  var mixPresets = { harmony: sfDefaultKeyFor("harmony", "piano"), melody: sfDefaultKeyFor("melody", "flute"), melodyDouble: sfKeyForFile("Extra v2/bassoon.sf2", 0, 0), comping2: "epiano", chordDouble: sfDefaultKeyFor("chordDouble", "mute"), bass: "synthBass", drum: sfDefaultKeyFor("drum", "kit"), bebop: "sopranoSax", melody2: "flute", modalVamps: sfDefaultKeyFor("harmony", "piano") };
-  var chordGainNode = null, bassGainNode = null, melodyGainNode = null, drumGainNode = null, melodyDoubleGainNode = null, chordDoubleGainNode = null, comping2GainNode = null, bebopGainNode = null, melody2GainNode = null;
+  var mixPresets = { harmony: sfDefaultKeyFor("harmony", "piano"), melody: sfDefaultKeyFor("melody", "flute"), melodyDouble: sfKeyForFile("Extra v2/bassoon.sf2", 0, 0), comping2: "epiano", chordDouble: sfDefaultKeyFor("chordDouble", "mute"), bassDouble: sfDefaultKeyFor("bass", "mute"), bass: "synthBass", drum: sfDefaultKeyFor("drum", "kit"), bebop: "sopranoSax", melody2: "flute", modalVamps: sfDefaultKeyFor("harmony", "piano") };
+  var chordGainNode = null, bassGainNode = null, melodyGainNode = null, drumGainNode = null, melodyDoubleGainNode = null, chordDoubleGainNode = null, bassDoubleGainNode = null, comping2GainNode = null, bebopGainNode = null, melody2GainNode = null;
 
   // ---------- Reverb: bus de envío compartido ----------
   // reverbSendLevel = nivel general (slider "Reverb", 50% por defecto).
@@ -12385,10 +12453,10 @@ function runAnalysis() {
   // con los faders "Reverb (envío por pista)" del mini mixer). El envío
   // real de cada pista es reverbSendLevel * reverbMix[track].
   var reverbSendLevel = 0.5;
-  var reverbMix = { chord: 1, bass: 1, melody: 1, melodyDouble: 1, chordDouble: 1, drum: 1, comping2: 1, bebop: 1, melody2: 1 };
+  var reverbMix = { chord: 1, bass: 1, bassDouble: 1, melody: 1, melodyDouble: 1, chordDouble: 1, drum: 1, comping2: 1, bebop: 1, melody2: 1 };
   var dryRenderMode = false; // true solo mientras renderTrackDry arma el grafo offline
   var reverbBusGain = null, reverbConvolver = null, reverbReturnGain = null;
-  var reverbSendGains = { chord: null, bass: null, melody: null, melodyDouble: null, chordDouble: null, drum: null, comping2: null, bebop: null, melody2:null };
+  var reverbSendGains = { chord: null, bass: null, bassDouble: null, melody: null, melodyDouble: null, chordDouble: null, drum: null, comping2: null, bebop: null, melody2:null };
 
   // Impulso sintético (ruido blanco con decaimiento exponencial),
   // generado en el navegador — mismo criterio que el resto del sitio
@@ -12457,6 +12525,11 @@ function runAnalysis() {
       chordDoubleGainNode.gain.value = audioGain("chordDouble");
       chordDoubleGainNode.connect(master);
     }
+    if(!bassDoubleGainNode){
+      bassDoubleGainNode = ctx.createGain();
+      bassDoubleGainNode.gain.value = audioGain("bassDouble");
+      bassDoubleGainNode.connect(master);
+    }
     if(!drumGainNode){
       drumGainNode = ctx.createGain();
       drumGainNode.gain.value = audioGain("drum");
@@ -12481,7 +12554,7 @@ function runAnalysis() {
     // arriba, hacia el bus compartido — no reemplaza ninguna conexión
     // existente, sólo agrega una segunda salida.
     var reverbBus = ensureReverbBus(ctx);
-    var dryNodes = { chord: chordGainNode, bass: bassGainNode, melody: melodyGainNode, melodyDouble: melodyDoubleGainNode, chordDouble: chordDoubleGainNode, drum: drumGainNode, comping2: comping2GainNode, bebop: bebopGainNode, melody2: melody2GainNode };
+    var dryNodes = { chord: chordGainNode, bass: bassGainNode, bassDouble: bassDoubleGainNode, melody: melodyGainNode, melodyDouble: melodyDoubleGainNode, chordDouble: chordDoubleGainNode, drum: drumGainNode, comping2: comping2GainNode, bebop: bebopGainNode, melody2: melody2GainNode };
     Object.keys(dryNodes).forEach(function(track){
       if(!reverbSendGains[track]){
         var send = ctx.createGain();
@@ -12491,7 +12564,7 @@ function runAnalysis() {
         reverbSendGains[track] = send;
       }
     });
-    return { chord: chordGainNode, bass: bassGainNode, melody: melodyGainNode, melodyDouble: melodyDoubleGainNode, chordDouble: chordDoubleGainNode, drum: drumGainNode, comping2: comping2GainNode, bebop: bebopGainNode, melody2: melody2GainNode };
+    return { chord: chordGainNode, bass: bassGainNode, bassDouble: bassDoubleGainNode, melody: melodyGainNode, melodyDouble: melodyDoubleGainNode, chordDouble: chordDoubleGainNode, drum: drumGainNode, comping2: comping2GainNode, bebop: bebopGainNode, melody2: melody2GainNode };
   }
   // Cambia el nivel de un canal en caliente (mientras suena o no) — usa
   // setTargetAtTime, igual que el volumen general, para que no haga clic.
@@ -12505,6 +12578,7 @@ function runAnalysis() {
                track === "melody" ? melodyGainNode : track === "drum" ? drumGainNode :
                track === "melodyDouble" ? melodyDoubleGainNode :
                track === "chordDouble" ? chordDoubleGainNode :
+               track === "bassDouble" ? bassDoubleGainNode :
                track === "comping2" ? comping2GainNode :
                track === "bebop" ? bebopGainNode :
                track === "melody2" ? melody2GainNode : null;
@@ -12614,6 +12688,7 @@ function runAnalysis() {
     { id:"melody2PresetSelect",      mix:"melody2",      special:[] },
     { id:"comping2PresetSelect",     mix:"comping2",     special:[] },
     { id:"bassPresetSelect",         mix:"bass",         special:[{ value:"synthBass", label:"Bajo original (sintetizado)" }] },
+    { id:"bassDoublePresetSelect",   mix:"bassDouble",   special:[{ value:"mute", label:"Empty (apagado)" }] },
     { id:"mvPresetSelect",           mix:"modalVamps",   special:[] }
   ];
   var SF_DRUM_SELECTS = [
@@ -14197,6 +14272,18 @@ function runAnalysis() {
         if(sm2Active && playSM2Voice(ctx, gains.bass, P.bass, ev.midi, t, dur*0.9, 0.24*velK(ev), velL(ev))) return;
         bassFam.fn(ctx, gains.bass, ev.midi, t, dur*0.9, velOpts(bassFam, dur*0.9, ev));
       });
+      // BassDuplicated: selector aparte (#bassDoublePresetSelect, default Acoust. Bass (Solar);
+      // "Empty" lo apaga) — repite las mismas notas y el mismo ritmo del Bajo con un segundo timbre.
+      if(P.bassDouble !== "mute" && want("bassDouble")){
+        var bassDoubleFam = voiceFamilyFor(P.bassDouble, "contrabass");
+        S.bass.forEach(function(ev){
+          if(!inWin(ev)) return;
+          var t = loopStartTime + ev.startBeat*spb;
+          var dur = ev.durBeats*spb;
+          if(sm2Active && playSM2Voice(ctx, gains.bassDouble, P.bassDouble, ev.midi, t, dur*0.9, 0.24*velK(ev), velL(ev))) return;
+          bassDoubleFam.fn(ctx, gains.bassDouble, ev.midi, t, dur*0.9, velOpts(bassDoubleFam, dur*0.9, ev));
+        });
+      }
     }
     if(instEnabled("consolaMelodyChk")){
       var melodyFam = voiceFamilyFor(P.melody, "flute");
@@ -14391,6 +14478,7 @@ function runAnalysis() {
     if(chordOn && state.chordEvents.length) out.push("chord");
     if(chordOn && state.chordEvents.length && mixPresets.chordDouble !== "mute") out.push("chordDouble");
     if(instEnabled("consolaBassChk") && state.bassEvents.length) out.push("bass");
+    if(instEnabled("consolaBassChk") && state.bassEvents.length && mixPresets.bassDouble !== "mute") out.push("bassDouble");
     if(melodyOn && state.melodyEvents.length) out.push("melody");
     if(melodyOn && state.melodyEvents.length && mixPresets.melodyDouble !== "mute") out.push("melodyDouble");
     if(instEnabled("consolaDrumChk") && drumEvents.length) out.push("drum");
@@ -14407,14 +14495,14 @@ function runAnalysis() {
     var saved = {
       masterGain:masterGain, masterBoost:masterBoost, masterLimiter:masterLimiter,
       chordGainNode:chordGainNode, bassGainNode:bassGainNode, melodyGainNode:melodyGainNode, drumGainNode:drumGainNode,
-      melodyDoubleGainNode:melodyDoubleGainNode, chordDoubleGainNode:chordDoubleGainNode, comping2GainNode:comping2GainNode, bebopGainNode:bebopGainNode, melody2GainNode:melody2GainNode,
+      melodyDoubleGainNode:melodyDoubleGainNode, chordDoubleGainNode:chordDoubleGainNode, bassDoubleGainNode:bassDoubleGainNode, comping2GainNode:comping2GainNode, bebopGainNode:bebopGainNode, melody2GainNode:melody2GainNode,
       reverbBusGain:reverbBusGain, reverbConvolver:reverbConvolver, reverbReturnGain:reverbReturnGain, reverbSendGains:reverbSendGains, voices:voices
     };
     masterGain = masterBoost = masterLimiter = null;
     chordGainNode = bassGainNode = melodyGainNode = drumGainNode = null;
-    melodyDoubleGainNode = chordDoubleGainNode = comping2GainNode = bebopGainNode = melody2GainNode = null;
+    melodyDoubleGainNode = chordDoubleGainNode = bassDoubleGainNode = comping2GainNode = bebopGainNode = melody2GainNode = null;
     reverbBusGain = reverbConvolver = reverbReturnGain = null;
-    reverbSendGains = { chord:null, bass:null, melody:null, melodyDouble:null, chordDouble:null, drum:null, comping2:null, bebop:null, melody2:null };
+    reverbSendGains = { chord:null, bass:null, bassDouble:null, melody:null, melodyDouble:null, chordDouble:null, drum:null, comping2:null, bebop:null, melody2:null };
     voices = new Set();
     dryRenderMode = true;
     try{
@@ -14424,13 +14512,13 @@ function runAnalysis() {
       masterLimiter.disconnect(); masterBoost.disconnect(); masterBoost.connect(off.destination);
       scheduleLoopAt(off, m, 0, spb, track);
       // ganancias de pista a 1: el mixer vive en los GainNode en vivo
-      [chordGainNode, bassGainNode, melodyGainNode, drumGainNode, melodyDoubleGainNode, chordDoubleGainNode, comping2GainNode, bebopGainNode, melody2GainNode]
+      [chordGainNode, bassGainNode, melodyGainNode, drumGainNode, melodyDoubleGainNode, chordDoubleGainNode, bassDoubleGainNode, comping2GainNode, bebopGainNode, melody2GainNode]
         .forEach(function(g){ if(g) g.gain.value = 1; });
     } finally {
       dryRenderMode = false;
       masterGain = saved.masterGain; masterBoost = saved.masterBoost; masterLimiter = saved.masterLimiter;
       chordGainNode = saved.chordGainNode; bassGainNode = saved.bassGainNode; melodyGainNode = saved.melodyGainNode; drumGainNode = saved.drumGainNode;
-      melodyDoubleGainNode = saved.melodyDoubleGainNode; chordDoubleGainNode = saved.chordDoubleGainNode; comping2GainNode = saved.comping2GainNode; bebopGainNode = saved.bebopGainNode; melody2GainNode = saved.melody2GainNode;
+      melodyDoubleGainNode = saved.melodyDoubleGainNode; chordDoubleGainNode = saved.chordDoubleGainNode; bassDoubleGainNode = saved.bassDoubleGainNode; comping2GainNode = saved.comping2GainNode; bebopGainNode = saved.bebopGainNode; melody2GainNode = saved.melody2GainNode;
       reverbBusGain = saved.reverbBusGain; reverbConvolver = saved.reverbConvolver; reverbReturnGain = saved.reverbReturnGain; reverbSendGains = saved.reverbSendGains;
       voices = saved.voices;
     }
@@ -14458,7 +14546,7 @@ function runAnalysis() {
   // un .sf2 a medio bajar queda con otro timbre (o distinto según cuándo se
   // apretó Reproducir: "a veces anda, a veces no"). Por eso antes de
   // renderizar se espera a que terminen de bajar los .sf2 de los presets en uso.
-  var PR_PRESET_OF_TRACK = { chord:"harmony", chordDouble:"chordDouble", bass:"bass", melody:"melody", melodyDouble:"melodyDouble", drum:"drum", comping2:"comping2", bebop:"bebop", melody2:"melody2" };
+  var PR_PRESET_OF_TRACK = { chord:"harmony", chordDouble:"chordDouble", bass:"bass", bassDouble:"bassDouble", melody:"melody", melodyDouble:"melodyDouble", drum:"drum", comping2:"comping2", bebop:"bebop", melody2:"melody2" };
   function prPresetLoading(key){
     if(!key || key === "mute") return false;
     if(key.indexOf("sf:") === 0){
@@ -14758,6 +14846,7 @@ function runAnalysis() {
     }
     if(instEnabled("consolaBassChk")){
       add("Bajo", "bass", 2, state.bassEvents, 0, exportProgramFor(mixPresets.bass, 32));
+      if(mixPresets.bassDouble !== "mute") add("BassDuplicated", "bassDouble", 2, state.bassEvents, 0, exportProgramFor(mixPresets.bassDouble, 32));
     }
     if(instEnabled("consolaMelodyChk")){
       add("Melodia", "melody", 3, state.melodyEvents, 0, exportProgramFor(mixPresets.melody, 73));
@@ -14866,21 +14955,21 @@ function runAnalysis() {
     var saved = {
       masterGain:masterGain, masterBoost:masterBoost, masterLimiter:masterLimiter,
       chordGainNode:chordGainNode, bassGainNode:bassGainNode, melodyGainNode:melodyGainNode, drumGainNode:drumGainNode,
-      melodyDoubleGainNode:melodyDoubleGainNode, chordDoubleGainNode:chordDoubleGainNode, comping2GainNode:comping2GainNode, bebopGainNode:bebopGainNode, melody2GainNode:melody2GainNode,
+      melodyDoubleGainNode:melodyDoubleGainNode, chordDoubleGainNode:chordDoubleGainNode, bassDoubleGainNode:bassDoubleGainNode, comping2GainNode:comping2GainNode, bebopGainNode:bebopGainNode, melody2GainNode:melody2GainNode,
       reverbBusGain:reverbBusGain, reverbConvolver:reverbConvolver, reverbReturnGain:reverbReturnGain, reverbSendGains:reverbSendGains, voices:voices
     };
     masterGain = masterBoost = masterLimiter = null;
     chordGainNode = bassGainNode = melodyGainNode = drumGainNode = null;
-    melodyDoubleGainNode = chordDoubleGainNode = comping2GainNode = bebopGainNode = melody2GainNode = null;
+    melodyDoubleGainNode = chordDoubleGainNode = bassDoubleGainNode = comping2GainNode = bebopGainNode = melody2GainNode = null;
     reverbBusGain = reverbConvolver = reverbReturnGain = null;
-    reverbSendGains = { chord:null, bass:null, melody:null, melodyDouble:null, chordDouble:null, drum:null, comping2:null, bebop:null, melody2:null };
+    reverbSendGains = { chord:null, bass:null, bassDouble:null, melody:null, melodyDouble:null, chordDouble:null, drum:null, comping2:null, bebop:null, melody2:null };
     voices = new Set();
     try{
       scheduleLoopAt(off, ensureMasterGain(off), 0, spb);
     } finally {
       masterGain = saved.masterGain; masterBoost = saved.masterBoost; masterLimiter = saved.masterLimiter;
       chordGainNode = saved.chordGainNode; bassGainNode = saved.bassGainNode; melodyGainNode = saved.melodyGainNode; drumGainNode = saved.drumGainNode;
-      melodyDoubleGainNode = saved.melodyDoubleGainNode; chordDoubleGainNode = saved.chordDoubleGainNode; comping2GainNode = saved.comping2GainNode; bebopGainNode = saved.bebopGainNode; melody2GainNode = saved.melody2GainNode;
+      melodyDoubleGainNode = saved.melodyDoubleGainNode; chordDoubleGainNode = saved.chordDoubleGainNode; bassDoubleGainNode = saved.bassDoubleGainNode; comping2GainNode = saved.comping2GainNode; bebopGainNode = saved.bebopGainNode; melody2GainNode = saved.melody2GainNode;
       reverbBusGain = saved.reverbBusGain; reverbConvolver = saved.reverbConvolver; reverbReturnGain = saved.reverbReturnGain; reverbSendGains = saved.reverbSendGains;
       voices = saved.voices;
     }
@@ -14962,7 +15051,7 @@ function runAnalysis() {
     // estuviera sonando (release de un pad, del saxo, etc.) en vez de
     // esperar a que cada nota termine su propia envolvente.
     var FADE = 0.015;
-    [chordGainNode, bassGainNode, melodyGainNode, drumGainNode, melodyDoubleGainNode, chordDoubleGainNode, comping2GainNode, bebopGainNode, melody2GainNode, reverbReturnGain, masterGain].forEach(function(g){
+    [chordGainNode, bassGainNode, melodyGainNode, drumGainNode, melodyDoubleGainNode, chordDoubleGainNode, bassDoubleGainNode, comping2GainNode, bebopGainNode, melody2GainNode, reverbReturnGain, masterGain].forEach(function(g){
       if(!g) return;
       g.gain.cancelScheduledValues(now);
       g.gain.setValueAtTime(g.gain.value, now);
@@ -14990,6 +15079,7 @@ function runAnalysis() {
     if(bebopGainNode) bebopGainNode.gain.setValueAtTime(audioGain("bebop"), restoreAt);
     if(melody2GainNode) melody2GainNode.gain.setValueAtTime(audioGain("melody2"), restoreAt);
     if(chordDoubleGainNode) chordDoubleGainNode.gain.setValueAtTime(audioGain("chordDouble"), restoreAt);
+    if(bassDoubleGainNode) bassDoubleGainNode.gain.setValueAtTime(audioGain("bassDouble"), restoreAt);
     // Refuerzo: pasada la restauración programada, se reescriben los niveles del mixer
     // (igual que al mover un slider). Idempotente; evita canales que quedan en 0.
     setTimeout(function(){ try{ applyAllMixGains(); }catch(e){} }, 80);
@@ -15516,7 +15606,7 @@ function runAnalysis() {
     if(this.classList.contains("primary")){
       soloPianoPrev = {
         presets: { harmony: mixPresets.harmony, melody: mixPresets.melody, bass: mixPresets.bass },
-        gains: { drum: mixGains.drum, melodyDouble: mixGains.melodyDouble, chordDouble: mixGains.chordDouble, comping2: mixGains.comping2, bebop: mixGains.bebop }
+        gains: { drum: mixGains.drum, melodyDouble: mixGains.melodyDouble, chordDouble: mixGains.chordDouble, bassDouble: mixGains.bassDouble, comping2: mixGains.comping2, bebop: mixGains.bebop }
       };
       ["harmony","melody","bass"].forEach(function(track){
         mixPresets[track] = "piano";
@@ -15526,6 +15616,7 @@ function runAnalysis() {
       setMixGain("drum", 0);
       setMixGain("melodyDouble", 0);
       setMixGain("chordDouble", 0);
+      setMixGain("bassDouble", 0);
       setMixGain("comping2", 0);
       setMixGain("bebop", 0);
       var drumVolEl = document.getElementById("mixDrumVol"), drumVolValEl = document.getElementById("mixDrumVolVal");
@@ -15546,6 +15637,7 @@ function runAnalysis() {
       setMixGain("drum", soloPianoPrev.gains.drum);
       setMixGain("melodyDouble", soloPianoPrev.gains.melodyDouble);
       setMixGain("chordDouble", soloPianoPrev.gains.chordDouble);
+      setMixGain("bassDouble", soloPianoPrev.gains.bassDouble);
       setMixGain("comping2", soloPianoPrev.gains.comping2);
       setMixGain("bebop", soloPianoPrev.gains.bebop);
       var drumVolEl2 = document.getElementById("mixDrumVol"), drumVolValEl2 = document.getElementById("mixDrumVolVal");
@@ -15583,7 +15675,8 @@ function runAnalysis() {
       { id: "mixBebopVol",        valId: "mixBebopVolVal",        track: "bebop"        },
       { id: "mixMelody2Vol",      valId: "mixMelody2VolVal",      track: "melody2"      },
       { id: "mixMelodyDoubleVol", valId: "mixMelodyDoubleVolVal", track: "melodyDouble" },
-      { id: "mixChordDoubleVol",  valId: "mixChordDoubleVolVal",  track: "chordDouble"  }
+      { id: "mixChordDoubleVol",  valId: "mixChordDoubleVolVal",  track: "chordDouble"  },
+      { id: "mixBassDoubleVol",   valId: "mixBassDoubleVolVal",   track: "bassDouble"   }
     ];
     MIX_SLIDERS.forEach(function(cfg){
       var el = document.getElementById(cfg.id);
@@ -15648,6 +15741,7 @@ function runAnalysis() {
       { id: "melody2PresetSelect",      key: "melody2"      },
       { id: "comping2PresetSelect",     key: "comping2"     },
       { id: "bassPresetSelect",         key: "bass"         },
+      { id: "bassDoublePresetSelect",   key: "bassDouble"   },
       { id: "drumPresetSelect",         key: "drum"         },
       { id: "mvPresetSelect",           key: "modalVamps"   }
     ];
