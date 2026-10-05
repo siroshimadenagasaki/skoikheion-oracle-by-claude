@@ -699,7 +699,7 @@
   .drum-roll-host{margin-top:6px;overflow-x:auto;overflow-y:hidden;border:1px solid var(--line);border-radius:6px;background:rgba(20,18,29,.62);}
   .drum-roll-host[hidden]{display:none;}
   .drum-roll-host svg{display:block;}
-  #velLanesHost{margin-top:6px;overflow-x:auto;overflow-y:hidden;border:1px solid var(--line);border-radius:6px;background:rgba(20,18,29,.62);}
+  #velLanesHost{position:relative;margin-top:6px;overflow-x:auto;overflow-y:hidden;border:1px solid var(--line);border-radius:6px;background:rgba(20,18,29,.62);}
   #velLanesHost[hidden]{display:none;}
   .consola-bar-tag{font-family:'JetBrains Mono',monospace;font-size:10px;fill:var(--ink-muted);}
   .consola-cifrado-tag{font-family:'JetBrains Mono',monospace;font-size:9px;fill:var(--gold);font-weight:600;}
@@ -1066,7 +1066,7 @@
   }
   #consolaBebopRollLabel{display:none;}
   #consolaRollsLayer > *{transform:translateY(var(--roll-shift,0vh));}
-  #rollVScroll{position:fixed;left:3px;top:50%;transform:translateY(-50%);z-index:50;width:10px;height:110px;margin:0;padding:0;opacity:.55;cursor:pointer;writing-mode:vertical-lr;direction:rtl;accent-color:var(--gold);}
+  #rollVScroll{position:fixed;left:3px;top:50%;transform:translateY(-50%);z-index:50;width:10px;height:55px;margin:0;padding:0;opacity:.55;cursor:pointer;writing-mode:vertical-lr;direction:rtl;accent-color:var(--gold);}
   #rollVScroll:hover{opacity:1;}
   #consolaRollsLayer .consola-empty{display:none;}
   #consolaRollsLayer .consola-roll-wrap{overflow-x:hidden;border:none;border-radius:0;margin-bottom:0 !important;background-image:none;background-color:transparent;}
@@ -1142,7 +1142,7 @@
   </div>
 </div>
 
-<input type="range" id="rollVScroll" min="-50" max="50" value="0" step="1" title="Mueve el piano roll general hacia arriba o abajo (doble click = centrar)" aria-label="Scroll vertical del piano roll">
+<input type="range" id="rollVScroll" min="-25" max="25" value="0" step="1" title="Mueve el piano roll general hacia arriba o abajo (doble click = centrar)" aria-label="Scroll vertical del piano roll">
 <!-- Piano rolls de SetMusicBox: fondo fijo a pantalla completa, siempre -->
     <div id="consolaRollsLayer">
     <div id="consolaBebopRollLabel" style="margin-bottom:6px;font-size:12px;font-weight:600;color:var(--ink-muted);padding-top:0;">🎷 bebopMelody — piano roll separado (aislado del principal)</div>
@@ -1312,6 +1312,11 @@
         <label for="consolaNormalSlider">&#8634; Simplicity</label>
         <input type="range" id="consolaNormalSlider" min="0" max="100" value="0" step="1" disabled>
         <span class="consola-val" id="consolaNormalVal">0%</span>
+      </div>
+      <div class="consola-field" title="Silencios de la melodía principal. 0% = la melodía suena siempre (como antes). 100% = suena solo ~10% del tiempo. En el medio, proporcional. Los silencios son de 1 a 4 compases y los más largos caen al principio. Default 25%.">
+        <label for="consolaMelSilSlider">Melody silences</label>
+        <input type="range" id="consolaMelSilSlider" min="0" max="100" value="25" step="1">
+        <span class="consola-val" id="consolaMelSilVal">25%</span>
       </div>
       <div class="consola-field" title="Controla, en conjunto, la transposición cromática al azar por compás y el achique automático del acorde (hasta 2 notas menos) que el motor libre aplicaba siempre a máxima intensidad. 0% = notas literales elegidas, sin transportar, set completo siempre. 100% = comportamiento de siempre.">
         <label for="consolaChromaSlider">Chromatism</label>
@@ -11436,6 +11441,48 @@ function runAnalysis() {
     }
     return rest;
   }
+  // Melody silences (slider #consolaMelSilSlider, default 25%): 0% = la melodía principal suena siempre;
+  // 100% = suena solo ~10% de los compases. Silencios de 1 a 4 compases (si hace falta para cumplir el %,
+  // los tramos de silencio crecen), ordenados de MÁS LARGO a más corto desde el principio. Devuelve {bar:true}.
+  function melodySilenceBars(numBars){
+    var sl = document.getElementById("consolaMelSilSlider");
+    var p = sl ? parseFloat(sl.value) / 100 : 0;
+    if(!isFinite(p) || p <= 0) return {};
+    var restTotal = Math.min(numBars - 1, Math.round(0.9 * Math.min(1, p) * numBars));
+    if(restTotal <= 0) return {};
+    var playTotal = numBars - restTotal;
+    var maxLen = Math.max(4, Math.ceil(restTotal / (playTotal + 1))); // con poco aire para tocar, los silencios se alargan
+    var chunks = [], left = restTotal;
+    while(left > 0){
+      var len = Math.min(left, 1 + Math.floor(Math.random() * maxLen));
+      chunks.push(len); left -= len;
+    }
+    // juntar tramos si hay más silencios que lugares para intercalar compases tocando
+    while(chunks.length > playTotal + 1){
+      chunks.sort(function(a,b){ return a-b; });
+      chunks[1] += chunks[0]; chunks.shift();
+    }
+    chunks.sort(function(a,b){ return b-a; }); // más largos primero
+    var rest = {}, bar = 0, gaps = chunks.length, playLeft = playTotal;
+    chunks.forEach(function(len, i){
+      for(var k=0; k<len; k++) rest[bar+k] = true;
+      bar += len;
+      var gapsLeft = gaps - i; // espacios para tocar que quedan (incluido el final)
+      var play = Math.max(i < gaps-1 ? 1 : 0, Math.round(playLeft / gapsLeft));
+      play = Math.min(play, playLeft);
+      bar += play; playLeft -= play;
+    });
+    return rest;
+  }
+  function applyMelodySilences(){
+    var rest = melodySilenceBars(NUM_BARS);
+    if(!Object.keys(rest).length) return;
+    function barOf(beat){
+      for (var b=NUM_BARS-1; b>=0; b--) if (beat >= RHYTHM.start(b) - 1e-6) return b;
+      return 0;
+    }
+    state.melodyEvents = state.melodyEvents.filter(function(e){ return !rest[barOf(e.startBeat)]; });
+  }
   function melody2Enabled(){ var c = document.getElementById("consolaMelody2Chk"); return !!(c && c.checked); }
   window.__consolaState = state; // hook de diagnóstico (solo lectura)
 
@@ -11581,6 +11628,7 @@ function runAnalysis() {
       }
       state.melody2Events = state.melody2Events.filter(function(e){ return !useN[mixBarOf(e.startBeat)]; });
     }
+    applyMelodySilences(); // Melody silences (slider): recorta compases de la melodía principal
     DYNAMICS.applyPitched(state); // Dynamics (0% = no-op)
     drumEvents = buildDrumEvents(NUM_BARS);
     renderRoll();
@@ -11614,6 +11662,7 @@ function runAnalysis() {
       ? BEBOPMELODY.buildEvents(NUM_BARS, function(bar){ return state.progression[bar]; })
       : [];
     state.melody2Events = []; // Melody n2 solo en el motor libre (Simplicity no tiene sorteo independiente)
+    applyMelodySilences(); // Melody silences (slider): recorta compases de la melodía principal
     DYNAMICS.applyPitched(state); // Dynamics (0% = no-op)
     drumEvents = buildDrumEvents(NUM_BARS);
     renderRoll();
@@ -12039,7 +12088,7 @@ function runAnalysis() {
     function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
     function clampI(i){ return Math.max(0, Math.min(LEVELS.length-1, i)); }
     function newPlan(){
-      var n = Math.max(1, NUM_BARS|0), segs = [], b = 0, idx = pick([2,3,3,4]);
+      var n = Math.max(1, NUM_BARS|0), segs = [], b = 0, idx = Math.random() < 0.7 ? 0 : pick([2,3,3,4]); // 70% de las veces la canción arranca en pianissimo (pp)
       while(b < n){
         var len = pick([2,2,4]);
         if(len > n-b || n-b-len === 1) len = n-b; // sin restos de 1 compás
@@ -12198,6 +12247,11 @@ function runAnalysis() {
       g.fillText("ø" + Math.round(sum/Math.max(1,n)), MARGIN_L - 6, y0 + 22);
     });
     host.appendChild(cv);
+    // Playhead del panel (sigue el tiempo igual que el de los piano rolls; lo mueve tickPlayhead)
+    var vph = document.createElement("div");
+    vph.id = "velLanesPlayhead";
+    vph.style.cssText = "position:absolute;top:0;left:" + MARGIN_L + "px;width:2px;height:" + H + "px;background:#ff5a5a;opacity:.85;pointer-events:none;visibility:hidden;";
+    host.appendChild(vph);
   }
   (function(){
     var btn = document.getElementById("velLanesToggle");
@@ -14223,7 +14277,8 @@ function runAnalysis() {
     var AUTOSCROLL_MARGIN = 80; // deja este margen visible a la izquierda del playhead
     var phDrum = null, hostDrum = null;
     var maxS = 0, maxSD = 0, maxSB = 0, lastMeasure = -1e9;
-    var lastS = -1, lastSD = -1, lastSB = -1;
+    var lastS = -1, lastSD = -1, lastSB = -1, lastSV = -1;
+    var hostVel = null, maxSV = 0;
     var shown = false;
     function measure(){
       // el roll de batería se puede volver a dibujar mientras suena
@@ -14232,6 +14287,8 @@ function runAnalysis() {
       maxS = host ? Math.max(0, host.scrollWidth - host.clientWidth) : 0;
       maxSD = (hostDrum && !hostDrum.hidden) ? Math.max(0, hostDrum.scrollWidth - hostDrum.clientWidth) : 0;
       maxSB = (hostBebop && !hostBebop.hidden) ? Math.max(0, hostBebop.scrollWidth - hostBebop.clientWidth) : 0;
+      hostVel = document.getElementById("velLanesHost"); // panel Velocity por track
+      maxSV = (hostVel && !hostVel.hidden) ? Math.max(0, hostVel.scrollWidth - hostVel.clientWidth) : 0;
       shown = false;
     }
     function step(ts){
@@ -14259,6 +14316,12 @@ function runAnalysis() {
         if(hostDrum && !hostDrum.hidden){
           var tD = Math.round(Math.min(maxSD, Math.max(0, x - AUTOSCROLL_MARGIN)));
           if(tD !== lastSD){ hostDrum.scrollLeft = tD; lastSD = tD; }
+        }
+        if(hostVel && !hostVel.hidden){
+          var vph = document.getElementById("velLanesPlayhead");
+          if(vph){ vph.style.left = xs + "px"; vph.style.visibility = "visible"; }
+          var tV = Math.round(Math.min(maxSV, Math.max(0, x - AUTOSCROLL_MARGIN)));
+          if(tV !== lastSV){ hostVel.scrollLeft = tV; lastSV = tV; }
         }
         if(hostBebop && !hostBebop.hidden){
           var tB = Math.round(Math.min(maxSB, Math.max(0, x - AUTOSCROLL_MARGIN)));
@@ -14923,6 +14986,10 @@ function runAnalysis() {
     if(drumHostStop) drumHostStop.scrollLeft = 0;
     var rollHost = document.getElementById("consolaRollHost");
     if(rollHost) rollHost.scrollLeft = 0;
+    var velHostStop = document.getElementById("velLanesHost");
+    if(velHostStop) velHostStop.scrollLeft = 0;
+    var velPhStop = document.getElementById("velLanesPlayhead");
+    if(velPhStop){ velPhStop.style.visibility = "hidden"; velPhStop.style.left = MARGIN_L + "px"; }
   }
 
   // Reproducir: siempre toca la ÚLTIMA secuencia generada (repite igual
@@ -15019,6 +15086,12 @@ function runAnalysis() {
     document.getElementById("consolaChromaVal").textContent = this.value + "%";
   });
   document.getElementById("consolaChromaSlider").addEventListener("change", function(){
+    if(state.rootChord.length) regenerateConsola();
+  });
+  document.getElementById("consolaMelSilSlider").addEventListener("input", function(){
+    document.getElementById("consolaMelSilVal").textContent = this.value + "%";
+  });
+  document.getElementById("consolaMelSilSlider").addEventListener("change", function(){
     if(state.rootChord.length) regenerateConsola();
   });
   document.getElementById("consolaChordsSlider").addEventListener("input", function(){
