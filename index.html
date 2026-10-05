@@ -1382,6 +1382,7 @@
           <span class="consola-inst-toggle" title="Mezcla figuras largas y cortas DENTRO del mismo compás de melodía, en vez del comportamiento de siempre (un compás entero de figuras largas y, cada tanto, un compás entero de fill de notas cortas). No cambia qué nota suena, solo el ritmo."><input type="checkbox" id="consolaMixDurChk" checked><label for="consolaMixDurChk">&#127925; Mix melody duration</label></span>
           <span class="consola-inst-toggle" title="Reemplaza la selección de nota de la melodía (y de bebopMelody, si está prendido) por un CONTORNO fijo — un patrón de saltos tipo '2 arriba, 1 abajo' repetido, en vez de arpegio lineal en los compases densos o nota al azar en el resto. El patrón se sortea de un pool variado (ciclos de 2 a 4 movimientos) una vez por cada Reproducir/Regenerar, y siempre indexa dentro del acorde vigente (nunca una nota ajena al set) — si el salto se pasa del tamaño del acorde, sigue contando en la octava de al lado, igual que una 9na es un 2 una octava arriba."><input type="checkbox" id="consolaMelodicPatternsChk" checked><label for="consolaMelodicPatternsChk">&#127925; melodicPatterns</label></span>
           <span class="consola-inst-toggle" title="Melody n2: una segunda melodía ALTERNATIVA, independiente de la melodía principal (otro ritmo y otras notas, siempre dentro del set), que suena en todos los compases, con silencios random de 1, 2 o 4 compases. Tiene su propio fader, reverb e instrumento en el Mini mixer (Flauta por defecto). Apagada por defecto."><input type="checkbox" id="consolaMelody2Chk"><label for="consolaMelody2Chk">&#127925; Melody n2</label></span>
+          <span class="consola-inst-toggle" title="melody_2follows: con Melody n2 prendida, en cada compás hay 50% de chances de que Melody n2 SIGA a la melodía principal (toca las mismas notas y el mismo ritmo, con su propio instrumento). En el otro 50% toca su línea independiente. Respeta los silencios de Melody n2; si la melodía principal calla en ese compás, Melody n2 toca lo suyo. Prendido por defecto."><input type="checkbox" id="consolaMelody2FollowsChk" checked><label for="consolaMelody2FollowsChk">melody_2follows</label></span>
         </div>
       </div>
         </div>
@@ -11474,6 +11475,28 @@ function runAnalysis() {
     });
     return rest;
   }
+  // melody_2follows (checkbox #consolaMelody2FollowsChk): en cada compás, 50% de chances de que
+  // Melody n2 copie la melodía principal (mismas notas y ritmo) en vez de su línea independiente.
+  // Respeta los silencios propios de n2 y, si la principal calla ese compás, n2 toca lo suyo.
+  function applyMelody2Follows(){
+    var chk = document.getElementById("consolaMelody2FollowsChk");
+    if(!chk || !chk.checked || !melody2Enabled() || !state.melody2Events.length || !state.melodyEvents.length) return;
+    function barOf(beat){
+      for (var b=NUM_BARS-1; b>=0; b--) if (beat >= RHYTHM.start(b) - 1e-6) return b;
+      return 0;
+    }
+    var follow = {};
+    for (var b=0; b<NUM_BARS; b++) follow[b] = !melody2RestCur[b] && Math.random() < 0.5;
+    var mainByBar = {};
+    state.melodyEvents.forEach(function(e){ var b = barOf(e.startBeat); (mainByBar[b] = mainByBar[b] || []).push(e); });
+    var out = state.melody2Events.filter(function(e){ var b = barOf(e.startBeat); return !(follow[b] && mainByBar[b]); });
+    Object.keys(mainByBar).forEach(function(k){
+      if(!follow[k]) return;
+      mainByBar[k].forEach(function(e){ out.push({ midi:e.midi, startBeat:e.startBeat, durBeats:e.durBeats, bar:e.bar }); });
+    });
+    out.sort(function(a,b){ return a.startBeat - b.startBeat; });
+    state.melody2Events = out;
+  }
   function applyMelodySilences(){
     var rest = melodySilenceBars(NUM_BARS);
     if(!Object.keys(rest).length) return;
@@ -11483,6 +11506,7 @@ function runAnalysis() {
     }
     state.melodyEvents = state.melodyEvents.filter(function(e){ return !rest[barOf(e.startBeat)]; });
   }
+  var melody2RestCur = {};
   function melody2Enabled(){ var c = document.getElementById("consolaMelody2Chk"); return !!(c && c.checked); }
   window.__consolaState = state; // hook de diagnóstico (solo lectura)
 
@@ -11580,6 +11604,7 @@ function runAnalysis() {
     state.melody2Events = melody2Enabled()
       ? (function(){
           var restBars = melody2RestBars(NUM_BARS);
+          melody2RestCur = restBars; // para melody_2follows
           function barOf(beat){
             for (var b=NUM_BARS-1; b>=0; b--) if (beat >= RHYTHM.start(b) - 1e-6) return b;
             return 0;
@@ -11629,6 +11654,7 @@ function runAnalysis() {
       state.melody2Events = state.melody2Events.filter(function(e){ return !useN[mixBarOf(e.startBeat)]; });
     }
     applyMelodySilences(); // Melody silences (slider): recorta compases de la melodía principal
+    applyMelody2Follows(); // melody_2follows: Melody n2 copia la melodía principal en ~50% de los compases
     DYNAMICS.applyPitched(state); // Dynamics (0% = no-op)
     drumEvents = buildDrumEvents(NUM_BARS);
     renderRoll();
@@ -15452,6 +15478,9 @@ function runAnalysis() {
   });
 
   document.getElementById("consolaMelody2Chk").addEventListener("change", function(){
+    if(state.rootChord.length) regenerateConsola();
+  });
+  document.getElementById("consolaMelody2FollowsChk").addEventListener("change", function(){
     if(state.rootChord.length) regenerateConsola();
   });
 
