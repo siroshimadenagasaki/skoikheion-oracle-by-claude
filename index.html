@@ -1274,7 +1274,7 @@
     <button type="button" class="module-fs-toggle fullscreen-btn" data-fs-card="consolaCard" title="Pantalla completa">⛶ Full screen</button>
     <h2>SetMusicBox · Segmento en loop</h2>
     <div class="collapsible-content collapsed" id="consolaContent">
-    <p class="consola-status">Con las notas elegidas arriba (reloj o piano) arma un segmento de 12 compases en loop, siempre dentro del mismo set de Solomon. El slider &#8681;&#8679; Chromatism (25% por defecto) controla cuánto transporta y achica el acorde por compás &mdash; en 0%, notas literales, set completo; subilo para más variedad cromática. &#8634; Normalito vuelve a la versión simple (set completo, sin transposición, una sola inversión). Bajo y batería varían su ritmo por compás; la melodía sigue la nota vigente del acorde, con fills cortos en ~30% de los compases y silencios ~20% del tiempo. Armonía en pad, bajo sintetizado, melodía en flauta y batería genérica opcional &mdash; cada instrumento con su propio mute.</p>
+    <p class="consola-status">Con las notas elegidas arriba (reloj o piano) arma un segmento de 12 compases en loop, siempre dentro del mismo set de Solomon. El slider &#8681;&#8679; Chromatism (25% por defecto) controla cuánto transporta y achica el acorde por compás &mdash; en 0%, notas literales, set completo; subilo para más variedad cromática. &#8634; Simplicity vuelve a la versión simple (set completo, sin transposición, una sola inversión). Bajo y batería varían su ritmo por compás; la melodía sigue la nota vigente del acorde, con fills cortos en ~30% de los compases y silencios ~20% del tiempo. Armonía en pad, bajo sintetizado, melodía en flauta y batería genérica opcional &mdash; cada instrumento con su propio mute.</p>
 
     <div class="consola-readout">
       <div class="label">Set actual</div>
@@ -1297,8 +1297,8 @@
         <input type="range" id="consolaTempo" min="25" max="200" value="84" step="1">
         <span class="consola-val" id="consolaTempoVal">84 BPM</span>
       </div>
-      <div class="consola-field" title="Normalito: 0% = motor libre de siempre (Normalito apagado). 100% = Normalito completo: versión simple, set completo sin transposición ni subsets, solo inversiones al azar entre compases, bajo y melodía en patrón predecible. En el medio, cada compás sale al azar de uno u otro motor (a mayor %, más compases Normalito). Se re-sortea en cada variación. No aplica a Multi Sets.">
-        <label for="consolaNormalSlider">&#8634; Normalito</label>
+      <div class="consola-field" title="Simplicity: 0% = motor libre de siempre (Simplicity apagado). 100% = Simplicity completo: versión simple, set completo sin transposición ni subsets, solo inversiones al azar entre compases, bajo y melodía en patrón predecible. En el medio, cada compás sale al azar de uno u otro motor (a mayor %, más compases Simplicity). Se re-sortea en cada variación. No aplica a Multi Sets.">
+        <label for="consolaNormalSlider">&#8634; Simplicity</label>
         <input type="range" id="consolaNormalSlider" min="0" max="100" value="0" step="1" disabled>
         <span class="consola-val" id="consolaNormalVal">0%</span>
       </div>
@@ -1317,7 +1317,7 @@
         <input type="range" id="consolaJazzSlider" min="0" max="100" value="0" step="1">
         <span class="consola-val" id="consolaJazzVal">0%</span>
       </div>
-      <div class="consola-field" title="Qué porcentaje de los acordes de armonía (2+ notas) atacan simultáneamente (en bloque) vs. escalonados (quebrados). Cada reataque tira su propio dado: 0% = ningún reataque queda quebrado, todos en bloque. 100% = todos quebrados (comportamiento histórico, sin cambios). 50% (default) = aproximadamente la mitad de los reataques en bloque y la mitad quebrados, al azar — no es una graduación de 'qué tan separadas' quedan las notas dentro de un acorde, es una mezcla de acordes enteros de cada tipo. Afecta tanto al motor libre como a Normalito, que comparten el mismo mecanismo.">
+      <div class="consola-field" title="Qué porcentaje de los acordes de armonía (2+ notas) atacan simultáneamente (en bloque) vs. escalonados (quebrados). Cada reataque tira su propio dado: 0% = ningún reataque queda quebrado, todos en bloque. 100% = todos quebrados (comportamiento histórico, sin cambios). 50% (default) = aproximadamente la mitad de los reataques en bloque y la mitad quebrados, al azar — no es una graduación de 'qué tan separadas' quedan las notas dentro de un acorde, es una mezcla de acordes enteros de cada tipo. Afecta tanto al motor libre como a Simplicity, que comparten el mismo mecanismo.">
         <label for="consolaChordSimulSlider">Chord simultaneity</label>
         <input type="range" id="consolaChordSimulSlider" min="0" max="100" value="50" step="1">
         <span class="consola-val" id="consolaChordSimulVal">50%</span>
@@ -1327,7 +1327,7 @@
         <input type="range" id="consolaNotesComplexitySlider" min="0" max="100" value="50" step="1">
         <span class="consola-val" id="consolaNotesComplexityVal">50%</span>
       </div>
-      <div class="consola-field" title="Tresillos en TODAS las pistas (armonía, bajo, melodía, bebop, batería). 0% = como siempre (casi sin tresillos). 100% = todo el compás en tresillos, al azar de blanca (3 en 4 tiempos), de negra (3 en 2 tiempos) o de corchea (3 en 1 tiempo). Solo mueve ataques: nunca cambia notas, así que el set no se traiciona. Cada pista tira sus propias ventanas (polirritmia). No afecta a Normalito.">
+      <div class="consola-field" title="Tresillos en TODAS las pistas (armonía, bajo, melodía, bebop, batería). 0% = como siempre (casi sin tresillos). 100% = todo el compás en tresillos, al azar de blanca (3 en 4 tiempos), de negra (3 en 2 tiempos) o de corchea (3 en 1 tiempo). Solo mueve ataques: nunca cambia notas, así que el set no se traiciona. Cada pista tira sus propias ventanas (polirritmia). No afecta a Simplicity.">
         <label for="consolaTripletsSlider">Triplets</label>
         <input type="range" id="consolaTripletsSlider" min="0" max="100" value="0" step="1">
         <span class="consola-val" id="consolaTripletsVal">0%</span>
@@ -1339,17 +1339,17 @@
           <span class="consola-inst-toggle" title="Además del subset de siempre, a veces usa el COMPLEMENTO del set elegido (las notas que el set deja afuera dentro de la octava) — más variedad armónica, siempre derivada del mismo set."><input type="checkbox" id="consolaSupersetsChk"><label for="consolaSupersetsChk">&#8679; Supersets (variedad)</label></span>
           <span class="consola-inst-toggle" title="Cada compás de armonía, bajo, melodía y batería tiene un 40% extra de probabilidad de repetir exactamente el patrón del compás anterior; además, bajo y melodía tienen un 40% de probabilidad por compás de acoplar sus ataques a los de la armonía en vez de llevar su propio ritmo."><input type="checkbox" id="consolaMoreRepChk"><label for="consolaMoreRepChk">&#128257; More repetition</label></span>
           <span class="consola-inst-toggle" title="En cada reataque de armonía se sortean varias combinaciones válidas de subconjunto/transposición/inversión dentro del MISMO acorde/grado elegido (nunca de otro) y se elige la que comparte más notas con el acorde anterior — el doble de notas comunes en promedio que al azar puro, con la misma restricción de conjunto de siempre."><input type="checkbox" id="consolaCommonNotesChk"><label for="consolaCommonNotesChk">&#128279; Notas comunes</label></span>
-          <span class="consola-inst-toggle" title="Slider 0–100% (default 5%): probabilidad por compás de que la melodía tenga notas rápidas (semicorcheas o fusas, al azar). 70% de esas veces: 1 a 3 grupitos de 2, 4 o 6 notas cortas repartidos al azar dentro de la melodía del compás. 30%: una CORRIDA en bloque de 1 compás entero o medio compás. Las notas de la corrida suben/bajan por grados conjuntos usando SOLO las notas del acorde vigente en cada instante (nunca sale del set), sin silencios. El resto del compás (si la corrida es de medio compás) sigue con su ritmo de siempre. No afecta a Normalito. 0% = nunca."><label for="consolaRapidRunsSlider">&#9889; Rapid runs</label><input type="range" class="consola-mini-range" id="consolaRapidRunsSlider" min="0" max="100" value="5" step="1"><span class="consola-val" id="consolaRapidRunsVal">5%</span></span>
+          <span class="consola-inst-toggle" title="Slider 0–100% (default 5%): probabilidad por compás de que la melodía tenga notas rápidas (semicorcheas o fusas, al azar). 70% de esas veces: 1 a 3 grupitos de 2, 4 o 6 notas cortas repartidos al azar dentro de la melodía del compás. 30%: una CORRIDA en bloque de 1 compás entero o medio compás. Las notas de la corrida suben/bajan por grados conjuntos usando SOLO las notas del acorde vigente en cada instante (nunca sale del set), sin silencios. El resto del compás (si la corrida es de medio compás) sigue con su ritmo de siempre. No afecta a Simplicity. 0% = nunca."><label for="consolaRapidRunsSlider">&#9889; Rapid runs</label><input type="range" class="consola-mini-range" id="consolaRapidRunsSlider" min="0" max="100" value="5" step="1"><span class="consola-val" id="consolaRapidRunsVal">5%</span></span>
         </div>
       </div>
-      <div class="consola-field consola-instruments" title="Bass function: de dónde saca sus notas el bajo en el modo libre (no afecta a ↺ Normalito, que usa su propio bajo fijo). Los dos checkboxes son excluyentes.">
+      <div class="consola-field consola-instruments" title="Bass function: de dónde saca sus notas el bajo en el modo libre (no afecta a ↺ Simplicity, que usa su propio bajo fijo). Los dos checkboxes son excluyentes.">
         <label>Bass function</label>
         <div class="consola-inst-row">
           <span class="consola-inst-toggle" title="Current set (default): el bajo toca SOLO notas del acorde en curso — el voicing de armonía que está sonando en ese instante exacto (mismo criterio que la melodía). Nunca una nota ajena al set elegido."><input type="checkbox" id="consolaBassFnCurrentChk" checked><label for="consolaBassFnCurrentChk">Current set</label></span>
           <span class="consola-inst-toggle" title="Superset: en cada ataque del bajo, 50% de las veces toca una nota del acorde en curso y el otro 50% una nota de AFUERA del set de ese reataque (una clase de tono que no pertenece al set transportado). Es el único modo del motor que sale del set elegido."><input type="checkbox" id="consolaBassFnSupersetChk"><label for="consolaBassFnSupersetChk">Superset</label></span>
         </div>
       </div>
-      <div class="consola-field consola-instruments" title="Pedal de sustain de la Armonía (motor libre y Normalito): en cada cambio de acorde se tira un dado al 50%. Si sale, el pedal se pisa antes de que termine el acorde y se suelta después del ataque del próximo — las notas del acorde que termina siguen sonando por encima del ataque siguiente y se cortan un instante después, enlazando un acorde con otro (legato). Una nota que se repite igual en el acorde siguiente no se estira (se vuelve a atacar, como en un piano real). No cambia QUÉ notas suenan, solo cuánto duran. Prendido por defecto.">
+      <div class="consola-field consola-instruments" title="Pedal de sustain de la Armonía (motor libre y Simplicity): en cada cambio de acorde se tira un dado al 50%. Si sale, el pedal se pisa antes de que termine el acorde y se suelta después del ataque del próximo — las notas del acorde que termina siguen sonando por encima del ataque siguiente y se cortan un instante después, enlazando un acorde con otro (legato). Una nota que se repite igual en el acorde siguiente no se estira (se vuelve a atacar, como en un piano real). No cambia QUÉ notas suenan, solo cuánto duran. Prendido por defecto.">
         <label>Armonía</label>
         <div class="consola-inst-row">
           <span class="consola-inst-toggle" title="Sustain: 50% de los cambios de acorde quedan enlazados con pedal (el acorde saliente se sostiene hasta un instante después del ataque del entrante)."><input type="checkbox" id="consolaSustainChk" checked><label for="consolaSustainChk">&#127929; Sustain</label></span>
@@ -1373,7 +1373,7 @@
         <div class="collapsible-content collapsed" id="rhythmBody" style="display:flex;flex-wrap:wrap;gap:20px 30px;">
       <div class="consola-field">
         <div class="consola-inst-row">
-          <span class="consola-inst-toggle" title="Slider 0–100% (default 0%): mismo concepto que MelodicSpace pero aplicado a BATERÍA — durante el tramo de respiro sorteado, la batería queda en un solo golpe suave por compás en vez de su patrón de siempre. No afecta a Normalito. 0% = nunca."><label for="consolaRhythmSpaceSlider">&#129345; RythmSpace</label><input type="range" class="consola-mini-range" id="consolaRhythmSpaceSlider" min="0" max="100" value="0" step="1"><span class="consola-val" id="consolaRhythmSpaceVal">0%</span></span>
+          <span class="consola-inst-toggle" title="Slider 0–100% (default 0%): mismo concepto que MelodicSpace pero aplicado a BATERÍA — durante el tramo de respiro sorteado, la batería queda en un solo golpe suave por compás en vez de su patrón de siempre. No afecta a Simplicity. 0% = nunca."><label for="consolaRhythmSpaceSlider">&#129345; RythmSpace</label><input type="range" class="consola-mini-range" id="consolaRhythmSpaceSlider" min="0" max="100" value="0" step="1"><span class="consola-val" id="consolaRhythmSpaceVal">0%</span></span>
         </div>
       </div>
       <div class="consola-field" title="Complejidad de la pista de Batería (motor libre/aleatorio — no afecta a Swing Drums, que es un groove fijo). A más %: más probabilidad de compases con patrones densos (ghostSnare/synKick/fill en vez de breath/sparse), hi-hat con subdivisión más rápida (llega hasta semicorcheas en vez de negras/corcheas), y de que se sumen más 'cuerpos' del kit encima del patrón de siempre — fill de toms sobre el último tiempo del compás, platillo crash en el primer tiempo, y el hi-hat cerrado reemplazado por ride/campana del ride en compases enteros. 50% por defecto (comportamiento intermedio); 0% = siempre lo más quieto/simple, sin toms/crash/ride extra.">
@@ -1405,20 +1405,20 @@
         <input type="checkbox" id="consolaLoopChk" checked>
         <label for="consolaLoopChk">Loop</label>
       </div>
-      <div class="consola-field consola-loop" title="Duplica la duración del segmento a 24 compases en vez de los 12 de siempre — mismo motor, mismas reglas (Chromatism, Chords, Jazz, MelodicSpace/HarmonicSpace/RythmSpace, Swing Drums, etc.), el doble de largo. Se aplica en el próximo Reproducir/Regenerar/Normalito.">
+      <div class="consola-field consola-loop" title="Duplica la duración del segmento a 24 compases en vez de los 12 de siempre — mismo motor, mismas reglas (Chromatism, Chords, Jazz, MelodicSpace/HarmonicSpace/RythmSpace, Swing Drums, etc.), el doble de largo. Se aplica en el próximo Reproducir/Regenerar/Simplicity.">
         <input type="checkbox" id="consola24BarsChk" checked>
         <label for="consola24BarsChk">24 compases</label>
       </div>
         </div>
       </div>
-      <div class="consola-field consola-instruments consola-stack" title="Harmony: si hay al menos una casilla tildada, la Armonía deja de usar el motor libre y toca SOLO el set elegido (sin subsets al azar, en bloque). Con Cycles tildado se transpone por ataque como el motor libre (ChangeDuration incluido). Bajo, melodía y cifrado siguen igual. No aplica a Normalito. Todas destildadas = motor libre de siempre.">
+      <div class="consola-field consola-instruments consola-stack" title="Harmony: si hay al menos una casilla tildada, la Armonía deja de usar el motor libre y toca SOLO el set elegido (sin subsets al azar, en bloque). Con Cycles tildado se transpone por ataque como el motor libre (ChangeDuration incluido). Bajo, melodía y cifrado siguen igual. No aplica a Simplicity. Todas destildadas = motor libre de siempre.">
         <div class="consola-subfield-head">
           <label>Harmony</label>
           <button type="button" class="subfield-toggle" aria-expanded="false" aria-controls="harmTestBody" onclick="toggleModule(this)" title="Mostrar/ocultar Harmony"></button>
         </div>
         <div class="collapsible-content collapsed" id="harmTestBody">
         <div class="consola-inst-row">
-          <span class="consola-inst-toggle" title="Slider 0–100% (default 0%): mismo concepto que MelodicSpace pero aplicado a ARMONÍA y BAJO — durante el tramo de respiro sorteado, un solo acorde por compás (redonda, sin reataques extra) y el bajo también en redondas. Es el rol que antes cumplía 'AddLittlePeace'. No afecta a Normalito. 0% = nunca."><label for="consolaHarmonicSpaceSlider">&#127925; HarmonicSpace</label><input type="range" class="consola-mini-range" id="consolaHarmonicSpaceSlider" min="0" max="100" value="0" step="1"><span class="consola-val" id="consolaHarmonicSpaceVal">0%</span></span>
+          <span class="consola-inst-toggle" title="Slider 0–100% (default 0%): mismo concepto que MelodicSpace pero aplicado a ARMONÍA y BAJO — durante el tramo de respiro sorteado, un solo acorde por compás (redonda, sin reataques extra) y el bajo también en redondas. Es el rol que antes cumplía 'AddLittlePeace'. No afecta a Simplicity. 0% = nunca."><label for="consolaHarmonicSpaceSlider">&#127925; HarmonicSpace</label><input type="range" class="consola-mini-range" id="consolaHarmonicSpaceSlider" min="0" max="100" value="0" step="1"><span class="consola-val" id="consolaHarmonicSpaceVal">0%</span></span>
         </div>
         <div class="consola-inst-row">
           <span class="consola-inst-toggle" title="Tilda o destilda todas las casillas de Harmony."><input type="checkbox" id="consolaHT_all"><label for="consolaHT_all">all</label></span>
@@ -1452,9 +1452,9 @@
         </div>
         <div class="collapsible-content collapsed" id="melodyBody">
         <div class="consola-inst-row">
-          <span class="consola-inst-toggle" title="Slider 0–100% (default 30%, antes 'AddLittlePeace'): probabilidad por variación de reservar 4 compases seguidos (elegidos al azar dentro de los 12) como un 'respiro' de la MELODÍA: en esos 4 compases, la melodía queda en una sola nota sostenida por compás (redonda) en vez de su ritmo de siempre — pisa Rapid runs si coincide en el mismo compás. El resto del segmento sigue igual. No afecta a Normalito. 0% = nunca."><label for="consolaMelodicSpaceSlider">&#128330;&#65039; MelodicSpace</label><input type="range" class="consola-mini-range" id="consolaMelodicSpaceSlider" min="0" max="100" value="30" step="1"><span class="consola-val" id="consolaMelodicSpaceVal">30%</span></span>
+          <span class="consola-inst-toggle" title="Slider 0–100% (default 30%, antes 'AddLittlePeace'): probabilidad por variación de reservar 4 compases seguidos (elegidos al azar dentro de los 12) como un 'respiro' de la MELODÍA: en esos 4 compases, la melodía queda en una sola nota sostenida por compás (redonda) en vez de su ritmo de siempre — pisa Rapid runs si coincide en el mismo compás. El resto del segmento sigue igual. No afecta a Simplicity. 0% = nunca."><label for="consolaMelodicSpaceSlider">&#128330;&#65039; MelodicSpace</label><input type="range" class="consola-mini-range" id="consolaMelodicSpaceSlider" min="0" max="100" value="30" step="1"><span class="consola-val" id="consolaMelodicSpaceVal">30%</span></span>
         </div>
-      <div class="consola-field consola-instruments" title="Ornaments: adornos sobre la melodía principal (~30% de las notas con figura lo bastante larga), en figuras muy rápidas (1/8 de tiempo) tomadas de la propia nota — nunca se superponen ni cambian el ritmo general. La vecina del adorno es la nota más cercana DENTRO del acorde vigente (hasta 2 semitonos arriba/abajo); si no hay, semitono cromático (única excepción a &quot;nunca una nota ajena al set&quot;, como Scales). La nota principal siempre es del acorde. Doblar melodía hereda los adornos; moreComping sigue a las notas principales. No aplica a Normalito. Todas destildadas = melodía de siempre.">
+      <div class="consola-field consola-instruments" title="Ornaments: adornos sobre la melodía principal (~30% de las notas con figura lo bastante larga), en figuras muy rápidas (1/8 de tiempo) tomadas de la propia nota — nunca se superponen ni cambian el ritmo general. La vecina del adorno es la nota más cercana DENTRO del acorde vigente (hasta 2 semitonos arriba/abajo); si no hay, semitono cromático (única excepción a &quot;nunca una nota ajena al set&quot;, como Scales). La nota principal siempre es del acorde. Doblar melodía hereda los adornos; moreComping sigue a las notas principales. No aplica a Simplicity. Todas destildadas = melodía de siempre.">
         <div class="consola-subfield-head">
           <label>Ornaments</label>
           <button type="button" class="subfield-toggle" aria-expanded="false" aria-controls="ornBody" onclick="toggleModule(this)" title="Mostrar/ocultar Ornaments"></button>
@@ -1804,9 +1804,9 @@
     </div>
 
     <p class="consola-foot">
-      Armonía: cada reataque sortea un subset del set elegido (o el set completo) con su propia transposición e inversión, nunca la misma combinación dos veces seguidas ni una nota ajena al set; el bajo depende de Bass function (en How to play): con Current set (default) toca solo notas del acorde en curso; con Superset toca, la mitad de las veces, una nota de afuera del set (es el único modo que sale del set elegido). Las notas nunca entran en bloque: se escalonan, con más distancia entre ataques cuanto más dura el acorde. &#8634; Normalito toca el set completo sin subsets ni transposición, una sola inversión por compás.
+      Armonía: cada reataque sortea un subset del set elegido (o el set completo) con su propia transposición e inversión, nunca la misma combinación dos veces seguidas ni una nota ajena al set; el bajo depende de Bass function (en How to play): con Current set (default) toca solo notas del acorde en curso; con Superset toca, la mitad de las veces, una nota de afuera del set (es el único modo que sale del set elegido). Las notas nunca entran en bloque: se escalonan, con más distancia entre ataques cuanto más dura el acorde. &#8634; Simplicity toca el set completo sin subsets ni transposición, una sola inversión por compás.
       Bajo: recorre grados del acorde vigente, ritmo variable (blancas, negras, alguna síncopa). Melodía en flauta: toca solo notas del acorde vigente, con fills cortos arpegiados en ~30% de los compases.
-      Batería opcional: bombo/caja/hi-hat con patrón variable por compás; el hi-hat además alterna corcheas parejas, negras y corcheas con puntillo. Se repite en loop hasta Detener &mdash; podés cambiar el set o tocar Normalito mientras suena.
+      Batería opcional: bombo/caja/hi-hat con patrón variable por compás; el hi-hat además alterna corcheas parejas, negras y corcheas con puntillo. Se repite en loop hasta Detener &mdash; podés cambiar el set o tocar Simplicity mientras suena.
     </p>
     </div>
   </div>
@@ -8087,9 +8087,9 @@ function runAnalysis() {
      gana sobre lo que hayan decidido los demás módulos de esa pista).
      Solo aplican al motor libre (buildChordEventsRandom /
      buildBassMelodyEventsRandom / buildDrumEvents cuando lo llama
-     regenerateConsola) — no tocan Normalito, que ya es un acorde fijo
+     regenerateConsola) — no tocan Simplicity, que ya es un acorde fijo
      por compás sin ritmo variable (RythmSpace se resetea a "apagado"
-     explícitamente al entrar a Normalito, ver normalizeConsola, porque
+     explícitamente al entrar a Simplicity, ver normalizeConsola, porque
      buildDrumEvents es compartida por los dos motores).
      ================================================================ */
   function makeSpaceModule(sliderId, fallbackPct){
@@ -8359,7 +8359,7 @@ function runAnalysis() {
      (slotChords), y bajo/melodía/bebop nunca cruzan el límite del
      reataque de armonía donde nacieron; (b) melodía → comping2 (deriva
      de la melodía ya tresillada) y doblar melodía siguen 1:1.
-     No afecta a Normalito (setActive(false)).
+     No afecta a Simplicity (setActive(false)).
      ================================================================ */
   var TRIPLETS = (function(){
     var EPS = 1e-6, active = true, MAX_COVER = 1;
@@ -8597,7 +8597,7 @@ function runAnalysis() {
     // `chordAt(bar, offsetInBar)` debe devolver el array de notas MIDI
     // del acorde que está sonando en ese instante (mismo contrato que
     // currentChordAt/slotChords en modo libre, o simplemente
-    // state.progression[bar] en modo Normalito).
+    // state.progression[bar] en modo Simplicity).
     function buildEvents(melodyEvents, chordAt){
       var events = [];
       melodyEvents.forEach(function(mEv){
@@ -8788,7 +8788,7 @@ function runAnalysis() {
      exactamente el mismo mecanismo que ya usan Arpeggios/Harris (índice
      % cantidad de notas, con vuelta de octava), generalizado de "7
      grados de escala" a "n notas del acorde (o de la escala) en curso".
-     El patrón se sortea UNA VEZ por cada Reproducir/Regenerar/Normalito
+     El patrón se sortea UNA VEZ por cada Reproducir/Regenerar/Simplicity
      (ver reset(), llamado desde regenerateConsola/normalizeConsola) —
      mismo patrón para toda la pasada, tanto en la melodía principal
      como en bebopMelody si está prendido, para que ambas líneas
@@ -8971,7 +8971,7 @@ function runAnalysis() {
     // numBars: NUM_BARS.
     // chordAt(bar, offsetInBar): mismo contrato que ya usa MORECOMPING
     // (currentChordAt en modo libre, o state.progression[bar] en
-    // Normalito — el segundo argumento se ignora en ese caso).
+    // Simplicity — el segundo argumento se ignora en ese caso).
     function buildEvents(numBars, chordAt){
       var doArp = arpChecked();
       var doScale = scaleChecked();
@@ -10017,7 +10017,7 @@ function runAnalysis() {
      sin transposición, sin subsets al azar, con BROKENCHORD (slider Chord simultaneity),
      sin Triplets ni Sustain sobre la armonía. Devuelve la misma forma
      { events, slotChords }, así bajo/melodía/cifrado/roll siguen igual.
-     No aplica a Normalito. Sin sync/poly, las capas que necesitan varios
+     No aplica a Simplicity. Sin sync/poly, las capas que necesitan varios
      ataques (accent/artic/subset/rests/swing) tocan negras (corcheas con
      swing).
      in3rds / in4ths / in5ths: lo que suena son acordes en terceras / cuartas / quintas diatónicas del set (5+ notas), solo voicing.
@@ -10554,7 +10554,7 @@ function runAnalysis() {
      en bloque (se les recorta la duración, nunca se corren para
      adelante), así el reataque de afuera sigue durando lo mismo.
      Afecta por igual al motor libre (buildChordEventsRandom) y a
-     Normalito (chordEventsFromCells/buildChordEvents) — ambos llaman
+     Simplicity (chordEventsFromCells/buildChordEvents) — ambos llaman
      a BROKENCHORD.offsetsFor, así que comparten el mismo slider.
      ================================================================ */
   var BROKENCHORD = (function(){
@@ -10621,7 +10621,7 @@ function runAnalysis() {
   /* ================================================================
      SUSTAINPEDAL — checkbox #consolaSustainChk (How to play, prendido
      por defecto). Post-proceso de los eventos de Armonía (motor libre y
-     Normalito): en cada cambio de reataque (slot k -> slot k+1, también
+     Simplicity): en cada cambio de reataque (slot k -> slot k+1, también
      de un compás al siguiente, nunca del último al primero del loop) se
      tira un dado al 50%. Si sale, simula el pedal: se pisa antes de que
      termine el acorde k y se suelta RELEASE después del ataque del
@@ -10979,7 +10979,7 @@ function runAnalysis() {
   // Random (dentro del set): reorganiza de forma arbitraria la armonía
   // (nuevo subset + inversión + transposición por compás), el BAJO y la
   // MELODÍA — siempre notas del mismo set (nunca de otro). Cada clic da
-  // una variación nueva; el modo Normalito usa siempre el orden
+  // una variación nueva; el modo Simplicity usa siempre el orden
   // predecible de inversiones sin transposición.
   //
   // ESTRUCTURA VERTICAL: el BAJO de un compás se encarga solo de
@@ -11222,8 +11222,8 @@ function runAnalysis() {
   // con subsets del set + inversión + transposición cromática por
   // compás, y pitch libre en bajo/melodía. Siempre dentro del mismo set
   // de Forte/Solomon, nunca notas ajenas.
-  // Normalito (slider #consolaNormalSlider, 0..100): probabilidad (0..1) de que cada
-  // compás salga de Normalito en vez del motor libre. 0 = libre, 1 = Normalito entero.
+  // Simplicity (slider #consolaNormalSlider, 0..100): probabilidad (0..1) de que cada
+  // compás salga de Simplicity en vez del motor libre. 0 = libre, 1 = Simplicity entero.
   function normalitoProb(){
     var sl = document.getElementById("consolaNormalSlider");
     var v = sl ? parseFloat(sl.value) : 0;
@@ -11235,7 +11235,7 @@ function runAnalysis() {
     TOTAL_BEATS = RHYTHM.total();
     var playBtn = document.getElementById("consolaPlayBtn");
     var regenPlayBtn = document.getElementById("consolaRegenPlayBtn");
-    var normalBtn = document.getElementById("consolaNormalSlider"); // slider Normalito (0% = motor libre)
+    var normalBtn = document.getElementById("consolaNormalSlider"); // slider Simplicity (0% = motor libre)
     if(!playBtn) return; // sección todavía no está en el DOM
     var readout = document.getElementById("consolaNotesReadout");
     var solomonReadout = document.getElementById("consolaSolomonReadout");
@@ -11253,7 +11253,7 @@ function runAnalysis() {
     }
     playBtn.disabled = false;
     if(regenPlayBtn) regenPlayBtn.disabled = false;
-    if(normalBtn) normalBtn.disabled = multi; // Normalito toca un solo set: no aplica a MULTI SETS
+    if(normalBtn) normalBtn.disabled = multi; // Simplicity toca un solo set: no aplica a MULTI SETS
     var rootChord;
     if(multi){
       MULTISETS.assign(NUM_BARS);
@@ -11269,7 +11269,7 @@ function runAnalysis() {
       }
     }
     state.rootChord = rootChord;
-    // Normalito tildado: en vez del motor libre, arma la versión simple (no aplica a MULTI SETS).
+    // Simplicity tildado: en vez del motor libre, arma la versión simple (no aplica a MULTI SETS).
     if(!multi && normalitoProb() >= 1){ normalizeConsola(); return; }
     fixedIntervalOffset = 0; // modo test de intervalos fijos: cada variación nueva arranca el ciclo en C (offset 0)
     cyclesOffset = 0; // módulo Cycles (Modo A acumulativo): cada variación nueva arranca el ciclo en C también
@@ -11311,11 +11311,11 @@ function runAnalysis() {
             .filter(function(e){ return !restBars[barOf(e.startBeat)]; });
         })()
       : [];
-    // Normalito entre 0% y 100%: mezcla compás a compás. Cada compás sale de
-    // Normalito con probabilidad pN y del motor libre si no. Armonía, bajo y
+    // Simplicity entre 0% y 100%: mezcla compás a compás. Cada compás sale de
+    // Simplicity con probabilidad pN y del motor libre si no. Armonía, bajo y
     // melodía se arman con ambos motores y se eligen por compás; moreComping,
     // bebopMelody y Ornaments se recalculan sobre el resultado mezclado, y Melody n2
-    // (que no existe en Normalito) calla en los compases Normalito. La batería no cambia.
+    // (que no existe en Simplicity) calla en los compases Simplicity. La batería no cambia.
     var pN = normalitoProb();
     if(!multi && pN > 0 && pN < 1){
       var nProg = buildProgression(rootChord, defaultInversionSeq(rootChord.length, NUM_BARS));
@@ -11356,7 +11356,7 @@ function runAnalysis() {
     renderBebopRoll();
   }
 
-  // ↺ Normalito (checkbox #consolaNormalChk, apagado por defecto): la versión
+  // ↺ Simplicity (checkbox #consolaNormalChk, apagado por defecto): la versión
   // simple de siempre — el set completo, sin transposición ni subsets, solo
   // inversiones mezcladas al azar entre compases, con bajo y melodía en su
   // patrón predecible (sin pitch libre). Mientras esté tildado,
@@ -11364,9 +11364,9 @@ function runAnalysis() {
   function normalizeConsola(){
     if(state.rootChord.length === 0) return;
     NUM_BARS = desiredNumBars();
-    MELODICPATTERNS.reset(); // melodicPatterns: también sortea contorno nuevo en Normalito
-    RHYTHMSPACE.reset(0); // No afecta a Normalito: buildDrumEvents es compartida por los dos motores, así que se apaga a mano (reset(0) siempre deja range=null)
-    TRIPLETS.setActive(false); // idem Triplets: buildDrumEvents es compartida, Normalito no tresilla nada (regenerateConsola lo vuelve a prender)
+    MELODICPATTERNS.reset(); // melodicPatterns: también sortea contorno nuevo en Simplicity
+    RHYTHMSPACE.reset(0); // No afecta a Simplicity: buildDrumEvents es compartida por los dos motores, así que se apaga a mano (reset(0) siempre deja range=null)
+    TRIPLETS.setActive(false); // idem Triplets: buildDrumEvents es compartida, Simplicity no tresilla nada (regenerateConsola lo vuelve a prender)
     var invSeq = defaultInversionSeq(state.rootChord.length, NUM_BARS);
     var built = buildProgression(state.rootChord, invSeq);
     state.progression = built.progression;
@@ -11382,7 +11382,7 @@ function runAnalysis() {
     state.bebopEvents = BEBOPMELODY.enabled()
       ? BEBOPMELODY.buildEvents(NUM_BARS, function(bar){ return state.progression[bar]; })
       : [];
-    state.melody2Events = []; // Melody n2 solo en el motor libre (Normalito no tiene sorteo independiente)
+    state.melody2Events = []; // Melody n2 solo en el motor libre (Simplicity no tiene sorteo independiente)
     drumEvents = buildDrumEvents(NUM_BARS);
     renderRoll();
     renderBebopRoll();
@@ -14450,7 +14450,7 @@ function runAnalysis() {
   document.getElementById("consolaTryBtn").addEventListener("click", function(){
     setNotes([0,4,7,11]); // C E G B — dispara runAnalysis() -> regenerateConsola()
   });
-  // Normalito (slider 0–100%): 100% → normalizeConsola (vía regenerateConsola, que lo respeta);
+  // Simplicity (slider 0–100%): 100% → normalizeConsola (vía regenerateConsola, que lo respeta);
   // 0% → motor libre; en el medio, mezcla por compás. Se regenera al soltar el slider. Sin set elegido no hace nada.
   document.getElementById("consolaNormalSlider").addEventListener("input", function(){
     document.getElementById("consolaNormalVal").textContent = this.value + "%";
