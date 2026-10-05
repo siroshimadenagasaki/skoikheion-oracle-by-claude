@@ -696,6 +696,8 @@
   .drum-roll-host{margin-top:6px;overflow-x:auto;overflow-y:hidden;border:1px solid var(--line);border-radius:6px;background:rgba(20,18,29,.62);}
   .drum-roll-host[hidden]{display:none;}
   .drum-roll-host svg{display:block;}
+  #velLanesHost{margin-top:6px;overflow-x:auto;overflow-y:hidden;border:1px solid var(--line);border-radius:6px;background:rgba(20,18,29,.62);}
+  #velLanesHost[hidden]{display:none;}
   .consola-bar-tag{font-family:'JetBrains Mono',monospace;font-size:10px;fill:var(--ink-muted);}
   .consola-cifrado-tag{font-family:'JetBrains Mono',monospace;font-size:9px;fill:var(--gold);font-weight:600;}
   .consola-row-label{font-family:'JetBrains Mono',monospace;font-size:9.5px;fill:var(--ink-muted);}
@@ -1332,6 +1334,11 @@
         <input type="range" id="consolaTripletsSlider" min="0" max="100" value="0" step="1">
         <span class="consola-val" id="consolaTripletsVal">0%</span>
       </div>
+      <div class="consola-field" title="Dynamics: aplica dinámicas de volumen (pp, p, mp, mf, f, ff) a cada evento MIDI con lógica musical: crescendos/diminuendos y terrazas de 2-4 compases que vuelven al nivel inicial del loop, acento en el tiempo 1, melodía por encima del acompañamiento y nota aguda un poco más fuerte que la grave. 0% = como siempre (velocity original). 100% = pp a ff. Mover el slider no regenera: re-aplica sobre las mismas notas. Ver el resultado en Mini mixer > Velocity por track.">
+        <label for="consolaDynamicsSlider">Dynamics</label>
+        <input type="range" id="consolaDynamicsSlider" min="0" max="100" value="0" step="1">
+        <span class="consola-val" id="consolaDynamicsVal">0%</span>
+      </div>
       <div class="consola-field consola-instruments">
         <label>Opciones del motor</label>
         <div class="consola-inst-row">
@@ -1622,6 +1629,10 @@
       <div class="drum-roll-block">
         <button type="button" id="drumRollToggle" class="drum-roll-toggle" aria-expanded="false" aria-controls="drumRollHost" title="Muestra/oculta un piano roll chico con los golpes de la batería (una fila por instrumento). Oculto por defecto.">&#9656; Piano roll batería</button>
         <div id="drumRollHost" class="drum-roll-host" hidden></div>
+      </div>
+      <div class="drum-roll-block">
+        <button type="button" id="velLanesToggle" class="drum-roll-toggle" aria-expanded="false" aria-controls="velLanesHost" title="Muestra/oculta un carril de velocity por pista (una barra por ataque, alineado con los piano rolls). Oculto por defecto: no consume nada mientras está cerrado.">&#9656; Velocity por track</button>
+        <div id="velLanesHost" hidden></div>
       </div>
       <div class="mix-grid">
         <div class="mix-channel">
@@ -9191,6 +9202,18 @@ function runAnalysis() {
   })();
 
   var voices = [];
+  // Cada nodo de voz se quita de `voices` cuando termina (evento "ended"). Antes la
+  // lista solo crecía: en loop en vivo acumulaba miles de nodos ya apagados hasta Detener.
+  function trackVoice(node){
+    var arr = voices;
+    arr.push(node);
+    try{
+      node.addEventListener("ended", function(){
+        var i = arr.indexOf(node);
+        if(i >= 0) arr.splice(i, 1);
+      }, { once:true });
+    }catch(e){}
+  }
   var playing = false;
   var rafId = null;
   var schedulerTimer = null;
@@ -11421,6 +11444,7 @@ function runAnalysis() {
     NUM_BARS = desiredNumBars();
     RHYTHM.recompute();
     TOTAL_BEATS = RHYTHM.total();
+    DYNAMICS.newPlan(); // Dynamics: curva nueva por generación
     var playBtn = document.getElementById("consolaPlayBtn");
     var regenPlayBtn = document.getElementById("consolaRegenPlayBtn");
     var normalBtn = document.getElementById("consolaNormalSlider"); // slider Simplicity (0% = motor libre)
@@ -11539,6 +11563,7 @@ function runAnalysis() {
       }
       state.melody2Events = state.melody2Events.filter(function(e){ return !useN[mixBarOf(e.startBeat)]; });
     }
+    DYNAMICS.applyPitched(state); // Dynamics (0% = no-op)
     drumEvents = buildDrumEvents(NUM_BARS);
     renderRoll();
     renderBebopRoll();
@@ -11571,6 +11596,7 @@ function runAnalysis() {
       ? BEBOPMELODY.buildEvents(NUM_BARS, function(bar){ return state.progression[bar]; })
       : [];
     state.melody2Events = []; // Melody n2 solo en el motor libre (Simplicity no tiene sorteo independiente)
+    DYNAMICS.applyPitched(state); // Dynamics (0% = no-op)
     drumEvents = buildDrumEvents(NUM_BARS);
     renderRoll();
     renderBebopRoll();
@@ -11952,6 +11978,225 @@ function runAnalysis() {
     setInterval(function(){
       if(drumRollOpen && drumRollRenderedFor !== drumEvents) renderDrumRoll();
     }, 400);
+  })();
+
+  /* ================================================================
+     MÓDULO DYNAMICS — slider #consolaDynamicsSlider (How to play, 0–100%,
+     default 0%) + panel "Velocity por track" (#velLanesHost, contraído).
+     0% = nada cambia (ni una velocity: se restauran las originales).
+     Con >0% cada evento MIDI recibe una velocity (1–127) que combina,
+     en el orden en que un músico las "escucha":
+       1) CURVA DE FORMA (macro): un plan por loop de segmentos de 2–4
+          compases, cada uno HAIRPIN (crescendo/diminuendo lineal hacia
+          un nivel vecino) o TERRAZA (nivel fijo, a veces un escalón
+          arriba/abajo). Escala pp·p·mp·mf·f·ff; saltos de 1 (70%) o 2
+          niveles, con más chance de bajar cuanto más alto está. El
+          último segmento vuelve al nivel inicial: el loop no "salta".
+       2) ACENTO MÉTRICO: tiempo 1 +6, tiempos +1, contratiempos −3.
+       3) BALANCE POR ROL: melodía +6, bebop/melody n2 +4, bajo −2,
+          armonía −6, moreComping −8 (la melodía manda, el comp acompaña).
+       4) CONTORNO: en líneas melódicas, la nota aguda suena un poco más
+          fuerte que la grave (hasta ±5).
+       5) HUMANIZACIÓN: ±3, determinista por posición (todas las notas
+          de un mismo acorde comparten tirada: no se desbalancea).
+     El slider escala TODO (profundidad de la curva, acentos, roles).
+     A 100%: pp≈38 … ff≈116 sobre una base neutra de 96 (la que ya usaba
+     el motor). La batería respeta sus propios acentos/ghost notes: solo
+     recibe curva + humanización como multiplicador de su velocity.
+     Solo decide VOLUMEN/capa de velocity: nunca toca alturas ni ritmo.
+     Mover el slider re-aplica sobre las MISMAS notas (no regenera).
+     ================================================================ */
+  var DYNAMICS = (function(){
+    var LEVELS = [-1, -0.72, -0.42, -0.12, 0.35, 0.85];
+    var NAMES = ["pp","p","mp","mf","f","ff"];
+    var ROLE = { chord:-6, bass:-2, melody:6, comping2:-8, bebop:4, melody2:4 };
+    var SEED = { chord:1.7, bass:3.1, melody:5.3, comping2:7.9, bebop:11.3, melody2:13.7, drum:17.1 };
+    var plan = null, planBars = 0, rev = 0;
+    function amount(){
+      var sl = document.getElementById("consolaDynamicsSlider");
+      var v = sl ? parseFloat(sl.value) : 0;
+      return isFinite(v) ? Math.max(0, Math.min(100, v)) / 100 : 0;
+    }
+    function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
+    function clampI(i){ return Math.max(0, Math.min(LEVELS.length-1, i)); }
+    function newPlan(){
+      var n = Math.max(1, NUM_BARS|0), segs = [], b = 0, idx = pick([2,3,3,4]);
+      while(b < n){
+        var len = pick([2,4,4]);
+        if(len > n-b || n-b-len === 1) len = n-b; // sin restos de 1 compás
+        var from = idx, to;
+        if(Math.random() < 0.4){ // terraza (a veces con escalón)
+          if(Math.random() < 0.6) idx = from = clampI(from + (Math.random() < 0.5 ? -1 : 1));
+          to = from;
+        } else { // hairpin
+          var up = Math.random() < (LEVELS.length - 1 - idx + 0.5) / LEVELS.length;
+          var step = Math.random() < 0.7 ? 1 : 2;
+          to = clampI(from + (up ? step : -step));
+          if(to === from) to = clampI(from + (up ? -1 : 1));
+          idx = to;
+        }
+        segs.push({ b0:b, b1:b+len, from:from, to:to });
+        b += len;
+      }
+      segs[segs.length-1].to = segs[0].from; // el loop vuelve al nivel inicial
+      plan = segs; planBars = n;
+      return plan;
+    }
+    function ensurePlan(){ if(!plan || planBars !== Math.max(1, NUM_BARS|0)) newPlan(); }
+    function barOf(beat){
+      for(var b = NUM_BARS-1; b > 0; b--) if(beat >= RHYTHM.start(b) - 1e-6) return b;
+      return 0;
+    }
+    function levelAt(beat, bar){
+      var s = null;
+      for(var i = 0; i < plan.length; i++) if(bar >= plan[i].b0 && bar < plan[i].b1){ s = plan[i]; break; }
+      if(!s) s = plan[plan.length-1];
+      var t0 = RHYTHM.start(s.b0), t1 = RHYTHM.start(Math.min(s.b1, NUM_BARS));
+      var t = t1 > t0 ? Math.max(0, Math.min(1, (beat - t0)/(t1 - t0))) : 0;
+      return LEVELS[s.from] + (LEVELS[s.to] - LEVELS[s.from]) * t;
+    }
+    function jitter(beat, seed){
+      var x = Math.sin(beat*12.9898 + seed*78.233) * 43758.5453;
+      return (x - Math.floor(x)) * 2 - 1; // -1..1
+    }
+    // velocity "absoluta" (sin velocity previa) o multiplicador (con previa)
+    function velFor(role, ev, a, hasOrig){
+      var bar = barOf(ev.startBeat), L = levelAt(ev.startBeat, bar);
+      var v = 96 + (L >= 0 ? L*24 : L*58) * a;
+      if(role !== "drum" && !hasOrig){
+        var pos = ev.startBeat - RHYTHM.start(bar);
+        var acc = pos < 0.02 ? 6 : (Math.abs(pos - Math.round(pos)) < 0.02 ? 1 : -3);
+        v += (acc + (ROLE[role] || 0)) * a;
+        if(role === "melody" || role === "bebop" || role === "melody2")
+          v += Math.max(-5, Math.min(5, ((ev.midi || 72) - 72)/12*4)) * a;
+      } else if(role !== "drum"){
+        v += (ROLE[role] || 0) * a;
+      }
+      v += jitter(ev.startBeat, SEED[role] || 1) * 3 * a;
+      return v;
+    }
+    function applyList(list, role){
+      if(!list || !list.length) return list;
+      var a = amount();
+      if(a > 0) ensurePlan();
+      for(var i = 0; i < list.length; i++){
+        var ev = list[i];
+        if(ev._v0 === undefined) ev._v0 = (ev.vel == null ? null : ev.vel);
+        if(a <= 0){
+          if(ev._v0 == null) delete ev.vel; else ev.vel = ev._v0;
+          continue;
+        }
+        var hasOrig = ev._v0 != null, v = velFor(role, ev, a, hasOrig);
+        if(hasOrig || role === "drum") v = (hasOrig ? ev._v0 : 96) * (v/96);
+        ev.vel = Math.max(1, Math.min(127, Math.round(v)));
+      }
+      return list;
+    }
+    function applyPitched(st){
+      applyList(st.chordEvents, "chord");
+      applyList(st.bassEvents, "bass");
+      applyList(st.melodyEvents, "melody");
+      applyList(st.comping2Events, "comping2");
+      applyList(st.bebopEvents, "bebop");
+      applyList(st.melody2Events, "melody2");
+      rev++;
+    }
+    function applyDrums(list){ applyList(list, "drum"); rev++; return list; }
+    function reapply(){
+      applyPitched(state);
+      applyDrums(drumEvents);
+    }
+    return { amount:amount, newPlan:newPlan, applyPitched:applyPitched, applyDrums:applyDrums, reapply:reapply, rev:function(){ return rev; } };
+  })();
+
+  /* Panel "Velocity por track" (contraído por defecto, cero costo mientras
+     está cerrado): un solo <canvas> con un carril por pista, una barra por
+     ataque (altura = velocity/127) alineado con los piano rolls de arriba
+     (mismo MARGIN_L/PPB). La armonía muestra el máximo de cada reataque. */
+  var velLanesOpen = false, velLanesSig = "";
+  function velLanesTracks(){
+    return [
+      { name:"Armonía", evs:state.chordEvents, color:"#b79cff" },
+      { name:"Bajo", evs:state.bassEvents, color:"#6fc2a6" },
+      { name:"Melodía", evs:state.melodyEvents, color:"#f0b95a" },
+      { name:"Comping", evs:state.comping2Events, color:"#8fb4ff" },
+      { name:"Bebop", evs:state.bebopEvents, color:"#ff8f8f" },
+      { name:"Melody n2", evs:state.melody2Events, color:"#7fd6e8" },
+      { name:"Batería", evs:drumEvents, color:"#d7d2c4" }
+    ].filter(function(t){ return t.evs && t.evs.length; });
+  }
+  function renderVelLanes(){
+    var host = document.getElementById("velLanesHost");
+    if(!host || !velLanesOpen) return;
+    var tracks = velLanesTracks();
+    velLanesSig = DYNAMICS.rev() + "|" + tracks.map(function(t){ return t.evs.length; }).join(",") + "|" + TOTAL_BEATS;
+    host.innerHTML = "";
+    if(!tracks.length){
+      var empty = document.createElement("div");
+      empty.style.cssText = "padding:6px 8px;font-size:11px;color:var(--ink-muted);";
+      empty.textContent = "Sin eventos todavía.";
+      host.appendChild(empty);
+      return;
+    }
+    var LH = 28, TOP = 4, W = Math.round(MARGIN_L + TOTAL_BEATS*PPB + 10), H = TOP + tracks.length*LH + 2;
+    var dpr = Math.min(2, window.devicePixelRatio || 1);
+    var cv = document.createElement("canvas");
+    cv.width = W*dpr; cv.height = H*dpr; cv.style.width = W+"px"; cv.style.height = H+"px"; cv.style.display = "block";
+    var g = cv.getContext("2d");
+    g.scale(dpr, dpr);
+    var cs = getComputedStyle(document.documentElement);
+    var line = (cs.getPropertyValue("--line") || "").trim() || "#3a3650";
+    var muted = (cs.getPropertyValue("--ink-muted") || "").trim() || "#9a96ab";
+    for(var b = 0; b <= NUM_BARS; b++){
+      var bx = Math.round(MARGIN_L + RHYTHM.start(b)*PPB) + 0.5;
+      g.strokeStyle = muted; g.globalAlpha = 0.45; g.lineWidth = 1;
+      g.beginPath(); g.moveTo(bx, TOP); g.lineTo(bx, H-2); g.stroke();
+    }
+    g.globalAlpha = 1;
+    tracks.forEach(function(t, i){
+      var y0 = TOP + i*LH, base = y0 + LH - 3, hMax = LH - 7;
+      g.strokeStyle = line; g.lineWidth = 0.5;
+      g.beginPath(); g.moveTo(MARGIN_L, base + 0.5); g.lineTo(W-8, base + 0.5); g.stroke();
+      // armonía y dobles: un solo valor por reataque (máximo entre sus notas)
+      var pts = [], byBeat = {}, sum = 0, n = 0;
+      t.evs.forEach(function(ev){
+        var v = ev.vel != null ? ev.vel : 96;
+        var k = ev.startBeat.toFixed(3);
+        if(t.name === "Armonía"){ if(byBeat[k] === undefined || v > byBeat[k].v) byBeat[k] = { b:ev.startBeat, v:v }; }
+        else pts.push({ b:ev.startBeat, v:v });
+      });
+      if(t.name === "Armonía") Object.keys(byBeat).forEach(function(k){ pts.push(byBeat[k]); });
+      g.fillStyle = t.color;
+      pts.forEach(function(p){
+        var h = Math.max(1.5, Math.min(1, p.v/127)*hMax);
+        g.globalAlpha = 0.5 + 0.5*Math.min(1, p.v/127);
+        g.fillRect(Math.round(MARGIN_L + p.b*PPB), base - h, 3, h);
+        sum += p.v; n++;
+      });
+      g.globalAlpha = 1;
+      g.fillStyle = muted; g.font = "9px sans-serif"; g.textAlign = "right";
+      g.fillText(t.name, MARGIN_L - 6, y0 + 11);
+      g.fillText("ø" + Math.round(sum/Math.max(1,n)), MARGIN_L - 6, y0 + 22);
+    });
+    host.appendChild(cv);
+  }
+  (function(){
+    var btn = document.getElementById("velLanesToggle");
+    var host = document.getElementById("velLanesHost");
+    if(!btn || !host) return;
+    btn.addEventListener("click", function(){
+      velLanesOpen = !velLanesOpen;
+      host.hidden = !velLanesOpen;
+      btn.setAttribute("aria-expanded", velLanesOpen ? "true" : "false");
+      btn.innerHTML = (velLanesOpen ? "&#9662;" : "&#9656;") + " Velocity por track";
+      if(velLanesOpen) renderVelLanes(); else { host.innerHTML = ""; velLanesSig = ""; }
+    });
+    setInterval(function(){
+      if(!velLanesOpen) return;
+      var tr = velLanesTracks();
+      var sig = DYNAMICS.rev() + "|" + tr.map(function(t){ return t.evs.length; }).join(",") + "|" + TOTAL_BEATS;
+      if(sig !== velLanesSig) renderVelLanes();
+    }, 500);
   })();
 
   // ---------- audio: sintetizador PAD (comparte el AudioContext del Oráculo) ----------
@@ -12532,7 +12777,7 @@ function runAnalysis() {
       env.connect(dest);
       src.start(startTime);
       src.stop(tReleaseEnd + 0.05);
-      voices.push(src);
+      trackVoice(src);
       src.onended = function(){ try{ src.disconnect(); env.disconnect(); }catch(e){} };
     });
     return true;
@@ -12569,7 +12814,7 @@ function runAnalysis() {
       osc.connect(filter);
       osc.start(startTime);
       osc.stop(sustainEnd + release + 0.1);
-      voices.push(osc);
+      trackVoice(osc);
     });
     var sub = ctx.createOscillator();
     sub.type = "sine";
@@ -12580,7 +12825,7 @@ function runAnalysis() {
     subGain.connect(filter);
     sub.start(startTime);
     sub.stop(sustainEnd + release + 0.1);
-    voices.push(sub);
+    trackVoice(sub);
   }
 
   // ---------- audio: sintetizador PIANO (armonía, alternativa a Pad) ----------
@@ -12626,7 +12871,7 @@ function runAnalysis() {
       partialGain.connect(filter);
       osc.start(startTime);
       osc.stop(sustainEnd + release + 0.1);
-      voices.push(osc);
+      trackVoice(osc);
     });
 
     // Percusión del martillo: un click corto de ruido filtrado al golpe.
@@ -12644,7 +12889,7 @@ function runAnalysis() {
     hammerGain.connect(dest);
     hammer.start(startTime);
     hammer.stop(startTime+0.05);
-    voices.push(hammer);
+    trackVoice(hammer);
   }
 
   // ---------- audio: sintetizador CUERDAS (strings, preset fijo de la pista moreComping) ----------
@@ -12687,7 +12932,7 @@ function runAnalysis() {
       osc.connect(filter);
       osc.start(startTime);
       osc.stop(sustainEnd + release + 0.1);
-      voices.push(osc);
+      trackVoice(osc);
     });
   }
 
@@ -12752,11 +12997,11 @@ function runAnalysis() {
     [osc, overtone].forEach(function(o){
       o.start(startTime);
       o.stop(sustainEnd + release + 0.1);
-      voices.push(o);
+      trackVoice(o);
     });
     noiseSrc.start(startTime);
     noiseSrc.stop(sustainEnd + release + 0.1);
-    voices.push(noiseSrc);
+    trackVoice(noiseSrc);
   }
 
   // ---------- audio: sintetizador SAXO (melodía, alternativa a Flauta) ----------
@@ -12828,11 +13073,11 @@ function runAnalysis() {
     [osc, third].forEach(function(o){
       o.start(startTime);
       o.stop(sustainEnd + release + 0.1);
-      voices.push(o);
+      trackVoice(o);
     });
     noiseSrc.start(startTime);
     noiseSrc.stop(sustainEnd + release + 0.1);
-    voices.push(noiseSrc);
+    trackVoice(noiseSrc);
   }
 
   function playBassVoice(ctx, dest, midi, startTime, duration, opts){
@@ -12875,7 +13120,7 @@ function runAnalysis() {
     [sine, sub, edge].forEach(function(o){
       o.start(startTime);
       o.stop(sustainEnd + release + 0.1);
-      voices.push(o);
+      trackVoice(o);
     });
   }
 
@@ -12907,7 +13152,7 @@ function runAnalysis() {
     gain.connect(dest);
     osc.start(startTime);
     osc.stop(startTime+0.3);
-    voices.push(osc);
+    trackVoice(osc);
 
     // click de ataque para dar punch
     var click = ctx.createBufferSource();
@@ -12923,7 +13168,7 @@ function runAnalysis() {
     clickGain.connect(dest);
     click.start(startTime);
     click.stop(startTime+0.03);
-    voices.push(click);
+    trackVoice(click);
   }
 
   function playSnareDrum(ctx, dest, startTime, velScale){
@@ -12942,7 +13187,7 @@ function runAnalysis() {
     noiseGain.connect(dest);
     noise.start(startTime);
     noise.stop(startTime+0.18);
-    voices.push(noise);
+    trackVoice(noise);
 
     var tone = ctx.createOscillator();
     tone.type = "triangle";
@@ -12954,7 +13199,7 @@ function runAnalysis() {
     toneGain.connect(dest);
     tone.start(startTime);
     tone.stop(startTime+0.12);
-    voices.push(tone);
+    trackVoice(tone);
   }
 
   // Cross-stick / rimshot — usado por "other-rhythm-variations" en
@@ -12977,7 +13222,7 @@ function runAnalysis() {
     gain.connect(dest);
     noise.start(startTime);
     noise.stop(startTime+0.06);
-    voices.push(noise);
+    trackVoice(noise);
 
     var click = ctx.createOscillator();
     click.type = "square";
@@ -12989,7 +13234,7 @@ function runAnalysis() {
     clickGain.connect(dest);
     click.start(startTime);
     click.stop(startTime+0.03);
-    voices.push(click);
+    trackVoice(click);
   }
 
   function playHihat(ctx, dest, startTime, open, velScale){
@@ -13008,7 +13253,7 @@ function runAnalysis() {
     gain.connect(dest);
     noise.start(startTime);
     noise.stop(startTime+dur+0.02);
-    voices.push(noise);
+    trackVoice(noise);
   }
 
   // Estilos de compás para la batería genérica: cada uno define su propio
@@ -13570,7 +13815,8 @@ function runAnalysis() {
     if(beats > (compound ? 4.5 : 4)+1e-6) kick.push(Math.floor(beats*0.6/pulse)*pulse);
     return { kick:kick, snare:snare, hihatHits:hihatHits };
   }
-  function buildDrumEvents(numBars){
+  function buildDrumEvents(numBars){ return DYNAMICS.applyDrums(buildDrumEventsRaw(numBars)); } // Dynamics (0% = no-op)
+  function buildDrumEventsRaw(numBars){
     if(swingDrumsEnabled) return TRIPLETS.applyDrums(buildSwingDrumEvents(numBars)); // Triplets: también sobre estos patrones fijos/generados (0% = no-op)
     if(modernJazzEnabled) return TRIPLETS.applyDrums(buildModernJazzEvents(numBars));
     // JAZZ: patrón de ride "spang-a-lang" en vez del hi-hat parejo —
@@ -13732,6 +13978,13 @@ function runAnalysis() {
     if(gmNote === 38 && ev && ev.vel != null && ev.vel >= 75) return 47; // caja fuerte -> Hrd Brush Snare1
     return JAZZ_TRAPS_REMAP[gmNote] != null ? JAZZ_TRAPS_REMAP[gmNote] : gmNote;
   }
+  // Dynamics: ev.vel (0-127, neutra 96) escala la ganancia y elige la capa de velocity del .sf2; sin ev.vel, igual que siempre.
+  function velK(ev){ return ev.vel != null ? ev.vel/96 : 1; }
+  function velL(ev){ return ev.vel != null ? ev.vel : undefined; }
+  function velDest(ctx, dest, ev){
+    if(ev.vel == null) return dest;
+    var g = ctx.createGain(); g.gain.value = ev.vel/96; g.connect(dest); return g;
+  }
   function scheduleLoopAt(ctx, dest, loopStartTime, spb, only){
     // only (opcional): nombre de UNA pista (chord, chordDouble, bass, melody,
     // melodyDouble, drum, comping2, bebop). Sin él, programa todas (modo en vivo).
@@ -13798,8 +14051,8 @@ function runAnalysis() {
       (want("bass") ? state.bassEvents : []).forEach(function(ev){
         var t = loopStartTime + ev.startBeat*spb;
         var dur = ev.durBeats*spb;
-        if(sm2Active && playSM2Voice(ctx, gains.bass, mixPresets.bass, ev.midi, t, dur*0.9, 0.24)) return;
-        bassFam.fn(ctx, gains.bass, ev.midi, t, dur*0.9, bassFam.mk(dur*0.9));
+        if(sm2Active && playSM2Voice(ctx, gains.bass, mixPresets.bass, ev.midi, t, dur*0.9, 0.24*velK(ev), velL(ev))) return;
+        bassFam.fn(ctx, velDest(ctx, gains.bass, ev), ev.midi, t, dur*0.9, bassFam.mk(dur*0.9));
       });
     }
     if(instEnabled("consolaMelodyChk")){
@@ -13807,8 +14060,8 @@ function runAnalysis() {
       (want("melody") ? state.melodyEvents : []).forEach(function(ev){
         var t = loopStartTime + ev.startBeat*spb;
         var dur = ev.durBeats*spb;
-        if(sm2Active && playSM2Voice(ctx, gains.melody, mixPresets.melody, ev.midi, t, dur*0.85, 0.2)) return;
-        melodyFam.fn(ctx, gains.melody, ev.midi, t, dur*0.85, melodyFam.mk(dur*0.85));
+        if(sm2Active && playSM2Voice(ctx, gains.melody, mixPresets.melody, ev.midi, t, dur*0.85, 0.2*velK(ev), velL(ev))) return;
+        melodyFam.fn(ctx, velDest(ctx, gains.melody, ev), ev.midi, t, dur*0.85, melodyFam.mk(dur*0.85));
       });
       // Doblar melodía: selector aparte (#melodyDoublePresetSelect, "Mute"
       // por defecto) — repite el mismo ritmo de la melodía, con un
@@ -13828,8 +14081,8 @@ function runAnalysis() {
           var t = loopStartTime + ev.startBeat*spb;
           var dur = ev.durBeats*spb;
           var mdMidi = ev.midi + melodyDoubleInterval;
-          if(sm2Active && playSM2Voice(ctx, gains.melodyDouble, mixPresets.melodyDouble, mdMidi, t, dur*0.85, 0.2)) return;
-          melodyDoubleFam.fn(ctx, gains.melodyDouble, mdMidi, t, dur*0.85, melodyDoubleFam.mk(dur*0.85));
+          if(sm2Active && playSM2Voice(ctx, gains.melodyDouble, mixPresets.melodyDouble, mdMidi, t, dur*0.85, 0.2*velK(ev), velL(ev))) return;
+          melodyDoubleFam.fn(ctx, velDest(ctx, gains.melodyDouble, ev), mdMidi, t, dur*0.85, melodyDoubleFam.mk(dur*0.85));
         });
       }
     }
@@ -13872,8 +14125,8 @@ function runAnalysis() {
     (want("comping2") ? state.comping2Events : []).forEach(function(ev){
       var t = loopStartTime + ev.startBeat*spb;
       var dur = ev.durBeats*spb;
-      if(sm2Active && playSM2Voice(ctx, gains.comping2, mixPresets.comping2, ev.midi, t, dur*0.9, 0.16)) return;
-      comping2Fam.fn(ctx, gains.comping2, ev.midi, t, dur*0.9, comping2Fam.mk(dur*0.9));
+      if(sm2Active && playSM2Voice(ctx, gains.comping2, mixPresets.comping2, ev.midi, t, dur*0.9, 0.16*velK(ev), velL(ev))) return;
+      comping2Fam.fn(ctx, velDest(ctx, gains.comping2, ev), ev.midi, t, dur*0.9, comping2Fam.mk(dur*0.9));
     });
     // bebopMelody: sexta pista, línea melódica INDEPENDIENTE (no dobla a
     // la melodía principal — tiene su propia nota por evento, elegida
@@ -13887,8 +14140,8 @@ function runAnalysis() {
     (want("bebop") ? state.bebopEvents : []).forEach(function(ev){
       var t = loopStartTime + ev.startBeat*spb;
       var dur = ev.durBeats*spb;
-      if(sm2Active && playSM2Voice(ctx, gains.bebop, mixPresets.bebop, ev.midi, t, dur*0.85, 0.16)) return;
-      bebopFam.fn(ctx, gains.bebop, ev.midi, t, dur*0.85, bebopFam.mk(dur*0.85));
+      if(sm2Active && playSM2Voice(ctx, gains.bebop, mixPresets.bebop, ev.midi, t, dur*0.85, 0.16*velK(ev), velL(ev))) return;
+      bebopFam.fn(ctx, velDest(ctx, gains.bebop, ev), ev.midi, t, dur*0.85, bebopFam.mk(dur*0.85));
     });
     // Melody n2: melodía alternativa independiente (solo desde el compás 12),
     // con su propio instrumento (#melody2PresetSelect, Flauta por defecto).
@@ -13896,8 +14149,8 @@ function runAnalysis() {
     (want("melody2") ? state.melody2Events : []).forEach(function(ev){
       var t = loopStartTime + ev.startBeat*spb;
       var dur = ev.durBeats*spb;
-      if(sm2Active && playSM2Voice(ctx, gains.melody2, mixPresets.melody2, ev.midi, t, dur*0.9, 0.16)) return;
-      melody2Fam.fn(ctx, gains.melody2, ev.midi, t, dur*0.9, melody2Fam.mk(dur*0.9));
+      if(sm2Active && playSM2Voice(ctx, gains.melody2, mixPresets.melody2, ev.midi, t, dur*0.9, 0.16*velK(ev), velL(ev))) return;
+      melody2Fam.fn(ctx, velDest(ctx, gains.melody2, ev), ev.midi, t, dur*0.9, melody2Fam.mk(dur*0.9));
     });
   }
 
@@ -14117,7 +14370,7 @@ function runAnalysis() {
           node.loop = looping;
           node.connect(gains[tr]);
           node.start(t0);
-          voices.push(node);
+          trackVoice(node);
           srcs.push(node);
         });
         playing = true;
@@ -14955,6 +15208,13 @@ function runAnalysis() {
   });
   document.getElementById("consolaRapidRunsSlider").addEventListener("change", function(){
     if(state.rootChord.length) regenerateConsola();
+  });
+  document.getElementById("consolaDynamicsSlider").addEventListener("input", function(){
+    document.getElementById("consolaDynamicsVal").textContent = this.value + "%";
+  });
+  document.getElementById("consolaDynamicsSlider").addEventListener("change", function(){
+    DYNAMICS.reapply(); // mismas notas, otra dinámica (no regenera)
+    renderRoll(); renderBebopRoll();
   });
   document.getElementById("consolaTripletsSlider").addEventListener("input", function(){
     document.getElementById("consolaTripletsVal").textContent = this.value + "%";
