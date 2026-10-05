@@ -1240,6 +1240,10 @@
         <input type="checkbox" id="consolaPrerenderChk">
         <label for="consolaPrerenderChk">⚡ Prerender</label>
         <span class="consola-val" id="consolaPrerenderStatus"></span>
+        <span class="radio-mode-wrap" style="margin-left:14px;white-space:nowrap;" title="RadioMode: después de 🪄 CreaturaRandom o 🪄 CreaturaBella, cuando termina la vuelta engancha otra vuelta nueva del mismo tipo (sets y sliders nuevos), sin cortar el audio. Se corta con Detener o destildando. Usa el modo en vivo (no Prerender).">
+          <input type="checkbox" id="consolaRadioChk">
+          <label for="consolaRadioChk">📻 RadioMode</label>
+        </span>
       </div>
     </div>
     <div class="clock-card multiset-card" id="multiSetsCard">
@@ -6034,7 +6038,7 @@ function clearNotes() {
   // agenda a futuro, no lo que ya está sonando/programado en el
   // AudioContext, así que sin esto el loop seguía sonando después de
   // Limpiar.
-  if (typeof window.consolaStopPlayback === "function") window.consolaStopPlayback();
+  if (!window.__radioBusy && typeof window.consolaStopPlayback === "function") window.consolaStopPlayback(); // RadioMode: armar la vuelta siguiente no corta lo que suena
   selected.clear();
   Object.values(pcElements).flat().forEach(el => el.classList.remove("selected"));
   runAnalysis();
@@ -14460,7 +14464,7 @@ function runAnalysis() {
     });
   }
 
-  function tickPlayhead(ctx, loopAnchor, spb, loopDur){
+  function tickPlayhead(ctx, loopAnchor, spb, loopDur, clk){
     // Optimizado: los elementos se buscan una vez y el ancho scrolleable
     // (scrollWidth/clientWidth, que fuerzan layout) se mide cada ~0.5 s en
     // vez de en cada frame; scrollLeft solo se escribe si cambió. Antes eran
@@ -14490,6 +14494,9 @@ function runAnalysis() {
     }
     function step(ts){
       if(!playing) return;
+      if(clk && clk.pend && ctx.currentTime >= clk.pend.anchor){
+        loopAnchor = clk.pend.anchor; loopDur = clk.pend.dur; clk.pend = null; // RadioMode: arrancó la vuelta nueva
+      }
       var elapsed = ctx.currentTime - loopAnchor;
       if(elapsed >= 0){
         if(ts - lastMeasure > 500){ measure(); lastMeasure = ts; }
@@ -14549,6 +14556,8 @@ function runAnalysis() {
   var prToken = 0;
   function prOn(){
     var c = document.getElementById("consolaPrerenderChk");
+    var r = document.getElementById("consolaRadioChk");
+    if(r && r.checked) return false; // RadioMode usa el scheduler en vivo (engancha vueltas sin cortes)
     return !!(c && c.checked) && !!(window.OfflineAudioContext || window.webkitOfflineAudioContext);
   }
   function prStatus(msg){
@@ -14736,6 +14745,7 @@ function runAnalysis() {
     var bpm = parseInt(tempoEl.value, 10);
     var spb = 60/bpm;
     var loopDur = TOTAL_BEATS*spb;
+    var clk = { pend: null }; // RadioMode: cambio de largo/ancla de vuelta para el playhead
     playing = true;
     document.getElementById("consolaPlayBtn").disabled = true;
     // 🔀 (consolaRegenPlayBtn) queda HABILITADO mientras suena: al pulsarlo
@@ -14754,7 +14764,7 @@ function runAnalysis() {
     // Pestaña en segundo plano: el navegador frena setInterval a ~1 s, así
     // que ahí la ventana se agranda para no dejar huecos.
     var TICK_MS = 50, AHEAD_FG = 0.8, AHEAD_BG = 1.6;
-    var LOOP_BEATS = TOTAL_BEATS; // fijo durante la reproducción, igual que loopDur
+    var LOOP_BEATS = TOTAL_BEATS; // fijo durante la reproducción (salvo RadioMode: cambia al enganchar una vuelta nueva), igual que loopDur
     var loopAnchor = ctx.currentTime + 0.1;
     var schedLoopStart = loopAnchor;  // inicio (en el reloj de audio) de la vuelta en curso
     var schedBeat = 0;                // próximo beat sin programar dentro de esa vuelta
@@ -14774,7 +14784,9 @@ function runAnalysis() {
       // manteniendo la grilla de vueltas (loopAnchor + k*loopDur).
       if(schedLoopStart + schedBeat*spb < now - 0.02){
         var nowBeatAbs = (now - schedLoopStart) / spb;
-        if(nowBeatAbs >= LOOP_BEATS){
+        if(window.__radioKind && nowBeatAbs >= LOOP_BEATS){
+          nowBeatAbs = LOOP_BEATS; // RadioMode: el bloque de fin de vuelta de abajo avanza UNA vuelta y genera la nueva
+        } else if(nowBeatAbs >= LOOP_BEATS){
           if(!loopChk.checked){ ending = true; endAfterCurrentLoop(); return; }
           var skip = Math.floor(nowBeatAbs / LOOP_BEATS);
           schedLoopStart += skip * loopDur;
@@ -14793,8 +14805,19 @@ function runAnalysis() {
         }
         if(schedBeat < LOOP_BEATS) break;
         // fin de la vuelta: ¿sigue el loop?
-        if(!loopChk.checked){ ending = true; endAfterCurrentLoop(); return; }
-        schedLoopStart += loopDur;
+        var rk = window.__radioKind;
+        if(rk && typeof window.__radioNext === "function"){
+          // RadioMode: arma una vuelta nueva (mismos sliders/sets al azar que CreaturaRandom/Bella)
+          // ~0.8 s antes de que termine la actual y la programa pegada, en el mismo reloj de audio.
+          try{ window.__radioNext(rk); }catch(err){ console.error("RadioMode:", err); }
+          schedLoopStart += loopDur;
+          loopDur = TOTAL_BEATS*spb;
+          LOOP_BEATS = TOTAL_BEATS;
+          clk.pend = { anchor: schedLoopStart, dur: loopDur };
+        } else {
+          if(!loopChk.checked){ ending = true; endAfterCurrentLoop(); return; }
+          schedLoopStart += loopDur;
+        }
         schedBeat = 0;
         snap = liveSnap(); // cambios de notas/presets entran en la vuelta nueva
       }
@@ -14802,9 +14825,10 @@ function runAnalysis() {
     pump();
     if(playing && !ending) schedulerTimer = setInterval(pump, TICK_MS);
 
-    tickPlayhead(ctx, loopAnchor, spb, loopDur);
+    tickPlayhead(ctx, loopAnchor, spb, loopDur, clk);
   }
   window.consolaStartPlayback = startPlayback;
+  window.consolaRegenerate = regenerateConsola; // RadioMode: arma la vuelta siguiente sin reproducir
   window.consolaStopPlayback = stopPlayback; // declaración hoisted más abajo — accesible acá igual
 
   /* ================================================================
@@ -15121,6 +15145,7 @@ function runAnalysis() {
 
   function stopPlayback(){
     playing = false;
+    window.__radioKind = null; // cualquier Detener / 🔀 / Compose apaga el RadioMode
     prToken = (prToken | 0) + 1; // cancela un prerender en curso
     var prSt = document.getElementById("consolaPrerenderStatus");
     if(prSt && prSt.textContent.indexOf("⏳") === 0) prSt.textContent = "";
@@ -16700,12 +16725,8 @@ function runAnalysis() {
 
     // bella=false: CreaturaRandom (sets al azar). bella=true: CreaturaBella (misma
     // secuencia, pero los sets salen del índice del libro ponderados por jerarquía).
-    async function runCreatura(bella){
-      if(running) return; // no reentrar si ya está corriendo
-      running = true;
-      btn.disabled = true;
-      if(btnBella) btnBella.disabled = true;
-      try {
+    // Pasos 0 y 1 (sliders al azar + Random Fill); compartidos con RadioMode.
+    function randomizeAndFill(bella){
         // 0) Variantes aleatorias (cada una se sortea por separado):
         // Chromatism 2–40%, Chords 20–60%, Triplets 0–100%, Melodic/Harmonic/
         // RythmSpace 0–100%, Rapid runs 0–30%.
@@ -16733,6 +16754,26 @@ function runAnalysis() {
         var fillFn = bella ? window.__multiSetsBellaFillCount : window.__multiSetsRandomFillCount;
         if(typeof fillFn === "function") fillFn(nSets);
         else if(!bella) clickIfEnabled("multiSetsRandomFillBtn");
+    }
+
+    // RadioMode: vuelta nueva SIN Compose/Detener/espera/Play — solo genera; el scheduler
+    // en vivo la engancha. (Mix time signatures queda tildado como en la creatura.)
+    window.__radioNext = function(kind){
+      window.__radioBusy = true;
+      try{
+        randomizeAndFill(kind === "bella");
+        setChecked("consolaMixTimeSigChk", true);
+        if(typeof window.consolaRegenerate === "function") window.consolaRegenerate();
+      } finally { window.__radioBusy = false; }
+    };
+
+    async function runCreatura(bella){
+      if(running) return; // no reentrar si ya está corriendo
+      running = true;
+      btn.disabled = true;
+      if(btnBella) btnBella.disabled = true;
+      try {
+        randomizeAndFill(bella);
 
         // 2) Compose: arma los 12 compases desde esos 5 o 2 sets y arranca
         // la reproducción (mismo botón 🎲 Compose de Multi Sets Input).
@@ -16749,6 +16790,10 @@ function runAnalysis() {
 
         // 6) 🔀 Regenerar: sortea una variación nueva y la reproduce.
         clickIfEnabled("consolaRegenPlayBtn");
+
+        // 7) RadioMode: al terminar esta vuelta, engancha otra nueva del mismo tipo.
+        var radioChk = document.getElementById("consolaRadioChk");
+        window.__radioKind = (radioChk && radioChk.checked) ? (bella ? "bella" : "random") : null;
       } finally {
         btn.disabled = false;
         if(btnBella) btnBella.disabled = false;
@@ -16756,6 +16801,8 @@ function runAnalysis() {
       }
     }
 
+    var radioChkEl = document.getElementById("consolaRadioChk");
+    if(radioChkEl) radioChkEl.addEventListener("change", function(){ if(!radioChkEl.checked) window.__radioKind = null; });
     btn.addEventListener("click", function(){ runCreatura(false); });
     if(btnBella) btnBella.addEventListener("click", function(){ runCreatura(true); });
   })();
