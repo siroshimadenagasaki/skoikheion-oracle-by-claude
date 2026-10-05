@@ -1240,9 +1240,9 @@
         <input type="checkbox" id="consolaPrerenderChk">
         <label for="consolaPrerenderChk">⚡ Prerender</label>
         <span class="consola-val" id="consolaPrerenderStatus"></span>
-        <span class="radio-mode-wrap" style="margin-left:14px;white-space:nowrap;" title="RadioMode: después de 🪄 CreaturaRandom o 🪄 CreaturaBella, cuando termina la vuelta engancha otra vuelta nueva del mismo tipo (sets y sliders nuevos), sin cortar el audio. Se corta con Detener o destildando. Usa el modo en vivo (no Prerender).">
-          <input type="checkbox" id="consolaRadioChk">
-          <label for="consolaRadioChk">📻 RadioMode</label>
+        <span class="radio-mode-wrap" style="margin-left:14px;white-space:nowrap;" title="RadioMode (botón ON/OFF): con ON, después de 🪄 CreaturaRandom o 🪄 CreaturaBella, cuando termina la vuelta engancha otra vuelta nueva del mismo tipo (sets y sliders nuevos), sin cortar el audio. Se corta con Detener o con OFF. Usa el modo en vivo (no Prerender).">
+          <input type="checkbox" id="consolaRadioChk" hidden>
+          <button type="button" class="chip" id="consolaRadioBtn" aria-pressed="false">&#128251; RadioMode: OFF</button>
         </span>
       </div>
     </div>
@@ -1357,7 +1357,9 @@
         <div class="consola-inst-row">
           <span class="consola-inst-toggle" title="Además del subset de siempre (el set completo o casi completo), a veces usa un subconjunto MÁS CHICO del mismo set elegido — más variedad de tamaños de acorde por compás, sin salir nunca del set."><input type="checkbox" id="consolaSubsetsChk"><label for="consolaSubsetsChk">&#8681; Subsets (variedad)</label></span>
           <span class="consola-inst-toggle" title="Además del subset de siempre, a veces usa el COMPLEMENTO del set elegido (las notas que el set deja afuera dentro de la octava) — más variedad armónica, siempre derivada del mismo set."><input type="checkbox" id="consolaSupersetsChk"><label for="consolaSupersetsChk">&#8679; Supersets (variedad)</label></span>
-          <span class="consola-inst-toggle" title="Cada compás de armonía, bajo, melodía y batería tiene un 40% extra de probabilidad de repetir exactamente el patrón del compás anterior; además, bajo y melodía tienen un 40% de probabilidad por compás de acoplar sus ataques a los de la armonía en vez de llevar su propio ritmo."><input type="checkbox" id="consolaMoreRepChk"><label for="consolaMoreRepChk">&#128257; More repetition</label></span>
+          <span class="consola-inst-toggle" title="More repetition · Harmony: cada compás (salvo el primero) tiene ~50% de repetir al anterior, sorteando UNO de tres modos: el MISMO ACORDE (mismo voicing, ritmo nuevo), el mismo PATRÓN RÍTMICO (acordes nuevos) o LOS DOS a la vez (compás idéntico). El bajo repite su ritmo junto con la armonía cuando toca patrón rítmico. No cambia cómo se toca: solo repite lo que ya sorteó el motor, siempre dentro del set."><input type="checkbox" id="consolaMoreRepHarmChk"><label for="consolaMoreRepHarmChk">&#128257; More repetition · Harmony</label></span>
+          <span class="consola-inst-toggle" title="More repetition · Melody: cada compás (salvo el primero) tiene ~50% de repetir al anterior, sorteando UNO de tres modos: el mismo MOTIVO MELÓDICO (mismas posiciones/contorno de notas, adaptado al acorde vigente; ritmo nuevo), el mismo MOTIVO RÍTMICO (notas nuevas) o LAS DOS cosas a la vez. Solo notas del acorde en curso (el set no se traiciona)."><input type="checkbox" id="consolaMoreRepMelChk"><label for="consolaMoreRepMelChk">&#128257; More repetition · Melody</label></span>
+          <span class="consola-inst-toggle" title="More repetition · Rhythm (batería): en vez de tirar una moneda compás a compás, repite en FRASES — un compás se toca 2, 3 o 4 veces seguidas y después cambia (el último compás de la frase a veces queda libre). Los compases repetidos llevan un poco de variación de velocity y algún hi-hat suave que falta, para que no suene maquinal."><input type="checkbox" id="consolaMoreRepRhyChk"><label for="consolaMoreRepRhyChk">&#128257; More repetition · Rhythm</label></span>
           <span class="consola-inst-toggle" title="En cada reataque de armonía se sortean varias combinaciones válidas de subconjunto/transposición/inversión dentro del MISMO acorde/grado elegido (nunca de otro) y se elige la que comparte más notas con el acorde anterior — el doble de notas comunes en promedio que al azar puro, con la misma restricción de conjunto de siempre."><input type="checkbox" id="consolaCommonNotesChk"><label for="consolaCommonNotesChk">&#128279; Notas comunes</label></span>
           <span class="consola-inst-toggle" title="Slider 0–100% (default 5%): probabilidad por compás de que la melodía tenga notas rápidas (semicorcheas o fusas, al azar). 70% de esas veces: 1 a 3 grupitos de 2, 4 o 6 notas cortas repartidos al azar dentro de la melodía del compás. 30%: una CORRIDA en bloque de 1 compás entero o medio compás. Las notas de la corrida suben/bajan por grados conjuntos usando SOLO las notas del acorde vigente en cada instante (nunca sale del set), sin silencios. El resto del compás (si la corrida es de medio compás) sigue con su ritmo de siempre. No afecta a Simplicity. 0% = nunca."><label for="consolaRapidRunsSlider">&#9889; Rapid runs</label><input type="range" class="consola-mini-range" id="consolaRapidRunsSlider" min="0" max="100" value="5" step="1"><span class="consola-val" id="consolaRapidRunsVal">5%</span></span>
           <span class="consola-inst-toggle" title="Slider 0–100% (default 0%): probabilidad por compás de que la melodía tenga notas rápidas (semicorcheas o fusas, al azar). 70% de esas veces: 1 a 3 grupitos de 2, 4 o 6 notas cortas repartidos al azar dentro de la melodía del compás. 30%: una CORRIDA en bloque de 1 compás entero o medio compás. Las notas de la corrida suben/bajan por grados conjuntos usando SOLO las notas del acorde vigente en cada instante (nunca sale del set), sin silencios. El resto del compás (si la corrida es de medio compás) sigue con su ritmo de siempre. Copia independiente de Rapid runs: solo modifica la melodía y Melody n2. No afecta a Simplicity. 0% = nunca."><label for="consolaRapidRuns2Slider">&#9889; Rapid runs v2</label><input type="range" class="consola-mini-range" id="consolaRapidRuns2Slider" min="0" max="100" value="0" step="1"><span class="consola-val" id="consolaRapidRuns2Val">0%</span></span>
@@ -8110,46 +8112,74 @@ function runAnalysis() {
 
   /* ================================================================
      MÓDULO MÁS REPETICIÓN — separado tanto del motor original como del
-     módulo Jazz. Se activa con el checkbox #consolaMoreRepChk (apagado
-     por defecto) y combina con Jazz sin problema (actúa DESPUÉS de que
-     armonía/bajo/melodía/batería ya eligieron su ritmo, sea con los
-     pools normales o con los de Jazz). Prendido:
-       - REPEAT_PROB (40%): cada compás, en cada pista por separado
-         (armonía, bajo, melodía, batería), tiene esa probabilidad
-         EXTRA de repetir exactamente el patrón rítmico del compás
-         anterior de esa misma pista, en vez del que le tocó variar.
-       - COUPLE_PROB (40%): además, cada compás de BAJO y de MELODÍA
-         tiene esa probabilidad de "acoplarse" — en vez de su propio
-         ritmo, usa los mismos instantes de ataque que tuvo la armonía
-         en ESE compás (batería no se acopla; el pedido fue solo
-         bajo/melodía).
-     En ningún caso cambia qué nota suena — solo CUÁNDO se reataca cada
-     pista (el ritmo es un array de duraciones, o de estilos de
-     batería; acá solo se decide si un compás copia al anterior o a la
-     armonía, nunca se inventa una nota nueva).
+     módulo Jazz. Tres checkboxes independientes: #consolaMoreRepHarmChk
+     (armonía: mismo acorde / mismo patrón rítmico / los dos; el bajo
+     acompaña el ritmo), #consolaMoreRepMelChk (melodía: mismo motivo
+     melódico / rítmico / los dos) y #consolaMoreRepRhyChk (batería:
+     repite en frases de 2-4 compases con variación leve). No cambia
+     la forma de tocar ni agrega notas fuera del set.
      ================================================================ */
   var MOREREP = (function(){
-    function enabled(){
-      var chk = document.getElementById("consolaMoreRepChk");
-      return !!(chk && chk.checked);
-    }
-    var REPEAT_PROB = 0.4;
-    var COUPLE_PROB = 0.4;
-    // Sesgo de repetición: de compás 1 en adelante, con REPEAT_PROB de
-    // probabilidad copia el patrón del compás anterior (arreglo de
-    // duraciones de armonía/bajo/melodía, u objeto de estilo de
-    // batería — funciona igual para ambos) en vez del que le tocó.
-    function applyRepetitionBias(arr){
-      for (var i=1;i<arr.length;i++){
-        if (Math.random() < REPEAT_PROB) arr[i] = arr[i-1];
+    // Tres checkboxes independientes (Harmony / Melody / Rhythm). No cambian la
+    // forma de tocar: solo deciden cuándo un compás copia al anterior.
+    function on(id){ var c = document.getElementById(id); return !!(c && c.checked); }
+    function harmEnabled(){ return on("consolaMoreRepHarmChk"); }
+    function melEnabled(){ return on("consolaMoreRepMelChk"); }
+    function rhyEnabled(){ return on("consolaMoreRepRhyChk"); }
+    var REPEAT_PROB = 0.5;
+    // Por compás (de 1 en adelante): "none" o uno de `kinds`, sorteado. Nunca más de 3
+    // compases seguidos repetidos, para que igual haya material nuevo.
+    function rollModes(numBars, kinds){
+      var out = [], run = 0;
+      for (var i=0;i<numBars;i++){
+        if (i > 0 && run < 3 && Math.random() < REPEAT_PROB){
+          out.push(kinds[Math.floor(Math.random()*kinds.length)]); run++;
+        } else { out.push("none"); run = 0; }
       }
-      return arr;
+      return out;
     }
+    // Armonía: post-proceso sobre {events, slotChords} (motor libre O Harmony testing).
+    // Por compás sortea: "chord" = mismo acorde (mismas notas, ritmo propio), "rhythm" = mismo patrón
+    // rítmico (notas propias) o "both" = compás idéntico. Siempre se reusan notas ya sorteadas del
+    // mismo set; con Multi sets solo "rhythm" (cada compás conserva su set).
+    function applyHarmony(cb, numBars){
+      var modes = rollModes(numBars, ["chord", "rhythm", "both"]);
+      var multi = (typeof MULTISETS !== "undefined") && MULTISETS.isActive();
+      var starts = [], beats = [];
+      for (var b=0;b<numBars;b++){ starts.push(RHYTHM.start(b)); beats.push(RHYTHM.beats(b)); }
+      function barOf(t){ for (var i=numBars-1;i>=0;i--) if (t >= starts[i]-1e-6) return i; return 0; }
+      var evBar = []; for (var q=0;q<numBars;q++) evBar.push([]);
+      cb.events.forEach(function(e){ evBar[barOf(e.startBeat)].push(e); });
+      evBar.forEach(function(l){ l.sort(function(a,c){ return a.startBeat - c.startBeat || a.midi - c.midi; }); });
+      var slots = cb.slotChords.slice();
+      for (var bar=1; bar<numBars; bar++){
+        var m = modes[bar];
+        if (m === "none") continue;
+        var prevE = evBar[bar-1], ownE = evBar[bar];
+        if (!prevE.length || !ownE.length || Math.abs(beats[bar]-beats[bar-1]) > 1e-6 || !slots[bar-1] || !slots[bar]){ modes[bar] = "none"; continue; }
+        if (multi && m !== "rhythm"){ m = "rhythm"; modes[bar] = "rhythm"; }
+        var d = starts[bar] - starts[bar-1], prevS = slots[bar-1], ownS = slots[bar];
+        function cl(e, over){ var o = Object.assign({}, e); o.startBeat = e.startBeat + (over.shift || 0); if (over.midi != null) o.midi = over.midi; o.bar = bar; return o; }
+        if (m === "both"){
+          evBar[bar] = prevE.map(function(e){ return cl(e, {shift:d}); });
+          slots[bar] = prevS.map(function(s){ return Object.assign({}, s); });
+        } else if (m === "rhythm"){ // tiempos del compás anterior, notas propias
+          evBar[bar] = prevE.map(function(e, i){ return cl(e, {shift:d, midi: ownE[i % ownE.length].midi}); });
+          slots[bar] = prevS.map(function(s, k){ var o = ownS[k % ownS.length]; return Object.assign({}, s, { chord: o.chord, setNotes: o.setNotes }); });
+        } else {            // "chord": notas del compás anterior, tiempos propios
+          evBar[bar] = ownE.map(function(e, i){ return cl(e, {midi: prevE[i % prevE.length].midi}); });
+          slots[bar] = ownS.map(function(s, k){ var o = prevS[k % prevS.length]; return Object.assign({}, s, { chord: o.chord, setNotes: o.setNotes }); });
+        }
+      }
+      lastHarm = modes;
+      var all = []; evBar.forEach(function(l){ l.forEach(function(e){ all.push(e); }); });
+      return { events: all, slotChords: slots };
+    }
+    var lastHarm = null;
     return {
-      enabled: enabled,
-      REPEAT_PROB: REPEAT_PROB,
-      COUPLE_PROB: COUPLE_PROB,
-      applyRepetitionBias: applyRepetitionBias
+      get lastHarm(){ return lastHarm; }, set lastHarm(v){ lastHarm = v; },
+      harmEnabled: harmEnabled, melEnabled: melEnabled, rhyEnabled: rhyEnabled,
+      rollModes: rollModes, applyHarmony: applyHarmony,
     };
   })();
 
@@ -10949,7 +10979,8 @@ function runAnalysis() {
     });
     // MÁS REPETICIÓN: 40% extra de probabilidad, compás a compás, de
     // repetir el patrón rítmico del compás anterior de armonía.
-    if (MOREREP.enabled()) cellsByBar = MOREREP.applyRepetitionBias(cellsByBar);
+    // (More repetition · Harmony se aplica DESPUÉS, sobre el resultado: MOREREP.applyHarmony — así
+    //  vale igual para el motor libre y para Harmony testing.)
     // Slider #consolaChordsSlider ("Chords"): gradúa cuántos compases
     // tienen más de un acorde. Por compás, con probabilidad
     // (1 - chordDensityVariety) se fuerza la celda de un solo reataque
@@ -11263,23 +11294,18 @@ function runAnalysis() {
     var numBars = progression.length;
     var bassCells = buildBassRhythmRandom(numBars);
     var melodyCells = buildMelodyRhythmRandom(numBars);
-    if (MOREREP.enabled()){
-      // MÁS REPETICIÓN: 40% extra de probabilidad, compás a compás, de
-      // repetir el patrón rítmico del compás anterior — para bajo y
-      // melodía, cada uno por separado.
-      bassCells = MOREREP.applyRepetitionBias(bassCells);
-      melodyCells = MOREREP.applyRepetitionBias(melodyCells);
-      // ACOPLE A LA ARMONÍA: 40% de probabilidad, compás a compás, de
-      // que el bajo y/o la melodía dejen de lado su propio ritmo y
-      // reataquen en los mismos instantes que la armonía tuvo en ESE
-      // compás (slotChords ya trae, por compás, los reataques exactos
-      // de armonía con su duración — se reusa esa misma forma).
-      for (var crBar=0; crBar<numBars; crBar++){
-        var chordCellForBar = slotChords[crBar].map(function(s){ return s.durBeats; });
-        if (Math.random() < MOREREP.COUPLE_PROB) bassCells[crBar] = chordCellForBar.slice();
-        // HarmonicSpace solo gobierna armonía+bajo: en su tramo de respiro slotChords trae
-        // redondas ([4]), y la melodía NO debe heredarlas por el acople.
-        if (Math.random() < MOREREP.COUPLE_PROB && !HARMONICSPACE.isPeaceBar(crBar)) melodyCells[crBar] = chordCellForBar.slice();
+    // More repetition · Harmony: el bajo repite su ritmo junto con la armonía cuando esta
+    // repite patrón rítmico. More repetition · Melody: modos propios de la melodía.
+    var hmModes = MOREREP.lastHarm;
+    if (hmModes && MOREREP.harmEnabled()){
+      for (var rbB=1; rbB<numBars; rbB++){
+        if (hmModes[rbB] === "rhythm" || hmModes[rbB] === "both") bassCells[rbB] = bassCells[rbB-1];
+      }
+    }
+    var melModes = MOREREP.melEnabled() ? MOREREP.rollModes(numBars, ["melodic", "rhythm", "both"]) : null;
+    if (melModes){
+      for (var rmM=1; rmM<numBars; rmM++){
+        if (melModes[rmM] === "rhythm" || melModes[rmM] === "both") melodyCells[rmM] = melodyCells[rmM-1];
       }
     }
     // HarmonicSpace: en el tramo de respiro (si salió sorteado), el
@@ -11322,6 +11348,7 @@ function runAnalysis() {
     var bassEvents = [], melodyEvents = [];
     var jazzPrevBass = null; // JAZZ: nota anterior del bajo, para caminar por grados conjuntos
     var motPlan = MOTIVIC.enabled() ? MOTIVIC.newPlan() : null; // Motivic melody: motivo propio de esta llamada
+    var motifByBar = [], silenceByBar = []; // More repetition · Melody: motivo (posición en el acorde + octava) y silencios de cada compás
     var patPos = 0, patStep = 0; // melodicPatterns: posición del contorno, persiste a lo largo de TODO el pasaje (nunca se resetea por compás/acorde)
     progression.forEach(function(chord, bar){
       // BASS FUNCTION (How to play). Dos modos excluyentes:
@@ -11385,6 +11412,13 @@ function runAnalysis() {
         var tmp = silenceTags[si2]; silenceTags[si2]=silenceTags[sj]; silenceTags[sj]=tmp;
       }
       var silenceOrder = spreadByGroup(silenceTags, function(t){ return t.silent; });
+      var mMode = melModes ? melModes[bar] : "none";
+      if (bar > 0 && (mMode === "rhythm" || mMode === "both") && silenceByBar[bar-1] && silenceByBar[bar-1].length === silenceOrder.length) silenceOrder = silenceByBar[bar-1]; // mismo motivo rítmico: mismos silencios
+      silenceByBar[bar] = silenceOrder;
+      var prevMotif = (bar > 0 && (mMode === "melodic" || mMode === "both")) ? motifByBar[bar-1] : null;
+      if (prevMotif && !prevMotif.length) prevMotif = null;
+      var curMotif = [], motifI = 0;
+      motifByBar[bar] = curMotif;
 
       var mOffset = 0;
       var lastChordRef = null, segShift = 0;
@@ -11406,7 +11440,12 @@ function runAnalysis() {
         }
         var currentSlotChord = currentChordAt(slotChords[bar], mOffset);
         var base, octAdd, midi;
-        if(motPlan){
+        if(prevMotif){
+          // More repetition · Melody (motivo melódico): misma posición dentro del acorde y misma octava
+          // relativa que la nota equivalente del compás anterior, sobre el acorde vigente.
+          var mRec = prevMotif[motifI % prevMotif.length];
+          midi = clampMelodyRange(currentSlotChord[mRec.idx % currentSlotChord.length] + mRec.oct);
+        } else if(motPlan){
           // Motivic melody: motivo desarrollado (ver módulo MOTIVIC), solo notas del acorde vigente
           midi = MOTIVIC.pitch(motPlan, MOTIVIC.ladder(currentSlotChord), MOTIVIC.next(motPlan));
         } else if(MELODICPATTERNS.enabled()){
@@ -11462,6 +11501,10 @@ function runAnalysis() {
           // acota de forma independiente, de a octavas enteras.
           midi = clampMelodyRange(base + octAdd);
         }
+        var rIdx = 0;
+        for (var rq=0; rq<currentSlotChord.length; rq++){ if (mod12(currentSlotChord[rq]) === mod12(midi)){ rIdx = rq; break; } }
+        curMotif.push({ idx: rIdx, oct: midi - currentSlotChord[rIdx] });
+        motifI++;
         melodyEvents.push({midi: midi, startBeat: barStart+mOffset, durBeats:dur, bar:bar});
         lastMelodyMidi = midi;
         mOffset += dur;
@@ -11630,7 +11673,9 @@ function runAnalysis() {
     state.progression = built.progression;
     state.roles = built.roles;
     var htOn = HARMTEST.active(); // Harmony testing: Armonía de prueba en vez del motor libre (sin Triplets ni Sustain sobre la armonía)
-    var chordBuilt = htOn ? HARMTEST.build(rootChord, NUM_BARS) : TRIPLETS.applyChords(buildChordEventsRandom(rootChord, NUM_BARS)); // Triplets: mueve armonía + sus reataques ANTES de armar bajo/melodía
+    MOREREP.lastHarm = null; // Harmony testing no pasa por buildChordEventsRandom
+    var chordBuilt0 = htOn ? HARMTEST.build(rootChord, NUM_BARS) : TRIPLETS.applyChords(buildChordEventsRandom(rootChord, NUM_BARS)); // Triplets: mueve armonía + sus reataques ANTES de armar bajo/melodía
+    var chordBuilt = MOREREP.harmEnabled() ? MOREREP.applyHarmony(chordBuilt0, NUM_BARS) : chordBuilt0; // More repetition · Harmony
     state.chordEvents = htOn ? chordBuilt.events : SUSTAINPEDAL.apply(chordBuilt.events, chordBuilt.slotChords); // Sustain (How to play): 50% de los cambios de acorde enlazados con pedal
     state.slotChords = chordBuilt.slotChords;
     var bm = buildBassMelodyEventsRandom(state.progression, built.meta, chordBuilt.slotChords);
@@ -14106,12 +14151,51 @@ function runAnalysis() {
     }
     return events;
   }
+  // More repetition · Rhythm: los compases que repiten al anterior no suenan clonados —
+  // velocity apenas distinta y, de vez en cuando, falta un hi-hat suave (nunca bombo/caja).
+  function varyRepeatedBars(ev, flags){
+    var starts = []; for (var b=0; b<flags.length; b++) starts.push(RHYTHM.start(b));
+    function barOf(beat){ var q = 0; while (q+1 < starts.length && beat >= starts[q+1]-1e-6) q++; return q; }
+    for (var i=ev.length-1; i>=0; i--){
+      var e = ev[i];
+      if (!flags[barOf(e.startBeat)] || e.type === "kick") continue;
+      if (e.type === "hihat" && !e.open && e.vel == null && Math.random() < 0.08){ ev.splice(i, 1); continue; }
+      e.vel = Math.max(30, Math.min(127, (e.vel != null ? e.vel : 96) + mjRand(-8, 6)));
+    }
+  }
+  // More repetition · Rhythm: la batería repite en FRASES — un compás se toca 2, 3 o 4 veces
+  // seguidas (copia de los golpes del primero) y después cambia; el último compás de una frase
+  // larga a veces queda libre. Los compases copiados se varían apenas (varyRepeatedBars).
+  function repeatDrumPhrases(ev, numBars){
+    var starts = [], beats = [];
+    for (var b=0;b<numBars;b++){ starts.push(RHYTHM.start(b)); beats.push(RHYTHM.beats(b)); }
+    function barOf(t){ for (var i=numBars-1;i>=0;i--) if (t >= starts[i]-1e-6) return i; return 0; }
+    var evBar = []; for (var q=0;q<numBars;q++) evBar.push([]);
+    ev.forEach(function(e){ evBar[barOf(e.startBeat)].push(e); });
+    var flags = []; for (var f=0;f<numBars;f++) flags.push(false);
+    var i = 0;
+    while (i < numBars){
+      var L = mjPick([2, 2, 3, 4]);
+      for (var j=1; j<L && i+j<numBars; j++){
+        if (j === L-1 && L >= 3 && Math.random() < 0.5) continue;
+        if (Math.abs(beats[i+j]-beats[i]) > 1e-6) continue;
+        var d = starts[i+j] - starts[i];
+        evBar[i+j] = evBar[i].map(function(e){ var o = Object.assign({}, e); o.startBeat = e.startBeat + d; return o; });
+        flags[i+j] = true;
+      }
+      i += L;
+    }
+    var out = []; evBar.forEach(function(l){ l.forEach(function(e){ out.push(e); }); });
+    varyRepeatedBars(out, flags);
+    return out;
+  }
   function displacementEnabled(){
     var c = document.getElementById("consolaDisplacementChk");
     return !!(c && c.checked);
   }
   function buildDrumEvents(numBars){
     var ev = buildDrumEventsRaw(numBars);
+    if (MOREREP.rhyEnabled()) ev = repeatDrumPhrases(ev, numBars); // More repetition · Rhythm (vale para cualquier modo de batería)
     if (displacementEnabled()) addDisplacementLayer(ev);
     return DYNAMICS.applyDrums(ev); // Dynamics (0% = no-op)
   }
@@ -14143,7 +14227,6 @@ function runAnalysis() {
     }
     // MÁS REPETICIÓN: 40% extra de probabilidad, compás a compás, de
     // repetir el patrón de batería del compás anterior.
-    if (MOREREP.enabled()) styleByBar = MOREREP.applyRepetitionBias(styleByBar);
     var events = [];
     for(var bar=0; bar<numBars; bar++){
       var base = RHYTHM.start(bar);
@@ -15567,8 +15650,10 @@ function runAnalysis() {
       if(state.rootChord.length) regenerateConsola();
     });
   })();
-  document.getElementById("consolaMoreRepChk").addEventListener("change", function(){
-    if(state.rootChord.length) regenerateConsola();
+  ["consolaMoreRepHarmChk","consolaMoreRepMelChk","consolaMoreRepRhyChk"].forEach(function(id){
+    document.getElementById(id).addEventListener("change", function(){
+      if(state.rootChord.length) regenerateConsola();
+    });
   });
   ["consolaMelodicSpaceSlider", "consolaHarmonicSpaceSlider", "consolaRhythmSpaceSlider"].forEach(function(id){
     var el = document.getElementById(id);
@@ -16839,6 +16924,18 @@ function runAnalysis() {
     }
 
     var radioChkEl = document.getElementById("consolaRadioChk");
+    var radioBtnEl = document.getElementById("consolaRadioBtn");
+    function radioPaint(){
+      if(!radioBtnEl || !radioChkEl) return;
+      radioBtnEl.textContent = "\uD83D\uDCFB RadioMode: " + (radioChkEl.checked ? "ON" : "OFF");
+      radioBtnEl.setAttribute("aria-pressed", radioChkEl.checked ? "true" : "false");
+      radioBtnEl.classList.toggle("primary", radioChkEl.checked);
+    }
+    if(radioBtnEl && radioChkEl) radioBtnEl.addEventListener("click", function(){
+      radioChkEl.checked = !radioChkEl.checked;
+      radioChkEl.dispatchEvent(new Event("change", { bubbles: true }));
+      radioPaint();
+    });
     if(radioChkEl) radioChkEl.addEventListener("change", function(){ if(!radioChkEl.checked) window.__radioKind = null; });
     btn.addEventListener("click", function(){ runCreatura(false); });
     if(btnBella) btnBella.addEventListener("click", function(){ runCreatura(true); });
