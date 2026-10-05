@@ -11998,7 +11998,7 @@ function runAnalysis() {
        5) HUMANIZACIÓN: ±3, determinista por posición (todas las notas
           de un mismo acorde comparten tirada: no se desbalancea).
      El slider escala TODO (profundidad de la curva, acentos, roles).
-     A 100%: pp≈38 … ff≈116 sobre una base neutra de 96 (la que ya usaba
+     A 100%: pp≈10 … ff≈127 sobre una base neutra de 96 (la que ya usaba
      el motor). La batería respeta sus propios acentos/ghost notes: solo
      recibe curva + humanización como multiplicador de su velocity.
      Solo decide VOLUMEN/capa de velocity: nunca toca alturas ni ritmo.
@@ -12013,22 +12013,23 @@ function runAnalysis() {
     function amount(){
       var sl = document.getElementById("consolaDynamicsSlider");
       var v = sl ? parseFloat(sl.value) : 0;
-      return isFinite(v) ? Math.max(0, Math.min(100, v)) / 100 : 0;
+      // curva 0.75: ya a mitad del slider el contraste es marcado
+      return isFinite(v) ? Math.pow(Math.max(0, Math.min(100, v)) / 100, 0.75) : 0;
     }
     function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
     function clampI(i){ return Math.max(0, Math.min(LEVELS.length-1, i)); }
     function newPlan(){
       var n = Math.max(1, NUM_BARS|0), segs = [], b = 0, idx = pick([2,3,3,4]);
       while(b < n){
-        var len = pick([2,4,4]);
+        var len = pick([2,2,4]);
         if(len > n-b || n-b-len === 1) len = n-b; // sin restos de 1 compás
         var from = idx, to;
-        if(Math.random() < 0.4){ // terraza (a veces con escalón)
+        if(Math.random() < 0.22){ // terraza (a veces con escalón)
           if(Math.random() < 0.6) idx = from = clampI(from + (Math.random() < 0.5 ? -1 : 1));
           to = from;
         } else { // hairpin
           var up = Math.random() < (LEVELS.length - 1 - idx + 0.5) / LEVELS.length;
-          var step = Math.random() < 0.7 ? 1 : 2;
+          var step = Math.random() < 0.45 ? 1 : 2;
           to = clampI(from + (up ? step : -step));
           if(to === from) to = clampI(from + (up ? -1 : 1));
           idx = to;
@@ -12060,7 +12061,7 @@ function runAnalysis() {
     // velocity "absoluta" (sin velocity previa) o multiplicador (con previa)
     function velFor(role, ev, a, hasOrig){
       var bar = barOf(ev.startBeat), L = levelAt(ev.startBeat, bar);
-      var v = 96 + (L >= 0 ? L*24 : L*58) * a;
+      var v = 96 + (L >= 0 ? L*36.5 : L*86) * a; // radical: pp≈10 … ff≈127 a 100%
       if(role !== "drum" && !hasOrig){
         var pos = ev.startBeat - RHYTHM.start(bar);
         var acc = pos < 0.02 ? 6 : (Math.abs(pos - Math.round(pos)) < 0.02 ? 1 : -3);
@@ -14051,6 +14052,27 @@ function runAnalysis() {
           }, 400);
         })(S.chord.length, hdSm2, hdFb, sm2Active, (typeof sf2State !== "undefined" ? sf2State : null), (typeof currentSynth !== "undefined" ? currentSynth : null), P.harmony);
       }
+      // Diagnóstico "Canal mudo" (todos los canales; solo lee estado): compara el gain real
+      // de cada canal con lo que indica el mixer. Una vez por vuelta, ventana del beat 0.
+      if(!only && ctx === audioCtx && wFrom <= 0){
+        setTimeout(function(){
+          try{
+            var bad = [], snapG = {};
+            Object.keys(gains).forEach(function(tr){
+              var g = gains[tr]; if(!g || !g.gain) return;
+              var gv = g.gain.value, want_ = audioGain(tr);
+              snapG[tr] = { nodo: gv, mixer: want_ };
+              if(isNaN(gv) || (want_ > 0 && gv < 0.0001)) bad.push(tr + " (nodo " + gv + ", mixer " + want_ + ")");
+            });
+            window.__chanDiag = { canales:snapG, ctx:ctx.state, t:new Date().toISOString() };
+            if(bad.length){
+              console.warn("[Canal mudo] " + bad.join(", "), window.__chanDiag);
+              var stEl2 = document.getElementById("consolaPrerenderStatus");
+              if(stEl2) stEl2.textContent = "⚠ Canal mudo: " + bad.join(", ");
+            }
+          }catch(e){}
+        }, 400);
+      }
       // Doblar armonía: selector aparte (#chordDoublePresetSelect, "Mute"
       // por defecto) — repite exactamente las mismas notas y el mismo
       // ritmo de la Armonía, con un segundo timbre. En Mute no
@@ -14831,7 +14853,7 @@ function runAnalysis() {
     // estuviera sonando (release de un pad, del saxo, etc.) en vez de
     // esperar a que cada nota termine su propia envolvente.
     var FADE = 0.015;
-    [chordGainNode, bassGainNode, melodyGainNode, drumGainNode, melodyDoubleGainNode, comping2GainNode, bebopGainNode, melody2GainNode, reverbReturnGain, masterGain].forEach(function(g){
+    [chordGainNode, bassGainNode, melodyGainNode, drumGainNode, melodyDoubleGainNode, chordDoubleGainNode, comping2GainNode, bebopGainNode, melody2GainNode, reverbReturnGain, masterGain].forEach(function(g){
       if(!g) return;
       g.gain.cancelScheduledValues(now);
       g.gain.setValueAtTime(g.gain.value, now);
@@ -14858,6 +14880,10 @@ function runAnalysis() {
     if(comping2GainNode) comping2GainNode.gain.setValueAtTime(audioGain("comping2"), restoreAt);
     if(bebopGainNode) bebopGainNode.gain.setValueAtTime(audioGain("bebop"), restoreAt);
     if(melody2GainNode) melody2GainNode.gain.setValueAtTime(audioGain("melody2"), restoreAt);
+    if(chordDoubleGainNode) chordDoubleGainNode.gain.setValueAtTime(audioGain("chordDouble"), restoreAt);
+    // Refuerzo: pasada la restauración programada, se reescriben los niveles del mixer
+    // (igual que al mover un slider). Idempotente; evita canales que quedan en 0.
+    setTimeout(function(){ try{ applyAllMixGains(); }catch(e){} }, 80);
 
     document.getElementById("consolaPlayBtn").disabled = state.chordEvents.length===0;
     var regenPlayBtnEl2 = document.getElementById("consolaRegenPlayBtn");
