@@ -250,6 +250,9 @@
   .fret-note.fret-open.selected circle{opacity:1;fill:var(--gold);stroke:#1a1622;stroke-width:.8;}
   .fret-note.fret-open.selected text{opacity:1;fill:#1a1622;}
 
+  .clock-stage{position:relative;max-width:424px;margin:0 auto;padding:0 52px;box-sizing:border-box;}
+  button.chip.rot-side{position:absolute;top:50%;transform:translateY(-50%);z-index:2;font-size:9px;line-height:1.15;padding:5px 6px;border-radius:10px;text-align:center;}
+  button.chip.rot-left{left:0;} button.chip.rot-right{right:0;}
   .clock-actions{display:flex;justify-content:center;gap:10px;margin-top:22px;flex-wrap:wrap;}
   button.chip{
     font-family:'JetBrains Mono',monospace;
@@ -1062,6 +1065,9 @@
     overflow:hidden;pointer-events:none;opacity:.45;
   }
   #consolaBebopRollLabel{display:none;}
+  #consolaRollsLayer > *{transform:translateY(var(--roll-shift,0vh));}
+  #rollVScroll{position:fixed;left:3px;top:50%;transform:translateY(-50%);z-index:50;width:10px;height:110px;margin:0;padding:0;opacity:.55;cursor:pointer;writing-mode:vertical-lr;direction:rtl;accent-color:var(--gold);}
+  #rollVScroll:hover{opacity:1;}
   #consolaRollsLayer .consola-empty{display:none;}
   #consolaRollsLayer .consola-roll-wrap{overflow-x:hidden;border:none;border-radius:0;margin-bottom:0 !important;background-image:none;background-color:transparent;}
   .wrap{position:relative;z-index:1;}
@@ -1136,6 +1142,7 @@
   </div>
 </div>
 
+<input type="range" id="rollVScroll" min="-50" max="50" value="0" step="1" title="Mueve el piano roll general hacia arriba o abajo (doble click = centrar)" aria-label="Scroll vertical del piano roll">
 <!-- Piano rolls de SetMusicBox: fondo fijo a pantalla completa, siempre -->
     <div id="consolaRollsLayer">
     <div id="consolaBebopRollLabel" style="margin-bottom:6px;font-size:12px;font-weight:600;color:var(--ink-muted);padding-top:0;">🎷 bebopMelody — piano roll separado (aislado del principal)</div>
@@ -1160,6 +1167,9 @@
         <button class="toggle-btn active" id="tabClock" type="button">Reloj</button>
         <button class="toggle-btn" id="tabPiano" type="button">Piano</button>
       </div>
+      <div class="clock-stage">
+      <button class="chip rot-side rot-left" id="rotateMinusBtn" type="button" title="Rotate set −: rota los intervalos del set hacia atrás (modo anterior), manteniendo la primera nota. Ej. C E G = 4-3-5 → 3-5-4: C D# G#. Tras una vuelta completa regresa al set original.">Rotate<br>set −</button>
+      <button class="chip rot-side rot-right" id="rotatePlusBtn" type="button" title="Rotate set +: rota los intervalos del set hacia adelante (modo siguiente), manteniendo la primera nota. Ej. C E G = 4-3-5 → 3-5-4: C D# G#. Tras una vuelta completa regresa al set original.">Rotate<br>set +</button>
       <div class="clock-wrap" id="clockWrap">
         <svg class="dial" viewBox="0 0 300 300">
           <circle class="dial-ring" cx="150" cy="150" r="128"/>
@@ -1173,6 +1183,7 @@
         </svg>
         <div class="clock-center clock-center-static" id="pianoSummary"></div>
       </div>
+      </div>
       <div class="clock-actions">
         <div style="display:flex;flex-direction:column;align-items:stretch;gap:6px;">
           <button class="chip primary" id="creaturaBtn" type="button" title="Corre sola la secuencia: sortea Chromatism (2–40%), Chords (20–60%), Triplets (0–100%), Melodic/Harmonic/RythmSpace (0–100%) y Rapid runs (0–30%) → Random Fill (5 o 2 sets al azar; 2–3/2–4/2–5 notas, modo Mezcla) → Compose → tilda Mix time signatures → Detener → espera 2s → 🔀 Regenerar. Una sola pasada por click.">🪄 CreaturaRandom</button>
@@ -1180,8 +1191,6 @@
         </div>
         <button class="chip" id="composeBtn" type="button" title="Toca el segmento de 12 compases de SetMusicBox con las notas actuales">🎹 Compose</button>
         <button class="chip" id="clearBtn">Limpiar</button>
-        <button class="chip" id="rotateMinusBtn" type="button" title="Rotate set −: rota los intervalos del set hacia atrás (modo anterior), manteniendo la primera nota. Ej. C E G = 4-3-5 → 3-5-4: C D# G#. Tras una vuelta completa regresa al set original.">Rotate set −</button>
-        <button class="chip" id="rotatePlusBtn" type="button" title="Rotate set +: rota los intervalos del set hacia adelante (modo siguiente), manteniendo la primera nota. Ej. C E G = 4-3-5 → 3-5-4: C D# G#. Tras una vuelta completa regresa al set original.">Rotate set +</button>
         <button class="chip" id="multiSetsMemBtn2" type="button" disabled title="Mismo botón que To Memory de Multi Sets Input (copia acá para no tener que abrir esa tarjeta): guarda el set actual del reloj/piano en el próximo casillero libre y resetea el reloj. Entre paréntesis, cuántos sets van guardados.">To Memory (0/5)</button>
         <button class="chip toggle" id="sf2Btn" type="button" aria-pressed="false" title="Carga los SoundFonts default y clásicos (Soundfonts v2/*.sf2 + un .sf2 por instrumento) y reemplaza el sintetizador por muestras de instrumento y batería reales (incluye SetMusicBox). Un clic más para volver al sintetizador liviano.">🎼 Sonido real (SoundFont)</button>
         <input type="file" id="sf2LocalPicker" webkitdirectory directory multiple hidden aria-hidden="true">
@@ -1336,8 +1345,8 @@
       </div>
       <div class="consola-field" title="Dynamics: aplica dinámicas de volumen (pp, p, mp, mf, f, ff) a cada evento MIDI con lógica musical: crescendos/diminuendos y terrazas de 2-4 compases que vuelven al nivel inicial del loop, acento en el tiempo 1, melodía por encima del acompañamiento y nota aguda un poco más fuerte que la grave. 0% = como siempre (velocity original). 100% = pp a ff. Mover el slider no regenera: re-aplica sobre las mismas notas. Ver el resultado en Mini mixer > Velocity por track.">
         <label for="consolaDynamicsSlider">Dynamics</label>
-        <input type="range" id="consolaDynamicsSlider" min="0" max="100" value="0" step="1">
-        <span class="consola-val" id="consolaDynamicsVal">0%</span>
+        <input type="range" id="consolaDynamicsSlider" min="0" max="100" value="50" step="1">
+        <span class="consola-val" id="consolaDynamicsVal">50%</span>
       </div>
       <div class="consola-field consola-instruments">
         <label>Opciones del motor</label>
@@ -1616,8 +1625,8 @@
       </div>
       <div class="consola-field" style="background-color:transparent !important;">
         <label for="consolaVolume">Volume master</label>
-        <input type="range" id="consolaVolume" min="0" max="100" value="100" step="1">
-        <span class="consola-val" id="consolaVolumeVal">100%</span>
+        <input type="range" id="consolaVolume" min="0" max="100" value="80" step="1">
+        <span class="consola-val" id="consolaVolumeVal">80%</span>
       </div>
       </div>
       <div class="consola-inst-row" style="justify-content:center;margin-bottom:10px;">
@@ -6375,8 +6384,18 @@ function renderIntervalVectorTablet(r) {
 // intervalo, y disparar la búsqueda de sets con "To Memory". No
 // modifica la lectura en vivo: renderIntervalVectorTablet se pausa
 // sola (ver arriba) mientras editing===true.
+// Selectores de preset: las letras/números NO saltan a presets que empiecen con esa tecla (type-ahead nativo del <select>).
+document.addEventListener("keydown",function(e){
+  var t=e.target;
+  if(t && t.tagName==="SELECT" && t.classList.contains("mix-preset-select") && e.key.length===1 && e.key!==" " && !e.ctrlKey && !e.metaKey && !e.altKey) e.preventDefault();
+},true);
+(function(){ var r=document.getElementById("rollVScroll"); if(!r) return;
+  r.addEventListener("input",function(){ document.documentElement.style.setProperty("--roll-shift",(-r.value)+"vh"); });
+  r.addEventListener("dblclick",function(){ r.value=0; r.dispatchEvent(new Event("input")); });
+})();
 window.IVECTOR_EDIT = (function () {
   let editing = false;
+  let initializing = false;
   function cells() {
     const out = [];
     for (let i = 1; i <= 6; i++) {
@@ -6403,7 +6422,7 @@ window.IVECTOR_EDIT = (function () {
       // Arranque limpio de cada edición — no pisa el mensaje de un To
       // Memory recién hecho, porque ese caso llama a setEditing(false).
       status("");
-      cells()[0].count && cells()[0].count.focus();
+      if (!initializing) cells()[0].count && cells()[0].count.focus();
     }
   }
   function currentVector() {
@@ -6443,6 +6462,7 @@ window.IVECTOR_EDIT = (function () {
       if (c.cell) c.cell.classList.toggle("active", active);
     });
   });
+  initializing = true; setEditing(true); initializing = false; // Editar objetivo: activo por defecto
   return { isEditing, setEditing, currentVector, currentMask, status };
 })();
 (function () {
@@ -12199,7 +12219,7 @@ function runAnalysis() {
   })();
 
   // ---------- audio: sintetizador PAD (comparte el AudioContext del Oráculo) ----------
-  var currentVolume = 1.0;
+  var currentVolume = 0.8;
   var masterBoost = null, masterLimiter = null;
   function ensureMasterGain(ctx){
     if(!masterGain){
@@ -12275,7 +12295,7 @@ function runAnalysis() {
   // Defaults propios (no los de SF_DEFAULT_FILES): Bajo = "synthBass" (Bajo original sintetizado) y
   // Doblar melodía = "bassoon" (Fagot, Instruments.sf2). Doblar armonía = Nord Pad (SF_DEFAULT_FILES).
   // Las filas de "Bass default.sf2" y "Armonica.sf2" siguen en el catálogo, elegibles a mano.
-  var mixPresets = { harmony: sfDefaultKeyFor("harmony", "piano"), melody: sfDefaultKeyFor("melody", "flute"), melodyDouble: sfKeyForFile("Extra v2/bassoon.sf2", 0, 0), comping2: "epiano", chordDouble: sfDefaultKeyFor("chordDouble", "mute"), bass: "synthBass", drum: sfDefaultKeyFor("drum", "kit"), bebop: "sopranoSax", melody2: sfDefaultKeyFor("melody", "flute"), modalVamps: sfDefaultKeyFor("harmony", "piano") };
+  var mixPresets = { harmony: sfDefaultKeyFor("harmony", "piano"), melody: sfDefaultKeyFor("melody", "flute"), melodyDouble: sfKeyForFile("Extra v2/bassoon.sf2", 0, 0), comping2: "epiano", chordDouble: sfDefaultKeyFor("chordDouble", "mute"), bass: "synthBass", drum: sfDefaultKeyFor("drum", "kit"), bebop: "sopranoSax", melody2: "flute", modalVamps: sfDefaultKeyFor("harmony", "piano") };
   var chordGainNode = null, bassGainNode = null, melodyGainNode = null, drumGainNode = null, melodyDoubleGainNode = null, chordDoubleGainNode = null, comping2GainNode = null, bebopGainNode = null, melody2GainNode = null;
 
   // ---------- Reverb: bus de envío compartido ----------
