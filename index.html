@@ -1240,7 +1240,7 @@
         <input type="checkbox" id="consolaPrerenderChk">
         <label for="consolaPrerenderChk">⚡ Prerender</label>
         <span class="consola-val" id="consolaPrerenderStatus"></span>
-        <span class="radio-mode-wrap" style="margin-left:14px;white-space:nowrap;" title="RadioMode (botón ON/OFF): con ON, después de 🪄 CreaturaRandom o 🪄 CreaturaBella, cuando termina la vuelta engancha otra vuelta nueva del mismo tipo (sets y sliders nuevos), sin cortar el audio. Se corta con Detener o con OFF. Usa el modo en vivo (no Prerender).">
+        <span class="radio-mode-wrap" style="margin-left:14px;white-space:nowrap;" title="RadioMode (botón ON/OFF): al pasar a ON arranca solo (CreaturaRandom o CreaturaBella al azar); con ON, después de 🪄 CreaturaRandom o 🪄 CreaturaBella, cuando termina la vuelta engancha otra vuelta nueva, alternando al azar Random/Bella (sets y sliders nuevos), sin cortar el audio. Se corta con Detener o con OFF. Usa el modo en vivo (no Prerender).">
           <input type="checkbox" id="consolaRadioChk" hidden>
           <button type="button" class="chip" id="consolaRadioBtn" aria-pressed="false">&#128251; RadioMode: OFF</button>
         </span>
@@ -1365,6 +1365,12 @@
           <span class="consola-inst-toggle" title="Slider 0–100% (default 0%): probabilidad por compás de que la melodía tenga notas rápidas (semicorcheas o fusas, al azar). 70% de esas veces: 1 a 3 grupitos de 2, 4 o 6 notas cortas repartidos al azar dentro de la melodía del compás. 30%: una CORRIDA en bloque de 1 compás entero o medio compás. Las notas de la corrida suben/bajan por grados conjuntos usando SOLO las notas del acorde vigente en cada instante (nunca sale del set), sin silencios. El resto del compás (si la corrida es de medio compás) sigue con su ritmo de siempre. Copia independiente de Rapid runs: solo modifica la melodía y Melody n2. No afecta a Simplicity. 0% = nunca."><label for="consolaRapidRuns2Slider">&#9889; Rapid runs v2</label><input type="range" class="consola-mini-range" id="consolaRapidRuns2Slider" min="0" max="100" value="0" step="1"><span class="consola-val" id="consolaRapidRuns2Val">0%</span></span>
         </div>
       </div>
+      <div class="consola-field consola-instruments" title="Pedal de sustain de la Armonía (motor libre y Simplicity): en cada cambio de acorde se tira un dado al 50%. Si sale, el pedal se pisa antes de que termine el acorde y se suelta después del ataque del próximo — las notas del acorde que termina siguen sonando por encima del ataque siguiente y se cortan un instante después, enlazando un acorde con otro (legato). Una nota que se repite igual en el acorde siguiente no se estira (se vuelve a atacar, como en un piano real). No cambia QUÉ notas suenan, solo cuánto duran. Prendido por defecto.">
+        <label>Armonía</label>
+        <div class="consola-inst-row">
+          <span class="consola-inst-toggle" title="Sustain: 50% de los cambios de acorde quedan enlazados con pedal (el acorde saliente se sostiene hasta un instante después del ataque del entrante)."><input type="checkbox" id="consolaSustainChk" checked><label for="consolaSustainChk">&#127929; Sustain</label></span>
+        </div>
+      </div>
       <div class="consola-field consola-instruments consola-stack" title="Bass: opciones del bajo. Bass function = de dónde saca sus notas el bajo en el modo libre (Current set / Superset, excluyentes; no afecta a ↺ Simplicity, que usa su propio bajo fijo).">
         <div class="consola-subfield-head">
           <label>Bass</label>
@@ -1378,12 +1384,9 @@
           <span class="consola-inst-toggle" title="Superset: en cada ataque del bajo, 50% de las veces toca una nota del acorde en curso y el otro 50% una nota de AFUERA del set de ese reataque (una clase de tono que no pertenece al set transportado). Es el único modo del motor que sale del set elegido."><input type="checkbox" id="consolaBassFnSupersetChk"><label for="consolaBassFnSupersetChk">Superset</label></span>
         </div>
         </div>
+        <div class="consola-inst-row" style="margin-top:4px;">
+          <span class="consola-inst-toggle" title="Patterns (OFF por defecto): el bajo toca un patrón rítmico repetitivo con las mismas notas, como un ostinato. Cada tramo de 4 compases sortea una célula rítmica (corcheas, 3+3+2, síncopas...) que se repite idéntica compás tras compás, y una figura de 1 a 4 grados del acorde en curso (a veces UNA sola nota: ostinato muy repetitivo). Las notas siguen al acorde vigente pero la figura no cambia. Con Patterns tildado, Bass function se ignora (solo toca notas del acorde en curso)."><input type="checkbox" id="consolaBassPatternsChk"><label for="consolaBassPatternsChk">Patterns</label></span>
         </div>
-      </div>
-      <div class="consola-field consola-instruments" title="Pedal de sustain de la Armonía (motor libre y Simplicity): en cada cambio de acorde se tira un dado al 50%. Si sale, el pedal se pisa antes de que termine el acorde y se suelta después del ataque del próximo — las notas del acorde que termina siguen sonando por encima del ataque siguiente y se cortan un instante después, enlazando un acorde con otro (legato). Una nota que se repite igual en el acorde siguiente no se estira (se vuelve a atacar, como en un piano real). No cambia QUÉ notas suenan, solo cuánto duran. Prendido por defecto.">
-        <label>Armonía</label>
-        <div class="consola-inst-row">
-          <span class="consola-inst-toggle" title="Sustain: 50% de los cambios de acorde quedan enlazados con pedal (el acorde saliente se sostiene hasta un instante después del ataque del entrante)."><input type="checkbox" id="consolaSustainChk" checked><label for="consolaSustainChk">&#127929; Sustain</label></span>
         </div>
       </div>
       <div class="consola-field consola-instruments">
@@ -9473,18 +9476,20 @@ function runAnalysis() {
       var n = sl ? parseInt(sl.value, 10) : 4;
       return (n >= 3 && n <= 8) ? n : 4;
     }
-    function randomSet(maxN){
-      var k = randomInt(2, maxN);
+    // bigBias (solo Creaturas): 60% de los sets salen de 5..maxN notas, el resto de 2..4;
+    // sin esto el uniforme 2..maxN casi nunca daba sets de 5-8 notas.
+    function randomSet(maxN, bigBias){
+      var k = (bigBias && maxN >= 5 && Math.random() < 0.6) ? randomInt(5, maxN) : randomInt(2, bigBias ? Math.min(4, maxN) : maxN);
       var pool = [0,1,2,3,4,5,6,7,8,9,10,11];
       for(var i = pool.length-1; i > 0; i--){ var j = randomInt(0, i); var t = pool[i]; pool[i] = pool[j]; pool[j] = t; }
       return pool.slice(0, k).sort(function(a,b){ return a-b; });
     }
-    function randomFill(count){
+    function randomFill(count, bigBias){
       var cnt = (typeof count === "number" && count >= 1 && count <= MAX_SLOTS) ? count : MAX_SLOTS; // el click pasa un Event: se ignora y llena los 5
       var maxN = randomMaxNotes();
       var made = [], seen = {};
       while(made.length < cnt){ // con maxN >= 3 hay 66+ sets posibles: no hay riesgo de quedarse sin distintos
-        var pcs = randomSet(maxN), key = pcs.join(",");
+        var pcs = randomSet(maxN, bigBias === true), key = pcs.join(",");
         if(seen[key]) continue;
         seen[key] = true;
         made.push(pcs);
@@ -9500,12 +9505,15 @@ function runAnalysis() {
     // libro (ver SET_HIERARCHY_DATA) y con más probabilidad cuanto mayor jerarquía.
     // Cardinalidad al azar entre 3 y el máximo del slider (el índice no tiene sets de 2
     // notas); cada clase sale con una tónica al azar; sin repetir clase entre casilleros.
-    function randomFillBella(count){
+    function randomFillBella(count, bigBias){
       var cnt = (typeof count === "number" && count >= 1 && count <= MAX_SLOTS) ? count : MAX_SLOTS;
       var maxN = randomMaxNotes();
       var made = [], used = {}, guard = 0;
       while(made.length < cnt && guard++ < 500){
-        var pick = pickSetByHierarchy(randomInt(3, maxN), used);
+        var bellaCard = (bigBias === true && maxN >= 5)
+          ? (Math.random() < 0.6 ? randomInt(5, maxN) : randomInt(3, 4))
+          : randomInt(3, maxN);
+        var pick = pickSetByHierarchy(bellaCard, used);
         if(!pick) continue;
         used[pick.code] = true;
         made.push(setHierarchyPcs(pick.code));
@@ -11290,6 +11298,66 @@ function runAnalysis() {
   // escuchando en la armonía en ese preciso momento, y sigue siendo, por
   // construcción, una nota del mismo set de Forte/Solomon (cada voicing
   // de slotChords ya es un subset transportado del set original).
+  /* ================================================================
+     MÓDULO BASS PATTERNS — checkbox #consolaBassPatternsChk (OFF por
+     defecto). Bajo tipo ostinato: cada tramo de PAT_SEG compases sortea
+     un PLAN = célula rítmica corta (motif, en pulsos) + figura de
+     grados (noteIdx, índices dentro del acorde en curso ordenado grave
+     a agudo). El motif se repite hasta llenar el compás y la figura de
+     grados reinicia en cada compás, así todos los compases del tramo
+     suenan idénticos (rítmica y figura); las alturas siguen al acorde
+     vigente en cada ataque. ~35% de los planes son de UNA sola nota
+     (ostinato muy repetitivo). Solo notas del acorde en curso.
+     ================================================================ */
+  var BASSPATTERNS = (function(){
+    var PAT_SEG = 4;
+    var MOTIFS = [
+      [1], [0.5], [0.5,0.5,1], [1,0.5,0.5], [1.5,0.5], [0.75,0.75,0.5],
+      [0.5,1,0.5], [0.75,0.25], [1.5,1.5,1], [1,1,0.5,0.5]
+    ];
+    function enabled(){
+      var c = document.getElementById("consolaBassPatternsChk");
+      return !!(c && c.checked);
+    }
+    function newPlan(){
+      var motif = MOTIFS[randomInt(0, MOTIFS.length-1)];
+      var idx;
+      if (Math.random() < 0.35){
+        idx = [0]; // una sola nota: ostinato muy repetitivo
+      } else {
+        var b = randomInt(1, 3), len = randomInt(2, 4);
+        idx = [0];
+        for (var i=1; i<len; i++) idx.push(Math.random() < 0.5 ? 0 : b);
+        if (idx.every(function(v){ return v === 0; })) idx[len-1] = b; // que haya al menos 2 notas distintas
+      }
+      return {motif: motif, idx: idx};
+    }
+    function cellFor(plan, beats){
+      var out = [], sum = 0, i = 0;
+      while (sum < beats - 1e-9){
+        var d = plan.motif[i % plan.motif.length]; i++;
+        if (sum + d > beats + 1e-9) d = beats - sum;
+        if (d < 0.25 - 1e-9 && out.length) out[out.length-1] += d; else out.push(d);
+        sum += d;
+      }
+      return out;
+    }
+    // Devuelve {cells, idx}: cells[bar] = duraciones, idx[bar][k] = grado de la nota k.
+    // Compases de respiro (HarmonicSpace): una redonda, grado 0, como el resto del motor.
+    function apply(numBars, isPeaceBar){
+      var cells = [], idx = [], plan = null;
+      for (var bar=0; bar<numBars; bar++){
+        if (bar % PAT_SEG === 0) plan = newPlan();
+        if (isPeaceBar(bar)){ cells.push([4]); idx.push([0]); continue; }
+        var c = cellFor(plan, RHYTHM.beats(bar));
+        cells.push(c);
+        idx.push(c.map(function(_, k){ return plan.idx[k % plan.idx.length]; }));
+      }
+      return {cells: cells, idx: idx};
+    }
+    return {enabled: enabled, apply: apply};
+  })();
+
   function buildBassMelodyEventsRandom(progression, meta, slotChords){
     var numBars = progression.length;
     var bassCells = buildBassRhythmRandom(numBars);
@@ -11316,6 +11384,12 @@ function runAnalysis() {
     bassCells = bassCells.map(function(cell, bar){
       return HARMONICSPACE.isPeaceBar(bar) ? [4] : cell;
     });
+    // Bass Patterns (checkbox, OFF por defecto): ostinato rítmico + figura fija de grados; pisa el ritmo anterior del bajo.
+    var bassPatIdx = null;
+    if (BASSPATTERNS.enabled()){
+      var bpa = BASSPATTERNS.apply(numBars, function(b){ return HARMONICSPACE.isPeaceBar(b); });
+      bassCells = bpa.cells; bassPatIdx = bpa.idx;
+    }
     // Rapid runs: al final de la cadena de la melodía (pisa pool/
     // MoreRep/acople en los compases sorteados). runMasks[bar][k] = true
     // si la nota k de ese compás pertenece a una corrida.
@@ -11363,8 +11437,16 @@ function runAnalysis() {
       var barStart = RHYTHM.start(bar);
 
       var bOffset = 0;
-      bassCells[bar].forEach(function(dur){
+      bassCells[bar].forEach(function(dur, bk){
         var pick;
+        if (bassPatIdx){
+          // Bass Patterns: grado fijo de la figura sobre el acorde en curso (ordenado grave a agudo)
+          var patChord = currentChordAt(slotChords[bar], bOffset).slice().sort(function(a,b){return a-b;});
+          pick = patChord[bassPatIdx[bar][bk] % patChord.length];
+          bassEvents.push({midi: pick-24, startBeat:barStart+bOffset, durBeats:dur, bar:bar});
+          bOffset += dur;
+          return;
+        }
         if (supersetMode){
           pick = bassSupersetPick(currentSlotAt(slotChords[bar], bOffset));
         } else {
@@ -15418,6 +15500,9 @@ function runAnalysis() {
       onBassFnChange();
     });
   })();
+  document.getElementById("consolaBassPatternsChk").addEventListener("change", function(){
+    if(state.rootChord.length) regenerateConsola();
+  });
   document.getElementById("consolaSubsetsChk").addEventListener("change", function(){
     subsetVarietyEnabled = this.checked;
     if(state.rootChord.length) regenerateConsola();
@@ -16845,6 +16930,41 @@ function runAnalysis() {
       sl.dispatchEvent(new Event("input", { bubbles: true }));
     }
 
+    // Al apretar CreaturaRandom/Bella (no en las vueltas de RadioMode): tempo al azar
+    // (60-140 BPM) + preset de Armonía y de Melodía sorteados entre una lista corta.
+    // null = dejar el preset actual. Una opción que no esté cargada en el selector
+    // (p.ej. Warm Pad HIFI sin HIFI) se descarta del sorteo.
+    function setSelectIfPresent(id, value){
+      var el = document.getElementById(id);
+      if(!el || value == null) return false;
+      var ok = Array.prototype.some.call(el.options, function(o){ return o.value === value; });
+      if(!ok) return false;
+      el.value = value;
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+      return true;
+    }
+    function sfKey(file, bank, program){
+      return (typeof sfKeyForFile === "function") ? sfKeyForFile(file, bank, program) : null;
+    }
+    function randomizeVoicesAndTempo(){
+      randomizeSlider("consolaTempo", 60, 140);
+      var harm = [null, "epiano", "pad", "celesta"];
+      var mel = [null,
+        sfKey("Extra v2/PSR-SX700_GM_Soundbank_-_Part_2 - 000-114 Steel Drums.sf2", 0, 114),
+        sfKey("Extra v2/Keys/PSR-SX700_GM_Soundbank_-_Part_2 - 000-023 Tango Accordion.sf2", 0, 23)];
+      function pick(id, list){
+        var el = document.getElementById(id);
+        if(!el) return;
+        var avail = list.filter(function(v){
+          return v === null || Array.prototype.some.call(el.options, function(o){ return o.value === v; });
+        });
+        var v = avail[Math.floor(Math.random() * avail.length)];
+        if(v !== null) setSelectIfPresent(id, v);
+      }
+      pick("harmonyPresetSelect", harm);
+      pick("melodyPresetSelect", mel);
+    }
+
     // bella=false: CreaturaRandom (sets al azar). bella=true: CreaturaBella (misma
     // secuencia, pero los sets salen del índice del libro ponderados por jerarquía).
     // Pasos 0 y 1 (sliders al azar + Random Fill); compartidos con RadioMode.
@@ -16863,7 +16983,7 @@ function runAnalysis() {
         // 1) Random Fill: rango de notas al azar entre las 3 opciones
         // pedidas (2–3 / 2–4 / 2–5), y modo Mezcla forzado aunque el
         // usuario haya dejado tildado Por compás o Por reataque.
-        var maxOptions = [3, 4, 5];
+        var maxOptions = [5, 6, 7, 8]; // antes 3/4/5: casi nunca salían sets de 5-8 notas
         var maxN = maxOptions[Math.floor(Math.random() * maxOptions.length)];
         var maxSlider = document.getElementById("multiSetsRandomMax");
         if(maxSlider){
@@ -16874,7 +16994,7 @@ function runAnalysis() {
         // Cantidad de sets al azar: 5 o 2 (multi set).
         var nSets = Math.random() < 0.5 ? 5 : 2;
         var fillFn = bella ? window.__multiSetsBellaFillCount : window.__multiSetsRandomFillCount;
-        if(typeof fillFn === "function") fillFn(nSets);
+        if(typeof fillFn === "function") fillFn(nSets, true);
         else if(!bella) clickIfEnabled("multiSetsRandomFillBtn");
     }
 
@@ -16883,7 +17003,8 @@ function runAnalysis() {
     window.__radioNext = function(kind){
       window.__radioBusy = true;
       try{
-        randomizeAndFill(kind === "bella");
+        // RadioMode alterna: cada vuelta nueva sortea Random o Bella (50/50).
+        randomizeAndFill(Math.random() < 0.5);
         setChecked("consolaMixTimeSigChk", true);
         if(typeof window.consolaRegenerate === "function") window.consolaRegenerate();
       } finally { window.__radioBusy = false; }
@@ -16896,6 +17017,7 @@ function runAnalysis() {
       if(btnBella) btnBella.disabled = true;
       try {
         randomizeAndFill(bella);
+        randomizeVoicesAndTempo();
 
         // 2) Compose: arma los 12 compases desde esos 5 o 2 sets y arranca
         // la reproducción (mismo botón 🎲 Compose de Multi Sets Input).
@@ -16935,6 +17057,8 @@ function runAnalysis() {
       radioChkEl.checked = !radioChkEl.checked;
       radioChkEl.dispatchEvent(new Event("change", { bubbles: true }));
       radioPaint();
+      // RadioMode ON: arranca solo (Random o Bella al azar); después engancha vueltas alternando.
+      if(radioChkEl.checked) runCreatura(Math.random() < 0.5);
     });
     if(radioChkEl) radioChkEl.addEventListener("change", function(){ if(!radioChkEl.checked) window.__radioKind = null; });
     btn.addEventListener("click", function(){ runCreatura(false); });
