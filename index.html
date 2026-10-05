@@ -1313,11 +1313,6 @@
         <input type="range" id="consolaNormalSlider" min="0" max="100" value="0" step="1" disabled>
         <span class="consola-val" id="consolaNormalVal">0%</span>
       </div>
-      <div class="consola-field" title="Silencios de la melodía principal. 0% = la melodía suena siempre (como antes). 100% = suena solo ~10% del tiempo. En el medio, proporcional. Los silencios son de 1 a 4 compases y los más largos caen al principio. Default 25%.">
-        <label for="consolaMelSilSlider">Melody silences</label>
-        <input type="range" id="consolaMelSilSlider" min="0" max="100" value="25" step="1">
-        <span class="consola-val" id="consolaMelSilVal">25%</span>
-      </div>
       <div class="consola-field" title="Controla, en conjunto, la transposición cromática al azar por compás y el achique automático del acorde (hasta 2 notas menos) que el motor libre aplicaba siempre a máxima intensidad. 0% = notas literales elegidas, sin transportar, set completo siempre. 100% = comportamiento de siempre.">
         <label for="consolaChromaSlider">Chromatism</label>
         <input type="range" id="consolaChromaSlider" min="0" max="100" value="15" step="1">
@@ -1361,6 +1356,7 @@
           <span class="consola-inst-toggle" title="Cada compás de armonía, bajo, melodía y batería tiene un 40% extra de probabilidad de repetir exactamente el patrón del compás anterior; además, bajo y melodía tienen un 40% de probabilidad por compás de acoplar sus ataques a los de la armonía en vez de llevar su propio ritmo."><input type="checkbox" id="consolaMoreRepChk"><label for="consolaMoreRepChk">&#128257; More repetition</label></span>
           <span class="consola-inst-toggle" title="En cada reataque de armonía se sortean varias combinaciones válidas de subconjunto/transposición/inversión dentro del MISMO acorde/grado elegido (nunca de otro) y se elige la que comparte más notas con el acorde anterior — el doble de notas comunes en promedio que al azar puro, con la misma restricción de conjunto de siempre."><input type="checkbox" id="consolaCommonNotesChk"><label for="consolaCommonNotesChk">&#128279; Notas comunes</label></span>
           <span class="consola-inst-toggle" title="Slider 0–100% (default 5%): probabilidad por compás de que la melodía tenga notas rápidas (semicorcheas o fusas, al azar). 70% de esas veces: 1 a 3 grupitos de 2, 4 o 6 notas cortas repartidos al azar dentro de la melodía del compás. 30%: una CORRIDA en bloque de 1 compás entero o medio compás. Las notas de la corrida suben/bajan por grados conjuntos usando SOLO las notas del acorde vigente en cada instante (nunca sale del set), sin silencios. El resto del compás (si la corrida es de medio compás) sigue con su ritmo de siempre. No afecta a Simplicity. 0% = nunca."><label for="consolaRapidRunsSlider">&#9889; Rapid runs</label><input type="range" class="consola-mini-range" id="consolaRapidRunsSlider" min="0" max="100" value="5" step="1"><span class="consola-val" id="consolaRapidRunsVal">5%</span></span>
+          <span class="consola-inst-toggle" title="Slider 0–100% (default 0%): probabilidad por compás de que la melodía tenga notas rápidas (semicorcheas o fusas, al azar). 70% de esas veces: 1 a 3 grupitos de 2, 4 o 6 notas cortas repartidos al azar dentro de la melodía del compás. 30%: una CORRIDA en bloque de 1 compás entero o medio compás. Las notas de la corrida suben/bajan por grados conjuntos usando SOLO las notas del acorde vigente en cada instante (nunca sale del set), sin silencios. El resto del compás (si la corrida es de medio compás) sigue con su ritmo de siempre. Copia independiente de Rapid runs: solo modifica la melodía y Melody n2. No afecta a Simplicity. 0% = nunca."><label for="consolaRapidRuns2Slider">&#9889; Rapid runs v2</label><input type="range" class="consola-mini-range" id="consolaRapidRuns2Slider" min="0" max="100" value="0" step="1"><span class="consola-val" id="consolaRapidRuns2Val">0%</span></span>
         </div>
       </div>
       <div class="consola-field consola-instruments consola-stack" title="Bass: opciones del bajo. Bass function = de dónde saca sus notas el bajo en el modo libre (Current set / Superset, excluyentes; no afecta a ↺ Simplicity, que usa su propio bajo fijo).">
@@ -1484,6 +1480,9 @@
         </div>
         <div class="collapsible-content collapsed" id="melodyBody">
         <div class="consola-inst-row">
+          <span class="consola-inst-toggle" title="Silencios de la melodía principal. 0% = la melodía suena siempre (como antes). 100% = suena solo ~10% del tiempo. En el medio, proporcional. Los silencios son de 1 a 4 compases y los más largos caen al principio. Default 25%."><label for="consolaMelSilSlider">Melody silences</label><input type="range" class="consola-mini-range" id="consolaMelSilSlider" min="0" max="100" value="25" step="1"><span class="consola-val" id="consolaMelSilVal">25%</span></span>
+        </div>
+        <div class="consola-inst-row">
           <span class="consola-inst-toggle" title="Slider 0–100% (default 30%, antes 'AddLittlePeace'): probabilidad por variación de reservar 4 compases seguidos (elegidos al azar dentro de los 12) como un 'respiro' de la MELODÍA: en esos 4 compases, la melodía queda en una sola nota sostenida por compás (redonda) en vez de su ritmo de siempre — pisa Rapid runs si coincide en el mismo compás. El resto del segmento sigue igual. No afecta a Simplicity. 0% = nunca."><label for="consolaMelodicSpaceSlider">&#128330;&#65039; MelodicSpace</label><input type="range" class="consola-mini-range" id="consolaMelodicSpaceSlider" min="0" max="100" value="30" step="1"><span class="consola-val" id="consolaMelodicSpaceVal">30%</span></span>
         </div>
         <div class="consola-inst-row">
@@ -1492,9 +1491,9 @@
       <div class="consola-field consola-instruments" title="Ornaments: adornos sobre la melodía principal (~30% de las notas con figura lo bastante larga), en figuras muy rápidas (1/8 de tiempo) tomadas de la propia nota — nunca se superponen ni cambian el ritmo general. La vecina del adorno es la nota más cercana DENTRO del acorde vigente (hasta 2 semitonos arriba/abajo); si no hay, semitono cromático (única excepción a &quot;nunca una nota ajena al set&quot;, como Scales). La nota principal siempre es del acorde. Doblar melodía hereda los adornos; moreComping sigue a las notas principales. No aplica a Simplicity. Todas destildadas = melodía de siempre.">
         <div class="consola-subfield-head">
           <label>Ornaments</label>
-          <button type="button" class="subfield-toggle" aria-expanded="false" aria-controls="ornBody" onclick="toggleModule(this)" title="Mostrar/ocultar Ornaments"></button>
+          <button type="button" class="subfield-toggle" aria-expanded="true" aria-controls="ornBody" onclick="toggleModule(this)" title="Mostrar/ocultar Ornaments"></button>
         </div>
-        <div class="collapsible-content collapsed" id="ornBody">
+        <div class="collapsible-content expanded" id="ornBody">
         <div class="consola-inst-row">
           <span class="consola-inst-toggle" title="Tilda o destilda todas las casillas de Ornaments."><input type="checkbox" id="consolaORN_all"><label for="consolaORN_all">all</label></span>
           <span class="consola-inst-toggle" title="Nota de gracia: una vecina muy corta justo antes de la nota principal (necesita figura de 1/2 tiempo o más)."><input type="checkbox" id="consolaORN_grace" checked><label for="consolaORN_grace">grace</label></span>
@@ -1507,9 +1506,9 @@
       <div class="consola-field consola-instruments" title="Línea melódica independiente (bebopMelody) y sus modos — agrupados y contraídos por defecto, mismo lugar de siempre.">
         <div class="consola-subfield-head">
           <label>bebopMelody</label>
-          <button type="button" class="subfield-toggle" aria-expanded="false" aria-controls="bebopModeBody" onclick="toggleModule(this)" title="Mostrar/ocultar bebopMelody y sus modos"></button>
+          <button type="button" class="subfield-toggle" aria-expanded="true" aria-controls="bebopModeBody" onclick="toggleModule(this)" title="Mostrar/ocultar bebopMelody y sus modos"></button>
         </div>
-        <div class="collapsible-content collapsed" id="bebopModeBody">
+        <div class="collapsible-content expanded" id="bebopModeBody">
         <div class="consola-inst-row" style="align-items:center;">
         <button type="button" class="chip" id="consolaBebopBtn" title="Agrega una SEXTA pista MIDI: una línea melódica INDEPENDIENTE (no dobla a la melodía principal, tiene su propia nota en cada instante) en corcheas fijas, en el modo (o modos) que elijas con los checkboxes Arpeggios/Scales de al lado. Instrumento elegible abajo en el mini mixer (Sax soprano por defecto). Apagada por defecto — tiene su propio volumen en el mini mixer (🎷 Bebop, en 0% por defecto).">bebopMelody</button>
         <span class="consola-bebop-mode" style="display:inline-flex;flex-wrap:wrap;align-items:center;gap:10px;margin-left:2px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.04em;color:var(--ink-muted);">
@@ -8224,11 +8223,11 @@ function runAnalysis() {
      del acorde vigente dentro del registro de melodía (solo clases de
      tono del acorde en curso → el set nunca se traiciona).
      ================================================================ */
-  var RAPIDRUNS = (function(){
+  function makeRapidRuns(sliderId, defaultPct){
     function prob(){
-      var sl = document.getElementById("consolaRapidRunsSlider");
-      var v = sl ? parseFloat(sl.value) : 5;
-      return isFinite(v) ? Math.max(0, Math.min(100, v)) / 100 : 0.05;
+      var sl = document.getElementById(sliderId);
+      var v = sl ? parseFloat(sl.value) : defaultPct;
+      return isFinite(v) ? Math.max(0, Math.min(100, v)) / 100 : defaultPct/100;
     }
     function onsetsOf(cell){
       var out = [], t = 0;
@@ -8424,7 +8423,11 @@ function runAnalysis() {
       return midi;
     }
     return { prob: prob, apply: apply, startRun: startRun, nextPitch: nextPitch };
-  })();
+  }
+  var RAPIDRUNS = makeRapidRuns("consolaRapidRunsSlider", 5);
+  // Rapid runs v2 (#consolaRapidRuns2Slider, default 0%): copia independiente de Rapid runs. Solo toca
+  // las células de la MELODÍA (principal y Melody n2: comparten el mismo armador); no el bajo ni bebop.
+  var RAPIDRUNS2 = makeRapidRuns("consolaRapidRuns2Slider", 0);
 
   /* ================================================================
      MÓDULO TRIPLETS — slider #consolaTripletsSlider (How to play, 0–100%,
@@ -11286,6 +11289,16 @@ function runAnalysis() {
     var rr = RAPIDRUNS.apply(melodyCells);
     melodyCells = rr.cells;
     var runMasks = rr.masks;
+    // Rapid runs v2: segundo sorteo independiente, solo en compases que v1 NO convirtió en corrida.
+    var runMod = melodyCells.map(function(){ return 1; });
+    var rr2 = RAPIDRUNS2.apply(melodyCells);
+    melodyCells = melodyCells.map(function(cell, bar){
+      var v1Run = runMasks[bar].some(function(x){ return x; });
+      var v2Run = rr2.masks[bar].some(function(x){ return x; });
+      if(v1Run || !v2Run) return cell;
+      runMasks[bar] = rr2.masks[bar]; runMod[bar] = 2;
+      return rr2.cells[bar];
+    });
     // MelodicSpace: en su propio tramo de respiro (sorteo independiente
     // del de HarmonicSpace), la melodía también queda en redondas — una
     // sola nota sostenida por compás, pisa cualquier ritmo anterior
@@ -11372,8 +11385,9 @@ function runAnalysis() {
         var isRun = !!runMasks[bar][k];
         if(isRun){
           // Rapid runs: sin silencios, paso a paso por las notas del acorde vigente
-          if(k === 0 || !runMasks[bar][k-1]) RAPIDRUNS.startRun(lastMelodyMidi);
-          var runMidi = RAPIDRUNS.nextPitch(currentChordAt(slotChords[bar], mOffset));
+          var RR = runMod[bar] === 2 ? RAPIDRUNS2 : RAPIDRUNS;
+          if(k === 0 || !runMasks[bar][k-1]) RR.startRun(lastMelodyMidi);
+          var runMidi = RR.nextPitch(currentChordAt(slotChords[bar], mOffset));
           melodyEvents.push({midi: runMidi, startBeat: barStart+mOffset, durBeats:dur, bar:bar});
           lastMelodyMidi = runMidi;
           mOffset += dur;
@@ -15482,6 +15496,12 @@ function runAnalysis() {
     document.getElementById("consolaRapidRunsVal").textContent = this.value + "%";
   });
   document.getElementById("consolaRapidRunsSlider").addEventListener("change", function(){
+    if(state.rootChord.length) regenerateConsola();
+  });
+  document.getElementById("consolaRapidRuns2Slider").addEventListener("input", function(){
+    document.getElementById("consolaRapidRuns2Val").textContent = this.value + "%";
+  });
+  document.getElementById("consolaRapidRuns2Slider").addEventListener("change", function(){
     if(state.rootChord.length) regenerateConsola();
   });
   document.getElementById("consolaDynamicsSlider").addEventListener("input", function(){
