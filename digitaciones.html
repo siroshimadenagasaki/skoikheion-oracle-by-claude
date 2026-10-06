@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
-<title>Digitaciones de Guitarra</title>
+<title>Guitar Fingerings</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
@@ -473,18 +473,18 @@
 
 <div class="wrap">
   <header>
-    <span class="eyebrow">Stoikheion · módulo de digitaciones (beta)</span>
-    <h1>Digitaciones de Guitarra</h1>
-    <p>Elegí las notas de un acorde (3 a 6) y un bajo opcional. Calcula qué digitaciones son físicamente tocables en una ventana de 6 trastes, separadas en acordes de cuerdas contiguas y acordes abiertos.</p>
+    <span class="eyebrow">Stoikheion · fingerings module (beta)</span>
+    <h1>Guitar Fingerings</h1>
+    <p>Pick the notes of a chord (3 to 6) and an optional bass note. It calculates which fingerings are physically playable within a 6-fret window, split into adjacent-string chords and open chords.</p>
   </header>
 
   <div class="layout">
     <div>
       <div class="panel">
-        <h2>Notas del acorde</h2>
-        <p class="hint">Tocá entre 3 y 6 notas en el reloj o el piano. El número debajo de cada una es su pitch class (0–11).</p>
+        <h2>Chord notes</h2>
+        <p class="hint">Pick between 3 and 6 notes on the clock or the piano. The number under each one is its pitch class (0–11).</p>
         <div class="input-toggle">
-          <button class="toggle-btn active" id="tabClock" type="button">Reloj</button>
+          <button class="toggle-btn active" id="tabClock" type="button">Clock</button>
           <button class="toggle-btn" id="tabPiano" type="button">Piano</button>
         </div>
         <div class="clock-wrap" id="clockWrap">
@@ -498,45 +498,45 @@
             <g id="pianoKeys"></g>
           </svg>
         </div>
-        <button class="reset-link" id="clearNotesBtn" type="button">limpiar selección</button>
+        <button class="reset-link" id="clearNotesBtn" type="button">clear selection</button>
 
         <div class="field">
-          <label for="bassSelect">Bajo (opcional)</label>
+          <label for="bassSelect">Bass (optional)</label>
           <select id="bassSelect"></select>
         </div>
 
-        <button class="btn" id="calcBtn">Calcular digitaciones</button>
+        <button class="btn" id="calcBtn">Calculate fingerings</button>
       </div>
 
       <div class="panel">
         <details class="params">
-          <summary>Parámetros físicos</summary>
+          <summary>Physical parameters</summary>
           <div class="params-grid">
-            <span>Estiramiento máx. (trastes)</span><input type="number" id="p_spanMax" min="1" max="11" step="1">
-            <span>Salto dedo 1→2</span><input type="number" id="p_gap12" min="0" max="6" step="1">
-            <span>Salto dedo 2→3</span><input type="number" id="p_gap23" min="0" max="6" step="1">
-            <span>Salto dedo 3→4</span><input type="number" id="p_gap34" min="0" max="6" step="1">
-            <span>Traste máx. del pulgar</span><input type="number" id="p_thumbMax" min="0" max="11" step="1">
-            <span>Margen del pulgar</span><input type="number" id="p_thumbMargin" min="0" max="6" step="1">
+            <span>Max stretch (frets)</span><input type="number" id="p_spanMax" min="1" max="11" step="1">
+            <span>Finger 1→2 gap</span><input type="number" id="p_gap12" min="0" max="6" step="1">
+            <span>Finger 2→3 gap</span><input type="number" id="p_gap23" min="0" max="6" step="1">
+            <span>Finger 3→4 gap</span><input type="number" id="p_gap34" min="0" max="6" step="1">
+            <span>Thumb max fret</span><input type="number" id="p_thumbMax" min="0" max="11" step="1">
+            <span>Thumb margin</span><input type="number" id="p_thumbMargin" min="0" max="6" step="1">
           </div>
-          <label class="checkline"><input type="checkbox" id="p_thumbEnabled"> Permitir pulgar (6ª y 5ª cuerda)</label>
-          <label class="checkline"><input type="checkbox" id="p_allowBarre"> Permitir cejilla (índice)</label>
-          <button class="reset-link" id="resetParams">restablecer valores por defecto</button>
+          <label class="checkline"><input type="checkbox" id="p_thumbEnabled"> Allow thumb (6th and 5th string)</label>
+          <label class="checkline"><input type="checkbox" id="p_allowBarre"> Allow barre (index finger)</label>
+          <button class="reset-link" id="resetParams">reset to defaults</button>
         </details>
       </div>
     </div>
 
     <div>
       <div class="legend">
-        <span><i class="ring" style="border-color:var(--bass)"></i> anillo = nota más grave</span>
-        <span><i class="ring" style="border-color:var(--thumb)"></i> anillo = pulgar</span>
-        <span><i style="background:var(--barre)"></i> barra = cejilla</span>
+        <span><i class="ring" style="border-color:var(--bass)"></i> ring = lowest note</span>
+        <span><i class="ring" style="border-color:var(--thumb)"></i> ring = thumb</span>
+        <span><i style="background:var(--barre)"></i> bar = barre</span>
       </div>
       <div class="legend note-legend" id="noteLegend"></div>
       <div class="status" id="statusLine"></div>
       <section class="results">
         <div class="results-head">
-          <h2>Cuerdas contiguas</h2>
+          <h2>Adjacent strings</h2>
           <span class="count" id="countContiguas"></span>
         </div>
         <div id="cardsContiguas"></div>
@@ -544,7 +544,7 @@
       </section>
       <section class="results">
         <div class="results-head">
-          <h2>Cuerdas abiertas</h2>
+          <h2>Open strings</h2>
           <span class="count" id="countAbiertas"></span>
         </div>
         <div id="cardsAbiertas"></div>
@@ -555,10 +555,10 @@
 
   <div class="fretboard-panel">
     <div class="fretboard-head">
-      <h2>Diapasón completo (cuerdas contiguas)</h2>
-      <button class="play-btn" id="playCompleto" type="button">▶ reproducir</button>
+      <h2>Full fretboard (adjacent strings)</h2>
+      <button class="play-btn" id="playCompleto" type="button">▶ play</button>
     </div>
-    <p class="hint">Las mismas digitaciones de cuerdas contiguas calculadas arriba, acorde completo (todas sus notas) por zona del mástil — la siguiente arranca donde termina la anterior. El centro hueco marca una cuerda al aire de esa digitación. Cada una tiene su color; un anillo indica que dos coinciden en la misma posición.</p>
+    <p class="hint">The same adjacent-string fingerings calculated above, full chord (all its notes) by neck zone — each one starts where the previous one ends. The hollow center marks an open string in that fingering. Each one has its own color; a ring indicates that two coincide in the same position.</p>
     <svg id="bgFretboard" class="bg-fretboard" viewBox="0 0 1500 550" aria-hidden="true"></svg>
   </div>
 
@@ -572,7 +572,7 @@
   // ==========================================================================
   // Núcleo de digitaciones (mismo motor de guitar_fingering.js)
   // ==========================================================================
-  var NOTE_NAMES = ["Do", "Do#", "Re", "Re#", "Mi", "Fa", "Fa#", "Sol", "Sol#", "La", "La#", "Si"];
+  var NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
   var NOTE_LETTERS = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
   var STRING_NUMS = [6, 5, 4, 3, 2, 1];
   var STRING_OPEN_PC = { 6: 4, 5: 9, 4: 2, 3: 7, 2: 11, 1: 4 };
@@ -839,8 +839,8 @@
       return v.pc === bass.pc && s === bass.string ? "<b>" + name + "</b>" : name;
     }).join(" · ");
     var chips = "";
-    if (result.solucion.thumb) chips += '<span class="chip thumb">pulgar</span>';
-    if ((result.solucion.slots || []).some(function (s) { return s.cejilla; })) chips += '<span class="chip barre">cejilla</span>';
+    if (result.solucion.thumb) chips += '<span class="chip thumb">thumb</span>';
+    if ((result.solucion.slots || []).some(function (s) { return s.cejilla; })) chips += '<span class="chip barre">barre</span>';
     return '<div class="card">' + diagramSVG(result) +
       '<div class="notes">' + notas + '</div>' +
       (chips ? '<div class="chips">' + chips + '</div>' : '') +
@@ -962,7 +962,7 @@
       var totalMs = (t - ctx.currentTime) * 1000;
       btn.disabled = true;
       var original = btn.textContent;
-      btn.textContent = "▶ sonando…";
+      btn.textContent = "▶ playing…";
       setTimeout(function () { btn.disabled = false; btn.textContent = original; }, totalMs);
     }
   }
@@ -991,17 +991,17 @@
     var head = document.createElement("div");
     head.className = "fretboard-head";
     var titulo = document.createElement("h2");
-    titulo.textContent = "Diapasón — cuerdas " + grupo.cuerdas + (etiqueta ? " (" + etiqueta + ")" : "");
+    titulo.textContent = "Fretboard — strings " + grupo.cuerdas + (etiqueta ? " (" + etiqueta + ")" : "");
     var playBtn = document.createElement("button");
     playBtn.className = "play-btn";
     playBtn.type = "button";
-    playBtn.textContent = "▶ reproducir";
+    playBtn.textContent = "▶ play";
     playBtn.addEventListener("click", function () { playChords(grupo.items, playBtn); });
     head.appendChild(titulo);
     head.appendChild(playBtn);
     var hint = document.createElement("p");
     hint.className = "hint";
-    hint.textContent = "Todas las digitaciones calculadas arriba para estas cuerdas (" + grupo.items.length + "), cada una con su color. El centro hueco marca una cuerda al aire; un anillo indica que dos coinciden en la misma posición.";
+    hint.textContent = "All the fingerings calculated above for these strings (" + grupo.items.length + "), each with its own color. The hollow center marks an open string; a ring indicates that two coincide in the same position.";
     var svg = document.createElementNS(svgNS, "svg");
     svg.setAttribute("class", "bg-fretboard");
     svg.setAttribute("viewBox", "0 0 1500 550");
@@ -1023,7 +1023,7 @@
     if (gruposAbiertas.length) {
       var divisor = document.createElement("h2");
       divisor.className = "fretboards-section-divider";
-      divisor.textContent = "Diapasones — cuerdas abiertas";
+      divisor.textContent = "Fretboards — open strings";
       container.appendChild(divisor);
       gruposAbiertas.forEach(function (grupo) {
         renderFretboardPanel(container, grupo, "abiertas");
@@ -1260,7 +1260,7 @@
     var prev = bassPc;
     bassSelect.innerHTML = "";
     var optAny = document.createElement("option");
-    optAny.value = ""; optAny.textContent = "(sin especificar)";
+    optAny.value = ""; optAny.textContent = "(unspecified)";
     bassSelect.appendChild(optAny);
     Array.from(selected).sort(function (a, b) { return a - b; }).forEach(function (pc) {
       var opt = document.createElement("option");
@@ -1327,9 +1327,9 @@
   function renderSection(key, results, cardsElId, countElId, moreWrapId, moreBtnId) {
     var cardsEl = document.getElementById(cardsElId);
     var countEl = document.getElementById(countElId);
-    countEl.textContent = results.length + (results.length === 1 ? " digitación" : " digitaciones");
+    countEl.textContent = results.length + (results.length === 1 ? " fingering" : " fingerings");
     if (!results.length) {
-      cardsEl.innerHTML = '<div class="empty">Ninguna digitación tocable con los parámetros actuales.</div>';
+      cardsEl.innerHTML = '<div class="empty">No playable fingering with the current parameters.</div>';
       document.getElementById(moreWrapId).hidden = true;
       return;
     }
@@ -1339,7 +1339,7 @@
     for (var gi = 0; gi < grupos.length && shown < limit; gi++) {
       var grupo = grupos[gi];
       var tomar = grupo.items.slice(0, limit - shown);
-      html += '<div class="group-head">cuerdas ' + grupo.cuerdas + '</div><div class="cards">' + tomar.map(cardHTML).join("") + '</div>';
+      html += '<div class="group-head">strings ' + grupo.cuerdas + '</div><div class="cards">' + tomar.map(cardHTML).join("") + '</div>';
       shown += tomar.length;
     }
     cardsEl.innerHTML = html;
@@ -1347,7 +1347,7 @@
     var moreBtn = document.getElementById(moreBtnId);
     if (results.length > shown) {
       moreWrap.hidden = false;
-      moreBtn.textContent = "mostrar más (" + (results.length - shown) + " restantes)";
+      moreBtn.textContent = "show more (" + (results.length - shown) + " remaining)";
       moreBtn.onclick = function () { revealed[key] += 24; renderAll(); };
     } else {
       moreWrap.hidden = true;
@@ -1365,7 +1365,7 @@
     var pcs = Array.from(selected).sort(function (a, b) { return a - b; });
     var statusLine = document.getElementById("statusLine");
     if (pcs.length < 3 || pcs.length > 6) {
-      statusLine.textContent = "Elegí entre 3 y 6 notas (llevás " + pcs.length + ").";
+      statusLine.textContent = "Pick between 3 and 6 notes (you have " + pcs.length + ").";
       lastResults = { contiguas: [], abiertas: [] };
       renderAll();
       renderBackgroundFretboard([]);
@@ -1375,7 +1375,7 @@
     readParamInputs();
     revealed = { contiguas: 12, abiertas: 12 };
     var nombres = pcs.map(function (pc) { return NOTE_NAMES[pc]; }).join(" · ");
-    statusLine.textContent = "Acorde: " + nombres + (bassPc != null ? "  ·  bajo " + NOTE_NAMES[bassPc] : "  ·  bajo sin especificar");
+    statusLine.textContent = "Chord: " + nombres + (bassPc != null ? "  ·  bass " + NOTE_NAMES[bassPc] : "  ·  bass unspecified");
     lastResults = calcularDigitaciones(pcs, { bajo: bassPc, params: params });
     renderAll();
     renderBackgroundFretboard(lastResults.contiguas);

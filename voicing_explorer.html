@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es" data-theme="dark">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -180,61 +180,61 @@
     </svg>
     <div>
       <h1>Voicing Explorer</h1>
-      <p class="tagline">Voicings de piano y progresiones a partir de conjuntos de clases de altura (mod 12) — sin armonía funcional.</p>
+      <p class="tagline">Piano voicings and progressions built from pitch-class sets (mod 12) — no functional harmony.</p>
     </div>
   </div>
 
   <div class="layout">
     <aside class="sidebar">
       <section class="panel">
-        <h2>Conjunto de trabajo</h2>
-        <label>Fundamental (origen de la transposición)
+        <h2>Working set</h2>
+        <label>Root (origin of the transposition)
           <select class="field" id="rootSelect"></select>
         </label>
-        <label>Conjunto de intervalos
+        <label>Interval set
           <select class="field" id="setSelect"></select>
         </label>
-        <label id="customWrap" hidden>Intervalos personalizados
+        <label id="customWrap" hidden>Custom intervals
           <input class="field" id="customIntervals" placeholder="0,3,6,9">
-          <span class="hint">Semitonos desde la fundamental, separados por coma.</span>
+          <span class="hint">Semitones from the root, comma-separated.</span>
         </label>
         <div class="rangerow">
-          <label>Nota MIDI baja
+          <label>Low MIDI note
             <input class="field" type="number" id="lowNote" value="48">
           </label>
-          <label>Nota MIDI alta
+          <label>High MIDI note
             <input class="field" type="number" id="highNote" value="84">
           </label>
         </div>
-        <button class="btn primary" id="generateBtn">Generar voicings</button>
+        <button class="btn primary" id="generateBtn">Generate voicings</button>
       </section>
 
       <section class="panel">
-        <h2>Cadena de transposición</h2>
-        <label>Modo
+        <h2>Transposition chain</h2>
+        <label>Mode
           <select class="field" id="chainMode">
-            <option value="max">Maximizar notas en común</option>
-            <option value="fixed">Paso fijo (planing)</option>
+            <option value="max">Maximize common notes</option>
+            <option value="fixed">Fixed step (planing)</option>
           </select>
         </label>
-        <label>Cantidad de pasos
+        <label>Number of steps
           <input class="field" type="number" id="chainSteps" value="6" min="2" max="12">
         </label>
-        <label id="fixedStepWrap" hidden>Semitonos por paso
+        <label id="fixedStepWrap" hidden>Semitones per step
           <input class="field" type="number" id="fixedStep" value="-1">
         </label>
-        <label id="candidateStepsWrap">Pasos candidatos (semitonos)
+        <label id="candidateStepsWrap">Candidate steps (semitones)
           <input class="field" id="candidateSteps" value="-2,-1,1,2">
-          <span class="hint">En cada paso se elige, entre estos, el que conserva más notas.</span>
+          <span class="hint">At each step, the one that keeps the most notes is chosen from these.</span>
         </label>
-        <button class="btn primary" id="chainBtn">Generar cadena</button>
+        <button class="btn primary" id="chainBtn">Generate chain</button>
       </section>
 
       <section class="panel">
-        <h2>Disposición del voicing</h2>
-        <div class="legend-row"><span class="dot cerrada"></span>Cerrada — extensión ≤ 1 octava</div>
-        <div class="legend-row"><span class="dot abierta"></span>Abierta — hasta ~1.5 octava</div>
-        <div class="legend-row"><span class="dot extendida"></span>Extendida — más separado</div>
+        <h2>Voicing arrangement</h2>
+        <div class="legend-row"><span class="dot cerrada"></span>Closed — span ≤ 1 octave</div>
+        <div class="legend-row"><span class="dot abierta"></span>Open — up to ~1.5 octaves</div>
+        <div class="legend-row"><span class="dot extendida"></span>Extended — wider spread</div>
       </section>
     </aside>
 
@@ -254,10 +254,10 @@
         <div class="card-head">
           <h2>Voicings <span class="count-pill" id="voicingCount">0</span></h2>
         </div>
-        <p class="help">Todas las combinaciones de octava por nota (con y sin doblados) dentro del rango elegido, filtradas por una extensión tocable. Tocá ▶ para escuchar cualquier fila.</p>
+        <p class="help">All octave combinations per note (with and without doublings) within the chosen range, filtered by a playable span. Press ▶ to listen to any row.</p>
         <div class="table-scroll">
           <table>
-            <thead><tr><th>Notas</th><th>Extensión</th><th>Disposición</th><th></th></tr></thead>
+            <thead><tr><th>Notes</th><th>Span</th><th>Arrangement</th><th></th></tr></thead>
             <tbody id="voicingBody"></tbody>
           </table>
         </div>
@@ -265,13 +265,13 @@
 
       <section class="card">
         <h2>Drop voicings</h2>
-        <p class="help">Misma nota, otra octava: se toma la posición cerrada y se baja una octava la 2ª o 3ª voz desde el agudo.</p>
+        <p class="help">Same note, another octave: the closed position is taken and the 2nd or 3rd voice from the top is dropped an octave.</p>
         <div class="drop-grid" id="dropGrid"></div>
       </section>
 
       <section class="card">
-        <h2>Notas en común bajo T<sub>n</sub></h2>
-        <p class="help">Para cada transposición del conjunto (1 a 11 semitonos), cuántas clases de altura coinciden con el conjunto original. Es una propiedad del conjunto en sí, no del contexto.</p>
+        <h2>Common notes under T<sub>n</sub></h2>
+        <p class="help">For each transposition of the set (1 to 11 semitones), how many pitch classes coincide with the original set. It is a property of the set itself, not of the context.</p>
         <div class="profile-wrap">
           <div class="profile-bars" id="profileBars"></div>
           <div class="bar-axis" id="profileAxis"></div>
@@ -280,22 +280,22 @@
 
       <section class="card">
         <div class="card-head">
-          <h2>Progresión <span class="count-pill" id="chainMeta">—</span></h2>
+          <h2>Progression <span class="count-pill" id="chainMeta">—</span></h2>
           <div class="chain-controls">
-            <button class="btn small primary" id="playAllBtn">▶ Reproducir todo</button>
-            <button class="btn small ghost" id="stopBtn">■ Detener</button>
+            <button class="btn small primary" id="playAllBtn">▶ Play all</button>
+            <button class="btn small ghost" id="stopBtn">■ Stop</button>
           </div>
         </div>
-        <p class="help">En cada paso se elige el voicing que mejor conecta con el anterior (menor movimiento total de voces), variando la disposición para no repetir siempre la misma forma.</p>
+        <p class="help">At each step the voicing that connects best with the previous one is chosen (least total voice movement), varying the arrangement so the same shape isn't always repeated.</p>
         <div class="table-scroll">
           <table>
-            <thead><tr><th>Paso</th><th>Notas</th><th>Disposición</th><th>Movimiento</th><th>Comunes</th><th></th></tr></thead>
+            <thead><tr><th>Step</th><th>Notes</th><th>Arrangement</th><th>Movement</th><th>Common</th><th></th></tr></thead>
             <tbody id="chainBody"></tbody>
           </table>
         </div>
       </section>
 
-      <footer class="note">Rango de trabajo en notación MIDI · 60 = Do central (C4). Sonido: ondas triangulares simples, solo para referencia auditiva.</footer>
+      <footer class="note">Working range in MIDI notation · 60 = middle C (C4). Sound: simple triangle waves, for auditory reference only.</footer>
     </main>
   </div>
 </div>
@@ -565,7 +565,7 @@
     o.textContent = setKeyStr(ivs) + '  ·  ' + name;
     setSelect.appendChild(o);
   });
-  const customOpt = document.createElement('option'); customOpt.value='__custom__'; customOpt.textContent='Personalizado…';
+  const customOpt = document.createElement('option'); customOpt.value='__custom__'; customOpt.textContent='Custom…';
   setSelect.appendChild(customOpt);
   setSelect.value = 'dom7';
 
@@ -618,14 +618,14 @@
   function renderSummary(root, intervals){
     const pcs = realize(root, intervals);
     document.getElementById('clockHolder').innerHTML = renderClock(pcs, root);
-    document.getElementById('bigSetLabel').textContent = setKeyStr(intervals) + ' sobre ' + spellPitchClass(root);
+    document.getElementById('bigSetLabel').textContent = setKeyStr(intervals) + ' on ' + spellPitchClass(root);
     const label = setSelect.value !== '__custom__' ? ` (rótulo convencional: “${setSelect.value}”)` : '';
-    document.getElementById('setSub').textContent = 'Clases de altura resultantes: ' + pcs.map(p=>spellPitchClass(p)).join(', ') + label;
+    document.getElementById('setSub').textContent = 'Resulting pitch classes: ' + pcs.map(p=>spellPitchClass(p)).join(', ') + label;
     document.getElementById('setChips').innerHTML = pcs.map(p=>`<span class="chip">${spellPitchClass(p)} · pc ${p}</span>`).join('');
   }
 
   function shapePill(shape){
-    return `<span class="shape-pill"><span class="dot ${shape}"></span>${shape}</span>`;
+    return `<span class="shape-pill"><span class="dot ${shape}"></span>${({cerrada:"closed",abierta:"open",extendida:"extended"})[shape]||shape}</span>`;
   }
 
   function generateVoicings(){
@@ -649,7 +649,7 @@
     const closedRef = vs.filter(v=>v.length>=4).sort((a,b)=>(a[a.length-1]-a[0])-(b[b.length-1]-b[0]))[0]
                       || vs[0];
     const dropGrid = document.getElementById('dropGrid');
-    const items = [['Cerrada', closedRef]];
+    const items = [['Closed', closedRef]];
     if (closedRef && closedRef.length>=4){
       items.push(['Drop 2', dropVoicing(closedRef,2)]);
       items.push(['Drop 3', dropVoicing(closedRef,3)]);
@@ -696,7 +696,7 @@
 
     const prog = buildProgression(steps, { nNotes, low, high, topK:5, seed:3, varyShape:true });
     lastChain = prog;
-    document.getElementById('chainMeta').textContent = prog.length + ' pasos';
+    document.getElementById('chainMeta').textContent = prog.length + ' steps';
     const body = document.getElementById('chainBody');
     body.innerHTML = '';
     prog.forEach((p,i)=>{
