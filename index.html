@@ -178,6 +178,9 @@
   .input-toggle{
     display:flex;justify-content:center;gap:6px;margin-bottom:18px;
   }
+  /* RadioMode: botón chico en la esquina superior derecha de la tarjeta Clock/Piano */
+  .radio-mode-wrap.radio-top{position:absolute;top:5px;right:10px;z-index:2;white-space:nowrap;}
+  .radio-mode-wrap.radio-top .chip{font-size:9px;padding:2px 8px;line-height:1.3;}
   .toggle-btn{
     font-family:'JetBrains Mono',monospace;
     font-size:11px;letter-spacing:.06em;text-transform:uppercase;
@@ -902,7 +905,7 @@
     display:block;
   }
   /* Shortcuts: mismo estilo que el "+" de arriba a la derecha, pero arriba a la izquierda */
-  .shortcuts-panel{position:fixed;left:env(safe-area-inset-left,0px);top:env(safe-area-inset-top,0px);z-index:100;display:flex;flex-direction:column;gap:6px;background:var(--surface);padding:12px;border:1px solid var(--line);border-top:0;border-left:0;border-radius:0 0 8px 0;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.06em;color:var(--ink-muted);}
+  .shortcuts-panel{position:fixed;left:env(safe-area-inset-left,0px);top:env(safe-area-inset-top,0px);z-index:100;display:flex;flex-direction:column;gap:6px;background:var(--surface);padding:12px;border:1px solid var(--line);border-top:0;border-left:0;border-radius:0 0 8px 0;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.06em;color:var(--ink-muted);transform:scale(.7);transform-origin:top left;}
   .shortcuts-panel.is-collapsed{padding:0;gap:0;width:32px;overflow:hidden;background:transparent;border:0;}
   .shortcuts-panel.is-collapsed .shortcuts-label,.shortcuts-panel.is-collapsed .shortcuts-list{display:none;}
   .shortcuts-header{display:flex;align-items:center;justify-content:space-between;gap:10px;}
@@ -1105,10 +1108,10 @@
 <div class="page-bg-avatar"></div>
 
 <!-- Panel de Shortcuts (arriba a la izquierda) -->
-<div class="shortcuts-panel is-collapsed" id="shortcutsPanel">
+<div class="shortcuts-panel" id="shortcutsPanel">
   <div class="shortcuts-header">
     <span class="shortcuts-label">Shortcuts</span>
-    <button type="button" class="shortcuts-toggle" id="shortcutsToggle" aria-expanded="false" aria-controls="shortcutsList" title="Mostrar/ocultar Shortcuts"></button>
+    <button type="button" class="shortcuts-toggle" id="shortcutsToggle" aria-expanded="true" aria-controls="shortcutsList" title="Mostrar/ocultar Shortcuts"></button>
   </div>
   <div class="shortcuts-list" id="shortcutsList">
     <div><kbd>G</kbd>Regenerate</div>
@@ -1166,6 +1169,10 @@
   <div class="stage">
     <div class="clock-col">
     <div class="clock-card">
+      <span class="radio-mode-wrap radio-top" title="RadioMode (botón ON/OFF): al pasar a ON arranca solo (CreaturaRandom o CreaturaBella al azar); con ON, después de 🪄 CreaturaRandom o 🪄 CreaturaBella, cuando termina la vuelta engancha otra vuelta nueva, alternando al azar Random/Bella (sets y sliders nuevos) y barajando los presets de Armonía y Melodía en cada canción nueva, sin cortar el audio. Se corta con Detener o con OFF. Usa el modo en vivo (no Prerender).">
+        <input type="checkbox" id="consolaRadioChk" hidden>
+        <button type="button" class="chip" id="consolaRadioBtn" aria-pressed="false">&#128251; RadioMode: OFF</button>
+      </span>
       <div class="input-toggle">
         <button class="toggle-btn active" id="tabClock" type="button">Clock</button>
         <button class="toggle-btn" id="tabPiano" type="button">Piano</button>
@@ -1244,10 +1251,6 @@
         <input type="checkbox" id="consolaPrerenderChk">
         <label for="consolaPrerenderChk">⚡ Prerender</label>
         <span class="consola-val" id="consolaPrerenderStatus"></span>
-        <span class="radio-mode-wrap" style="margin-left:14px;white-space:nowrap;" title="RadioMode (botón ON/OFF): al pasar a ON arranca solo (CreaturaRandom o CreaturaBella al azar); con ON, después de 🪄 CreaturaRandom o 🪄 CreaturaBella, cuando termina la vuelta engancha otra vuelta nueva, alternando al azar Random/Bella (sets y sliders nuevos), sin cortar el audio. Se corta con Detener o con OFF. Usa el modo en vivo (no Prerender).">
-          <input type="checkbox" id="consolaRadioChk" hidden>
-          <button type="button" class="chip" id="consolaRadioBtn" aria-pressed="false">&#128251; RadioMode: OFF</button>
-        </span>
       </div>
     </div>
     <div class="clock-card multiset-card" id="multiSetsCard">
@@ -1472,6 +1475,7 @@
           <span class="consola-inst-toggle" title="In3rds: en sets de 5+ notas, en vez del set entero toca acordes en bloque de 4 notas apilados en terceras del propio set, de abajo para arriba (como el módulo Grados en Terceras: C E G B, D F A C…), de un grado al azar y distinto en cada ataque. Solo, toca 2 por compás dentro del mismo acorde; con sync/poly/rythmicarmonies etc. toca uno por ataque. Con sets de menos de 5 notas no cambia nada. Se combina con inversions, subset, sync, etc."><input type="checkbox" id="consolaHT_in3rds" checked><label for="consolaHT_in3rds">in3rds</label></span>
           <span class="consola-inst-toggle" title="In4ths: en sets de 5+ notas, en vez del set entero toca acordes en bloque de 4 notas apilados en cuartas DIATÓNICAS del propio set (de grado en grado del set, posiciones i, i+3, i+6, i+9: C F B E en un set mayor), de un grado al azar y distinto en cada ataque. Solo, toca 2 por compás dentro del mismo acorde (o 4 con la fundamental moviéndose por grados del set); con sync/poly/rythmicarmonies etc. toca uno por ataque. Si el set no da al menos 3 notas distintas apiladas así (p. ej. 6 notas en cuartas), no cambia nada. Se combina con inversions, subset, sync, in3rds y las otras (si hay varias tildadas, sortea una por acorde)."><input type="checkbox" id="consolaHT_in4ths" checked><label for="consolaHT_in4ths">In4ths</label></span>
           <span class="consola-inst-toggle" title="In5ths: en sets de 5+ notas, en vez del set entero toca acordes en bloque de 4 notas apilados en quintas DIATÓNICAS del propio set (de grado en grado del set, posiciones i, i+4, i+8, i+12: C G D A en un set mayor), de un grado al azar y distinto en cada ataque. Solo, toca 2 por compás dentro del mismo acorde (o 4 con la fundamental moviéndose por grados del set); con sync/poly/rythmicarmonies etc. toca uno por ataque. Si el set no da al menos 3 notas distintas apiladas así (p. ej. 6 notas en cuartas), no cambia nada. Se combina con inversions, subset, sync, in3rds y las otras (si hay varias tildadas, sortea una por acorde)."><input type="checkbox" id="consolaHT_in5ths" checked><label for="consolaHT_in5ths">In5ths</label></span>
+          <span class="consola-inst-toggle" title="3rdsRuns: en un tramo de 4 compases SEGUIDOS (el inicio se sortea al azar entre los compases) y solo cuando el set tiene más de 4 notas (5+), la armonía toca acordes en bloque apilados en terceras DEL set (de 4 notas, como In3rds), uno por cada grado del set (todas las inversiones: C E G B, D F A C, E G B D…, en orden y volviendo al principio), en tresillos de corchea (3 por tiempo). El acorde vigente (bajo, melodía, cifrado) sigue siendo el set completo. Con sets de 4 notas o menos no cambia nada. Los compases de respiro de HarmonicSpace no se tocan. No entra en all."><input type="checkbox" id="consolaHT_runs3"><label for="consolaHT_runs3">3rdsRuns</label></span>
           <span class="consola-inst-toggle" title="Guitar comping: en vez del voicing de piano, cada ataque toca una DIGITACIÓN DE GUITARRA real del set (el mismo motor de la tarjeta Digitaciones de Guitarra: cuerdas, trastes y dedos tocables), con el grave del set como nota más grave y la posición más cercana a la digitación anterior. Pasa Armonía a Guitarra jazz (al destildar vuelve al preset anterior). El ritmo sale de las otras casillas (sync, poly, rythmicarmonies…). Pisa inversiones e in3rds. Sets de 7+ notas: toca 6 (el grave + 5 al azar). No entra en all."><input type="checkbox" id="consolaHT_guitar"><label for="consolaHT_guitar">guitar</label></span>
           <span class="consola-inst-toggle" title="One chord test: la canción tiene UN solo acorde. Se sortea el primer acorde del algoritmo (con su transposición) y TODOS los ataques de Harmony repiten ese mismo set, en todos los compases. Bajo y melodía quedan sobre ese set. El ritmo y las demás casillas (inversions, arp, in3rds…) siguen funcionando sobre ese único acorde. No entra en all."><input type="checkbox" id="consolaHT_onechord"><label for="consolaHT_onechord">One chord test</label></span>
         </div>
@@ -1479,6 +1483,7 @@
           <span class="consola-inst-toggle" title="Arpegiador de armonía: 0% = nunca (Armonía de siempre). 100% = TODOS los compases se arpegian. Entre medio, cada compás se sortea: con probabilidad = el valor se reemplaza por un arpegio de las notas del acorde vigente (el set no se traiciona: solo sus notas, subiendo de octava si el patrón lo pide). En cada compás arpegiado se sortea de nuevo el patrón (casi siempre aleatorios o asimétricos: paseo aleatorio, permutación, célula irregular, convergente, pedal, saltos de 2 o 3… los lineales arriba/abajo salen poco, ~10%), la subdivisión (corcheas, semicorcheas o tresillos) y el largo de las notas. Con el slider por encima de 0 la Armonía deja el motor libre (como al tildar una casilla). Se combina con inversions, in3rds, guitar y accent; en los compases arpegiados reemplaza el ritmo de sync/poly/rythmicarmonies."><label for="consolaHT_arpSlider">&#127929; Arp</label><input type="range" class="consola-mini-range" id="consolaHT_arpSlider" min="0" max="100" value="0" step="1"><span class="consola-val" id="consolaHT_arpVal">0%</span></span>
           <span class="consola-inst-toggle" title="3/4/5: intensidad de in3rds / in4ths / in5ths (las casillas eligen CUÁLES entran). 0% = apagado (suena el set entero, como si ninguna estuviera tildada). 100% = encendido: todos los acordes salen apilados en terceras / cuartas / quintas del set. Entre medio, cada acorde sortea al azar entre los dos estados: con probabilidad = el valor suena apilado, si no suena el set entero. Solo afecta a sets de 5+ notas."><label for="consolaHT_stackSlider">3/4/5</label><input type="range" class="consola-mini-range" id="consolaHT_stackSlider" min="0" max="100" value="75" step="1"><span class="consola-val" id="consolaHT_stackVal">75%</span>
           <span class="consola-inst-toggle" title="251: progresiones al azar (presets del Generador de progresiones: V-I, V-Im, II-V, IIø-V, II-V-I, IIø-V-Im, II-V-I-VI, IIø-V-Im-VIø) tratadas como UN acorde: cada progresión dura de medio a 4 compases (se sortea 0.5 / 1 / 2 / 3 / 4, repartido en partes iguales entre sus acordes; no menos de 1 tiempo por acorde). 0% = sin progresiones. 100% = solo progresiones. Entre medio, cada tramo se sortea: con probabilidad = el valor arranca una progresión. Combinado con Chromatism / Cycles, la progresión ENTERA se transpone junta (en vez de un acorde, una progresión). Ojo: los acordes de la progresión salen de la tabla de sets del generador, no del set elegido. Los compases de HarmonicSpace (respiro) no llevan progresión."><label for="consolaHT_progSlider">251</label><input type="range" class="consola-mini-range" id="consolaHT_progSlider" min="0" max="100" value="0" step="1"><span class="consola-val" id="consolaHT_progVal">0%</span></span></span>
+          <span class="consola-inst-toggle" title="BlockwithMelody: la armonía toca EN BLOQUE la misma rítmica que la melodía principal (cada nota de la melodía = un acorde en bloque, con el voicing vigente en ese instante, mismo inicio y misma duración; los adornos de Ornaments no cuentan y, si dos notas de la melodía quedan a menos de 1/4 de tiempo, el acorde anterior sigue sonando). 0% = Armonía de siempre. 100% = TODA la melodía armonizada en bloque. Entre medio, se eligen al azar frases / pasajes melódicos completos (grupos de notas separados por silencios de 1 tiempo o más; las frases de más de 2 compases se parten por compás) hasta cubrir ese % de la melodía; el resto queda con la armonía de siempre. Los acordes y el set no cambian: solo CUÁNDO suenan. Se aplica al final, sobre cualquier otra casilla de Harmony (los compases elegidos pisan sync, poly, arp, 3rdsRuns, etc.)."><label for="consolaHT_bwmSlider">BlockwithMelody</label><input type="range" class="consola-mini-range" id="consolaHT_bwmSlider" min="0" max="100" value="0" step="1"><span class="consola-val" id="consolaHT_bwmVal">0%</span></span>
         </div>
         <div class="consola-inst-row" style="align-items:center;gap:8px;">
           <button type="button" class="chip" id="consolaMoreCompingBtn" title="Agrega una QUINTA pista MIDI (instrumento elegible en el selector de al lado; default Piano eléctrico), que dobla cada nota de la melodía junto con 1 o 2 notas más del acorde vigente en ese instante (siempre del mismo set, nunca una nota ajena) — el grupito entero queda siempre pegado a la nota de melodía, a lo sumo a una octava o dos de distancia.">moreComping</button>
@@ -1516,11 +1521,13 @@
         </div>
         <div class="collapsible-content expanded" id="ornBody">
         <div class="consola-inst-row">
-          <span class="consola-inst-toggle" title="Tilda o destilda todas las casillas de Ornaments."><input type="checkbox" id="consolaORN_all"><label for="consolaORN_all">all</label></span>
+          <span class="consola-inst-toggle" title="Tilda o destilda todas las casillas de Ornaments (incluidas glissando y bend↓)."><input type="checkbox" id="consolaORN_all"><label for="consolaORN_all">all</label></span>
           <span class="consola-inst-toggle" title="Nota de gracia: una vecina muy corta justo antes de la nota principal (necesita figura de 1/2 tiempo o más)."><input type="checkbox" id="consolaORN_grace" checked><label for="consolaORN_grace">grace</label></span>
           <span class="consola-inst-toggle" title="Mordente: principal – vecina – principal, rápido (figura de 1/2 tiempo o más)."><input type="checkbox" id="consolaORN_mordent" checked><label for="consolaORN_mordent">mordent</label></span>
           <span class="consola-inst-toggle" title="Trino: alterna principal/vecina en notas largas (figura de 1 tiempo o más); siempre termina en la principal."><input type="checkbox" id="consolaORN_trill"><label for="consolaORN_trill">trill</label></span>
           <span class="consola-inst-toggle" title="Grupeto: vecina de arriba – principal – vecina de abajo – principal (figura de 3/4 de tiempo o más)."><input type="checkbox" id="consolaORN_turn"><label for="consolaORN_turn">turn</label></span>
+          <span class="consola-inst-toggle" title="Glissando (portamento): ~30% de las notas ligadas a la anterior (hueco de hasta 1/4 de tiempo, salto de hasta una octava) arrancan en la altura de la nota anterior y se deslizan de forma continua hasta la suya. Vale para Melody y Melody n2 (y para Doblar melodía, que copia la melodía)."><input type="checkbox" id="consolaORN_gliss"><label for="consolaORN_gliss">glissando</label></span>
+          <span class="consola-inst-toggle" title="Pitch bend descendente: ~30% de las notas largas (2 tiempos o más) terminan con una caída continua de 2 semitonos. Vale para Melody y Melody n2 (y para Doblar melodía, que copia la melodía)."><input type="checkbox" id="consolaORN_bend"><label for="consolaORN_bend">bend&#8595;</label></span>
         </div>
         </div>
       </div>
@@ -8853,6 +8860,41 @@ function runAnalysis() {
   })();
 
   /* ================================================================
+     PITCHFX — casillas #consolaORN_gliss ("glissando") y #consolaORN_bend ("bend↓"), en Ornaments.
+     Marcan eventos de Melody y Melody n2 (después de melody_2follows, antes de Dynamics);
+     el audio los aplica como curva de afinación continua (ver pitchFxFor / pitchFxApply):
+       · ev.gl = semitonos de la nota anterior respecto de esta (la nota arranca en la altura
+         anterior y se desliza hasta la suya). ~30% de las notas ligadas a la anterior
+         (hueco <= 1/4 de tiempo, salto <= 12 semitonos, figura >= 1/2 tiempo).
+       · ev.bd = semitonos que cae al final (2). ~30% de las notas de 2 tiempos o más.
+     No cambia ni agrega notas: el set no se toca (la curva pasa por alturas intermedias, igual
+     que un portamento/bend real). Las casillas apagadas = melodía de siempre.
+     ================================================================ */
+  var PITCHFX = (function(){
+    var PROB = 0.3, EPS = 1e-6, BEND_SEMIS = 2, BEND_MIN_BEATS = 2, GLISS_MAX_GAP = 0.25, GLISS_MAX_INT = 12, GLISS_MIN_BEATS = 0.5;
+    function on(id){ var e = document.getElementById(id); return !!(e && e.checked); }
+    function mark(list){
+      if(!list || !list.length) return list;
+      var gl = on("consolaORN_gliss"), bd = on("consolaORN_bend");
+      list.forEach(function(ev){ delete ev.gl; delete ev.bd; });
+      if(!gl && !bd) return list;
+      var sorted = list.slice().sort(function(a, b){ return a.startBeat - b.startBeat; });
+      sorted.forEach(function(ev, i){
+        var prev = sorted[i-1];
+        if(gl && prev && ev.durBeats >= GLISS_MIN_BEATS - EPS && prev.midi !== ev.midi
+           && Math.abs(prev.midi - ev.midi) <= GLISS_MAX_INT
+           && ev.startBeat - (prev.startBeat + prev.durBeats) <= GLISS_MAX_GAP + EPS
+           && Math.random() < PROB){
+          ev.gl = prev.midi - ev.midi;
+        }
+        if(bd && ev.durBeats >= BEND_MIN_BEATS - EPS && Math.random() < PROB) ev.bd = BEND_SEMIS;
+      });
+      return list;
+    }
+    return { mark: mark };
+  })();
+
+  /* ================================================================
      MOTOR BARRY HARRIS — checkbox #consolaBebopHarrisChk, "🎼 Harris".
      Reconstruido a partir del doc de diseño guardado en el proyecto
      (claude/harris-melodic-engine.md): esos 3 patches se probaron una
@@ -9334,7 +9376,33 @@ function runAnalysis() {
   // Cada nodo de voz se quita de `voices` cuando termina (evento "ended").
   // Set: alta/baja O(1) — con arrays, indexOf+splice por cada nota terminada
   // costaba O(n) en el hilo principal con cientos de voces vivas.
+  // PITCHFX (glissando / bend↓): mientras PITCHFX_CUR está seteado, cada voz que se registra con
+  // trackVoice recibe la curva de afinación (cents) sobre su AudioParam detune; las que no lo tienen
+  // (buffer sources de Safari viejo) usan playbackRate. Solo se setea alrededor de las notas de
+  // Melody / Melody n2 / Doblar melodía que traen ev.gl o ev.bd; el resto del audio no se toca.
+  var PITCHFX_CUR = null;
+  function pitchFxFor(ev, t, d){
+    if(!ev || (!ev.gl && !ev.bd)) return null;
+    var glT = Math.min(0.14, d * 0.3);
+    return { t0:t, d:d, gl:ev.gl || 0, glT:glT, bd:ev.bd || 0, bdT:Math.min(0.6, d * 0.35) };
+  }
+  function pitchFxApply(node, fx){
+    try{
+      var bs = fx.bd ? Math.max(fx.t0 + fx.glT, fx.t0 + fx.d - fx.bdT) : 0;
+      var P = node.detune;
+      if(P && typeof P.setValueAtTime === "function"){
+        var base = P.value;
+        if(fx.gl){ P.setValueAtTime(base + fx.gl*100, fx.t0); P.linearRampToValueAtTime(base, fx.t0 + fx.glT); }
+        if(fx.bd){ P.setValueAtTime(base, bs); P.linearRampToValueAtTime(base - fx.bd*100, fx.t0 + fx.d); }
+      } else if(node.playbackRate && typeof node.playbackRate.setValueAtTime === "function"){
+        var r = node.playbackRate, b0 = r.value;
+        if(fx.gl){ r.setValueAtTime(b0 * Math.pow(2, fx.gl/12), fx.t0); r.exponentialRampToValueAtTime(b0, fx.t0 + fx.glT); }
+        if(fx.bd){ r.setValueAtTime(b0, bs); r.exponentialRampToValueAtTime(b0 * Math.pow(2, -fx.bd/12), fx.t0 + fx.d); }
+      }
+    }catch(e){}
+  }
   function trackVoice(node){
+    if(PITCHFX_CUR) pitchFxApply(node, PITCHFX_CUR);
     var set = voices;
     set.add(node);
     try{
@@ -10505,7 +10573,7 @@ function runAnalysis() {
   var HARMTEST = (function(){
     var IDS = { base:"consolaHT_base", sync:"consolaHT_sync", poly:"consolaHT_poly", accent:"consolaHT_accent",
                 artic:"consolaHT_artic", subset:"consolaHT_subset", rests:"consolaHT_rests", swing:"consolaHT_swing",
-                inversions:"consolaHT_inversions", rythmicarmonies:"consolaHT_rythmicarmonies", in3rds:"consolaHT_in3rds", in4ths:"consolaHT_in4ths", in5ths:"consolaHT_in5ths", guitar:"consolaHT_guitar", onechord:"consolaHT_onechord" };
+                inversions:"consolaHT_inversions", rythmicarmonies:"consolaHT_rythmicarmonies", in3rds:"consolaHT_in3rds", runs3:"consolaHT_runs3", in4ths:"consolaHT_in4ths", in5ths:"consolaHT_in5ths", guitar:"consolaHT_guitar", onechord:"consolaHT_onechord" };
     // 3/4/5: slider #consolaHT_stackSlider (0–100%) = probabilidad (por acorde) de que in3rds/in4ths/in5ths apilen. 0 = esas casillas quedan apagadas.
     function stackProb(){ var e = document.getElementById("consolaHT_stackSlider"); var v = e ? parseFloat(e.value) : 75; return isNaN(v) ? 0.75 : Math.max(0, Math.min(1, v/100)); }
     function on(k){ var e = document.getElementById(IDS[k]); if(!(e && e.checked)) return false; if((k === "in3rds" || k === "in4ths" || k === "in5ths") && stackProb() === 0) return false; return true; }
@@ -10801,6 +10869,31 @@ function runAnalysis() {
         keptAtt.sort(function(x, y){ return x.t - y.t; });
         attacks = keptAtt;
       }
+      // 2c) 3rdsRuns: tramo de 4 compases SEGUIDOS (inicio al azar). Solo compases cuyo set tiene 5+ notas distintas
+      // (como In3rds) y que no son de respiro de HarmonicSpace. Cada compás elegido pasa a UN ataque de compás
+      // entero marcado a.runs3 (pisa a un arpegio de Arp si coincide); las notas salen en el paso 3 (runs3Emit).
+      if(on("runs3")){
+        var runsLen = Math.min(4, numBars), runsStart = randomInt(0, numBars - runsLen), runsBar = {}, runsAny = false;
+        for(var rq = runsStart; rq < runsStart + runsLen; rq++){
+          if(HARMONICSPACE.enabled() && HARMONICSPACE.isPeaceBar(rq)) continue;
+          if(uniquePcs(MULTISETS.rootForAttack(rq, rootChord)).length < 5) continue;
+          runsBar[rq] = true; runsAny = true;
+        }
+        if(runsAny){
+          attacks.forEach(function(a){ // una ligadura que entra a un compás de runs se corta en la barra
+            var be = barStart[a.bar] + barLen[a.bar];
+            if(a.t + a.d > be + 1e-9 && a.bar + 1 < numBars && runsBar[a.bar + 1]) a.d = be - a.t;
+          });
+          var runsKept = attacks.filter(function(a){ return !runsBar[a.bar]; });
+          Object.keys(runsBar).forEach(function(k){
+            var rb3 = parseInt(k, 10);
+            var rFirst = attacks.filter(function(a){ return a.bar === rb3; })[0];
+            runsKept.push({ t:barStart[rb3], d:barLen[rb3], bar:rb3, rel:0, strong:true, onBeat:true, shift:0, silent:false, runs3:true, prog: rFirst ? rFirst.prog : null });
+          });
+          runsKept.sort(function(x, y){ return x.t - y.t; });
+          attacks = runsKept;
+        }
+      }
       // 3) eventos + slots
       var events = [], slotChords = [];
       for(var sb = 0; sb < numBars; sb++) slotChords.push([]);
@@ -10837,6 +10930,38 @@ function runAnalysis() {
           var ev = { midi: midi, startBeat: t0, durBeats: dd, bar: a.bar };
           if(on("accent")) ev.vel = (s2 === 0) ? 112 : (Math.abs(s2*st - Math.round(s2*st)) < 1e-6 ? 88 : 62);
           events.push(ev);
+        }
+        return true;
+      }
+      // 3rdsRuns: el compás entero en tresillos de corchea (3 por tiempo); cada golpe es un acorde en bloque de 4 notas
+      // apilado en terceras DEL set (posiciones d, d+2, d+4, d+6 con wrap de octava, igual que thirdsStack), con el
+      // grado d recorriendo todos los grados del set en orden y volviendo al principio (el recorrido sigue de un
+      // compás al siguiente). Devuelve false si el set no da al menos 3 notas distintas apiladas en terceras: entonces
+      // el compás suena como acorde normal. Solo notas del set; el slot (bajo/melodía/cifrado) sigue siendo el set entero.
+      var runsPos = -1;
+      function runs3Emit(a, rc){
+        var lowest = Math.min.apply(null, rc);
+        var scale = uniquePcs(rc).map(function(pc){ return mod12(pc - lowest); }).sort(function(x, y){ return x - y; });
+        var n = scale.length;
+        if(n < 5) return false;
+        var size = Math.min(4, n / gcd(n, 2));
+        if(size < 3) return false;
+        var ns = Math.max(1, Math.round(barLen[a.bar] * 3)), st = barLen[a.bar] / ns;
+        if(runsPos < 0) runsPos = randomInt(0, n - 1);
+        for(var k = 0; k < ns; k++){
+          var d = runsPos % n; runsPos++;
+          var chord = [];
+          for(var j = 0; j < size; j++){ var pos = d + 2*j; chord.push(lowest + scale[pos % n] + 12*Math.floor(pos / n)); }
+          chord.sort(function(x, y){ return x - y; });
+          var t0 = a.t + k*st, dd = Math.max(0.05, st*0.92);
+          var rvel = on("accent") ? ((k % 3 === 0) ? ((k === 0) ? 112 : 88) : 62) : null;
+          var rbo = BROKENCHORD.offsetsFor(chord, dd);
+          chord.forEach(function(nn, ni){
+            var roff = rbo[ni] || 0;
+            var ev = { midi: nn, startBeat: t0 + roff, durBeats: Math.max(0.05, dd - roff), bar: a.bar };
+            if(rvel != null) ev.vel = rvel;
+            events.push(ev);
+          });
         }
         return true;
       }
@@ -10897,7 +11022,7 @@ function runAnalysis() {
         }
         // in3rds: lo que SUENA es un acorde en terceras del set; el acorde vigente (slots, bajo, melodía, cifrado) sigue siendo el set completo
         var in3Sub = null;
-        if(stackOn() && !gv && (stackProb() >= 1 || Math.random() < stackProb())){
+        if(stackOn() && !gv && !a.runs3 && (stackProb() >= 1 || Math.random() < stackProb())){
           var st = thirdsStack(rc, prevDeg3, a, a.in3g ? a.in3g.stride : (Math.random() < 0.5 ? barStride[a.bar] : pickStride()), prevSub3);
           if(st){
             prevDeg3 = a.in3g ? a.in3g.base : st.deg;
@@ -10923,6 +11048,7 @@ function runAnalysis() {
         var dur = Math.max(0.05, endEff - startEff);
         if(on("artic") && (i % 2 === 1)) dur = Math.max(0.05, dur * 0.3); // staccato en los impares, legato en los pares
         if(a.arp && arpEmit(a, in3Sub || voiced)) return; // Arp: este compás es un arpegio
+        if(a.runs3 && !gv && runs3Emit(a, rc)) return; // 3rdsRuns: este compás son acordes en terceras en tresillos
         var notes = in3Sub || rhSub || voiced;
         if(on("subset") && !a.strong){
           var pool = (in3Sub || voiced).slice(), pick = [], want = randomInt(1, Math.min(2, pool.length));
@@ -11984,6 +12110,101 @@ function runAnalysis() {
     });
     return rest;
   }
+  /* ================================================================
+     BLOCKWITHMELODY — slider #consolaHT_bwmSlider (Harmony, 0–100%, default 0).
+     Post-proceso de la ARMONÍA, después de que la melodía principal quedó final (Ornaments,
+     Rapid runs, silencios): en los tramos elegidos la armonía toca en bloque exactamente la
+     rítmica de la melodía (un acorde por nota, mismo inicio y duración; el voicing es el vigente
+     en ese instante según slotChords, así el set no se toca: cambia CUÁNDO suena, no QUÉ).
+     Tramos = frases melódicas (notas separadas por silencios >= 1 tiempo; las de más de 2 compases se
+     parten por compás). 0% = nada; 100% = todas; en el medio se sortean frases hasta cubrir ese % de
+     la melodía (por duración). Los adornos (ev.orn) no cuentan; notas a < 1/4 de tiempo del acorde
+     anterior no generan acorde nuevo (el anterior sigue sonando).
+     ================================================================ */
+  var BLOCKWITHMELODY = (function(){
+    var EPS = 1e-6, GAP = 1, MIN_STEP = 0.25, MAX_BARS = 2;
+    function prob(){ var e = document.getElementById("consolaHT_bwmSlider"); var v = e ? parseFloat(e.value) : 0; return isNaN(v) ? 0 : Math.max(0, Math.min(1, v/100)); }
+    function enabled(){ return prob() > 0; }
+    function barOf(beat){
+      for(var b = NUM_BARS-1; b >= 0; b--) if(beat >= RHYTHM.start(b) - EPS) return b;
+      return 0;
+    }
+    function phrases(mel){
+      var notes = mel.filter(function(e){ return !e.orn; }).sort(function(a, b){ return a.startBeat - b.startBeat; });
+      var out = [], cur = null, curEnd = 0;
+      notes.forEach(function(e){
+        var end = e.startBeat + e.durBeats;
+        if(cur && e.startBeat - curEnd < GAP - EPS){ cur.push(e); curEnd = Math.max(curEnd, end); }
+        else { cur = [e]; out.push(cur); curEnd = end; }
+      });
+      // frases largas: se parten por compás en tramos de MAX_BARS compases como máximo
+      var res = [];
+      out.forEach(function(ph){
+        var byChunk = {};
+        ph.forEach(function(e){ var k = Math.floor(barOf(e.startBeat) / MAX_BARS); (byChunk[k] = byChunk[k] || []).push(e); });
+        Object.keys(byChunk).sort(function(a, b){ return a - b; }).forEach(function(k){ res.push(byChunk[k]); });
+      });
+      return res;
+    }
+    function apply(){
+      var p = prob();
+      var mel = state.melodyEvents, slots = state.slotChords;
+      if(p <= 0 || !mel || !mel.length || !state.chordEvents || !slots || !slots.length) return;
+      var segs = phrases(mel).map(function(ph){
+        var st = ph[0].startBeat, en = 0, dur = 0;
+        ph.forEach(function(e){ en = Math.max(en, e.startBeat + e.durBeats); });
+        dur = ph.reduce(function(a, e){ return a + e.durBeats; }, 0);
+        return { notes: ph, start: st, end: en, w: dur };
+      });
+      if(!segs.length) return;
+      var total = segs.reduce(function(a, g){ return a + g.w; }, 0), chosen = [];
+      if(p >= 1 - EPS) chosen = segs.slice();
+      else {
+        var pool = segs.slice(), acc = 0;
+        while(pool.length && acc < p*total - EPS){
+          var g = pool.splice(Math.floor(Math.random()*pool.length), 1)[0];
+          chosen.push(g); acc += g.w;
+        }
+      }
+      if(!chosen.length) return;
+      chosen.sort(function(a, b){ return a.start - b.start; });
+      var ev = state.chordEvents.slice(), added = [];
+      chosen.forEach(function(g){
+        // 1) fuera la armonía que arranca dentro del tramo; la que venía de antes se corta al entrar
+        var nextKept = Infinity;
+        ev = ev.filter(function(e){
+          if(e.startBeat >= g.start - EPS && e.startBeat < g.end - EPS) return false;
+          if(e.startBeat >= g.end - EPS && e.startBeat < nextKept) nextKept = e.startBeat;
+          return true;
+        });
+        ev.forEach(function(e){
+          if(e.startBeat < g.start - EPS && e.startBeat + e.durBeats > g.start + EPS) e.durBeats = Math.max(0.05, g.start - e.startBeat);
+        });
+        // 2) un acorde en bloque por onset de la melodía (onsets a < MIN_STEP del anterior no cuentan)
+        var onsets = [];
+        g.notes.forEach(function(n){
+          var last = onsets[onsets.length-1];
+          if(last && n.startBeat - last.t < MIN_STEP - EPS){ last.end = Math.max(last.end, n.startBeat + n.durBeats); return; }
+          onsets.push({ t: n.startBeat, end: n.startBeat + n.durBeats, bar: barOf(n.startBeat) });
+        });
+        onsets.forEach(function(o, i){
+          var sl = slots[o.bar];
+          if(!sl || !sl.length) return;
+          var off = o.t - RHYTHM.start(o.bar);
+          var chord = currentChordAt(sl, off);
+          if(!chord || !chord.length) return;
+          var end = (i + 1 < onsets.length) ? Math.min(o.end, onsets[i+1].t) : o.end;
+          if(i === onsets.length - 1 && nextKept !== Infinity && nextKept - end < GAP*2) end = Math.max(end, nextKept); // sin huecos antes de la armonía que sigue
+          var d = Math.max(0.05, end - o.t);
+          chord.slice().sort(function(a, b){ return a - b; }).forEach(function(m){
+            added.push({ midi: m, startBeat: o.t, durBeats: d, bar: o.bar });
+          });
+        });
+      });
+      state.chordEvents = ev.concat(added).sort(function(a, b){ return a.startBeat - b.startBeat || a.midi - b.midi; });
+    }
+    return { enabled: enabled, apply: apply };
+  })();
   // melody_2follows (checkbox #consolaMelody2FollowsChk): en cada compás, 50% de chances de que
   // Melody n2 copie la melodía principal (mismas notas y ritmo) en vez de su línea independiente.
   // Respeta los silencios propios de n2 y, si la principal calla ese compás, n2 toca lo suyo.
@@ -12245,7 +12466,9 @@ function runAnalysis() {
     }
     state.chordEvents = SYNCOPATION.apply(state.chordEvents, state.slotChords, simpBars); // Syncopation (How to play): el primer ataque de armonía de cada compás puede anticiparse o retrasarse (slotChords no se toca)
     applyMelodySilences(); // Melody silences (slider): recorta compases de la melodía principal
+    BLOCKWITHMELODY.apply(); // BlockwithMelody (Harmony): la armonía toca en bloque la rítmica de la melodía en los tramos elegidos
     applyMelody2Follows(); // melody_2follows: Melody n2 copia la melodía principal en ~50% de los compases
+    PITCHFX.mark(state.melodyEvents); PITCHFX.mark(state.melody2Events); // glissando / bend↓ (Ornaments): marcas para el audio
     DYNAMICS.applyPitched(state); // Dynamics (0% = no-op)
     drumEvents = buildDrumEvents(NUM_BARS);
     renderRoll();
@@ -12280,6 +12503,7 @@ function runAnalysis() {
       : [];
     state.melody2Events = []; // Melody n2 solo en el motor libre (Simplicity no tiene sorteo independiente)
     applyMelodySilences(); // Melody silences (slider): recorta compases de la melodía principal
+    BLOCKWITHMELODY.apply(); // BlockwithMelody (Harmony)
     DYNAMICS.applyPitched(state); // Dynamics (0% = no-op)
     drumEvents = buildDrumEvents(NUM_BARS);
     renderRoll();
@@ -15016,8 +15240,11 @@ function runAnalysis() {
         if(!inWin(ev)) return;
         var t = loopStartTime + ev.startBeat*spb;
         var dur = ev.durBeats*spb;
-        if(sm2Active && playSM2Voice(ctx, gains.melody, P.melody, ev.midi, t, dur*0.85, 0.2*velK(ev), velL(ev))) return;
-        melodyFam.fn(ctx, gains.melody, ev.midi, t, dur*0.85, velOpts(melodyFam, dur*0.85, ev));
+        PITCHFX_CUR = pitchFxFor(ev, t, dur*0.85);
+        try{
+          if(sm2Active && playSM2Voice(ctx, gains.melody, P.melody, ev.midi, t, dur*0.85, 0.2*velK(ev), velL(ev))) return;
+          melodyFam.fn(ctx, gains.melody, ev.midi, t, dur*0.85, velOpts(melodyFam, dur*0.85, ev));
+        } finally { PITCHFX_CUR = null; }
       });
       // Doblar melodía: selector aparte (#melodyDoublePresetSelect, "Mute"
       // por defecto) — repite el mismo ritmo de la melodía, con un
@@ -15036,8 +15263,11 @@ function runAnalysis() {
           var t = loopStartTime + ev.startBeat*spb;
           var dur = ev.durBeats*spb;
           var mdMidi = ev.midi + melodyDoubleInterval;
-          if(sm2Active && playSM2Voice(ctx, gains.melodyDouble, P.melodyDouble, mdMidi, t, dur*0.85, 0.2*velK(ev), velL(ev))) return;
-          melodyDoubleFam.fn(ctx, gains.melodyDouble, mdMidi, t, dur*0.85, velOpts(melodyDoubleFam, dur*0.85, ev));
+          PITCHFX_CUR = pitchFxFor(ev, t, dur*0.85);
+          try{
+            if(sm2Active && playSM2Voice(ctx, gains.melodyDouble, P.melodyDouble, mdMidi, t, dur*0.85, 0.2*velK(ev), velL(ev))) return;
+            melodyDoubleFam.fn(ctx, gains.melodyDouble, mdMidi, t, dur*0.85, velOpts(melodyDoubleFam, dur*0.85, ev));
+          } finally { PITCHFX_CUR = null; }
         });
       }
     }
@@ -15096,8 +15326,11 @@ function runAnalysis() {
       if(!inWin(ev)) return;
       var t = loopStartTime + ev.startBeat*spb;
       var dur = ev.durBeats*spb;
-      if(sm2Active && playSM2Voice(ctx, gains.melody2, P.melody2, ev.midi, t, dur*0.9, 0.16*velK(ev), velL(ev))) return;
-      melody2Fam.fn(ctx, gains.melody2, ev.midi, t, dur*0.9, velOpts(melody2Fam, dur*0.9, ev));
+      PITCHFX_CUR = pitchFxFor(ev, t, dur*0.9);
+      try{
+        if(sm2Active && playSM2Voice(ctx, gains.melody2, P.melody2, ev.midi, t, dur*0.9, 0.16*velK(ev), velL(ev))) return;
+        melody2Fam.fn(ctx, gains.melody2, ev.midi, t, dur*0.9, velOpts(melody2Fam, dur*0.9, ev));
+      } finally { PITCHFX_CUR = null; }
     });
   }
 
@@ -16149,6 +16382,9 @@ function runAnalysis() {
     });
     syncAll();
   })();
+  document.getElementById("consolaHT_runs3").addEventListener("change", function(){
+    if(state.rootChord.length) regenerateConsola();
+  });
   // Harmony "guitar": al tildar pasa Armonía a Guitarra jazz (recuerda el preset anterior); al destildar lo restaura si sigue en jazzGuitar.
   (function(){
     var el = document.getElementById("consolaHT_guitar");
@@ -16220,6 +16456,12 @@ function runAnalysis() {
   document.getElementById("consolaHT_progSlider").addEventListener("change", function(){
     if(state.rootChord.length) regenerateConsola();
   });
+  document.getElementById("consolaHT_bwmSlider").addEventListener("input", function(){
+    document.getElementById("consolaHT_bwmVal").textContent = this.value + "%";
+  });
+  document.getElementById("consolaHT_bwmSlider").addEventListener("change", function(){
+    if(state.rootChord.length) regenerateConsola();
+  });
   document.getElementById("consolaHT_onechord").addEventListener("change", function(){
     if(state.rootChord.length) regenerateConsola();
   });
@@ -16277,7 +16519,7 @@ function runAnalysis() {
   });
   // Ornaments: mismo esquema que Harmony — cada casilla regenera, "all" tilda/destilda las otras y refleja su estado.
   (function(){
-    var keys = ["grace","mordent","trill","turn"];
+    var keys = ["grace","mordent","trill","turn","gliss","bend"];
     var allEl = document.getElementById("consolaORN_all");
     function syncAll(){
       if(!allEl) return;
@@ -17390,10 +17632,16 @@ function runAnalysis() {
     }
     function randomizeVoicesAndTempo(){
       randomizeSlider("consolaTempo", 30, 120);
-      var harm = [null, "epiano", "celesta"]; // sin "pad" (Warm Pad HIFI): pedido del usuario 2026-10-06
-      var mel = [null,
+      randomizeVoices(false);
+    }
+    // radio=true (RadioMode, cada canción nueva): baraja SIEMPRE entre las opciones (sin "dejar el preset actual"),
+    // con el piano / la flauta de siempre como opciones base, así los presets cambian de verdad en cada canción.
+    function randomizeVoices(radio){
+      var harm = [radio ? "piano" : null, "epiano", "celesta"]; // sin "pad" (Warm Pad HIFI): pedido del usuario 2026-10-06
+      var mel = [radio ? "flute" : null,
         sfKey("Extra v2/PSR-SX700_GM_Soundbank_-_Part_2 - 000-114 Steel Drums.sf2", 0, 114),
         sfKey("Extra v2/Keys/PSR-SX700_GM_Soundbank_-_Part_2 - 000-023 Tango Accordion.sf2", 0, 23)];
+      if(radio){ harm.push("harpsichord"); mel.push("sopranoSax", "tenorSax"); } // RadioMode: también los presets de los estilos Baroque/Jazz (siempre disponibles, sin loadExtra)
       function pick(id, list){
         var el = document.getElementById(id);
         if(!el) return;
@@ -17489,6 +17737,7 @@ function runAnalysis() {
       try{
         // RadioMode alterna: cada vuelta nueva sortea Random o Bella (50/50).
         randomizeAndFill(Math.random() < 0.5);
+        randomizeVoices(true); // RadioMode: cada canción nueva baraja los presets de Armonía y Melodía (el tempo no se toca)
         setChecked("consolaMixTimeSigChk", true);
         if(typeof window.consolaRegenerate === "function") window.consolaRegenerate();
       } finally { window.__radioBusy = false; }
