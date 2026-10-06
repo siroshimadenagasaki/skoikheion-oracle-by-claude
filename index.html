@@ -1385,7 +1385,7 @@
         </div>
         </div>
         <div class="consola-inst-row" style="margin-top:4px;">
-          <span class="consola-inst-toggle" title="Patterns (OFF por defecto): el bajo toca un patrón rítmico repetitivo con las mismas notas, como un ostinato. Cada tramo de 4 compases sortea una célula rítmica (corcheas, 3+3+2, síncopas...) que se repite idéntica compás tras compás, y una figura de 1 a 4 grados del acorde en curso (a veces UNA sola nota: ostinato muy repetitivo). Las notas siguen al acorde vigente pero la figura no cambia. Con Patterns tildado, Bass function se ignora (solo toca notas del acorde en curso)."><input type="checkbox" id="consolaBassPatternsChk"><label for="consolaBassPatternsChk">Patterns</label></span>
+          <span class="consola-inst-toggle" title="Patterns (OFF por defecto): el bajo toca un GROOVE repetitivo. Cada tramo de 4 compases sortea un groove (funk, soul o drive) con anticipaciones y ghost notes que se repite compás tras compás, sobre una figura de raíz, quinta, b7/6, 3 y octava, con variación leve. Todas las notas salen del set del acorde en curso: la quinta es la justa si está en el set, si no la 5b, si no la 5#. Con Bass function superset puede sumar notas de la pentatónica más compatible, sin chocar con el set. Con Patterns tildado, Bass function solo decide si se agregan esas notas (superset) o no."><input type="checkbox" id="consolaBassPatternsChk"><label for="consolaBassPatternsChk">Patterns</label></span>
         </div>
         </div>
       </div>
@@ -11070,7 +11070,7 @@ function runAnalysis() {
           var noteOff = strumOff + (brokenOffsets ? brokenOffsets[vi] : 0);
           events.push({midi:note, startBeat:barStart+offset+noteOff, durBeats:Math.max(0.05,dur-noteOff), bar:bar});
         });
-        slots.push({chord:voiced, startBeat:offset, durBeats:dur, setNotes:transposeChord(rcAtk, t)}); // setNotes: el set completo de ESTE reataque, transportado por su t — lo usa Bass function "superset" para saber qué queda afuera del set
+        slots.push({chord:voiced, startBeat:offset, durBeats:dur, setNotes:transposeChord(rcAtk, t), tonic:mod12(BASE_MIDI + t)}); // setNotes: el set completo de ESTE reataque, transportado por su t — lo usa Bass function "superset" para saber qué queda afuera del set
         prevCombo = combo;
         offset += dur;
       });
@@ -11299,63 +11299,137 @@ function runAnalysis() {
   // construcción, una nota del mismo set de Forte/Solomon (cada voicing
   // de slotChords ya es un subset transportado del set original).
   /* ================================================================
-     MÓDULO BASS PATTERNS — checkbox #consolaBassPatternsChk (OFF por
-     defecto). Bajo tipo ostinato: cada tramo de PAT_SEG compases sortea
-     un PLAN = célula rítmica corta (motif, en pulsos) + figura de
-     grados (noteIdx, índices dentro del acorde en curso ordenado grave
-     a agudo). El motif se repite hasta llenar el compás y la figura de
-     grados reinicia en cada compás, así todos los compases del tramo
-     suenan idénticos (rítmica y figura); las alturas siguen al acorde
-     vigente en cada ataque. ~35% de los planes son de UNA sola nota
-     (ostinato muy repetitivo). Solo notas del acorde en curso.
+     MÓDULO BASS PATTERNS (modo GROOVE) — checkbox #consolaBassPatternsChk
+     (OFF por defecto). Bajo de groove: cada tramo de PAT_SEG compases
+     sortea un groove (grilla de semicorcheas con anticipaciones y ghost
+     notes: funk / soul / drive) que se repite compás tras compás, con una
+     figura de grados RAÍZ - QUINTA - b7/6 - 3 - octava y variación leve.
+       · Fidelidad al set: todas las notas salen del set del reataque en
+         curso (slot.setNotes), nunca de afuera, salvo con Bass function
+         "superset" (ver bassSupersetPick), donde además se pueden sumar
+         notas de la pentatónica más compatible.
+       · Quinta: la justa (7) si está en el set; si no la 5b (6); si no la
+         5# (8); si el set no tiene ninguna, la figura no lleva quinta (y
+         nunca se agrega una quinta como nota extra).
+       · Notas agregadas (solo superset, sets de <= 5 notas): se rechazan si
+         chocan por semitono con una nota del set (un set con 3m no recibe
+         3M) y nunca caen en tiempos fuertes.
+       · Raíz: la tónica transportada del reataque (slot.tonic) si está en
+         el set; si no, la nota más grave del set.
+       · Ghost notes: nota muy corta y suave sobre una nota del set.
      ================================================================ */
   var BASSPATTERNS = (function(){
     var PAT_SEG = 4;
-    var MOTIFS = [
-      [1], [0.5], [0.5,0.5,1], [1,0.5,0.5], [1.5,0.5], [0.75,0.75,0.5],
-      [0.5,1,0.5], [0.75,0.25], [1.5,1.5,1], [1,1,0.5,0.5]
-    ];
+    var FIFTH_PRIORITY = [7, 6, 8];
+    var PENTA_MINOR = [0, 3, 5, 7, 10], PENTA_MAJOR = [0, 2, 4, 7, 9];
+    var GROOVES = {
+      funk:  ["1","0","g","1", "0","0","1","g", "1","0","g","1", "0","1","0","g"],
+      soul:  ["1","0","0","1", "0","g","1","0", "0","1","0","g", "1","0","0","1"],
+      drive: ["1","0","1","g", "1","0","1","g", "1","0","1","g", "1","0","1","1"]
+    };
+    var GROOVE_NAMES = ["funk", "soul", "drive"];
+    var GHOST_VEL = 38;      // velocity de las ghost notes (Dynamics las escala en proporción)
+    var SUSTAIN_CAP = 1;     // tope (en pulsos) de una nota: lo que sobra queda como silencio, el groove respira
+    var lastD = 0;           // último grado tocado (las ghost notes lo repiten si sigue en el set)
     function enabled(){
       var c = document.getElementById("consolaBassPatternsChk");
       return !!(c && c.checked);
     }
     function newPlan(){
-      var motif = MOTIFS[randomInt(0, MOTIFS.length-1)];
-      var idx;
-      if (Math.random() < 0.35){
-        idx = [0]; // una sola nota: ostinato muy repetitivo
-      } else {
-        var b = randomInt(1, 3), len = randomInt(2, 4);
-        idx = [0];
-        for (var i=1; i<len; i++) idx.push(Math.random() < 0.5 ? 0 : b);
-        if (idx.every(function(v){ return v === 0; })) idx[len-1] = b; // que haya al menos 2 notas distintas
-      }
-      return {motif: motif, idx: idx};
+      return {groove: GROOVE_NAMES[randomInt(0, GROOVE_NAMES.length-1)], variation: 0.08 + Math.random()*0.14};
     }
-    function cellFor(plan, beats){
-      var out = [], sum = 0, i = 0;
-      while (sum < beats - 1e-9){
-        var d = plan.motif[i % plan.motif.length]; i++;
-        if (sum + d > beats + 1e-9) d = beats - sum;
-        if (d < 0.25 - 1e-9 && out.length) out[out.length-1] += d; else out.push(d);
-        sum += d;
-      }
+    function gridFor(plan, beats){
+      var steps = Math.max(1, Math.round(beats*4)), g = GROOVES[plan.groove], out = [];
+      for (var s=0; s<steps; s++) out.push(g[s % 16]);
+      out[0] = "1";
       return out;
     }
-    // Devuelve {cells, idx}: cells[bar] = duraciones, idx[bar][k] = grado de la nota k.
-    // Compases de respiro (HarmonicSpace): una redonda, grado 0, como el resto del motor.
+    // Devuelve {cells, idx}: cells[bar] = duraciones (distancia entre ataques, en pulsos),
+    // idx[bar][k] = {g: ghost?, i: índice de figura, s: paso de semicorchea, v: prob. de variación}.
+    // Compases de respiro (HarmonicSpace): una redonda sobre la raíz, como el resto del motor.
     function apply(numBars, isPeaceBar){
       var cells = [], idx = [], plan = null;
+      lastD = 0;
       for (var bar=0; bar<numBars; bar++){
         if (bar % PAT_SEG === 0) plan = newPlan();
-        if (isPeaceBar(bar)){ cells.push([4]); idx.push([0]); continue; }
-        var c = cellFor(plan, RHYTHM.beats(bar));
-        cells.push(c);
-        idx.push(c.map(function(_, k){ return plan.idx[k % plan.idx.length]; }));
+        if (isPeaceBar(bar)){ cells.push([4]); idx.push([{g:false, i:0, s:0, v:0}]); continue; }
+        var grid = gridFor(plan, RHYTHM.beats(bar)), starts = [], c = [], h = [], k = 0;
+        grid.forEach(function(ch, s){ if (ch !== "0") starts.push(s); });
+        starts.forEach(function(s, n){
+          var next = n+1 < starts.length ? starts[n+1] : grid.length;
+          var isG = grid[s] === "g";
+          c.push((next - s) * 0.25);
+          h.push({g:isG, i:isG ? 0 : k, s:s, v:plan.variation});
+          if (!isG) k++;
+        });
+        cells.push(c); idx.push(h);
       }
       return {cells: cells, idx: idx};
     }
-    return {enabled: enabled, apply: apply};
+    function uniqSorted(a){
+      var o = [];
+      a.forEach(function(x){ if (o.indexOf(x) < 0) o.push(x); });
+      return o.sort(function(x, y){ return x - y; });
+    }
+    function distToPenta(d, P){
+      var m = 12;
+      P.forEach(function(n){ var x = Math.min(mod12(d-n), mod12(n-d)); if (x < m) m = x; });
+      return m;
+    }
+    // Datos del reataque (cacheados en el slot): raíz, set relativo a la raíz, pool y figura de grados.
+    function info(slot, superset){
+      var key = superset ? "_bgS" : "_bgC";
+      if (slot[key]) return slot[key];
+      var notes = (slot.setNotes && slot.setNotes.length) ? slot.setNotes : slot.chord;
+      var pcs = uniqSorted(notes.map(mod12));
+      var low = mod12(Math.min.apply(null, notes));
+      var rootPc = (slot.tonic != null && pcs.indexOf(slot.tonic) >= 0) ? slot.tonic : low;
+      var R = uniqSorted(pcs.map(function(pc){ return mod12(pc - rootPc); }));
+      var inR = function(d){ return R.indexOf(mod12(d)) >= 0; };
+      var fifth = null;
+      for (var fi=0; fi<FIFTH_PRIORITY.length; fi++){ if (inR(FIFTH_PRIORITY[fi])){ fifth = FIFTH_PRIORITY[fi]; break; } }
+      var sc = function(P){ return P.filter(inR).length; };
+      var P = sc(PENTA_MINOR) >= sc(PENTA_MAJOR) ? PENTA_MINOR : PENTA_MAJOR;
+      var pool = R.slice(), core;
+      if (R.length > 5){
+        core = [0];
+        if (fifth !== null) core.push(fifth);
+        R.filter(function(d){ return core.indexOf(d) < 0; })
+         .sort(function(a, b){ return distToPenta(a, P) - distToPenta(b, P); })
+         .forEach(function(d){ if (core.length < 5) core.push(d); });
+      } else {
+        if (superset){
+          P.forEach(function(d){
+            if (inR(d) || FIFTH_PRIORITY.indexOf(d) >= 0) return; // la quinta solo sale del set
+            if (inR(d+1) || inR(d-1)) return;                      // choca con el set: contradice
+            pool.push(d);
+          });
+          pool = uniqSorted(pool);
+        }
+        core = pool;
+      }
+      var cell = [0];
+      if (fifth !== null) cell.push(fifth);
+      [10, 9, 3, 4, 5, 2].forEach(function(d){
+        if (core.indexOf(d) >= 0 && cell.indexOf(d) < 0 && cell.length < 4) cell.push(d);
+      });
+      cell.push(12);
+      slot[key] = {rootPc: rootPc, R: R, pool: pool, cell: cell};
+      return slot[key];
+    }
+    // Altura de una nota del groove sobre el reataque en curso. Devuelve {midi, ghost}.
+    function pitch(slot, h, superset){
+      var inf = info(slot, superset);
+      var isColor = function(d){ return inf.R.indexOf(mod12(d)) < 0; };
+      var base = BASE_MIDI - 24 + inf.rootPc;
+      if (h.g) return {midi: base + (inf.R.indexOf(mod12(lastD)) >= 0 ? lastD : 0), ghost: true};
+      var d = (h.s === 0) ? 0 : inf.cell[h.i % inf.cell.length];
+      if (h.s !== 0 && Math.random() < h.v) d = inf.pool[randomInt(0, inf.pool.length-1)];
+      if (h.s % 4 === 0 && isColor(d)) d = 0; // nota agregada: nunca en tiempo fuerte
+      if (!isColor(d)) lastD = d;
+      return {midi: base + d, ghost: false};
+    }
+    return {enabled: enabled, apply: apply, pitch: pitch, GHOST_VEL: GHOST_VEL, SUSTAIN_CAP: SUSTAIN_CAP};
   })();
 
   function buildBassMelodyEventsRandom(progression, meta, slotChords){
@@ -11440,10 +11514,12 @@ function runAnalysis() {
       bassCells[bar].forEach(function(dur, bk){
         var pick;
         if (bassPatIdx){
-          // Bass Patterns: grado fijo de la figura sobre el acorde en curso (ordenado grave a agudo)
-          var patChord = currentChordAt(slotChords[bar], bOffset).slice().sort(function(a,b){return a-b;});
-          pick = patChord[bassPatIdx[bar][bk] % patChord.length];
-          bassEvents.push({midi: pick-24, startBeat:barStart+bOffset, durBeats:dur, bar:bar});
+          // Bass Patterns (groove): raíz/quinta/pentatónica del set del reataque en curso; ghost notes con vel baja
+          var gslot = currentSlotAt(slotChords[bar], bOffset);
+          var gp = BASSPATTERNS.pitch(gslot, bassPatIdx[bar][bk], supersetMode);
+          var gev = {midi: gp.midi, startBeat:barStart+bOffset, durBeats: gp.ghost ? Math.min(dur, 0.12) : Math.min(dur, BASSPATTERNS.SUSTAIN_CAP), bar:bar};
+          if (gp.ghost) gev.vel = BASSPATTERNS.GHOST_VEL;
+          bassEvents.push(gev);
           bOffset += dur;
           return;
         }
