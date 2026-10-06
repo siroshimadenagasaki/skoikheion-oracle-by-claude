@@ -1186,8 +1186,8 @@
       </div>
       <div class="clock-actions">
         <div style="display:flex;flex-direction:column;align-items:stretch;gap:6px;">
-          <button class="chip primary" id="creaturaBtn" type="button" title="Corre sola la secuencia: sortea Chromatism (2–40%), Chords (20–60%), Triplets (0–100%), Melodic/Harmonic/RythmSpace (0–100%) y Rapid runs (0–30%) → Random Fill (5 o 2 sets al azar; 2–3/2–4/2–5 notas, modo Mezcla) → Compose → tilda Mix time signatures → Detener → espera 2s → 🔀 Regenerar. Una sola pasada por click.">🪄 CreaturaRandom</button>
-          <button class="chip primary" id="creaturaBellaBtn" type="button" title="Igual que CreaturaRandom (mismos sliders, Compose, Mix time signatures, Detener, espera 2s y Regenerar), pero los 5 o 2 sets salen SOLO del índice del libro (jerarquías de sets) y con más probabilidad cuanto mayor es su jerarquía: dentro de cada cardinalidad (3 hasta el máximo del slider, el índice no tiene sets de 2 notas) el set 1 del índice es el más probable y el último el menos probable. Cada set sale transportado a una tónica al azar.">🪄 CreaturaBella</button>
+          <button class="chip primary" id="creaturaBtn" type="button" title="Corre sola la secuencia: sortea Chromatism (2–40%), Chords (20–60%), Triplets (0–100%), Melodic/Harmonic/RythmSpace (0–100%) y Rapid runs (0–30%), Simplicity (0–50%), Melody n2 (on/off al azar) y una combinación totalmente al azar de Cycles (intervalos + Chromatism; prende Cycles) → Random Fill (5 o 2 sets al azar; 2–3/2–4/2–5 notas, modo Mezcla) → Compose → tilda Mix time signatures → Detener → espera 2s → 🔀 Regenerar. Una sola pasada por click.">🪄 CreaturaRandom</button>
+          <button class="chip primary" id="creaturaBellaBtn" type="button" title="Igual que CreaturaRandom (mismos sliders, incluidos Simplicity 0–50%, Melody n2 on/off y Cycles al azar; Compose, Mix time signatures, Detener, espera 2s y Regenerar), pero los 5 o 2 sets salen SOLO del índice del libro (jerarquías de sets) y con más probabilidad cuanto mayor es su jerarquía: dentro de cada cardinalidad (3 hasta el máximo del slider, el índice no tiene sets de 2 notas) el set 1 del índice es el más probable y el último el menos probable. Cada set sale transportado a una tónica al azar.">🪄 CreaturaBella</button>
         </div>
         <button class="chip" id="composeBtn" type="button" title="Toca el segmento de 12 compases de SetMusicBox con las notas actuales">🎹 Compose</button>
         <button class="chip" id="clearBtn">Limpiar</button>
@@ -17065,10 +17065,50 @@ function runAnalysis() {
       pick("melodyPresetSelect", mel);
     }
 
+    // Cycles al azar: combinación totalmente aleatoria de los 12 sliders de intervalo
+    // (#consolaCyclesBody, los que tienen data-semitones) + Chromatism. El total de
+    // intervalos se sortea en 0..100; cada intervalo entra o no al azar con peso al azar;
+    // los pesos suman EXACTO ese total (método del resto mayor) y Chromatism completa
+    // hasta 100% (misma regla que cyclesWeightedPick). Se ponen primero todos en 0 sin
+    // evento para que el tope de 100% de la UI nunca recorte un valor nuevo.
+    function randomizeCycles(){
+      var sliders = Array.prototype.slice.call(
+        document.querySelectorAll("#consolaCyclesBody input[type=range][data-semitones]"));
+      if(!sliders.length) return;
+      sliders.forEach(function(s){ s.value = 0; });
+      var total = Math.floor(Math.random() * 101); // 0..100
+      var picked = sliders.filter(function(){ return Math.random() < 0.5; });
+      if(total > 0 && !picked.length) picked = [sliders[Math.floor(Math.random() * sliders.length)]];
+      if(total > 0){
+        var raw = picked.map(function(){ return Math.random() + 0.05; });
+        var rawSum = raw.reduce(function(a, b){ return a + b; }, 0);
+        var exact = raw.map(function(r){ return r / rawSum * total; });
+        var vals = exact.map(function(x){ return Math.floor(x); });
+        var left = total - vals.reduce(function(a, b){ return a + b; }, 0);
+        exact.map(function(x, i){ return { i: i, frac: x - Math.floor(x) }; })
+          .sort(function(a, b){ return b.frac - a.frac; })
+          .slice(0, left)
+          .forEach(function(o){ vals[o.i]++; });
+        picked.forEach(function(s, i){ s.value = vals[i]; });
+      }
+      // "input" actualiza cada etiqueta de % y el total "X% · Chromatism Y%" (sin regenerar).
+      sliders.forEach(function(s){ s.dispatchEvent(new Event("input", { bubbles: true })); });
+      // Para que la combinación tenga efecto, Cycles tiene que estar prendido.
+      setChecked("consolaCyclesChk", true);
+    }
+
     // bella=false: CreaturaRandom (sets al azar). bella=true: CreaturaBella (misma
     // secuencia, pero los sets salen del índice del libro ponderados por jerarquía).
     // Pasos 0 y 1 (sliders al azar + Random Fill); compartidos con RadioMode.
     function randomizeAndFill(bella){
+        // 0b) Melody n2 on/off al azar (50/50). Se asigna sin disparar "change": ese handler
+        // solo hace regenerateConsola(), y el Compose / Regenerar que sigue ya regenera.
+        var m2 = document.getElementById("consolaMelody2Chk");
+        if(m2) m2.checked = Math.random() < 0.5;
+        // 0c) Simplicity al azar 0–50% (enteros; 0 = motor libre puro).
+        randomizeSlider("consolaNormalSlider", 0, 50);
+        // 0d) Cycles: combinación random de intervalos + Chromatism.
+        randomizeCycles();
         // 0) Variantes aleatorias (cada una se sortea por separado):
         // Chromatism 2–40%, Chords 20–60%, Triplets 0–100%, Melodic/Harmonic/
         // RythmSpace 0–100%, Rapid runs 0–30%.
