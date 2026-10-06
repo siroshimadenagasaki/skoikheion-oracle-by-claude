@@ -17375,7 +17375,7 @@ function runAnalysis() {
     // Al apretar CreaturaRandom/Bella (no en las vueltas de RadioMode): tempo al azar
     // (30-120 BPM) + preset de Armonía y de Melodía sorteados entre una lista corta.
     // null = dejar el preset actual. Una opción que no esté cargada en el selector
-    // (p.ej. Warm Pad HIFI sin HIFI) se descarta del sorteo.
+    // (p.ej. un preset HIFI sin loadExtra) se descarta del sorteo.
     function setSelectIfPresent(id, value){
       var el = document.getElementById(id);
       if(!el || value == null) return false;
@@ -17390,7 +17390,7 @@ function runAnalysis() {
     }
     function randomizeVoicesAndTempo(){
       randomizeSlider("consolaTempo", 30, 120);
-      var harm = [null, "epiano", "pad", "celesta"];
+      var harm = [null, "epiano", "celesta"]; // sin "pad" (Warm Pad HIFI): pedido del usuario 2026-10-06
       var mel = [null,
         sfKey("Extra v2/PSR-SX700_GM_Soundbank_-_Part_2 - 000-114 Steel Drums.sf2", 0, 114),
         sfKey("Extra v2/Keys/PSR-SX700_GM_Soundbank_-_Part_2 - 000-023 Tango Accordion.sf2", 0, 23)];
