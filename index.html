@@ -1412,6 +1412,9 @@
         <div class="consola-inst-row" style="margin-top:4px;">
           <span class="consola-inst-toggle" title="Patterns (OFF por defecto): el bajo toca un GROOVE repetitivo. Cada tramo de 4 compases sortea un groove (funk, soul o drive) con anticipaciones y ghost notes que se repite compás tras compás, sobre una figura de raíz, quinta, b7/6, 3 y octava, con variación leve. Todas las notas salen del set del acorde en curso: la quinta es la justa si está en el set, si no la 5b, si no la 5#. Con Bass function superset puede sumar notas de la pentatónica más compatible, sin chocar con el set. Con Patterns tildado, Bass function solo decide si se agregan esas notas (superset) o no."><input type="checkbox" id="consolaBassPatternsChk"><label for="consolaBassPatternsChk">Patterns</label></span>
         </div>
+        <div class="consola-inst-row" style="margin-top:4px;">
+          <span class="consola-inst-toggle" title="BlockwithMelody (Bass): mismo concepto que BlockwithMelody de Harmony y de Rhythm pero aplicado al BAJO. 0% = bajo de siempre. 100% = en TODA la melodía el bajo toca la misma rítmica que la melodía principal (cada nota de la melodía = una nota de bajo, mismo inicio y hasta el siguiente golpe; los adornos de Ornaments no cuentan y notas a menos de 1/4 de tiempo del golpe anterior no suman nota). Entre medio se eligen al azar frases melódicas completas (grupos de notas separados por silencios de 1 tiempo o más; las de más de 2 compases se parten) hasta cubrir ese % de la melodía; el resto queda con el bajo de siempre. Cada nota sale del acorde vigente en ese instante (con Bass function y Jazz como siempre en el motor libre) y no repite la del golpe anterior si el acorde tiene otra para elegir. Se aplica al final, sobre cualquier otra opción de Bass (los tramos elegidos pisan Patterns). Default 0%."><label for="consolaBassBwmSlider">BlockwithMelody</label><input type="range" class="consola-mini-range" id="consolaBassBwmSlider" min="0" max="100" value="0" step="1"><span class="consola-val" id="consolaBassBwmVal">0%</span></span>
+        </div>
         </div>
       </div>
       <div class="consola-field consola-instruments">
@@ -1496,6 +1499,7 @@
           <span class="consola-inst-toggle" title="5thRuns: lo mismo que 3rdsRuns pero en QUINTAS únicamente: en un tramo de 4 compases SEGUIDOS (inicio al azar; puede coincidir en compases con 3rdsRuns solo si no queda otro lugar) y solo con sets de 5+ notas, la armonía toca acordes en bloque apilados en quintas verdaderas (cada nota a 6, 7 u 8 semitonos de la anterior, todas notas del set, hasta 4 notas dentro de 2 octavas), uno por cada raíz que dé un acorde así, en orden y volviendo al principio, en tresillos de corchea (3 por tiempo). El acorde vigente (bajo, melodía, cifrado) sigue siendo el set completo. Sin quintas posibles en el set suena el set entero. Los compases de respiro de HarmonicSpace no se tocan. No entra en all."><input type="checkbox" id="consolaHT_runs5" autocomplete="off"><label for="consolaHT_runs5">5thRuns</label></span>
           <span class="consola-inst-toggle" title="Guitar comping: en vez del voicing de piano, cada ataque toca una DIGITACIÓN DE GUITARRA real del set (el mismo motor de la tarjeta Digitaciones de Guitarra: cuerdas, trastes y dedos tocables), con el grave del set como nota más grave y la posición más cercana a la digitación anterior. Pasa Armonía a Guitarra jazz (al destildar vuelve al preset anterior). El ritmo sale de las otras casillas (sync, poly, rythmicarmonies…). Pisa inversiones e in3rds. Sets de 7+ notas: toca 6 (el grave + 5 al azar). No entra en all."><input type="checkbox" id="consolaHT_guitar"><label for="consolaHT_guitar">guitar</label></span>
           <span class="consola-inst-toggle" title="One chord test: la canción tiene UN solo acorde. Se sortea el primer acorde del algoritmo (con su transposición) y TODOS los ataques de Harmony repiten ese mismo set, en todos los compases. Bajo y melodía quedan sobre ese set. El ritmo y las demás casillas (inversions, arp, in3rds…) siguen funcionando sobre ese único acorde. No entra en all."><input type="checkbox" id="consolaHT_onechord"><label for="consolaHT_onechord">One chord test</label></span>
+          <span class="consola-inst-toggle" title="wide.range: los acordes largos (3 negras o más, de 2+ notas) se extienden en varias octavas: se duplican 1 octava abajo y 2 o 3 octavas arriba (se sortea por acorde). Las copias nunca suenan juntas: cada capa (la octava de abajo, el acorde original y las de arriba) ataca en un momento distinto, en orden al azar, repartidas a lo largo de la primera mitad del acorde, y todas terminan cuando termina el acorde. Mismas clases de tono: el set no se traiciona. Las capas que se pasan del registro (más agudo que C8 o más grave que E1) se omiten. No entra en all."><input type="checkbox" id="consolaHT_wide"><label for="consolaHT_wide">wide.range</label></span>
         </div>
         <div class="consola-inst-row">
           <span class="consola-inst-toggle" title="Arpegiador de armonía: 0% = nunca (Armonía de siempre). 100% = TODOS los compases se arpegian. Entre medio, cada compás se sortea: con probabilidad = el valor se reemplaza por un arpegio de las notas del acorde vigente (el set no se traiciona: solo sus notas, subiendo de octava si el patrón lo pide). En cada compás arpegiado se sortea de nuevo el patrón (casi siempre aleatorios o asimétricos: paseo aleatorio, permutación, célula irregular, convergente, pedal, saltos de 2 o 3… los lineales arriba/abajo salen poco, ~10%), la subdivisión (corcheas, semicorcheas o tresillos) y el largo de las notas. Con el slider por encima de 0 la Armonía deja el motor libre (como al tildar una casilla). Se combina con inversions, in3rds, guitar y accent; en los compases arpegiados reemplaza el ritmo de sync/poly/rythmicarmonies."><label for="consolaHT_arpSlider">&#127929; Arp</label><input type="range" class="consola-mini-range" id="consolaHT_arpSlider" min="0" max="100" value="0" step="1"><span class="consola-val" id="consolaHT_arpVal">0%</span></span>
@@ -10695,7 +10699,7 @@ function runAnalysis() {
   var HARMTEST = (function(){
     var IDS = { base:"consolaHT_base", sync:"consolaHT_sync", poly:"consolaHT_poly", accent:"consolaHT_accent",
                 artic:"consolaHT_artic", subset:"consolaHT_subset", rests:"consolaHT_rests", swing:"consolaHT_swing",
-                inversions:"consolaHT_inversions", rythmicarmonies:"consolaHT_rythmicarmonies", in3rds:"consolaHT_in3rds", runs3:"consolaHT_runs3", runs5:"consolaHT_runs5", in4ths:"consolaHT_in4ths", in5ths:"consolaHT_in5ths", guitar:"consolaHT_guitar", onechord:"consolaHT_onechord" };
+                inversions:"consolaHT_inversions", rythmicarmonies:"consolaHT_rythmicarmonies", in3rds:"consolaHT_in3rds", runs3:"consolaHT_runs3", runs5:"consolaHT_runs5", in4ths:"consolaHT_in4ths", in5ths:"consolaHT_in5ths", guitar:"consolaHT_guitar", onechord:"consolaHT_onechord", wide:"consolaHT_wide" };
     // 3/4/5: slider #consolaHT_stackSlider (0–100%) = probabilidad (por acorde) de que in3rds/in4ths/in5ths apilen. 0 = esas casillas quedan apagadas.
     function stackProb(){ var e = document.getElementById("consolaHT_stackSlider"); var v = e ? parseFloat(e.value) : 75; return isNaN(v) ? 0.75 : Math.max(0, Math.min(1, v/100)); }
     function on(k){ var e = document.getElementById(IDS[k]); if(!(e && e.checked)) return false; if((k === "in3rds" || k === "in4ths" || k === "in5ths") && stackProb() === 0) return false; return true; }
@@ -12561,6 +12565,124 @@ function runAnalysis() {
     }
     return { apply: apply, prob: prob };
   })();
+  /* ================================================================
+     WIDERANGE — casilla #consolaHT_wide ("wide.range", Harmony, OFF por defecto). Post-proceso de la ARMONÍA: un acorde que dura 3 negras
+     o más (3 tiempos; con 2+ notas distintas) se extiende en varias octavas. Por acorde se sortea cuántas octavas hacia arriba (2 o 3) y se
+     agrega una copia 1 octava abajo: capas = [-1, original, +1, +2 (, +3)]. Las capas NUNCA atacan juntas: se sortea el orden (el original
+     también entra en el sorteo) y los ataques se reparten parejo a lo largo de la primera MITAD del acorde; todas terminan cuando termina el
+     acorde (lo que cambia es el ataque, no el final). Mismas clases de tono: el set no se traiciona. Una capa que se pasa del registro
+     (alguna nota > C8 o < E1) se omite. Se llama después de TEMPODENSITY (que descartaría capas pegadas) y antes de staggerBigChordAttacks.
+     ================================================================ */
+  var WIDERANGE = (function(){
+    var EPS = 1e-6, MIN_DUR = 3, LO = 28, HI = 108;
+    function enabled(){ var e = document.getElementById("consolaHT_wide"); return !!(e && e.checked); }
+    function shuffle(a){
+      for(var i = a.length - 1; i > 0; i--){ var j = randomInt(0, i), t = a[i]; a[i] = a[j]; a[j] = t; }
+      return a;
+    }
+    function apply(events){
+      if(!enabled() || !events || !events.length) return events;
+      var groups = {}, keys = [];
+      events.forEach(function(e){
+        var k = Math.round(e.startBeat*1000);
+        if(!groups[k]){ groups[k] = []; keys.push(k); }
+        groups[k].push(e);
+      });
+      var out = [], touched = false;
+      keys.forEach(function(k){
+        var g = groups[k], seen = {}, nDistinct = 0, longest = 0;
+        g.forEach(function(e){ if(!seen[e.midi]){ seen[e.midi] = 1; nDistinct++; } if(e.durBeats > longest) longest = e.durBeats; });
+        if(nDistinct < 2 || longest < MIN_DUR - EPS){ out = out.concat(g); return; }
+        var shifts = [-12, 0], up = randomInt(2, 3);
+        for(var u = 1; u <= up; u++) shifts.push(12*u);
+        shifts = shifts.filter(function(sh){
+          return sh === 0 || g.every(function(e){ return e.midi + sh >= LO && e.midi + sh <= HI; });
+        });
+        if(shifts.length < 2){ out = out.concat(g); return; }
+        shuffle(shifts);
+        var step = (longest/2) / (shifts.length - 1);
+        shifts.forEach(function(sh, i){
+          g.forEach(function(e){
+            var end = e.startBeat + e.durBeats, c = {}, key;
+            for(key in e) if(Object.prototype.hasOwnProperty.call(e, key)) c[key] = e[key];
+            c.midi = e.midi + sh;
+            c.startBeat = e.startBeat + i*step;
+            c.durBeats = Math.max(0.05, end - c.startBeat);
+            out.push(c);
+          });
+        });
+        touched = true;
+      });
+      return touched ? out.sort(function(a, b){ return a.startBeat - b.startBeat || a.midi - b.midi; }) : events;
+    }
+    return { enabled: enabled, apply: apply };
+  })();
+  /* ================================================================
+     BASSBLOCKMELODY — slider #consolaBassBwmSlider (Bass, 0-100%, default 0). Mismo concepto que BlockwithMelody de Harmony y de
+     Rhythm, aplicado al BAJO: en las frases elegidas (mismo criterio: % de la melodía por duración, BLOCKWITHMELODY.chooseSegs) el bajo
+     deja su patrón y toca una nota por cada nota de la melodía (mismo inicio, hasta el siguiente golpe; los adornos no cuentan y notas a
+     < 1/4 de tiempo del golpe anterior no suman nota). La altura sale del acorde vigente en ese instante (slotChords), con el mismo criterio
+     del bajo de siempre: nota del acorde en curso menos 2 octavas, o la octava más cercana si Jazz tira el dado; con Bass function = Superset
+     (solo motor libre) puede salir una nota de afuera del set. No repite la nota del golpe anterior si hay otra para elegir.
+     Se llama al final de la cadena (después de BlockwithMelody de Harmony), sobre la melodía ya final.
+     ================================================================ */
+  var BASSBLOCKMELODY = (function(){
+    var EPS = 1e-6, MIN_STEP = 0.25, GAP = 1;
+    function prob(){ var e = document.getElementById("consolaBassBwmSlider"); var v = e ? parseFloat(e.value) : 0; return isNaN(v) ? 0 : Math.max(0, Math.min(1, v/100)); }
+    // free = true en el motor libre (Bass function superset y Jazz aplican); false en Simplicity (bajo fijo: solo notas del acorde)
+    function apply(free){
+      var p = prob(), mel = state.melodyEvents, slots = state.slotChords;
+      if(p <= 0 || !mel || !mel.length || !state.bassEvents || !slots || !slots.length) return;
+      var chosen = BLOCKWITHMELODY.chooseSegs(p, mel);
+      if(!chosen.length) return;
+      var superset = !!free && bassFunction === "superset";
+      var ev = state.bassEvents.slice(), added = [], prevMidi = null, jazzPrev = null;
+      function candidate(sl, off, chord){
+        var pick = superset ? bassSupersetPick(currentSlotAt(sl, off)) : chord[randomInt(0, chord.length - 1)];
+        var useJazz = !!free && JAZZ.roll();
+        var midi = useJazz ? (jazzPrev === null ? JAZZ.clampBass(pick - 24) : JAZZ.clampBass(JAZZ.nearestOctave(pick, jazzPrev))) : pick - 24;
+        return { midi: midi, jazz: useJazz };
+      }
+      function nextBass(sl, off, chord){
+        var c = null;
+        for(var t = 0; t < 12; t++){ c = candidate(sl, off, chord); if(c.midi !== prevMidi) break; }
+        prevMidi = c.midi;
+        if(c.jazz) jazzPrev = c.midi;
+        return c.midi;
+      }
+      chosen.forEach(function(g){
+        // 1) fuera el bajo que arranca dentro del tramo; el que venía de antes se corta al entrar
+        var nextKept = Infinity;
+        ev = ev.filter(function(e){
+          if(e.startBeat >= g.start - EPS && e.startBeat < g.end - EPS) return false;
+          if(e.startBeat >= g.end - EPS && e.startBeat < nextKept) nextKept = e.startBeat;
+          return true;
+        });
+        ev.forEach(function(e){
+          if(e.startBeat < g.start - EPS && e.startBeat + e.durBeats > g.start + EPS) e.durBeats = Math.max(0.05, g.start - e.startBeat);
+        });
+        // 2) una nota de bajo por onset de la melodía (onsets a < MIN_STEP del anterior no cuentan)
+        var onsets = [];
+        g.notes.forEach(function(n){
+          var last = onsets[onsets.length - 1];
+          if(last && n.startBeat - last.t < MIN_STEP - EPS){ last.end = Math.max(last.end, n.startBeat + n.durBeats); return; }
+          onsets.push({ t: n.startBeat, end: n.startBeat + n.durBeats, bar: BLOCKWITHMELODY.barOf(n.startBeat) });
+        });
+        onsets.forEach(function(o, i){
+          var sl = slots[o.bar];
+          if(!sl || !sl.length) return;
+          var off = o.t - RHYTHM.start(o.bar);
+          var chord = currentChordAt(sl, off);
+          if(!chord || !chord.length) return;
+          var end = (i + 1 < onsets.length) ? Math.min(o.end, onsets[i+1].t) : o.end;
+          if(i === onsets.length - 1 && nextKept !== Infinity && nextKept - end < GAP*2) end = Math.max(end, nextKept); // sin huecos antes del bajo que sigue
+          added.push({ midi: nextBass(sl, off, chord), startBeat: o.t, durBeats: Math.max(0.05, end - o.t), bar: o.bar });
+        });
+      });
+      state.bassEvents = ev.concat(added).sort(function(a, b){ return a.startBeat - b.startBeat || a.midi - b.midi; });
+    }
+    return { apply: apply, prob: prob };
+  })();
   // melody_2follows (checkbox #consolaMelody2FollowsChk): en cada compás, 50% de chances de que
   // Melody n2 copie la melodía principal (mismas notas y ritmo) en vez de su línea independiente.
   // Respeta los silencios propios de n2 y, si la principal calla ese compás, n2 toca lo suyo.
@@ -12823,7 +12945,9 @@ function runAnalysis() {
     state.chordEvents = SYNCOPATION.apply(state.chordEvents, state.slotChords, simpBars); // Syncopation (How to play): el primer ataque de armonía de cada compás puede anticiparse o retrasarse (slotChords no se toca)
     applyMelodySilences(); // Melody silences (slider): recorta compases de la melodía principal
     BLOCKWITHMELODY.apply(); // BlockwithMelody (Harmony): la armonía toca en bloque la rítmica de la melodía en los tramos elegidos
+    BASSBLOCKMELODY.apply(true); // BlockwithMelody (Bass): el bajo toca la rítmica de la melodía en los tramos elegidos
     state.chordEvents = TEMPODENSITY.apply(state.chordEvents); // Armonía según el tempo: no más ataques de los tocables
+    state.chordEvents = WIDERANGE.apply(state.chordEvents); // wide.range (Harmony): acordes largos duplicados en varias octavas, capas escalonadas
     state.chordEvents = staggerBigChordAttacks(state.chordEvents); // Armonía: 6+ notas nunca atacan simultáneas
     applyMelody2Follows(); // melody_2follows: Melody n2 copia la melodía principal en ~50% de los compases
     PITCHFX.mark(state.melodyEvents); PITCHFX.mark(state.melody2Events); // glissando / bend↓ (Ornaments): marcas para el audio
@@ -12862,7 +12986,9 @@ function runAnalysis() {
     state.melody2Events = []; // Melody n2 solo en el motor libre (Simplicity no tiene sorteo independiente)
     applyMelodySilences(); // Melody silences (slider): recorta compases de la melodía principal
     BLOCKWITHMELODY.apply(); // BlockwithMelody (Harmony)
+    BASSBLOCKMELODY.apply(false); // BlockwithMelody (Bass)
     state.chordEvents = TEMPODENSITY.apply(state.chordEvents); // Armonía según el tempo: no más ataques de los tocables
+    state.chordEvents = WIDERANGE.apply(state.chordEvents); // wide.range (Harmony): acordes largos duplicados en varias octavas, capas escalonadas
     state.chordEvents = staggerBigChordAttacks(state.chordEvents); // Armonía: 6+ notas nunca atacan simultáneas
     DYNAMICS.applyPitched(state); // Dynamics (0% = no-op)
     drumEvents = buildDrumEvents(NUM_BARS);
@@ -16857,6 +16983,9 @@ function runAnalysis() {
   document.getElementById("consolaHT_onechord").addEventListener("change", function(){
     if(state.rootChord.length) regenerateConsola();
   });
+  document.getElementById("consolaHT_wide").addEventListener("change", function(){
+    if(state.rootChord.length) regenerateConsola();
+  });
   document.getElementById("consolaHT_arpSlider").addEventListener("input", function(){
     document.getElementById("consolaHT_arpVal").textContent = this.value + "%";
   });
@@ -16901,6 +17030,12 @@ function runAnalysis() {
     document.getElementById("consolaRhythmBwmVal").textContent = this.value + "%";
   });
   document.getElementById("consolaRhythmBwmSlider").addEventListener("change", function(){
+    if(state.rootChord.length) regenerateConsola();
+  });
+  document.getElementById("consolaBassBwmSlider").addEventListener("input", function(){
+    document.getElementById("consolaBassBwmVal").textContent = this.value + "%";
+  });
+  document.getElementById("consolaBassBwmSlider").addEventListener("change", function(){
     if(state.rootChord.length) regenerateConsola();
   });
   document.getElementById("consolaSustainSlider").addEventListener("input", function(){
