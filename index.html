@@ -5683,7 +5683,7 @@ const SF_BASE_URLS = []; // Instruments/Drums/Percussion.sf2 ya no existen (ver 
 // cambiar un default: reemplazá el archivo en Soundfonts/ o editá su fila.
 const SF_DEFAULT_FILES = [
   { mix: "harmony",      file: "Piano default.sf2", bank: 0, program: 0,  label: "Grand Piano",          kind: "melodic", family: "piano" },
-  { mix: "chordDouble",  file: "Nord Pad.sf2",      bank: 0, program: 0,  label: "Warm Pad Pro",         kind: "melodic", family: "pad"   },
+  { mix: "chordDouble",  file: "Extra v2/Keys/Nord Pad.sf2", bank: 0, program: 0,  label: "Warm Pad Pro",         kind: "melodic", family: "pad"   },
   { mix: "melody",       file: "BasoonFlute.sf2",   bank: 0, program: 0,  label: "Ethan's Bassoon",      kind: "melodic", family: "flute" },
   { mix: "melodyDouble", file: "Extra v2/LEAD/Armonica.sf2", bank: 0, program: 0,  label: "Hohner C Harmonica",   kind: "melodic", family: "flute" },
   { mix: "bass",         file: "Bass default.sf2",  bank: 0, program: 32, label: "Acoust. Bass (Solar)", kind: "melodic", family: "bass"  },
@@ -5808,6 +5808,7 @@ function sfKindFor(path, manifestEntries) {
     if (m.mode === "new") return m.target === "drum" ? "drum" : "melodic";
     return (m.key === "kit" || m.key === "percussion") ? "drum" : "melodic";
   }
+  if (/\/Drums\//.test(path)) return "drum"; // todo lo de Extra v2/Drums/ va al selector Batería
   const name = path.split("/").pop();
   if (/steel/i.test(name)) return "melodic"; // "Steel Drums" es melódico (GM 114), no un kit
   return /kit|drum|perc|bater/i.test(name) ? "drum" : "melodic";
@@ -13471,21 +13472,45 @@ function runAnalysis() {
      Melódicos van en Armonía/Doblar armonía/Melodía/Doblar melodía/
      Bebop/Bajo; los de batería (Drums, Percussion, kits HIFI) en Batería.
      ================================================================ */
+  // roles: qué carpetas de "Soundfonts v2/" alimentan cada selector (ver sfRoleFor).
+  //   drum    -> Extra v2/Drums/            (Batería)
+  //   lead    -> Extra v2/LEAD/             (Melodía, Melody N2, Bebop, Doblar melodía)
+  //   bass    -> Extra v2/BASS/             (Bajo, Doblar bajo)
+  //   harmony -> Extra v2/Keys/ + Synth/ + Brass & Strings/ (Armonía y sus dobles)
+  //   loose   -> archivos sueltos en Extra v2/ (melódicos y armónicos)
+  // Siempre se conservan: el grupo "Classics", el archivo default del selector,
+  // los archivos que usan los estilos (SF_ALWAYS_FILES) y el archivo del preset elegido.
   var SF_MELODIC_SELECTS = [
-    { id:"harmonyPresetSelect",      mix:"harmony",      special:[] },
-    { id:"chordDoublePresetSelect",  mix:"chordDouble",  special:[{ value:"mute", label:"Mute (off)" }] },
-    { id:"melodyPresetSelect",       mix:"melody",       special:[] },
-    { id:"melodyDoublePresetSelect", mix:"melodyDouble", special:[{ value:"mute", label:"Mute (off)" }] },
-    { id:"bebopPresetSelect",        mix:"bebop",        special:[] },
-    { id:"melody2PresetSelect",      mix:"melody2",      special:[] },
-    { id:"comping2PresetSelect",     mix:"comping2",     special:[] },
-    { id:"bassPresetSelect",         mix:"bass",         special:[{ value:"synthBass", label:"Original bass (synthesized)" }] },
-    { id:"bassDoublePresetSelect",   mix:"bassDouble",   special:[{ value:"mute", label:"Empty (off)" }] },
-    { id:"mvPresetSelect",           mix:"modalVamps",   special:[] }
+    { id:"harmonyPresetSelect",      mix:"harmony",      roles:["harmony","loose"], special:[] },
+    { id:"chordDoublePresetSelect",  mix:"chordDouble",  roles:["harmony","loose"], special:[{ value:"mute", label:"Mute (off)" }] },
+    { id:"melodyPresetSelect",       mix:"melody",       roles:["lead","loose"],    special:[] },
+    { id:"melodyDoublePresetSelect", mix:"melodyDouble", roles:["lead","loose"],    special:[{ value:"mute", label:"Mute (off)" }] },
+    { id:"bebopPresetSelect",        mix:"bebop",        roles:["lead","loose"],    special:[] },
+    { id:"melody2PresetSelect",      mix:"melody2",      roles:["lead","loose"],    special:[] },
+    { id:"comping2PresetSelect",     mix:"comping2",     roles:["harmony","loose"], special:[] },
+    { id:"bassPresetSelect",         mix:"bass",         roles:["bass"],            special:[{ value:"synthBass", label:"Original bass (synthesized)" }] },
+    { id:"bassDoublePresetSelect",   mix:"bassDouble",   roles:["bass"],            special:[{ value:"mute", label:"Empty (off)" }] },
+    { id:"mvPresetSelect",           mix:"modalVamps",   roles:["harmony","loose"], special:[] }
   ];
   var SF_DRUM_SELECTS = [
-    { id:"drumPresetSelect", mix:"drum", special:[] }
+    { id:"drumPresetSelect", mix:"drum", roles:["drum"], special:[] }
   ];
+  // Rol de un .sf2 según su carpeta (ruta relativa a SF_ROOT_DIR). Los de la
+  // raíz de "Soundfonts v2/" (los defaults) se asignan por nombre.
+  var SF_ROOT_ROLES = { "Piano default.sf2":"harmony", "BasoonFlute.sf2":"lead", "Flute default.sf2":"lead", "Bass default.sf2":"bass", "Drums default.sf2":"drum" };
+  function sfRoleFor(path){
+    var rel = path.indexOf(SF_ROOT_DIR + "/") === 0 ? path.slice(SF_ROOT_DIR.length + 1) : path;
+    var x = SF_EXTRA_DIR + "/";
+    if(rel.indexOf(x) !== 0) return SF_ROOT_ROLES[rel] || "loose";
+    var sub = rel.slice(x.length);
+    if(sub.indexOf("/") === -1) return "loose";
+    var folder = sub.split("/")[0].toLowerCase();
+    if(folder === "drums") return "drum";
+    if(folder === "lead") return "lead";
+    if(folder === "bass") return "bass";
+    if(folder === "keys" || folder === "synth" || folder === "brass & strings") return "harmony";
+    return "loose";
+  }
   // Familia de sintetizador de respaldo (cuando el SoundFont está apagado o
   // el archivo no cargó) para un preset SIN familia declarada: se deduce del
   // nombre del preset + archivo. Solo afecta al sonido de respaldo.
@@ -13532,7 +13557,7 @@ function runAnalysis() {
         curated.push({ key:sfDefaultKey(d), label:d.label, bank:d.bank, program:d.program, family:d.family,
           title:"Default of this selector · " + SF_ROOT_DIR + "/" + d.file + " · banco " + d.bank + " · programa " + d.program });
       });
-      return { id:e.id, label:e.label, kind:e.kind, font:sfFontByUrl[e.url] || null, extra:true, url:e.url, curated:curated };
+      return { id:e.id, label:e.label, kind:e.kind, font:sfFontByUrl[e.url] || null, extra:true, url:e.url, path:e.path, curated:curated };
     });
   }
   // Entradas de un archivo: primero las que ya tenían key propia (en el
@@ -13566,6 +13591,12 @@ function runAnalysis() {
     if(st === "loading" || hifiEnabled) return "… loading presets from this file";
     return "… press loadExtra to see all its presets";
   }
+  function sfFileVisibleIn(cfg, f, current){
+    if(cfg.roles.indexOf(sfRoleFor(f.path)) !== -1) return true;
+    if(SF_DEFAULT_FILES.some(function(d){ return d.mix === cfg.mix && sfDefaultId(d) === f.id; })) return true; // su default
+    if(SF_ALWAYS_FILES.some(function(a){ return "x_" + encodeURIComponent(a) === f.id; }) && cfg.roles.indexOf("bass") === -1 && cfg.roles.indexOf("drum") === -1) return true; // usados por estilos
+    return String(current).indexOf("sf:" + f.id + ":") === 0; // el preset elegido ahora
+  }
   function sfFillSelect(cfg, files, kind){
     var sel = document.getElementById(cfg.id);
     if(!sel) return;
@@ -13574,6 +13605,7 @@ function runAnalysis() {
     cfg.special.forEach(function(sp){ sel.appendChild(new Option(sp.label, sp.value)); });
     files.forEach(function(f){
       if(f.kind !== kind) return;
+      if(f.extra && !sfFileVisibleIn(cfg, f, current)) return;
       var g = document.createElement("optgroup");
       g.label = f.label;
       f.entries.forEach(function(e){
