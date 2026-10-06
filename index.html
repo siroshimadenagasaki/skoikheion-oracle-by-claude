@@ -1070,6 +1070,22 @@
   #consolaBebopRollLabel{display:none;}
   #consolaSongTitle{font-size:clamp(18px,2.4vw,30px);font-weight:700;letter-spacing:.02em;text-align:center;color:var(--gold);padding:0 12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   #consolaSongTitle:empty{display:none;}
+  /* Título de la canción + bpm actual al lado */
+  #consolaSongHead{display:flex;align-items:baseline;justify-content:center;gap:14px;padding:0 12px;min-width:0;}
+  #consolaSongHead #consolaSongTitle{padding:0;min-width:0;}
+  #consolaSongBpm{font-family:'JetBrains Mono',monospace;font-size:clamp(12px,1.4vw,18px);color:var(--ink-muted);white-space:nowrap;flex:none;}
+  #consolaSongTitle:empty + #consolaSongBpm{display:none;}
+  /* "+" bajo Shortcuts: trae el piano roll (de fondo, detrás de la página) al primer plano */
+  .shortcuts-roll-btn{align-self:flex-start;width:32px;height:26px;display:flex;align-items:center;justify-content:center;background:var(--surface-2);border:1px solid var(--line);color:var(--gold);border-radius:6px;font-size:16px;font-weight:700;line-height:1;cursor:pointer;padding:0;transition:.15s;}
+  .shortcuts-roll-btn:hover{background:var(--surface);border-color:var(--gold);}
+  .shortcuts-panel.is-collapsed .shortcuts-roll-btn{display:none;}
+  body.roll-front #consolaRollsLayer{z-index:90;opacity:1;background:var(--bg);pointer-events:auto;}
+  body.roll-front #rollVScroll{z-index:95;}
+  /* "+ sounds": Real sound (SoundFont) y loadExtra contraídos por defecto */
+  .sounds-group{display:flex;flex-direction:column;align-items:center;gap:8px;}
+  .sounds-group .collapsible-content.collapsed{display:none;}
+  .sounds-toggle::before{content:"+ ";}
+  .sounds-toggle[aria-expanded="true"]::before{content:"\2212 ";}
   #consolaRollsLayer > *{transform:translateY(var(--roll-shift,0vh));flex:none;}
   #rollVScroll{position:fixed;left:3px;top:50%;transform:translateY(-50%);z-index:50;width:10px;height:55px;margin:0;padding:0;opacity:.55;cursor:pointer;writing-mode:vertical-lr;direction:rtl;accent-color:var(--gold);}
   #rollVScroll:hover{opacity:1;}
@@ -1122,6 +1138,7 @@
     <div><kbd>S</kbd>Clear</div>
     <div><kbd>D</kbd>Play</div>
   </div>
+  <button type="button" class="shortcuts-roll-btn" id="rollFrontBtn" aria-pressed="false" title="Traer el piano roll al primer plano (otro clic lo devuelve al fondo)">+</button>
 </div>
 
 <!-- Botonera de Navegación "Ir a:" -->
@@ -1150,7 +1167,7 @@
 <input type="range" id="rollVScroll" min="-25" max="25" value="0" step="1" title="Mueve el piano roll general hacia arriba o abajo (doble click = centrar)" aria-label="Scroll vertical del piano roll">
 <!-- Piano rolls de SetMusicBox: fondo fijo a pantalla completa, siempre -->
     <div id="consolaRollsLayer">
-    <div id="consolaSongTitle" aria-live="polite"></div>
+    <div id="consolaSongHead"><div id="consolaSongTitle" aria-live="polite"></div><span id="consolaSongBpm" title="Tempo actual"></span></div>
     <div id="consolaBebopRollLabel" style="margin-bottom:6px;font-size:12px;font-weight:600;color:var(--ink-muted);padding-top:0;">🎷 bebopMelody — separate piano roll (isolated from the main one)</div>
     <div class="consola-roll-wrap" id="consolaBebopRollHost" style="min-height:60px;margin-bottom:20px;"></div>
     <div class="consola-roll-wrap" id="consolaRollHost"></div>
@@ -1203,9 +1220,14 @@
         <button class="chip" id="composeBtn" type="button" title="Toca el segmento de 12 compases de SetMusicBox con las notas actuales">🎹 Compose</button>
         <button class="chip" id="clearBtn">Clear</button>
         <button class="chip" id="multiSetsMemBtn2" type="button" disabled title="Mismo botón que To Memory de Multi Sets Input (copia acá para no tener que abrir esa tarjeta): guarda el set actual del reloj/piano en el próximo casillero libre y resetea el reloj. Entre paréntesis, cuántos sets van guardados.">To Memory (0/5)</button>
+        <div class="sounds-group">
+          <button type="button" class="chip sounds-toggle" aria-expanded="false" aria-controls="soundsBody" onclick="toggleModule(this)" title="Mostrar/ocultar Real sound (SoundFont) y loadExtra">sounds</button>
+          <div class="collapsible-content collapsed" id="soundsBody" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;">
         <button class="chip toggle" id="sf2Btn" type="button" aria-pressed="false" title="Carga los SoundFonts default y clásicos (Soundfonts v2/*.sf2 + un .sf2 por instrumento) y reemplaza el sintetizador por muestras de instrumento y batería reales (incluye SetMusicBox). Un clic más para volver al sintetizador liviano.">🎼 Real sound (SoundFont)</button>
         <input type="file" id="sf2LocalPicker" webkitdirectory directory multiple hidden aria-hidden="true">
         <button class="chip" id="loadExtraBtn" type="button" title="Carga los SoundFonts de la carpeta Soundfonts v2/Extra v2/ (Piano Steinway D, Warm Pad, Super Bass Electric, Jazz Kit… y cualquier .sf2 que subas ahí) y activa sus opciones (HIFI) en los selectores del mini mixer. Solo se nota con '🎼 Sonido real' activado. Si alguno falla, volvé a apretarlo para reintentar.">loadExtra</button>
+          </div>
+        </div>
       </div>
       <div class="ivector-tablet" id="ivectorTablet" title="Vector de intervalos del set actual (6 clases de intervalo) — se contrasta con la Tabla de Sets completa (Anexo 1)">
         <div class="ivector-head">
@@ -1232,8 +1254,9 @@
       <div class="examples examples-module" id="examplesModule">
         <div class="examples-head">
           <span class="examples-title">Quick examples</span>
+          <button type="button" class="subfield-toggle" aria-expanded="false" aria-controls="examplesBody" onclick="toggleModule(this)" title="Mostrar/ocultar Quick examples"></button>
         </div>
-        <div class="collapsible-content" id="examplesBody">
+        <div class="collapsible-content collapsed" id="examplesBody">
           <div class="examples-chips">
           <button class="chip" data-ex="0,4,7" title="Tríada mayor · 0 4 7">C</button>
           <button class="chip" data-ex="0,3,7" title="Tríada menor · 0 3 7">Cm</button>
@@ -1377,12 +1400,6 @@
           <span class="consola-inst-toggle" title="Slider 0–100% (default 0%): probabilidad por compás de que la melodía tenga notas rápidas (semicorcheas o fusas, al azar). 70% de esas veces: 1 a 3 grupitos de 2, 4 o 6 notas cortas repartidos al azar dentro de la melodía del compás. 30%: una CORRIDA en bloque de 1 compás entero o medio compás. Las notas de la corrida suben/bajan por grados conjuntos usando SOLO las notas del acorde vigente en cada instante (nunca sale del set), sin silencios. El resto del compás (si la corrida es de medio compás) sigue con su ritmo de siempre. Copia independiente de Rapid runs: solo modifica la melodía y Melody n2. No afecta a Simplicity. 0% = nunca."><label for="consolaRapidRuns2Slider">&#9889; Rapid runs v2</label><input type="range" class="consola-mini-range" id="consolaRapidRuns2Slider" min="0" max="100" value="0" step="1"><span class="consola-val" id="consolaRapidRuns2Val">0%</span></span>
         </div>
       </div>
-      <div class="consola-field consola-instruments" title="Pedal de sustain de la Armonía (motor libre y Simplicity): en cada cambio de acorde se tira un dado al 50%. Si sale, el pedal se pisa antes de que termine el acorde y se suelta después del ataque del próximo — las notas del acorde que termina siguen sonando por encima del ataque siguiente y se cortan un instante después, enlazando un acorde con otro (legato). Una nota que se repite igual en el acorde siguiente no se estira (se vuelve a atacar, como en un piano real). No cambia QUÉ notas suenan, solo cuánto duran. Prendido por defecto.">
-        <label>Harmony</label>
-        <div class="consola-inst-row">
-          <span class="consola-inst-toggle" title="Sustain: 50% de los cambios de acorde quedan enlazados con pedal (el acorde saliente se sostiene hasta un instante después del ataque del entrante)."><input type="checkbox" id="consolaSustainChk" checked><label for="consolaSustainChk">&#127929; Sustain</label></span>
-        </div>
-      </div>
       <div class="consola-field consola-instruments consola-stack" title="Bass: opciones del bajo. Bass function = de dónde saca sus notas el bajo en el modo libre (Current set / Superset, excluyentes; no afecta a ↺ Simplicity, que usa su propio bajo fijo).">
         <div class="consola-subfield-head">
           <label>Bass</label>
@@ -1463,6 +1480,9 @@
         </div>
         <div class="collapsible-content collapsed" id="harmTestBody">
         <div class="consola-inst-row">
+          <span class="consola-inst-toggle" title="Pedal de sustain de la Armonía (motor libre y Simplicity): en cada cambio de acorde se tira un dado al 50%. Si sale, el pedal se pisa antes de que termine el acorde y se suelta después del ataque del próximo — las notas del acorde que termina siguen sonando por encima del ataque siguiente y se cortan un instante después, enlazando un acorde con otro (legato). Una nota que se repite igual en el acorde siguiente no se estira (se vuelve a atacar, como en un piano real). No cambia QUÉ notas suenan, solo cuánto duran. Prendido por defecto."><input type="checkbox" id="consolaSustainChk" checked><label for="consolaSustainChk">&#127929; Sustain</label></span>
+        </div>
+        <div class="consola-inst-row">
           <span class="consola-inst-toggle" title="Slider 0–100% (default 0%): mismo concepto que MelodicSpace pero aplicado a ARMONÍA y BAJO — durante el tramo de respiro sorteado, un solo acorde por compás (redonda, sin reataques extra) y el bajo también en redondas. Es el rol que antes cumplía 'AddLittlePeace'. No afecta a Simplicity. 0% = nunca."><label for="consolaHarmonicSpaceSlider">&#127925; HarmonicSpace</label><input type="range" class="consola-mini-range" id="consolaHarmonicSpaceSlider" min="0" max="100" value="0" step="1"><span class="consola-val" id="consolaHarmonicSpaceVal">0%</span></span>
         </div>
         <div class="consola-inst-row">
@@ -1504,6 +1524,7 @@
           <span class="consola-inst-toggle" title="Reemplaza la selección de nota de la melodía (y de bebopMelody, si está prendido) por un CONTORNO fijo — un patrón de saltos tipo '2 arriba, 1 abajo' repetido, en vez de arpegio lineal en los compases densos o nota al azar en el resto. El patrón se sortea de un pool variado (ciclos de 2 a 4 movimientos) una vez por cada Reproducir/Regenerar, y siempre indexa dentro del acorde vigente (nunca una nota ajena al set) — si el salto se pasa del tamaño del acorde, sigue contando en la octava de al lado, igual que una 9na es un 2 una octava arriba."><input type="checkbox" id="consolaMelodicPatternsChk" checked><label for="consolaMelodicPatternsChk">&#127925; melodicPatterns</label></span>
           <span class="consola-inst-toggle" title="Melody n2: una segunda melodía ALTERNATIVA, independiente de la melodía principal (otro ritmo y otras notas, siempre dentro del set), que suena en todos los compases, con silencios gobernados por el slider Melody silences (mismo criterio que la melodía principal). Tiene su propio fader, reverb e instrumento en el Mini mixer (Flauta por defecto). Apagada por defecto."><input type="checkbox" id="consolaMelody2Chk"><label for="consolaMelody2Chk">&#127925; Melody n2</label></span>
           <span class="consola-inst-toggle" title="melody_2follows: con Melody n2 prendida, en cada compás hay 50% de chances de que Melody n2 SIGA a la melodía principal (toca las mismas notas y el mismo ritmo, con su propio instrumento). En el otro 50% toca su línea independiente. Respeta los silencios de Melody n2; si la melodía principal calla en ese compás, Melody n2 toca lo suyo. Prendido por defecto."><input type="checkbox" id="consolaMelody2FollowsChk" checked><label for="consolaMelody2FollowsChk">melody_2follows</label></span>
+          <span class="consola-inst-toggle" title="bendv2: pitch bend sutil en Melody, Melody n2 y Doblar melodía. (1) Scoop: la primera nota de cada frase (después de un silencio de 1 tiempo o más) arranca 30–60 cents abajo y sube a su altura en ~100 ms. (2) Caída final: la última nota de la frase (antes de un silencio, de 1 tiempo o más) baja 50–100 cents en su último cuarto. ~15% de las notas elegibles, máximo un bend por compás, nunca llega a un semitono (el set no se toca) y no pisa notas con glissando o bend↓."><input type="checkbox" id="consolaMelBendV2Chk"><label for="consolaMelBendV2Chk">bendv2</label></span>
         </div>
         <div class="consola-inst-row">
           <span class="consola-inst-toggle" title="Silencios de la melodía principal. 0% = la melodía suena siempre (como antes). 100% = suena solo ~10% del tiempo. En el medio, proporcional. Los silencios son de 1 a 4 compases y los más largos caen al principio. Afecta igual a Melody n2 (cada una sortea sus propios silencios). Default 25%."><label for="consolaMelSilSlider">Melody silences</label><input type="range" class="consola-mini-range" id="consolaMelSilSlider" min="0" max="100" value="25" step="1"><span class="consola-val" id="consolaMelSilVal">25%</span></span>
@@ -8877,8 +8898,9 @@ function runAnalysis() {
     function mark(list){
       if(!list || !list.length) return list;
       var gl = on("consolaORN_gliss"), bd = on("consolaORN_bend");
-      list.forEach(function(ev){ delete ev.gl; delete ev.bd; });
-      if(!gl && !bd) return list;
+      list.forEach(function(ev){ delete ev.gl; delete ev.bd; delete ev.sc; delete ev.fd; });
+      var v2 = on("consolaMelBendV2Chk");
+      if(!gl && !bd && !v2) return list;
       var sorted = list.slice().sort(function(a, b){ return a.startBeat - b.startBeat; });
       sorted.forEach(function(ev, i){
         var prev = sorted[i-1];
@@ -8890,7 +8912,35 @@ function runAnalysis() {
         }
         if(bd && ev.durBeats >= BEND_MIN_BEATS - EPS && Math.random() < PROB) ev.bd = BEND_SEMIS;
       });
+      if(v2) markV2(sorted);
       return list;
+    }
+    // bendv2 (checkbox #consolaMelBendV2Chk, en Melody): bend sutil, en cents (nunca llega a un semitono).
+    //  · ev.sc = scoop de entrada (30–60 cents abajo, sube a su altura): 1ª nota de cada frase (hueco >= 1 tiempo
+    //    antes, o primera de la lista), figura >= 1/2 tiempo.
+    //  · ev.fd = caída final (50–100 cents en el último cuarto): última nota de cada frase (hueco >= 1 tiempo
+    //    después, o última de la lista), figura >= 1 tiempo.
+    // ~15% de las notas elegibles, máximo un bend por compás, sin pisar notas con glissando / bend↓ ni adornos.
+    var V2_PROB = 0.15, V2_GAP = 1, V2_SC_MIN_BEATS = 0.5, V2_FD_MIN_BEATS = 1;
+    function markV2(sorted){
+      var notes = sorted.filter(function(e){ return !e.orn; });
+      var usedBars = {};
+      notes.forEach(function(ev, i){
+        if(ev.gl || ev.bd) return;
+        var bar = (ev.bar != null) ? ev.bar : Math.floor(ev.startBeat / 4);
+        if(usedBars[bar]) return;
+        var prev = notes[i-1], next = notes[i+1];
+        var first = !prev || ev.startBeat - (prev.startBeat + prev.durBeats) >= V2_GAP - EPS;
+        var last = !next || next.startBeat - (ev.startBeat + ev.durBeats) >= V2_GAP - EPS;
+        var canSc = first && ev.durBeats >= V2_SC_MIN_BEATS - EPS;
+        var canFd = last && ev.durBeats >= V2_FD_MIN_BEATS - EPS;
+        if(canSc && canFd) { if(Math.random() < 0.5) canFd = false; else canSc = false; }
+        if(!canSc && !canFd) return;
+        if(Math.random() >= V2_PROB) return;
+        if(canSc) ev.sc = 30 + Math.round(Math.random() * 30);
+        else ev.fd = 50 + Math.round(Math.random() * 50);
+        usedBars[bar] = true;
+      });
     }
     return { mark: mark };
   })();
@@ -9383,9 +9433,9 @@ function runAnalysis() {
   // Melody / Melody n2 / Doblar melodía que traen ev.gl o ev.bd; el resto del audio no se toca.
   var PITCHFX_CUR = null;
   function pitchFxFor(ev, t, d){
-    if(!ev || (!ev.gl && !ev.bd)) return null;
+    if(!ev || (!ev.gl && !ev.bd && !ev.sc && !ev.fd)) return null;
     var glT = Math.min(0.14, d * 0.3);
-    return { t0:t, d:d, gl:ev.gl || 0, glT:glT, bd:ev.bd || 0, bdT:Math.min(0.6, d * 0.35) };
+    return { t0:t, d:d, gl:ev.gl || 0, glT:glT, bd:ev.bd || 0, bdT:Math.min(0.6, d * 0.35), sc:ev.sc || 0, scT:Math.min(0.11, d * 0.3), fd:ev.fd || 0, fdT:d * 0.25 };
   }
   function pitchFxApply(node, fx){
     try{
@@ -9395,10 +9445,15 @@ function runAnalysis() {
         var base = P.value;
         if(fx.gl){ P.setValueAtTime(base + fx.gl*100, fx.t0); P.linearRampToValueAtTime(base, fx.t0 + fx.glT); }
         if(fx.bd){ P.setValueAtTime(base, bs); P.linearRampToValueAtTime(base - fx.bd*100, fx.t0 + fx.d); }
+        // bendv2: curvas ease-out (aproximación exponencial), en cents
+        if(fx.sc){ P.setValueAtTime(base - fx.sc, fx.t0); P.setTargetAtTime(base, fx.t0, fx.scT/3); P.setValueAtTime(base, fx.t0 + fx.scT); }
+        if(fx.fd){ var fs = fx.t0 + fx.d - fx.fdT; P.setValueAtTime(base, fs); P.setTargetAtTime(base - fx.fd, fs, fx.fdT/3); }
       } else if(node.playbackRate && typeof node.playbackRate.setValueAtTime === "function"){
         var r = node.playbackRate, b0 = r.value;
         if(fx.gl){ r.setValueAtTime(b0 * Math.pow(2, fx.gl/12), fx.t0); r.exponentialRampToValueAtTime(b0, fx.t0 + fx.glT); }
         if(fx.bd){ r.setValueAtTime(b0, bs); r.exponentialRampToValueAtTime(b0 * Math.pow(2, -fx.bd/12), fx.t0 + fx.d); }
+        if(fx.sc){ r.setValueAtTime(b0 * Math.pow(2, -fx.sc/1200), fx.t0); r.setTargetAtTime(b0, fx.t0, fx.scT/3); r.setValueAtTime(b0, fx.t0 + fx.scT); }
+        if(fx.fd){ var fs2 = fx.t0 + fx.d - fx.fdT; r.setValueAtTime(b0, fs2); r.setTargetAtTime(b0 * Math.pow(2, -fx.fd/1200), fs2, fx.fdT/3); }
       }
     }catch(e){}
   }
@@ -11142,12 +11197,13 @@ function runAnalysis() {
     function offsetsFor(voiced, dur){
       var n = voiced.length;
       if(n < 2) return voiced.map(function(){ return 0; });
-      if(!roll()) return voiced.map(function(){ return 0; }); // este reataque sale en bloque
+      // Acordes de MÁS de 5 notas: el ataque NUNCA es simultáneo (siempre quebrado; no se tira el dado del slider).
+      if(n <= 5 && !roll()) return voiced.map(function(){ return 0; }); // este reataque sale en bloque
       var order = voiced.map(function(_, i){ return i; })
         .sort(function(a,b){ return voiced[a]-voiced[b]; }); // índices, grave -> agudo
       var step = stepFor(dur, n);
       var byRank = {}; // rank (0=grave ... n-1=agudo) -> offset
-      var maxPattern = n >= 3 ? 3 : 1;
+      var maxPattern = (n >= 3 && n <= 5) ? 3 : 1; // con 6+ notas solo arpegio grave→agudo o agudo→grave: todas las notas entran en instantes distintos
       var pattern = randomInt(0, maxPattern);
       if(pattern === 0){
         // Grave -> agudo, una por una.
@@ -12111,6 +12167,30 @@ function runAnalysis() {
     });
     return rest;
   }
+  // Red de seguridad (Armonía): un acorde de MÁS de 5 notas nunca ataca todo junto. Si después de
+  // BROKENCHORD/BlockwithMelody/etc. quedaron 6+ notas con el mismo inicio, se escalonan grave -> agudo
+  // (paso chico, nunca cambia QUÉ notas suenan ni cuándo termina cada una).
+  function staggerBigChordAttacks(events){
+    if(!events || !events.length) return events;
+    var groups = {};
+    events.forEach(function(e){ var k = Math.round(e.startBeat*1000); (groups[k] = groups[k] || []).push(e); });
+    var touched = false;
+    Object.keys(groups).forEach(function(k){
+      var g = groups[k];
+      if(g.length <= 5) return;
+      g.sort(function(a, b){ return a.midi - b.midi; });
+      var minDur = Math.min.apply(null, g.map(function(e){ return e.durBeats; }));
+      var step = Math.min(0.03, minDur/(g.length+1));
+      g.forEach(function(e, i){
+        if(i === 0) return;
+        var end = e.startBeat + e.durBeats;
+        e.startBeat += i*step;
+        e.durBeats = Math.max(0.05, end - e.startBeat);
+      });
+      touched = true;
+    });
+    return touched ? events.slice().sort(function(a, b){ return a.startBeat - b.startBeat || a.midi - b.midi; }) : events;
+  }
   /* ================================================================
      BLOCKWITHMELODY — slider #consolaHT_bwmSlider (Harmony, 0–100%, default 0).
      Post-proceso de la ARMONÍA, después de que la melodía principal quedó final (Ornaments,
@@ -12468,6 +12548,7 @@ function runAnalysis() {
     state.chordEvents = SYNCOPATION.apply(state.chordEvents, state.slotChords, simpBars); // Syncopation (How to play): el primer ataque de armonía de cada compás puede anticiparse o retrasarse (slotChords no se toca)
     applyMelodySilences(); // Melody silences (slider): recorta compases de la melodía principal
     BLOCKWITHMELODY.apply(); // BlockwithMelody (Harmony): la armonía toca en bloque la rítmica de la melodía en los tramos elegidos
+    state.chordEvents = staggerBigChordAttacks(state.chordEvents); // Armonía: 6+ notas nunca atacan simultáneas
     applyMelody2Follows(); // melody_2follows: Melody n2 copia la melodía principal en ~50% de los compases
     PITCHFX.mark(state.melodyEvents); PITCHFX.mark(state.melody2Events); // glissando / bend↓ (Ornaments): marcas para el audio
     DYNAMICS.applyPitched(state); // Dynamics (0% = no-op)
@@ -12505,6 +12586,7 @@ function runAnalysis() {
     state.melody2Events = []; // Melody n2 solo en el motor libre (Simplicity no tiene sorteo independiente)
     applyMelodySilences(); // Melody silences (slider): recorta compases de la melodía principal
     BLOCKWITHMELODY.apply(); // BlockwithMelody (Harmony)
+    state.chordEvents = staggerBigChordAttacks(state.chordEvents); // Armonía: 6+ notas nunca atacan simultáneas
     DYNAMICS.applyPitched(state); // Dynamics (0% = no-op)
     drumEvents = buildDrumEvents(NUM_BARS);
     renderRoll();
@@ -16610,6 +16692,9 @@ function runAnalysis() {
   document.getElementById("consolaMelody2FollowsChk").addEventListener("change", function(){
     if(state.rootChord.length) regenerateConsola();
   });
+  document.getElementById("consolaMelBendV2Chk").addEventListener("change", function(){
+    if(state.rootChord.length) regenerateConsola();
+  });
 
   // Checkboxes de modo de bebopMelody (Arpeggios / Scales, ver BEBOPMELODY
   // arriba) — solo cambian QUÉ notas calcula buildEvents, así que basta
@@ -17662,8 +17747,18 @@ function runAnalysis() {
     function sfKey(file, bank, program){
       return (typeof sfKeyForFile === "function") ? sfKeyForFile(file, bank, program) : null;
     }
+    // Seteos al azar extra de CreaturaRandom / CreaturaBella / RadioMode (los mueve randomizeVoicesAndTempo y __radioNext):
+    // Reverb general 40–70%, Melody silences 0–10% y moreComping prendido/apagado (50/50). moreComping se cambia
+    // sin click (el click regenera por su cuenta): el Regenerar que sigue ya usa el estado nuevo.
+    function randomizeExtras(){
+      randomizeSlider("consolaReverbAmount", 40, 70);
+      randomizeSlider("consolaMelSilSlider", 0, 10);
+      var mc = document.getElementById("consolaMoreCompingBtn");
+      if(mc) mc.classList.toggle("primary", Math.random() < 0.5);
+    }
     function randomizeVoicesAndTempo(){
       randomizeSlider("consolaTempo", 30, 120);
+      randomizeExtras(); // Reverb general 40–70%, Melody silences 0–10%, moreComping on/off (CreaturaRandom/Bella)
       randomizeVoices(false);
     }
     // radio=true (RadioMode, cada canción nueva): baraja SIEMPRE entre las opciones (sin "dejar el preset actual"),
@@ -17770,6 +17865,7 @@ function runAnalysis() {
         // RadioMode alterna: cada vuelta nueva sortea Random o Bella (50/50).
         randomizeAndFill(Math.random() < 0.5);
         randomizeVoices(true); // RadioMode: cada canción nueva baraja los presets de Armonía y Melodía (el tempo no se toca)
+        randomizeExtras(); // RadioMode: Reverb general 40–70%, Melody silences 0–10%, moreComping on/off en cada canción nueva
         setChecked("consolaMixTimeSigChk", true);
         if(typeof window.consolaRegenerate === "function") window.consolaRegenerate();
       } finally { window.__radioBusy = false; }
@@ -17853,6 +17949,25 @@ function runAnalysis() {
       if(!b||b.disabled) return;
       e.preventDefault();
       b.click();
+    });
+  })();
+  // BPM junto al título de la canción: sigue al slider Tempo (#consolaTempo), a mano o sorteado (CreaturaRandom/Bella lo mueven con "input").
+  (function(){
+    var sl = document.getElementById("consolaTempo"), out = document.getElementById("consolaSongBpm");
+    if(!sl || !out) return;
+    function upd(){ out.textContent = "bpm=" + sl.value; }
+    sl.addEventListener("input", upd);
+    sl.addEventListener("change", upd);
+    upd();
+  })();
+  // "+" bajo Shortcuts: trae el piano roll (normalmente de fondo, detrás de la página) al primer plano; otro clic lo devuelve al fondo.
+  (function(){
+    var b = document.getElementById("rollFrontBtn");
+    if(!b) return;
+    b.addEventListener("click", function(){
+      var on = document.body.classList.toggle("roll-front");
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+      b.textContent = on ? "\u2212" : "+";
     });
   })();
 </script>
