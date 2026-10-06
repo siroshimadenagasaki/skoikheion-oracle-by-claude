@@ -1351,6 +1351,11 @@
         <input type="range" id="consolaTripletsSlider" min="0" max="100" value="0" step="1">
         <span class="consola-val" id="consolaTripletsVal">0%</span>
       </div>
+      <div class="consola-field" title="Síncopa en los ataques de ACORDES (armonía). Probabilidad, compás a compás, de que el primer ataque del compás NO caiga en el tiempo 1: o se ANTICIPA (el acorde entra antes del 1, p.ej. en el 'y' del 4 del compás anterior) o se RETRASA (el 1 queda sin ataque de armonía y el acorde entra después), en cualquier punto de la rejilla de corcheas. 0% = como antes (siempre en el 1). Solo mueve ataques de la armonía: nunca cambia notas, así que el set no se traiciona; bajo y melodía siguen su acorde de siempre. No afecta a Simplicity.">
+        <label for="consolaSyncopationSlider">Syncopation</label>
+        <input type="range" id="consolaSyncopationSlider" min="0" max="100" value="50" step="1">
+        <span class="consola-val" id="consolaSyncopationVal">50%</span>
+      </div>
       <div class="consola-field" title="Dynamics: aplica dinámicas de volumen (pp, p, mp, mf, f, ff) a cada evento MIDI con lógica musical: crescendos/diminuendos y terrazas de 2-4 compases que vuelven al nivel inicial del loop, acento en el tiempo 1, melodía por encima del acompañamiento y nota aguda un poco más fuerte que la grave. 0% = como siempre (velocity original). 100% = pp a ff. Mover el slider no regenera: re-aplica sobre las mismas notas. Ver el resultado en Mini mixer > Velocity por track.">
         <label for="consolaDynamicsSlider">Dynamics</label>
         <input type="range" id="consolaDynamicsSlider" min="0" max="100" value="50" step="1">
@@ -11097,6 +11102,99 @@ function runAnalysis() {
     }
     return { enabled: enabled, apply: apply, PROB: PROB };
   })();
+  /* ================================================================
+     MÓDULO SYNCOPATION — slider #consolaSyncopationSlider (How to play,
+     0–100%, default 50%). 0% = como antes: el primer ataque de armonía de
+     cada compás cae siempre en el tiempo 1.
+     Post-proceso de los eventos de ARMONÍA ya armados (después de
+     Sustain, así el pedal no se desfasa). Por compás, con probabilidad
+     = slider, el primer reataque del compás deja de caer en el 1:
+       · ANTICIPACIÓN: sus notas entran δ tiempos antes del 1 (cruzan al
+         compás anterior); el acorde saliente se corta ahí.
+       · RETRASO: sus notas entran δ tiempos después del 1 (el 1 queda
+         sin ataque de armonía); el fin del reataque no se mueve.
+     δ en la rejilla de corcheas (anticipación 0.5–2, retraso 0.5–2.5),
+     limitado para que nunca desaparezca un acorde ni se pise el
+     reataque siguiente. Si caben las dos, elige una al azar.
+     Solo MUEVE ataques de la armonía (nunca agrega ni cambia alturas: el
+     set no se traiciona). slotChords no se toca: bajo y melodía siguen
+     el acorde de siempre en el tiempo 1 (la armonía anticipa/retrasa
+     sobre ellos). No anticipa el compás 0 (no hay compás previo). No
+     afecta a los compases Simplicity (skipBars).
+     ================================================================ */
+  var SYNCOPATION = (function(){
+    var EPS = 1e-6, MIN_LEFT = 0.25, MIN_GAP = 0.5;
+    var GRID_ANT = [0.5, 1, 1.5, 2];
+    var GRID_DEL = [0.5, 1, 1.5, 2, 2.5];
+    function prob(){
+      var sl = document.getElementById("consolaSyncopationSlider");
+      var v = sl ? parseFloat(sl.value) : 0;
+      return isFinite(v) ? Math.max(0, Math.min(100, v)) / 100 : 0;
+    }
+    function barOfBeat(beat, n){
+      for(var b=n-1; b>=0; b--) if(beat >= RHYTHM.start(b) - EPS) return b;
+      return 0;
+    }
+    function apply(events, slotChords, skipBars){
+      var p = prob();
+      if(p <= 0 || !events || !events.length || !slotChords || !slotChords.length) return events;
+      var n = slotChords.length, byBar = [], i;
+      for(i=0;i<n;i++) byBar.push([]);
+      events.forEach(function(ev){ byBar[barOfBeat(ev.startBeat, n)].push(ev); });
+      for(var b=0; b<n; b++){
+        if(skipBars && skipBars[b]) continue;
+        if(Math.random() >= p) continue;
+        var slots = slotChords[b];
+        if(!slots || !slots.length) continue;
+        var bs = RHYTHM.start(b), lo = bs + slots[0].startBeat, hi = lo + slots[0].durBeats;
+        var first = byBar[b].filter(function(e){ return e.startBeat >= lo - EPS && e.startBeat < hi - EPS; });
+        if(!first.length) continue;
+        var minDur = Infinity, firstStart = Infinity, lastStart = -Infinity;
+        first.forEach(function(e){
+          minDur = Math.min(minDur, e.durBeats);
+          firstStart = Math.min(firstStart, e.startBeat);
+          lastStart = Math.max(lastStart, e.startBeat);
+        });
+        // RETRASO: las notas siguen dentro de su reataque y les queda duración audible.
+        var delOpts = GRID_DEL.filter(function(d){
+          return d <= minDur - MIN_LEFT + EPS && lastStart + d <= hi - MIN_LEFT + EPS;
+        });
+        // ANTICIPACIÓN: hay compás previo (no Simplicity) y su último ataque conserva ≥ MIN_GAP.
+        var antOpts = [];
+        if(b > 0 && !(skipBars && skipBars[b-1])){
+          var prevLast = -Infinity;
+          byBar[b-1].forEach(function(e){ if(e.startBeat < firstStart - EPS) prevLast = Math.max(prevLast, e.startBeat); });
+          var prevStart = RHYTHM.start(b-1);
+          antOpts = GRID_ANT.filter(function(d){
+            var ns = firstStart - d;
+            return ns >= prevStart + MIN_GAP - EPS && (prevLast === -Infinity || ns >= prevLast + MIN_GAP - EPS);
+          });
+        }
+        var kinds = [];
+        if(delOpts.length) kinds.push("del");
+        if(antOpts.length) kinds.push("ant");
+        if(!kinds.length) continue;
+        var kind = kinds[Math.floor(Math.random() * kinds.length)];
+        if(kind === "del"){
+          var dd = delOpts[Math.floor(Math.random() * delOpts.length)];
+          first.forEach(function(e){ e.startBeat += dd; e.durBeats -= dd; });
+        } else {
+          var da = antOpts[Math.floor(Math.random() * antOpts.length)];
+          var newStart = firstStart - da;
+          // el acorde saliente se corta donde entra el anticipado
+          events.forEach(function(e){
+            if(first.indexOf(e) >= 0) return;
+            if(e.startBeat < newStart - EPS && e.startBeat + e.durBeats > newStart + EPS){
+              e.durBeats = Math.max(0.05, newStart - e.startBeat);
+            }
+          });
+          first.forEach(function(e){ e.startBeat -= da; e.durBeats += da; });
+        }
+      }
+      return events;
+    }
+    return { apply: apply, prob: prob };
+  })();
   // ---- VOICE LEADING en la armonía normal (camino no-Jazz de buildChordEventsRandom) ----
   // Costo de moverse de un voicing al siguiente: distancia total entre voces emparejadas de grave a
   // agudo (+6 por cada nota de diferencia en la cantidad) — mismo criterio que JAZZ.voicingCost.
@@ -12106,6 +12204,7 @@ function runAnalysis() {
     // bebopMelody y Ornaments se recalculan sobre el resultado mezclado, y Melody n2
     // (que no existe en Simplicity) calla en los compases Simplicity. La batería no cambia.
     var pN = normalitoProb();
+    var simpBars = null; // compases que salen de Simplicity (mezcla): Syncopation no los toca
     if(pN > 0 && pN < 1){
       var nProg = simplicityProgression(rootChord, NUM_BARS); // con MULTI SETS: set de referencia de cada compás
       var nChord = buildChordEvents(nProg.progression);
@@ -12117,6 +12216,7 @@ function runAnalysis() {
         useN.push(Math.random() < pN);
         if(multi && useN[ub]) MULTISETS.forceBar(ub); // compás Simplicity = un solo set entero (etiqueta "S#", no "mix")
       }
+      simpBars = useN;
       var mixBarOf = function(beat){
         for(var mb=NUM_BARS-1; mb>=0; mb--) if(beat >= RHYTHM.start(mb) - 1e-6) return mb;
         return 0;
@@ -12143,6 +12243,7 @@ function runAnalysis() {
       }
       state.melody2Events = state.melody2Events.filter(function(e){ return !useN[mixBarOf(e.startBeat)]; });
     }
+    state.chordEvents = SYNCOPATION.apply(state.chordEvents, state.slotChords, simpBars); // Syncopation (How to play): el primer ataque de armonía de cada compás puede anticiparse o retrasarse (slotChords no se toca)
     applyMelodySilences(); // Melody silences (slider): recorta compases de la melodía principal
     applyMelody2Follows(); // melody_2follows: Melody n2 copia la melodía principal en ~50% de los compases
     DYNAMICS.applyPitched(state); // Dynamics (0% = no-op)
@@ -16153,6 +16254,12 @@ function runAnalysis() {
   document.getElementById("consolaTripletsSlider").addEventListener("change", function(){
     if(state.rootChord.length) regenerateConsola();
   });
+  document.getElementById("consolaSyncopationSlider").addEventListener("input", function(){
+    document.getElementById("consolaSyncopationVal").textContent = this.value + "%";
+  });
+  document.getElementById("consolaSyncopationSlider").addEventListener("change", function(){
+    if(state.rootChord.length) regenerateConsola();
+  });
   document.getElementById("consolaCommonNotesChk").addEventListener("change", function(){
     if(state.rootChord.length) regenerateConsola();
   });
@@ -17266,7 +17373,7 @@ function runAnalysis() {
     }
 
     // Al apretar CreaturaRandom/Bella (no en las vueltas de RadioMode): tempo al azar
-    // (60-140 BPM) + preset de Armonía y de Melodía sorteados entre una lista corta.
+    // (30-120 BPM) + preset de Armonía y de Melodía sorteados entre una lista corta.
     // null = dejar el preset actual. Una opción que no esté cargada en el selector
     // (p.ej. Warm Pad HIFI sin HIFI) se descarta del sorteo.
     function setSelectIfPresent(id, value){
@@ -17282,7 +17389,7 @@ function runAnalysis() {
       return (typeof sfKeyForFile === "function") ? sfKeyForFile(file, bank, program) : null;
     }
     function randomizeVoicesAndTempo(){
-      randomizeSlider("consolaTempo", 60, 140);
+      randomizeSlider("consolaTempo", 30, 120);
       var harm = [null, "epiano", "pad", "celesta"];
       var mel = [null,
         sfKey("Extra v2/PSR-SX700_GM_Soundbank_-_Part_2 - 000-114 Steel Drums.sf2", 0, 114),
