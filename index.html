@@ -1523,10 +1523,10 @@
         </div>
         <div class="collapsible-content collapsed" id="melodyBody">
         <div class="consola-inst-row">
-          <span class="consola-inst-toggle" title="Reemplaza la selección de nota de la melodía (y de bebopMelody, si está prendido) por un CONTORNO fijo — un patrón de saltos tipo '2 arriba, 1 abajo' repetido, en vez de arpegio lineal en los compases densos o nota al azar en el resto. El patrón se sortea de un pool variado (ciclos de 2 a 4 movimientos) una vez por cada Reproducir/Regenerar, y siempre indexa dentro del acorde vigente (nunca una nota ajena al set) — si el salto se pasa del tamaño del acorde, sigue contando en la octava de al lado, igual que una 9na es un 2 una octava arriba."><input type="checkbox" id="consolaMelodicPatternsChk" checked><label for="consolaMelodicPatternsChk">&#127925; melodicPatterns</label></span>
+          <span class="consola-inst-toggle" title="melodicPatterns: 0% = apagado. 100% = SOLO patrones melódicos. Reemplaza la selección de nota de la melodía (y de bebopMelody, si está prendido) por un CONTORNO fijo — un patrón de saltos tipo '2 arriba, 1 abajo' repetido, en vez de arpegio lineal en los compases densos o nota al azar en el resto. El patrón se sortea de un pool variado (ciclos de 2 a 4 movimientos) una vez por cada Reproducir/Regenerar, y siempre indexa dentro del acorde vigente (nunca una nota ajena al set) — si el salto se pasa del tamaño del acorde, sigue contando en la octava de al lado, igual que una 9na es un 2 una octava arriba. Con valores intermedios, cada nota tiene ese % de probabilidad de elegirse con el contorno; en el resto usa el método de siempre (arpegio lineal o nota al azar). Default 100%."><label for="consolaMelodicPatternsSlider">&#127925; melodicPatterns</label><input type="range" class="consola-mini-range" id="consolaMelodicPatternsSlider" min="0" max="100" value="100" step="1"><span class="consola-val" id="consolaMelodicPatternsVal">100%</span></span>
           <span class="consola-inst-toggle" title="Melody n2: una segunda melodía ALTERNATIVA, independiente de la melodía principal (otro ritmo y otras notas, siempre dentro del set), que suena en todos los compases, con silencios gobernados por el slider Melody silences (mismo criterio que la melodía principal). Tiene su propio fader, reverb e instrumento en el Mini mixer (Flauta por defecto). Apagada por defecto."><input type="checkbox" id="consolaMelody2Chk"><label for="consolaMelody2Chk">&#127925; Melody n2</label></span>
-          <span class="consola-inst-toggle" title="melody_2follows: con Melody n2 prendida, en cada compás hay 50% de chances de que Melody n2 SIGA a la melodía principal (toca las mismas notas y el mismo ritmo, con su propio instrumento). En el otro 50% toca su línea independiente. Respeta los silencios de Melody n2; si la melodía principal calla en ese compás, Melody n2 toca lo suyo. Prendido por defecto."><input type="checkbox" id="consolaMelody2FollowsChk" checked><label for="consolaMelody2FollowsChk">melody_2follows</label></span>
-          <span class="consola-inst-toggle" title="bendv2: pitch bend sutil en Melody, Melody n2 y Doblar melodía. (1) Scoop: la primera nota de cada frase (después de un silencio de 1 tiempo o más) arranca 30–60 cents abajo y sube a su altura en ~100 ms. (2) Caída final: la última nota de la frase (antes de un silencio, de 1 tiempo o más) baja 50–100 cents en su último cuarto. ~15% de las notas elegibles, máximo un bend por compás, nunca llega a un semitono (el set no se toca) y no pisa notas con glissando o bend↓."><input type="checkbox" id="consolaMelBendV2Chk"><label for="consolaMelBendV2Chk">bendv2</label></span>
+          <span class="consola-inst-toggle" title="melody_2follows: con Melody n2 prendida, en cada compás hay 50% de chances de que Melody n2 SIGA a la melodía principal (toca las mismas notas y el mismo ritmo, con su propio instrumento). En el otro 50% toca su línea independiente. Respeta los silencios de Melody n2; si la melodía principal calla en ese compás, Melody n2 toca lo suyo. Apagado por defecto."><input type="checkbox" id="consolaMelody2FollowsChk"><label for="consolaMelody2FollowsChk">melody_2follows</label></span>
+          <span class="consola-inst-toggle" title="bendv2: pitch bend sutil en Melody, Melody n2 y Doblar melodía. (1) Scoop: la primera nota de cada frase (después de un silencio de 1 tiempo o más) arranca 30–60 cents abajo y sube a su altura en ~100 ms. (2) Caída final: la última nota de la frase (antes de un silencio, de 1 tiempo o más) baja 50–100 cents en su último cuarto. ~15% de las notas elegibles, máximo un bend por compás, nunca llega a un semitono (el set no se toca) y no pisa notas con glissando o bend↓."><input type="checkbox" id="consolaMelBendV2Chk" checked><label for="consolaMelBendV2Chk">bendv2</label></span>
         </div>
         <div class="consola-inst-row">
           <span class="consola-inst-toggle" title="Silencios de la melodía principal. 0% = la melodía suena siempre (como antes). 100% = suena solo ~10% del tiempo. En el medio, proporcional. Los silencios son de 1 a 4 compases y los más largos caen al principio. Afecta igual a Melody n2 (cada una sortea sus propios silencios). Default 25%."><label for="consolaMelSilSlider">Melody silences</label><input type="range" class="consola-mini-range" id="consolaMelSilSlider" min="0" max="100" value="25" step="1"><span class="consola-val" id="consolaMelSilVal">25%</span></span>
@@ -9033,7 +9033,7 @@ function runAnalysis() {
   })();
 
   /* ================================================================
-     MÓDULO PATRONES MELÓDICOS — checkbox #consolaMelodicPatternsChk,
+     MÓDULO PATRONES MELÓDICOS — slider #consolaMelodicPatternsSlider (0% = off, 100% = solo patrones),
      "melodicPatterns". Reemplaza la elección de nota de la melodía
      principal (buildBassMelodyEventsRandom) y de bebopMelody
      (BEBOPMELODY, modos Arpeggios/Scales/Harris) por un CONTORNO fijo:
@@ -9068,9 +9068,20 @@ function runAnalysis() {
       [[3,-1],[1,1],[1,1]]
     ];
     var current = null;
-    function enabled(){
-      var chk = document.getElementById("consolaMelodicPatternsChk");
-      return !!(chk && chk.checked);
+    // Slider #consolaMelodicPatternsSlider (0-100%, default 100). 0 = apagado, 100 = SOLO patrones
+    // melódicos; en el medio, cada nota se elige con el contorno con esa probabilidad.
+    function amount(){
+      var sl = document.getElementById("consolaMelodicPatternsSlider");
+      var v = sl ? parseFloat(sl.value) : 100;
+      return isFinite(v) ? Math.max(0, Math.min(100, v)) : 100;
+    }
+    function enabled(){ return amount() > 0; }
+    // Dado por nota. En 0% y 100% no consume aleatoriedad (no altera el resto de la generación).
+    function roll(){
+      var a = amount();
+      if(a <= 0) return false;
+      if(a >= 100) return true;
+      return Math.random()*100 < a;
     }
     // Sortea un patrón nuevo del pool — llamar una sola vez por cada
     // regeneración (regenerateConsola/normalizeConsola), nunca desde
@@ -9101,7 +9112,7 @@ function runAnalysis() {
       var octLap = Math.floor(pos / n);
       return { idx: idx, octLap: octLap };
     }
-    return { enabled: enabled, reset: reset, nextPos: nextPos, indexWithOctave: indexWithOctave };
+    return { enabled: enabled, roll: roll, reset: reset, nextPos: nextPos, indexWithOctave: indexWithOctave };
   })();
 
   /* ================================================================
@@ -9412,7 +9423,7 @@ function runAnalysis() {
       if(doHarris) modes.push("harris");
       if(!modes.length) return []; // ningún modo tildado (o aplicable): silencio
 
-      var patOn = MELODICPATTERNS.enabled();
+      var patOn = MELODICPATTERNS.enabled(); // slider > 0; el dado por nota es MELODICPATTERNS.roll()
       var events = [];
       var prevKey = null;
       var idx = 0;          // arp/scale: se resetea en cada cambio de acorde
@@ -9439,7 +9450,7 @@ function runAnalysis() {
             }
             var hTones = HARRIS.scaleNear(harrisCtx, harrisAnchor);
             var hn = hTones.length;
-            if(patOn){
+            if(patOn && MELODICPATTERNS.roll()){
               if(harrisStep>0) harrisPos = MELODICPATTERNS.nextPos(harrisPos, harrisStep-1);
               harrisStep++;
               var hPos = MELODICPATTERNS.indexWithOctave(harrisPos, hn);
@@ -9463,7 +9474,7 @@ function runAnalysis() {
             if(!arpUp) tones = tones.slice().reverse();
             if(key !== prevKey){ idx = 0; idxPos = 0; idxStep = 0; prevKey = key; }
             var n = tones.length;
-            if(patOn){
+            if(patOn && MELODICPATTERNS.roll()){
               if(idxStep>0) idxPos = MELODICPATTERNS.nextPos(idxPos, idxStep-1);
               idxStep++;
               var iPos = MELODICPATTERNS.indexWithOctave(idxPos, n);
@@ -12179,7 +12190,7 @@ function runAnalysis() {
         } else if(motPlan){
           // Motivic melody: motivo desarrollado (ver módulo MOTIVIC), solo notas del acorde vigente
           midi = MOTIVIC.pitch(motPlan, MOTIVIC.ladder(currentSlotChord), MOTIVIC.next(motPlan));
-        } else if(MELODICPATTERNS.enabled()){
+        } else if(MELODICPATTERNS.roll()){
           // melodicPatterns: contorno fijo en vez de arpegio lineal
           // (denso) o nota al azar (disperso) — misma restricción de
           // siempre, solo notas de currentSlotChord, indexadas con el
@@ -17047,7 +17058,10 @@ function runAnalysis() {
   document.getElementById("consolaMixDurChk").addEventListener("change", function(){
     if(state.rootChord.length) regenerateConsola();
   });
-  document.getElementById("consolaMelodicPatternsChk").addEventListener("change", function(){
+  document.getElementById("consolaMelodicPatternsSlider").addEventListener("input", function(){
+    document.getElementById("consolaMelodicPatternsVal").textContent = this.value + "%";
+  });
+  document.getElementById("consolaMelodicPatternsSlider").addEventListener("change", function(){
     if(state.rootChord.length) regenerateConsola();
   });
   document.getElementById("consolaMotivicSlider").addEventListener("input", function(){
