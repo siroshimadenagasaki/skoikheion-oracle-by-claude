@@ -3524,18 +3524,25 @@ function getAllByCardinality(chordsData, card) {
 }
 
 function getZMate(chordsData, pcs) {
-  // Replica fielmente el comportamiento real del sitio: compara el input
-  // crudo (no la prime form) contra la tabla al excluir el propio acorde,
-  // lo que a veces produce resultados distintos de la relacion Z estandar.
+  // Relación Z estándar: mismo vector de intervalos pero OTRA clase de conjunto (distinto
+  // número de Forte; el sufijo B de la tabla Forte-Solomon es solo la quiralidad, no cuenta
+  // como otra clase). Solo existe desde tetracordos: en tríadas devuelve null. Devuelve el
+  // código de la clase mate con la MISMA quiralidad (A/B) que el set de entrada.
   const prime = getPrimeForm(pcs);
+  const forte = getByPitchClasses(chordsData, prime);
+  if (!forte) return null;
+  const baseOf = (c) => c["forte-code"].replace(/B$/, "");
   const ic = getIntervalVector(prime);
-  for (const chord of getAllByCardinality(chordsData, pcs.length)) {
-    if (arraysAreEqual(getIntervalVector(chord["pitch-classes"]), ic) &&
-        !arraysAreEqual(pcs, chord["pitch-classes"])) {
-      return chord["forte-code"];
-    }
-  }
-  return null;
+  // OJO: el vector de intervalos se compara EN ORDEN (posición a posición). arraysAreEqual compara
+  // como multiconjunto, y eso daba "mates" falsos (ej. <001110> de la tríada mayor vs <011100> de 3-2).
+  const sameIC = (v) => v.length === ic.length && v.every((x, i) => x === ic[i]);
+  const mates = getAllByCardinality(chordsData, prime.length).filter(c =>
+    baseOf(c) !== baseOf(forte) && sameIC(getIntervalVector(c["pitch-classes"])));
+  if (!mates.length) return null;
+  const sol = getSolomonChord(chordsData, pcs);
+  const wantB = !!(sol && /B$/.test(sol["forte-code"]));
+  const same = mates.find(c => /B$/.test(c["forte-code"]) === wantB);
+  return (same || mates[0])["forte-code"];
 }
 
 function getSolomonChord(chordsData, pcs) {
@@ -8383,6 +8390,10 @@ function runAnalysis() {
     var BASE_SHIFTS = [-3,-2,-1,1,2,3];
     var MUTATE_PROB = 0.25;
     var cellQ = [], cellBase = null, lastCell = null, lastLen = 0, lastMidi = null, shiftDir = 1;
+    // Acentos de velocity: la primera nota de cada célula suena más fuerte y el resto más suave
+    // (neutra = 96; el promedio de una célula de 4 notas queda ≈ 96). Dynamics lo multiplica encima.
+    var ACCENT_VEL = 112, UNACCENT_VEL = 88, lastIsCellStart = false;
+    function accentVel(){ return lastIsCellStart ? ACCENT_VEL : UNACCENT_VEL; }
     function ladder(chord){
       var pcs = {};
       chord.forEach(function(m){ pcs[((m%12)+12)%12] = true; });
@@ -8437,7 +8448,8 @@ function runAnalysis() {
     }
     function nextPitch(chord){
       var lad = ladder(chord);
-      if(!lad.length) return clampMelodyRange(chord[0] + 12);
+      if(!lad.length){ lastIsCellStart = false; return clampMelodyRange(chord[0] + 12); }
+      var isCellStart = !cellQ.length; // esta nota abre una célula nueva (para el acento de velocity)
       if(!cellQ.length){
         if(cellBase === null){
           var mid = Math.floor(lad.length/2) + randomInt(-2, 2);
@@ -8453,6 +8465,7 @@ function runAnalysis() {
       }
       var off = cellQ.shift();
       var idx = fold(nearestIdx(lad, cellBase) + off, lad.length);
+      lastIsCellStart = isCellStart;
       var midi = lad[idx];
       if(midi === lastMidi && lad.length > 1){ // nunca la misma nota seguida
         idx = fold(idx + (Math.random()<0.5 ? 1 : -1), lad.length);
@@ -8462,7 +8475,7 @@ function runAnalysis() {
       lastMidi = midi;
       return midi;
     }
-    return { prob: prob, apply: apply, startRun: startRun, nextPitch: nextPitch };
+    return { prob: prob, apply: apply, startRun: startRun, nextPitch: nextPitch, accentVel: accentVel };
   }
   var RAPIDRUNS = makeRapidRuns("consolaRapidRunsSlider", 5);
   // Rapid runs v2 (#consolaRapidRuns2Slider, default 0%): copia independiente de Rapid runs. Solo toca
@@ -8999,6 +9012,11 @@ function runAnalysis() {
      (Melody n2 tiene su propio motivo). Solo decide la ALTURA: ritmo,
      silencios, Rapid runs y MelodicSpace quedan como estaban (las notas
      de corrida y los silencios no consumen notas del motivo).
+     RITMO MOTÍVICO (2026-10-05): los compases impares copian la célula rítmica y los silencios del
+     compás anterior (si miden lo mismo; Rapid runs y MelodicSpace siguen pisando después), y un compás
+     denso (≥3 notas que suenan, sin corrida) es UNA entrada completa del motivo, ajustada a exactamente
+     esas notas (beginBar). Así cada par de compases repite la figura rítmica: entrada 1→2 (motivo →
+     secuencia) y 3→4 (variación → cierre). Compases ralos o de corrida: flujo de siempre.
      ================================================================ */
   var MOTIVIC = (function(){
     function enabled(){
@@ -9034,8 +9052,19 @@ function runAnalysis() {
       return [0,1,2,1];
     }
     function newPlan(){
-      return { motive: makeMotive(), home: randomInt(76,88), groups: [], q: -1, cur: [], pos: 0, resolve: false };
+      return { motive: makeMotive(), home: randomInt(76,88), groups: [], q: -1, cur: [], pos: 0, resolve: false, forceLen: 0 };
     }
+    // RITMO MOTÍVICO: un compás "denso" (≥3 notas que suenan, sin corrida) es UNA entrada completa
+    // del motivo — su contorno se ajusta a exactamente esas notas (se corta o se cicla). Los compases
+    // impares copian el ritmo (célula + silencios) del par anterior, así cada par de compases repite
+    // la misma figura rítmica con la entrada 1→2 (motivo → secuencia) y 3→4 (variación → cierre).
+    // Los compases ralos o de corrida siguen el flujo de siempre (no cortan el motivo).
+    function fit(T, n){
+      var out = [];
+      for(var i=0; i<n; i++) out.push(T[i % T.length]);
+      return out;
+    }
+    function beginBar(plan, n){ plan.pos = plan.cur.length; plan.forceLen = n; }
     function group(plan, g){
       if(!plan.groups[g]){
         var ops = ["inversion","retrograde","fragment"];
@@ -9065,6 +9094,7 @@ function runAnalysis() {
         T = M.slice(0, Math.max(2, M.length-1));
         plan.resolve = true;
       }
+      if(plan.forceLen > 0){ T = fit(T, plan.forceLen); plan.forceLen = 0; } // ritmo motívico: largo exacto del compás
       plan.cur = T.map(function(x){ return x + shift; });
       plan.pos = 0;
     }
@@ -9081,7 +9111,7 @@ function runAnalysis() {
       if(o.resolve) return lad[h];
       return lad[Math.max(0, Math.min(lad.length-1, h + o.off))];
     }
-    return { enabled: enabled, ladder: ladder, newPlan: newPlan, next: next, pitch: pitch };
+    return { enabled: enabled, ladder: ladder, newPlan: newPlan, next: next, pitch: pitch, beginBar: beginBar };
   })();
 
   /* ================================================================
@@ -10445,7 +10475,7 @@ function runAnalysis() {
     // Devuelve { voiced, inv }. inv 0 = fundamental (el orden del set), 1 = 1ra inv, 2 = 2da...
     // Disposición: cerrada, o abierta (sube 1-2 voces internas una octava) — a veces (~40%)
     // con una voz duplicada a la octava. Nunca cambia el grave elegido ni suma notas ajenas.
-    function invVoicing(rc, prevInv){
+    function invVoicingOnce(rc, prevInv){
       var pcs = uniquePcs(rc), n = pcs.length;
       if(n < 2) return { voiced: rc.slice().sort(function(a,b){ return a-b; }), inv: 0 };
       var inv, guard = 0;
@@ -10470,6 +10500,22 @@ function runAnalysis() {
       }
       return { voiced: voiced, inv: inv };
     }
+    // VOICE LEADING (Harmony / inversions): con probabilidad VOICELEAD_PROB (65%, como Jazz) sortea varios
+    // candidatos (inversión + disposición cerrada/abierta + duplicación, todo con las mismas reglas de arriba)
+    // y se queda con el que menos mueve las voces respecto del voicing anterior (vlCost). El resto de las
+    // veces, el sorteo de siempre. Solo elige entre voicings válidos del mismo set: nunca agrega notas ajenas.
+    var VL_CANDIDATES = 8;
+    function invVoicing(rc, prevInv, prevVoiced){
+      if(prevVoiced && prevVoiced.length && Math.random() < VOICELEAD_PROB){
+        var best = null, bestCost = Infinity;
+        for(var c = 0; c < VL_CANDIDATES; c++){
+          var cand = invVoicingOnce(rc, prevInv), cost = vlCost(prevVoiced, cand.voiced);
+          if(cost < bestCost){ bestCost = cost; best = cand; }
+        }
+        return best;
+      }
+      return invVoicingOnce(rc, prevInv);
+    }
     // ---- in3rds: acorde apilado en terceras DEL set (misma lógica que gtApilar de "Grados en Terceras") ----
     // El set (ordenado desde su nota más grave) es la "escala"; se elige un grado al azar y se apilan
     // posiciones i, i+2, i+4(, i+6) con wrap a la octava. Solo para sets de 5+ notas distintas.
@@ -10479,7 +10525,7 @@ function runAnalysis() {
     function stackStrides(){ var o = []; if(on("in3rds")) o.push(2); if(on("in4ths")) o.push(3); if(on("in5ths")) o.push(4); return o; }
     function stackOn(){ return stackStrides().length > 0; }
     function pickStride(){ var l = stackStrides(); return l[randomInt(0, l.length-1)]; }
-    function thirdsStack(rc, prevDeg, att, stride){
+    function thirdsStack(rc, prevDeg, att, stride, prevNotes){
       stride = stride || 2; // 2 = terceras, 3 = cuartas, 4 = quintas (en grados del set)
       var lowest = Math.min.apply(null, rc);
       var scale = uniquePcs(rc).map(function(pc){ return { pc: pc, off: mod12(pc - lowest) }; })
@@ -10489,19 +10535,36 @@ function runAnalysis() {
       var maxDistinct = n / gcd(n, stride); // i+stride*k repite tras n/gcd(n,stride) notas
       var size = Math.min(4, maxDistinct); // acordes de 4 notas (7mas del set en terceras); con n par y chico, lo máximo que da
       if(size < 3) return null; // 2 notas apiladas no hacen acorde: el set suena entero
+      // Apila `size` grados del set desde el grado `d` (con wrap a la octava), ascendente.
+      function stackAt(d){
+        var notes = [];
+        for(var k = 0; k < size; k++){
+          var pos = d + stride*k;
+          notes.push(lowest + scale[pos % n].off + 12*Math.floor(pos / n));
+        }
+        return notes.sort(function(a, b){ return a - b; });
+      }
       var deg, g = 0;
       if(att && att.in3g){
         // compás de 4 acordes: la fundamental se mueve por grados del set (2 arriba 1 abajo, o 1 abajo 2 arriba)
         var grp = att.in3g;
         if(att.in3k === 0 || grp.base == null){ do { grp.base = randomInt(0, n-1); g++; } while(grp.base === prevDeg && g < 20); }
         deg = grp.base + grp.pat[Math.min(att.in3k, grp.pat.length-1)];
-      } else { do { deg = randomInt(0, n-1); g++; } while(deg === prevDeg && g < 20); }
-      var notes = [];
-      for(var k = 0; k < size; k++){
-        var pos = deg + stride*k;
-        notes.push(lowest + scale[pos % n].off + 12*Math.floor(pos / n));
+      } else {
+        do { deg = randomInt(0, n-1); g++; } while(deg === prevDeg && g < 20);
+        // VOICE LEADING: con probabilidad VOICELEAD_PROB sortea varios grados y se queda con el apilado
+        // que menos mueve las voces respecto del acorde apilado anterior (mismas reglas: solo notas del set).
+        if(prevNotes && prevNotes.length && Math.random() < VOICELEAD_PROB){
+          var bestCost = vlCost(prevNotes, stackAt(deg));
+          for(var vc = 1; vc < VL_CANDIDATES; vc++){
+            var d2, g2 = 0;
+            do { d2 = randomInt(0, n-1); g2++; } while(d2 === prevDeg && g2 < 20);
+            var c2 = vlCost(prevNotes, stackAt(d2));
+            if(c2 < bestCost){ bestCost = c2; deg = d2; }
+          }
+        }
       }
-      return { notes: notes.sort(function(a, b){ return a - b; }), deg: deg };
+      return { notes: stackAt(deg), deg: deg };
     }
     // ---- arp: patrones (índices dentro de las notas del acorde; i >= n sube de octava) ----
     // Pocos lineales (arriba/abajo); la mayoría asimétricos o aleatorios. w = peso en el sorteo.
@@ -10683,6 +10746,8 @@ function runAnalysis() {
       var events = [], slotChords = [];
       for(var sb = 0; sb < numBars; sb++) slotChords.push([]);
       var prevInv = -1, rhKey = null, rhInv = 0, prevDeg3 = -1, prevInv3 = -1, prevGuitar = null;
+      var prevVoicedInv = null, prevVoicedInv3 = null; // VOICE LEADING: último voicing de inversions (acorde completo / apilado en terceras)
+      var prevSub3 = null; // VOICE LEADING: último acorde apilado (in3rds/in4ths/in5ths) que sonó
       var arpPrev = null;
       // Arp: toca el compás entero como arpegio sobre las notas de "src" (sin duplicados, ascendentes).
       // Devuelve false si hay menos de 2 notas (entonces el compás suena como acorde en bloque).
@@ -10744,7 +10809,7 @@ function runAnalysis() {
         }
         if(on("onechord") && !oneRc) oneRc = rc.slice();
         var voiced, rhSub = null;
-        if(on("inversions")){ var iv = invVoicing(rc, prevInv); voiced = iv.voiced; prevInv = iv.inv; }
+        if(on("inversions")){ var iv = invVoicing(rc, prevInv, prevVoicedInv); voiced = iv.voiced; prevInv = iv.inv; prevVoicedInv = iv.voiced; }
         else {
           voiced = rc.slice().sort(function(x,y){ return x-y; });
           // Rythmicarmonies: mientras el acorde no cambia, a veces (~35%) el reataque toca otra inversión del MISMO set
@@ -10774,11 +10839,12 @@ function runAnalysis() {
         // in3rds: lo que SUENA es un acorde en terceras del set; el acorde vigente (slots, bajo, melodía, cifrado) sigue siendo el set completo
         var in3Sub = null;
         if(stackOn() && !gv && (stackProb() >= 1 || Math.random() < stackProb())){
-          var st = thirdsStack(rc, prevDeg3, a, a.in3g ? a.in3g.stride : (Math.random() < 0.5 ? barStride[a.bar] : pickStride()));
+          var st = thirdsStack(rc, prevDeg3, a, a.in3g ? a.in3g.stride : (Math.random() < 0.5 ? barStride[a.bar] : pickStride()), prevSub3);
           if(st){
             prevDeg3 = a.in3g ? a.in3g.base : st.deg;
             in3Sub = st.notes;
-            if(on("inversions")){ var iv3 = invVoicing(in3Sub, prevInv3); in3Sub = iv3.voiced; prevInv3 = iv3.inv; }
+            if(on("inversions")){ var iv3 = invVoicing(in3Sub, prevInv3, prevVoicedInv3); in3Sub = iv3.voiced; prevInv3 = iv3.inv; prevVoicedInv3 = iv3.voiced; }
+            prevSub3 = in3Sub;
           }
         }
         // slots (con ligadura: si el ataque cruza la barra, el resto queda en el compás siguiente)
@@ -10977,6 +11043,27 @@ function runAnalysis() {
     }
     return { enabled: enabled, apply: apply, PROB: PROB };
   })();
+  // ---- VOICE LEADING en la armonía normal (camino no-Jazz de buildChordEventsRandom) ----
+  // Costo de moverse de un voicing al siguiente: distancia total entre voces emparejadas de grave a
+  // agudo (+6 por cada nota de diferencia en la cantidad) — mismo criterio que JAZZ.voicingCost.
+  var VOICELEAD_PROB = 0.65; // misma proporción que usa Jazz (65%); el resto sigue siendo inversión al azar
+  function vlCost(prev, cand){
+    var a = prev.slice().sort(function(x,y){ return x-y; }), b = cand.slice().sort(function(x,y){ return x-y; });
+    var n = Math.min(a.length, b.length), cost = Math.abs(a.length - b.length) * 6;
+    for (var i=0; i<n; i++) cost += Math.abs(a[i] - b[i]);
+    return cost;
+  }
+  // Inversión de `chordT` (ya transpuesto) que menos mueve las voces respecto de `prev`. Salta la
+  // que repetiría exactamente el combo anterior (comboHead = "notas:t:" + inversión == prevCombo).
+  function bestInversion(chordT, prev, comboHead, prevCombo){
+    var best = -1, bestCost = Infinity;
+    for (var i=0; i<chordT.length; i++){
+      if (comboHead + i === prevCombo) continue;
+      var c = vlCost(prev, invertChord(chordT, i));
+      if (c < bestCost){ bestCost = c; best = i; }
+    }
+    return best < 0 ? 0 : best;
+  }
   function buildChordEventsRandom(rootChord, numBars){
     var chordPool = JAZZ.roll() ? JAZZ.CHORD_RHYTHM_POOL : CHORD_RHYTHM_POOL;
     var cellsByBar = avoidAdjacentDuplicates(
@@ -11054,10 +11141,18 @@ function runAnalysis() {
             picked = randomSubsetChord(rcAtk);
             t = randomChromaTransposition();
             inv = picked.chord.length > 1 ? randomInt(0, picked.chord.length-1) : 0;
+            // VOICE LEADING (armonía normal): la mayoría de las veces la inversión es la que
+            // menos mueve las voces respecto del reataque anterior. Solo elige la inversión
+            // (la transposición `t` se sortea UNA vez por intento, igual que antes): las
+            // clases de altura no cambian, el set no se traiciona.
+            if (jazzPrevVoiced && picked.chord.length > 1 && Math.random() < VOICELEAD_PROB){
+              inv = bestInversion(transposeChord(picked.chord, t), jazzPrevVoiced, picked.chord.join(",") + ":" + t + ":", prevCombo);
+            }
             combo = picked.chord.join(",") + ":" + t + ":" + inv;
             comboGuard++;
           } while(combo === prevCombo && comboGuard < 40);
           voiced = invertChord(transposeChord(picked.chord, t), inv);
+          jazzPrevVoiced = voiced; // también en el camino normal: así Jazz y normal se encadenan con el voicing realmente anterior
           strum = false;
         }
         // Ataque quebrado (ver módulo BROKENCHORD arriba): si no hubo
@@ -11453,6 +11548,14 @@ function runAnalysis() {
         if (melModes[rmM] === "rhythm" || melModes[rmM] === "both") melodyCells[rmM] = melodyCells[rmM-1];
       }
     }
+    // Motivic melody — RITMO MOTÍVICO: los compases impares repiten la célula rítmica del compás
+    // anterior (solo si miden lo mismo). Rapid runs / MelodicSpace se aplican DESPUÉS y siguen
+    // pisando el ritmo como siempre. Los silencios se copian más abajo, en el armado de la melodía.
+    if (MOTIVIC.enabled()){
+      for (var rmv=1; rmv<numBars; rmv+=2){
+        if (RHYTHM.beats(rmv) === RHYTHM.beats(rmv-1)) melodyCells[rmv] = melodyCells[rmv-1];
+      }
+    }
     // HarmonicSpace: en el tramo de respiro (si salió sorteado), el
     // bajo también queda en redondas — un solo ataque por compás, pisa
     // cualquier ritmo anterior (pool, MoreRep/acople). Mismo tramo que
@@ -11574,10 +11677,16 @@ function runAnalysis() {
       }
       var silenceOrder = spreadByGroup(silenceTags, function(t){ return t.silent; });
       var mMode = melModes ? melModes[bar] : "none";
-      if (bar > 0 && (mMode === "rhythm" || mMode === "both") && silenceByBar[bar-1] && silenceByBar[bar-1].length === silenceOrder.length) silenceOrder = silenceByBar[bar-1]; // mismo motivo rítmico: mismos silencios
+      if (bar > 0 && (mMode === "rhythm" || mMode === "both" || (motPlan && bar % 2 === 1)) && silenceByBar[bar-1] && silenceByBar[bar-1].length === silenceOrder.length) silenceOrder = silenceByBar[bar-1]; // mismo motivo rítmico (Motivic melody: compases impares copian los silencios del par anterior): mismos silencios
       silenceByBar[bar] = silenceOrder;
       var prevMotif = (bar > 0 && (mMode === "melodic" || mMode === "both")) ? motifByBar[bar-1] : null;
       if (prevMotif && !prevMotif.length) prevMotif = null;
+      // Motivic melody — ritmo motívico: un compás denso (≥3 notas que suenan y ninguna de corrida)
+      // es UNA entrada completa del motivo, ajustada a exactamente esas notas.
+      if (motPlan && !prevMotif && !runMasks[bar].some(function(x){ return x; })){
+        var soundN = silenceOrder.filter(function(s){ return !s.silent; }).length;
+        if (soundN >= 3) MOTIVIC.beginBar(motPlan, soundN);
+      }
       var curMotif = [], motifI = 0;
       motifByBar[bar] = curMotif;
 
@@ -11590,7 +11699,7 @@ function runAnalysis() {
           var RR = runMod[bar] === 2 ? RAPIDRUNS2 : RAPIDRUNS;
           if(k === 0 || !runMasks[bar][k-1]) RR.startRun(lastMelodyMidi);
           var runMidi = RR.nextPitch(currentChordAt(slotChords[bar], mOffset));
-          melodyEvents.push({midi: runMidi, startBeat: barStart+mOffset, durBeats:dur, bar:bar});
+          melodyEvents.push({midi: runMidi, startBeat: barStart+mOffset, durBeats:dur, bar:bar, vel: RR.accentVel()}); // acento: 1ra nota de cada célula
           lastMelodyMidi = runMidi;
           mOffset += dur;
           return;
@@ -13748,9 +13857,21 @@ function runAnalysis() {
   // lejos en bias 1.8 (peso +80%) sin que ningún tier baje nunca de 0.2
   // (20% de su peso original — nunca desaparece del todo, mismo espíritu
   // de "siempre algo de variedad" que chromaVariety/chordDensityVariety).
-  var RHYTHM_COMPLEXITY_STRENGTH = 3.2;
+  // RADICAL (2026-10-05): ahora es EXPONENCIAL — bias = exp(STRENGTH·(c−0.5)·(density−0.5)). Sigue
+  // neutro en c=0.5 (bias=1 para toda density: el 50% reproduce el reparto de siempre), pero en los
+  // extremos el tier más lejano pesa ×12 (density 1.0 al 100%, density 0.0 al 0%) y el opuesto ×0.08
+  // (nunca llega a 0: siempre queda algo de variedad). STRENGTH=10 → al 100% ~58% de los compases
+  // son "fill" y ~54% de los hi-hat son semicorcheas; al 0% ~33% "breath", ~31% "sparse" y ~82% de los
+  // hi-hat son negras.
+  var RHYTHM_COMPLEXITY_STRENGTH = 10;
   function complexityBias(density, complexity){
-    return 1 + (complexity - 0.5) * RHYTHM_COMPLEXITY_STRENGTH * (density - 0.5);
+    return Math.exp((complexity - 0.5) * RHYTHM_COMPLEXITY_STRENGTH * (density - 0.5));
+  }
+  // Probabilidad que pasa por `mid` en complexity=0.5 (el valor de siempre), vale `lo` en 0 y `hi` en 1.
+  // Respuesta lineal por tramos: mismo punto medio que antes, extremos mucho más lejos.
+  function cxProb(x, lo, mid, hi){
+    x = Math.max(0, Math.min(1, x));
+    return x <= 0.5 ? lo + (mid - lo) * (x / 0.5) : mid + (hi - mid) * ((x - 0.5) / 0.5);
   }
   function complexityReweight(pool, complexity){
     return pool.map(function(p){
@@ -14034,13 +14155,13 @@ function runAnalysis() {
       }
 
       // ¿Arranca una polirritmia? (compás 1 o 3 de la frase)
-      if (polyLeft === 0 && (phrasePos === 0 || phrasePos === 2) && Math.random() < 0.12 + cx*0.25){
+      if (polyLeft === 0 && (phrasePos === 0 || phrasePos === 2) && Math.random() < cxProb(cx, 0, 0.245, 0.9)){ // RADICAL
         polyLeft = Math.random() < 0.5 ? 1 : 2;
         polyGroup = Math.random() < 0.65 ? 4 : 5;
         polyPos = 0;
       }
       var isPoly = polyLeft > 0;
-      var isSpace = !isPoly && !phraseEnd && Math.random() < Math.max(0.05, 0.3 - cx*0.2);
+      var isSpace = !isPoly && !phraseEnd && Math.random() < cxProb(cx, 0.6, 0.2, 0.02); // RADICAL: al 0% más de la mitad de los compases son de espacio, al 100% casi ninguno
       var bellBar = phraseEnd && Math.random() < 0.25;
 
       // Ride que respira + pedal + feathering
@@ -14059,7 +14180,7 @@ function runAnalysis() {
       // Fill melódico de toms (fin de frase), arranque variable
       var fillStart = slots;
       var asymDone = false;
-      if (asymmetricEnabled() && !isPoly && Math.random() < (phraseEnd ? 0.3 + cx*0.4 : 0.05 + cx*0.12)){
+      if (asymmetricEnabled() && !isPoly && Math.random() < (phraseEnd ? cxProb(cx, 0.05, 0.5, 1) : cxProb(cx, 0, 0.11, 0.5))){ // RADICAL
         var asymAt = addAsymmetricFill(push, base, beats);
         if (asymAt >= 0){
           asymDone = true;
@@ -14067,7 +14188,7 @@ function runAnalysis() {
           if (phraseEnd) resolveNext = true;
         }
       }
-      if (!asymDone && phraseEnd && Math.random() < 0.4 + cx*0.4){
+      if (!asymDone && phraseEnd && Math.random() < cxProb(cx, 0.1, 0.6, 1)){ // RADICAL
         fillStart = mjRand(Math.max(1, slots-9), slots-3);
         var hits = mjRand(3, 5);
         var zig = Math.random() < 0.35;
@@ -14094,7 +14215,7 @@ function runAnalysis() {
         if (polyLeft === 0) resolveNext = true;
       } else if (!isSpace){
         // Comping conversacional
-        var dens = (0.25 + cx*0.45) * (phraseEnd ? 1.4 : 1);
+        var dens = cxProb(cx, 0.05, 0.475, 1) * (phraseEnd ? 1.4 : 1); // RADICAL: casi mudo al 0%, denso al 100%
         var slot = mjRand(1, 3);
         while (slot < fillStart){
           var onBeat = slot % 3 === 0;
@@ -14163,14 +14284,16 @@ function runAnalysis() {
     // Fill de toms sobre el último tiempo del compás (3 golpes
     // descendentes en corcheas: tom agudo, medio-grave, grave — notas GM
     // 50/47/45). Probabilidad crece con el %, tope 50% de los compases.
-    if (Math.random() < complexity * 0.5){
+    // RADICAL: 0% = nunca; 50% = 25% (como siempre); 100% = TODOS los compases.
+    if (Math.random() < cxProb(complexity, 0, 0.25, 1)){
       events.push({type:"kick", startBeat: base+3.0,  midi:50});
       events.push({type:"kick", startBeat: base+3.5,  midi:47});
       events.push({type:"kick", startBeat: base+3.75, midi:45});
     }
     // Platillo crash (GM 49) en el primer tiempo del compás, además del
     // bombo de siempre. Tope 35% de los compases incluso al 100%.
-    if (Math.random() < complexity * 0.35){
+    // RADICAL: 0% = nunca; 50% = 17,5%; 100% = todos los compases.
+    if (Math.random() < cxProb(complexity, 0, 0.175, 1)){
       events.push({type:"hihat", startBeat: base, open:true, midi:49});
     }
     // Ride en vez de hi-hat cerrado para TODO el compás (recorre los
@@ -14179,7 +14302,7 @@ function runAnalysis() {
     // en los acentuados/abiertos, conserva el mismo patrón de acentos de
     // siempre). Solo entra en juego pasado el 50%, tope 30% de los
     // compases al 100%.
-    var rideChance = Math.max(0, (complexity - 0.5) * 0.6);
+    var rideChance = cxProb(complexity, 0, 0, 0.9); // RADICAL: 0 hasta el 50%, 90% de los compases al 100%
     if (Math.random() < rideChance){
       for (var q=events.length-1; q>=0 && events[q].startBeat >= base; q--){
         if (events[q].type === "hihat" && events[q].midi == null){
@@ -14198,21 +14321,22 @@ function runAnalysis() {
       // corcheas "and" de los tiempos 1 y 3. Se suman, no reemplazan
       // nada.
       [0.5, 2.5].forEach(function(gb){
-        if (Math.random() < 0.25 + complexity*0.35){
+        // RADICAL: casi nunca al 0% (3%), 42,5% al 50% (como siempre), 90% al 100%
+        if (Math.random() < cxProb(complexity, 0.03, 0.425, 0.9)){
           events.push({type:"snare", startBeat: base+gb, vel: 28 + Math.round(Math.random()*10)});
         }
       });
       // Síncopa de bombo: golpe extra en la corchea antes del tiempo 3,
       // fuera del patrón fijo de siempre. Probabilidad crece con la
       // complejidad, tope 30%.
-      if (Math.random() < complexity*0.3){
+      if (Math.random() < cxProb(complexity, 0, 0.15, 0.9)){ // RADICAL: 0% nunca, 50% 15% (como siempre), 100% 90%
         events.push({type:"kick", startBeat: base+2.5});
       }
       // Cross-stick/rimshot: en compases quietos (complexity efectivo
       // < 0.3) cambia el timbre de los golpes de caja de ESTE compás
       // (incluidas las ghost notes recién agregadas) a rimshot, en vez
       // de agregar golpes nuevos — variación de timbre, no de cantidad.
-      if (complexity < 0.3){
+      if (complexity < 0.4){ // RADICAL: antes <0.3
         for (var rs=events.length-1; rs>=0 && events[rs].startBeat >= base; rs--){
           if (events[rs].type === "snare") events[rs].type = "rimshot";
         }
@@ -14464,7 +14588,7 @@ function runAnalysis() {
       // styleByBar de arriba (ver sectionComplexity()).
       var barComplexity = sectionComplexity(bar, rhythmComplexity);
       addRhythmComplexityLayer(events, base, barComplexity, otherRhythmVariationsEnabled());
-      if (asymmetricEnabled() && Math.random() < ((bar % 4 === 3) ? 0.3 + rhythmComplexity*0.4 : 0.05 + rhythmComplexity*0.15)){
+      if (asymmetricEnabled() && Math.random() < ((bar % 4 === 3) ? cxProb(rhythmComplexity, 0.05, 0.5, 1) : cxProb(rhythmComplexity, 0, 0.125, 0.5))){ // RADICAL: mismo punto medio (50%) que antes, extremos mucho más lejos
         addAsymmetricFill(function(ev){ events.push(ev); }, base, RHYTHM.beats(bar));
       }
       addCounterRhythmLayer(function(ev){ events.push(ev); }, base, Math.round(RHYTHM.beats(bar)*3), Math.round(RHYTHM.beats(bar)*3), Math.max(0, (rhythmComplexity - 0.5)*2));
