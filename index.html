@@ -1312,7 +1312,7 @@
         <input type="range" id="consolaTempo" min="25" max="200" value="84" step="1">
         <span class="consola-val" id="consolaTempoVal">84 BPM</span>
       </div>
-      <div class="consola-field" title="Simplicity: 0% = motor libre de siempre (Simplicity apagado). 100% = Simplicity completo: versión simple, set completo sin transposición ni subsets, solo inversiones al azar entre compases, bajo y melodía en patrón predecible. En el medio, cada compás sale al azar de uno u otro motor (a mayor %, más compases Simplicity). Se re-sortea en cada variación. No aplica a Multi Sets.">
+      <div class="consola-field" title="Simplicity: 0% = motor libre de siempre (Simplicity apagado). 100% = Simplicity completo: versión simple, set completo sin transposición ni subsets, solo inversiones al azar entre compases, bajo y melodía en patrón predecible. En el medio, cada compás sale al azar de uno u otro motor (a mayor %, más compases Simplicity). Se re-sortea en cada variación. Con Multi Sets, cada compás Simplicity toca entero uno de los sets guardados (el que le tocó), solo con inversiones.">
         <label for="consolaNormalSlider">&#8634; Simplicity</label>
         <input type="range" id="consolaNormalSlider" min="0" max="100" value="0" step="1" disabled>
         <span class="consola-val" id="consolaNormalVal">0%</span>
@@ -9393,6 +9393,9 @@ function runAnalysis() {
     function rootForBar(bar, fallback){
       return isActive() ? chords[barSlot[bar]] : fallback;
     }
+    // Simplicity + Multi Sets: un compás Simplicity toca UN solo set entero
+    // (el de referencia del compás), así que nunca puede ser de "reataques mezclados".
+    function forceBar(bar){ if(isActive() && bar >= 0 && bar < barKind.length) barKind[bar] = "bar"; }
     // rootChord para UN reataque de armonía de ese compás.
     function rootForAttack(bar, fallback){
       if(!isActive()) return fallback;
@@ -9663,7 +9666,7 @@ function runAnalysis() {
       refreshUI();
     }
     return {
-      init: init, isActive: isActive, assign: assign, rootForBar: rootForBar,
+      init: init, isActive: isActive, assign: assign, forceBar: forceBar, rootForBar: rootForBar,
       rootForAttack: rootForAttack, tagFor: tagFor, firstRoot: firstRoot, readoutText: readoutText,
       solomonReadoutHTML: solomonReadoutHTML, fillByTarget: fillByTarget, fillByMask: fillByMask
     };
@@ -11774,6 +11777,24 @@ function runAnalysis() {
     var v = sl ? parseFloat(sl.value) : 0;
     return isFinite(v) ? Math.max(0, Math.min(100, v)) / 100 : 0;
   }
+  // Progresión de Simplicity (set completo, solo inversiones al azar entre compases).
+  // Con MULTI SETS activo cada compás usa el set de referencia que MULTISETS.assign
+  // le sorteó (rootForBar) y las inversiones se reparten parejo POR SET, sin repetir la
+  // misma inversión de un set en compases consecutivos de ese mismo set. Sin multi es
+  // exactamente buildProgression(rootChord, defaultInversionSeq(...)) de siempre.
+  function simplicityProgression(rootChord, numBars){
+    if(!MULTISETS.isActive()) return buildProgression(rootChord, defaultInversionSeq(rootChord.length, numBars));
+    var seqBySet = {}, usedBySet = {}, progression = [], roles = [];
+    for(var b=0; b<numBars; b++){
+      var rc = MULTISETS.rootForBar(b, rootChord);
+      var key = rc.join(",");
+      if(!seqBySet[key]){ seqBySet[key] = defaultInversionSeq(rc.length, numBars); usedBySet[key] = 0; }
+      var inv = seqBySet[key][usedBySet[key]++];
+      progression.push(invertChord(rc, inv));
+      roles.push(invLabel(inv));
+    }
+    return { progression: progression, roles: roles };
+  }
   function regenerateConsola(){
     NUM_BARS = desiredNumBars();
     RHYTHM.recompute();
@@ -11799,7 +11820,7 @@ function runAnalysis() {
     }
     playBtn.disabled = false;
     if(regenPlayBtn) regenPlayBtn.disabled = false;
-    if(normalBtn) normalBtn.disabled = multi; // Simplicity toca un solo set: no aplica a MULTI SETS
+    if(normalBtn) normalBtn.disabled = false; // Simplicity también funciona con MULTI SETS (cada compás toca el set entero que le tocó)
     var rootChord;
     if(multi){
       MULTISETS.assign(NUM_BARS);
@@ -11815,8 +11836,8 @@ function runAnalysis() {
       }
     }
     state.rootChord = rootChord;
-    // Simplicity tildado: en vez del motor libre, arma la versión simple (no aplica a MULTI SETS).
-    if(!multi && normalitoProb() >= 1){ normalizeConsola(); return; }
+    // Simplicity al 100%: en vez del motor libre, arma la versión simple (con MULTI SETS: cada compás, el set entero que le tocó).
+    if(normalitoProb() >= 1){ normalizeConsola(); return; }
     fixedIntervalOffset = 0; // modo test de intervalos fijos: cada variación nueva arranca el ciclo en C (offset 0)
     cyclesOffset = 0; // módulo Cycles (Modo A acumulativo): cada variación nueva arranca el ciclo en C también
     MELODICPATTERNS.reset(); // melodicPatterns: un contorno nuevo por variación, compartido por melodía principal y bebopMelody
@@ -11866,14 +11887,17 @@ function runAnalysis() {
     // bebopMelody y Ornaments se recalculan sobre el resultado mezclado, y Melody n2
     // (que no existe en Simplicity) calla en los compases Simplicity. La batería no cambia.
     var pN = normalitoProb();
-    if(!multi && pN > 0 && pN < 1){
-      var nProg = buildProgression(rootChord, defaultInversionSeq(rootChord.length, NUM_BARS));
+    if(pN > 0 && pN < 1){
+      var nProg = simplicityProgression(rootChord, NUM_BARS); // con MULTI SETS: set de referencia de cada compás
       var nChord = buildChordEvents(nProg.progression);
       var nChordEv = SUSTAINPEDAL.apply(nChord.events, nChord.slotChords);
       var nBass = buildBassEvents(nProg.progression);
       var nMel = buildMelodyEvents(nProg.progression);
       var useN = [];
-      for(var ub=0; ub<NUM_BARS; ub++) useN.push(Math.random() < pN);
+      for(var ub=0; ub<NUM_BARS; ub++){
+        useN.push(Math.random() < pN);
+        if(multi && useN[ub]) MULTISETS.forceBar(ub); // compás Simplicity = un solo set entero (etiqueta "S#", no "mix")
+      }
       var mixBarOf = function(beat){
         for(var mb=NUM_BARS-1; mb>=0; mb--) if(beat >= RHYTHM.start(mb) - 1e-6) return mb;
         return 0;
@@ -11919,8 +11943,8 @@ function runAnalysis() {
     MELODICPATTERNS.reset(); // melodicPatterns: también sortea contorno nuevo en Simplicity
     RHYTHMSPACE.reset(0); // No afecta a Simplicity: buildDrumEvents es compartida por los dos motores, así que se apaga a mano (reset(0) siempre deja range=null)
     TRIPLETS.setActive(false); // idem Triplets: buildDrumEvents es compartida, Simplicity no tresilla nada (regenerateConsola lo vuelve a prender)
-    var invSeq = defaultInversionSeq(state.rootChord.length, NUM_BARS);
-    var built = buildProgression(state.rootChord, invSeq);
+    if(MULTISETS.isActive()) for(var fb=0; fb<NUM_BARS; fb++) MULTISETS.forceBar(fb); // Simplicity + Multi Sets: compás enteros de UN set (etiqueta "S#")
+    var built = simplicityProgression(state.rootChord, NUM_BARS); // con MULTI SETS: set de referencia de cada compás
     state.progression = built.progression;
     state.roles = built.roles;
     var chordBuiltNormal = buildChordEvents(state.progression);
