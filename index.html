@@ -1218,7 +1218,7 @@
           <button class="chip primary" id="creaturaBellaBtn" type="button" title="Igual que CreaturaRandom (mismos sliders, incluidos Simplicity 0–50%, Melody n2 on/off y Cycles al azar; Compose, Mix time signatures, Detener, espera 2s y Regenerar), pero los 5 o 2 sets salen SOLO del índice del libro (jerarquías de sets) y con más probabilidad cuanto mayor es su jerarquía: dentro de cada cardinalidad (3 hasta el máximo del slider, el índice no tiene sets de 2 notas) el set 1 del índice es el más probable y el último el menos probable. Cada set sale transportado a una tónica al azar.">🪄 CreaturaBella</button>
           <button class="chip primary" id="creaturaIntervalicBtn" type="button" title="Igual que CreaturaRandom (mismos sliders, Compose, Mix time signatures, Detener, espera 2s y Regenerar, con 5 o 2 sets), pero antes sortea una combinación de clases de intervalo (1, 2 o 3 de ic1..ic6) y los sets salen SOLO de los que tienen todas esas clases en su vector de intervalos, con más probabilidad cuanto mayor parte del vector ocupan esas clases.">🪄 CreaturaIntervalic</button>
         </div>
-        <button class="chip" id="composeBtn" type="button" title="Como CreaturaBella pero con TU set y TU compás: con el set elegido en el reloj/piano (2+ notas) y el time signature que dejaste escrito, sortea los sliders, el tempo y los presets al azar (como CreaturaBella), no cambia el set, no mezcla compases, y toca una variación nueva en primer plano. Sin set elegido, toca el segmento actual de SetMusicBox.">🎹 Compose</button>
+        <button class="chip" id="composeBtn" type="button" title="Como CreaturaBella pero con TU set y TU compás: con el set elegido en el reloj/piano (2+ notas) y el time signature que dejaste escrito, sortea los sliders, el tempo y los presets al azar (como CreaturaBella), no cambia el set, no mezcla compases, y toca una variación nueva en primer plano. Sin set elegido, sortea uno con la misma regla de CreaturaBella (sets del índice por jerarquía).">🎹 Compose</button>
         <button class="chip" id="clearBtn">Clear</button>
         <button class="chip" id="multiSetsMemBtn2" type="button" disabled title="Mismo botón que To Memory de Multi Sets Input (copia acá para no tener que abrir esa tarjeta): guarda el set actual del reloj/piano en el próximo casillero libre y resetea el reloj. Entre paréntesis, cuántos sets van guardados.">To Memory (0/5)</button>
         <div class="sounds-group">
@@ -6379,6 +6379,11 @@ document.getElementById("composeBtn").addEventListener("click", function(){
     consolaCard.scrollIntoView({ behavior: "smooth", block: "start" });
   }
   // Compose con un set elegido (2+ notas en el reloj/piano): corre la secuencia tipo CreaturaBella sobre ESE set y el compás elegido.
+  // Sin set elegido: sortea uno con la regla de CreaturaBella y lo pone en el reloj/piano; luego corre igual que con set elegido.
+  if (selected.size < 2 && typeof window.__multiSetsBellaPickOne === "function") {
+    var rnd = window.__multiSetsBellaPickOne();
+    if (rnd && rnd.length >= 2) setNotes(rnd);
+  }
   if (selected.size >= 2 && typeof window.__composeCreatura === "function") { window.__composeCreatura(); return; }
   if (btn && !btn.disabled && typeof window.consolaStartPlayback === "function") window.consolaStartPlayback();
 });
@@ -9899,6 +9904,16 @@ function runAnalysis() {
       el("multiSetsClearBtn").addEventListener("click", clearMemory);
       if(el("multiSetsRandomFillBtn")) el("multiSetsRandomFillBtn").addEventListener("click", function(){ randomFill(); });
       window.__multiSetsRandomFillCount = randomFill; // creatura: llena solo N casilleros (1-5)
+      // Compose sin set elegido: UN set al azar con la misma regla de CreaturaBella (solo sets del índice, más probable cuanto mayor jerarquía, 3..máx notas del slider, tónica al azar). No toca las memorias.
+      window.__multiSetsBellaPickOne = function(){
+        var maxN = randomMaxNotes();
+        for(var g = 0; g < 200; g++){
+          var card = (maxN >= 5) ? (Math.random() < 0.6 ? randomInt(5, maxN) : randomInt(3, 4)) : randomInt(3, maxN);
+          var pick = pickSetByHierarchy(card, {});
+          if(pick) return setHierarchyPcs(pick.code);
+        }
+        return null;
+      };
       window.__multiSetsBellaFillCount = randomFillBella; // CreaturaBella: igual, pero solo sets del índice por jerarquía
       window.__multiSetsIntervalicFillCount = randomFillIntervalic; // CreaturaIntervalic: igual, pero sets elegidos por combinación de clases de intervalo (vector interválico)
       if(el("multiSetsRandomMax")) el("multiSetsRandomMax").addEventListener("input", function(){
