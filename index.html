@@ -1145,6 +1145,7 @@
     <div><kbd>F</kbd>Stop</div>
     <div><kbd>H</kbd>CreaturaRandom</div>
     <div><kbd>B</kbd>CreaturaBella</div>
+    <div><kbd>A</kbd>CommonChords</div>
     <div><kbd>J</kbd>Random fill</div>
     <div><kbd>S</kbd>Clear</div>
     <div><kbd>D</kbd>Play</div>
@@ -18997,14 +18998,14 @@ function runAnalysis() {
   })();
 </script>
 <script>
-  // Shortcuts: G regenerate, F stop, H creatura, J random fill, S limpiar, D play.
+  // Shortcuts: A CommonChords, G regenerate, F stop, H creatura, J random fill, S limpiar, D play.
   (function(){
     var panel=document.getElementById("shortcutsPanel"), tg=document.getElementById("shortcutsToggle");
     if(tg) tg.addEventListener("click", function(){
       var c=panel.classList.toggle("is-collapsed");
       tg.setAttribute("aria-expanded", c?"false":"true");
     });
-    var MAP={ f:"consolaStopBtn", h:"creaturaBtn", b:"creaturaBellaBtn", j:"multiSetsRandomFillBtn", s:"clearBtn", d:"consolaPlayBtn" };
+    var MAP={ a:"commonChordsBtn", f:"consolaStopBtn", h:"creaturaBtn", b:"creaturaBellaBtn", j:"multiSetsRandomFillBtn", s:"clearBtn", d:"consolaPlayBtn" };
     document.addEventListener("keydown", function(e){
       var k=(e.key||"").toLowerCase(), id=MAP[k];
       if(!id) return;
