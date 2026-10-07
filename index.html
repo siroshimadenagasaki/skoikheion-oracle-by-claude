@@ -1227,6 +1227,7 @@
         <div style="display:flex;flex-direction:column;align-items:stretch;gap:6px;">
           <button class="chip primary" id="creaturaBtn" type="button" title="Corre sola la secuencia: sortea Chromatism (2–40%), Chords (20–60%), Triplets (0–100%), Melodic/Harmonic/RythmSpace (0–100%) y Rapid runs (0–30%), Simplicity (0–50%), Melody n2 (on/off al azar) y una combinación totalmente al azar de Cycles (intervalos + Chromatism; prende Cycles) → Random Fill (5 o 2 sets al azar; 2–3/2–4/2–5 notas, modo Mezcla) → Compose → tilda Mix time signatures → Detener → espera 2s → 🔀 Regenerar. Una sola pasada por click.">🪄 CreaturaRandom</button>
           <button class="chip primary" id="creaturaBellaBtn" type="button" title="Igual que CreaturaRandom (mismos sliders, incluidos Simplicity 0–50%, Melody n2 on/off y Cycles al azar; Compose, Mix time signatures, Detener, espera 2s y Regenerar), pero los 5 o 2 sets salen SOLO del índice del libro (jerarquías de sets) y con más probabilidad cuanto mayor es su jerarquía: dentro de cada cardinalidad (3 hasta el máximo del slider, el índice no tiene sets de 2 notas) el set 1 del índice es el más probable y el último el menos probable. Cada set sale transportado a una tónica al azar.">🪄 CreaturaBella</button>
+          <div style="display:flex;align-items:center;gap:8px;"><button class="chip primary" id="commonChordsBtn" type="button" style="flex:1;" title="CommonChords: en vez de sets, compone una canción con acordes de la base de acordes (tríadas, sextas, séptimas, add, extendidos, alterados), en cualquier tónica y siempre en inversión: el bajo toca la tónica, la tercera, la quinta o la séptima. Cantidad de acordes al azar (1, 2 o 4 por compás; se pueden repetir o no). La melodía toca solo notas del modo del acorde en curso (Cmaj7 sin #11 = Jónico o Lidio). 🔀 / tecla G sortean otra canción CommonChords.">🎼 CommonChords</button><label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="ModeTest: un acorde por compás y la melodía toca únicamente la escala heptatónica (el modo) de cada acorde, de la tónica hacia arriba."><input type="checkbox" id="commonChordsModeTest"> ModeTest</label></div>
           <button class="chip primary" id="creaturaIntervalicBtn" type="button" title="Igual que CreaturaRandom (mismos sliders, Compose, Mix time signatures, Detener, espera 2s y Regenerar, con 5 o 2 sets), pero antes sortea una combinación de clases de intervalo (1, 2 o 3 de ic1..ic6) y los sets salen SOLO de los que tienen todas esas clases en su vector de intervalos, con más probabilidad cuanto mayor parte del vector ocupan esas clases.">🪄 CreaturaIntervalic</button>
         </div>
         <button class="chip" id="composeBtn" type="button" title="Como CreaturaBella pero con TU set y TU compás: con el set elegido en el reloj/piano (2+ notas) y el time signature que dejaste escrito, sortea los sliders, el tempo y los presets al azar (como CreaturaBella), no cambia el set, no mezcla compases, y toca una variación nueva en primer plano. Sin set elegido, sortea uno con la misma regla de CreaturaBella (sets del índice por jerarquía); cada vez que lo apretás de nuevo, sortea otro set distinto (un set que elegiste vos a mano se respeta).">🎹 Compose</button>
@@ -6087,6 +6088,7 @@ const pcElements = {};
 for (let pc = 0; pc < 12; pc++) pcElements[pc] = [];
 
 function toggleNote(pc) {
+  if (window.__commonChords) window.__commonChords.off(); // salir de 🎼 CommonChords
   if (selected.has(pc)) selected.delete(pc);
   else selected.add(pc);
   const isSelected = selected.has(pc);
@@ -6096,6 +6098,7 @@ function toggleNote(pc) {
 }
 
 function clearNotes() {
+  if (window.__commonChords) window.__commonChords.off(); // salir de 🎼 CommonChords
   // Antes de limpiar la selección: si SetMusicBox está reproduciendo,
   // cortar el loop (setInterval + voces) — regenerateConsola() (vía
   // runAnalysis) vacía state.chordEvents pero eso solo afecta lo que se
@@ -6109,6 +6112,7 @@ function clearNotes() {
 }
 
 function setNotes(pcs) {
+  if (window.__commonChords) window.__commonChords.off(); // salir de 🎼 CommonChords
   selected.clear();
   Object.values(pcElements).flat().forEach(el => el.classList.remove("selected"));
   pcs.forEach(pc => {
@@ -12920,12 +12924,16 @@ function runAnalysis() {
         default: return cap(indefES(n, a)) + " " + wh + ", " + indefES(n2, a2) + " " + wh2 + " y " + npBareES(n3) + " que " + act;
       }
     }
-    // Distribución: 25% corto (como siempre), 50% largo, 25% muy largo; el idioma sigue siendo 50/50.
+    // Distribución: 30% corto, 60% largo (ambos con 10 palabras o menos) y 10% muy largo (más de 10 palabras); el idioma sigue siendo 50/50.
+    function nWords(t){ return t.trim().split(/\s+/).length; }
     function pickTitle(){
-      var r = Math.random(), es = Math.random() < 0.5;
-      if(r < 0.25) return es ? titleES() : titleEN();
-      if(r < 0.75) return es ? longES() : longEN();
-      return es ? veryLongES() : veryLongEN();
+      var r = Math.random(), es = Math.random() < 0.5, t, k = 0;
+      if(r >= 0.90){
+        do { t = es ? veryLongES() : veryLongEN(); k++; } while(nWords(t) <= 10 && k < 30);
+        return t;
+      }
+      do { t = (r < 0.30) ? (es ? titleES() : titleEN()) : (es ? longES() : longEN()); k++; } while(nWords(t) > 10 && k < 30);
+      return t;
     }
     function show(t){
       var el = document.getElementById("consolaSongTitle");
@@ -12970,6 +12978,7 @@ function runAnalysis() {
     var regenPlayBtn = document.getElementById("consolaRegenPlayBtn");
     var normalBtn = document.getElementById("consolaNormalSlider"); // slider Simplicity (0% = motor libre)
     if(!playBtn) return; // sección todavía no está en el DOM
+    if(typeof COMMONCHORDS !== "undefined" && COMMONCHORDS && COMMONCHORDS.active){ COMMONCHORDS.build(); return; } // 🎼 CommonChords: acordes de la base + melodía en su modo (no usa el set del reloj)
     var readout = document.getElementById("consolaNotesReadout");
     var solomonReadout = document.getElementById("consolaSolomonReadout");
     var multi = MULTISETS.isActive(); // MULTI SETS INPUT: componer desde la memoria en vez de desde `selected`
@@ -13148,6 +13157,316 @@ function runAnalysis() {
     renderBebopRoll();
   }
   window.regenerateConsola = regenerateConsola;
+
+  /* ================================================================
+     COMMONCHORDS — botón "🎼 CommonChords" (debajo de CreaturaBella) + checkbox "ModeTest".
+     En vez de sets, la canción se arma con acordes de la base CHORDS_SRC (copia de Chords_other_categorie.txt:
+     tríadas, sextas, séptimas, add, extendidos, dominantes alterados, mayores/menores alterados), en cualquier
+     tónica (0–11), siempre en INVERSIÓN: el bajo toca la tónica, la tercera, la quinta o la séptima del acorde
+     (las que existan en ese acorde) y el acorde de arriba arranca por esa misma nota (C/E, C7/Bb...).
+     - Cantidad de acordes al azar: cada compás sortea 1, 2 o 4 acordes (partes iguales). Se puede repetir o no
+       (sorteo por canción). Con ModeTest tildado: UN acorde por compás.
+     - Modo del acorde: cualquiera de las escalas heptatónicas de la lista (mayor, menor melódica, menor armónica
+       y sus modos) que contengan TODAS las notas del acorde (Cmaj7 sin 11/#11 → Jónico o Lidio; con #11 → solo
+       Lidio). Un acorde que ningún modo contiene entero queda afuera, salvo que el archivo lo asigne a un modo
+       (C7#9b13 → Altered). Los que quedan afuera están en COMMONCHORDS.excluded.
+       C7alt (el archivo solo trae su escala) = siempre C7#9 (C E G Bb D#) con la melodía en modo Altered (COMMONCHORDS.alt).
+     - Melodía: SOLO notas del modo del acorde en curso (arranca cada acorde en una nota del acorde).
+       ModeTest: la melodía toca únicamente la escala de 7 notas del modo, de la tónica hacia arriba, repartida
+       en el compás.
+     Se engancha en regenerateConsola (flag active): 🔀 / tecla G sortean otra canción CommonChords hasta que
+     se use otra Creatura, Compose, Clear o se cambie el set del reloj/piano (COMMONCHORDS.off()).
+     ================================================================ */
+  var COMMONCHORDS = (function(){
+    var CHORDS_SRC = [
+      ["", "C E G"],
+      ["m", "C Eb G"],
+      ["dim", "C Eb Gb"],
+      ["aug", "C E G#"],
+      ["sus2", "C D G"],
+      ["sus4", "C F G"],
+      ["5", "C G"],
+      ["6", "C E G A"],
+      ["m6", "C Eb G A"],
+      ["6/9", "C E G A D"],
+      ["m6/9", "C Eb G A D"],
+      ["7", "C E G Bb"],
+      ["maj7", "C E G B"],
+      ["m7", "C Eb G Bb"],
+      ["mMaj7", "C Eb G B"],
+      ["m7b5", "C Eb Gb Bb"],
+      ["dim7", "C Eb Gb A"],
+      ["7sus4", "C F G Bb"],
+      ["add9", "C E G D"],
+      ["madd9", "C Eb G D"],
+      ["m(b6)", "C Eb G Ab"],
+      ["9", "C E G Bb D"],
+      ["maj9", "C E G B D"],
+      ["m9", "C Eb G Bb D"],
+      ["11", "C E G Bb D F"],
+      ["m11", "C Eb G Bb D F"],
+      ["13", "C E G Bb D A"],
+      ["9sus4", "C F G Bb D"],
+      ["7b5", "C E Gb Bb"],
+      ["7#5", "C E G# Bb"],
+      ["7b9", "C E G Bb Db"],
+      ["7#9", "C E G Bb D#"],
+      ["7#11", "C E G Bb F#"],
+      ["7b13", "C E G Bb Ab"],
+      ["7b5b9", "C E Gb Bb Db"],
+      ["7b5#9", "C E Gb Bb D#"],
+      ["7#5b9", "C E G# Bb Db"],
+      ["7#5#9", "C E G# Bb D#"],
+      ["7b9b13", "C E G Bb Db Ab"],
+      ["7#9b13", "C E G Bb D# Ab"],
+      ["7b9#11", "C E G Bb Db F#"],
+      ["7#9#11", "C E G Bb D# F#"],
+      ["9b5", "C E Gb Bb D"],
+      ["9#5", "C E G# Bb D"],
+      ["13b9", "C E G Bb Db A"],
+      ["13#9", "C E G Bb D# A"],
+      ["13#11", "C E G Bb D F# A"],
+      ["7sus4b9", "C F G Bb Db"],
+      ["maj7b5", "C E Gb B"],
+      ["maj7#5", "C E G# B"],
+      ["maj7#11", "C E G B F#"],
+      ["maj9#11", "C E G B D F#"],
+      ["maj13#11", "C E G B D F# A"],
+      ["m7b9", "C Eb G Bb Db"],
+      ["m9b5", "C Eb Gb Bb D"]
+    ];
+    var SCALES_SRC = [
+      ["Ionian", "C D E F G A B"],
+      ["Dorian", "C D Eb F G A Bb"],
+      ["Phrygian", "C Db Eb F G Ab Bb"],
+      ["Lydian", "C D E F# G A B"],
+      ["Mixolydian", "C D E F G A Bb"],
+      ["Aeolian", "C D Eb F G Ab Bb"],
+      ["Locrian", "C Db Eb F Gb Ab Bb"],
+      ["Melodic minor", "C D Eb F G A B"],
+      ["Dorian b2", "C Db Eb F G A Bb"],
+      ["Lydian augmented", "C D E F# G# A B"],
+      ["Lydian dominant", "C D E F# G A Bb"],
+      ["Mixolydian b6", "C D E F G Ab Bb"],
+      ["Locrian nat 2", "C D Eb F Gb Ab Bb"],
+      ["Altered", "C Db Eb E Gb Ab Bb"],
+      ["Harmonic minor", "C D Eb F G Ab B"],
+      ["Phrygian dominant", "C Db E F G Ab Bb"]
+    ];
+    var EXPLICIT = {"7#9b13": ["Altered"]};
+    var ALT_AS = "7#9"; // C7alt (el archivo solo da la escala Altered) = este acorde, siempre en modo Altered
+    var PCN = {C:0, D:2, E:4, F:5, G:7, A:9, B:11};
+    function pcOf(n){
+      var v = PCN[n.charAt(0)];
+      for(var i = 1; i < n.length; i++) v += (n.charAt(i) === "#") ? 1 : -1;
+      return ((v % 12) + 12) % 12;
+    }
+    function rnd(n){ return Math.floor(Math.random() * n); }
+    var SCALES = SCALES_SRC.map(function(s){
+      return { name: s[0], semis: s[1].split(" ").map(pcOf) }; // semitonos desde la tónica, en orden ascendente
+    });
+    var CHORDS = [], EXCLUDED = [], ALT_DEF = null;
+    CHORDS_SRC.forEach(function(c){
+      var sym = c[0], stack = [], prev = -1;
+      c[1].split(" ").forEach(function(n){        // notas apiladas hacia arriba (9na = +14, 11na = +17, 13na = +21)
+        var v = pcOf(n);
+        while(v <= prev) v += 12;
+        stack.push(v); prev = v;
+      });
+      var pcs = stack.map(function(v){ return v % 12; });
+      var modes = SCALES.filter(function(s){
+        return pcs.every(function(p){ return s.semis.indexOf(p) >= 0; });
+      });
+      if(!modes.length && EXPLICIT[sym]){ // sin modo que lo contenga entero: el archivo lo asigna a uno (C7#9b13 → Altered)
+        modes = SCALES.filter(function(s){ return EXPLICIT[sym].indexOf(s.name) >= 0; });
+      }
+      if(sym === ALT_AS) modes = SCALES.filter(function(s){ return s.name === "Altered"; }); // C7alt = C7#9 sobre Altered
+      if(!modes.length){ EXCLUDED.push("C" + sym); return; }
+      // Grados del bajo: 1 = tónica; 3 = tercera menor/mayor; 5 = b5/5/#5; 7 = séptima menor/mayor (solo las que existan).
+      var deg = { "1": 0 };
+      for(var i = 1; i < stack.length; i++){
+        var m = stack[i] % 12;
+        if(deg["3"] === undefined && (m === 3 || m === 4)) deg["3"] = i;
+        if(deg["5"] === undefined && (m === 6 || m === 7 || m === 8)) deg["5"] = i;
+        if(deg["7"] === undefined && (m === 10 || m === 11)) deg["7"] = i;
+      }
+      var defObj = { sym: sym, stack: stack, pcs: pcs, modes: modes, deg: deg, degKeys: Object.keys(deg) };
+      if(sym === ALT_AS){ ALT_DEF = defObj; return; } // no entra al pool normal: solo sale como C7alt
+      CHORDS.push(defObj);
+    });
+
+    // C7alt (el archivo solo da la escala Altered) = siempre C7#9 (C E G Bb D#), con la melodía en modo Altered.
+    var ALTERED_SCALE = SCALES.filter(function(s){ return s.name === "Altered"; })[0];
+    var POOL = ALT_DEF ? CHORDS.concat([{ meta7alt: true }]) : CHORDS;
+
+    // Acorde de arriba: arranca por la nota del bajo elegida (inversión) y apila el resto hacia arriba, lo más cerca posible.
+    function voice(def, root, degKey){
+      var k = def.deg[degKey], n = def.stack.length;
+      var low = 48 + ((root + def.stack[k]) % 12);
+      var chord = [low], prevV = low;
+      for(var j = 1; j < n; j++){
+        var pc = (root + def.stack[(k + j) % n]) % 12;
+        var v = prevV - (prevV % 12) + pc;
+        while(v <= prevV) v += 12;
+        chord.push(v); prevV = v;
+      }
+      if(chord[n - 1] > 88) chord = chord.map(function(x){ return x - 12; });
+      return chord;
+    }
+    function chordLabel(def, root, degKey){
+      var s = spellPitchClass(root) + def.sym;
+      if(degKey !== "1") s += "/" + spellPitchClass((root + def.stack[def.deg[degKey]]) % 12);
+      return s;
+    }
+
+    var api = { active: false, excluded: EXCLUDED, chords: CHORDS, alt: ALT_DEF, scales: SCALES, lastSong: null };
+
+    function modeTestOn(){
+      var el = document.getElementById("commonChordsModeTest");
+      return !!(el && el.checked);
+    }
+
+    function build(){
+      var testOn = modeTestOn();
+      NUM_BARS = desiredNumBars();
+      RHYTHM.recompute();
+      TOTAL_BEATS = RHYTHM.total();
+      var allowRepeat = Math.random() < 0.5;      // por canción: ¿se pueden repetir acordes?
+      var used = {}, history = [];
+      function pickChord(){
+        var pick, key, tries = 0;
+        do {
+          if(allowRepeat && history.length && Math.random() < 0.4){
+            pick = history[rnd(history.length)];
+          } else {
+            var def = POOL[rnd(POOL.length)], force = null;
+            if(def.meta7alt){ def = ALT_DEF; force = ALTERED_SCALE; } // C7alt = C7#9 sobre Altered
+            pick = { def: def, root: rnd(12), degKey: def.degKeys[rnd(def.degKeys.length)], force: force };
+          }
+          key = pick.def.sym + "|" + pick.root + "|" + pick.degKey;
+          tries++;
+        } while(!allowRepeat && used[key] && tries < 80);
+        used[key] = true; history.push(pick);
+        return pick;
+      }
+
+      var chordEvents = [], bassEvents = [], melodyEvents = [];
+      var progression = [], roles = [], slotChords = [], song = [];
+      var prevMel = 84;
+      for(var bar = 0; bar < NUM_BARS; bar++){
+        var beats = RHYTHM.beats(bar), barStart = RHYTHM.start(bar);
+        var nSlots = 1;
+        if(!testOn){
+          var r = Math.random();
+          nSlots = r < 0.5 ? 1 : (r < 0.85 ? 2 : 4);
+          if(beats < 2) nSlots = 1; else if(beats < 4 && nSlots === 4) nSlots = 2;
+        }
+        var slotDur = beats / nSlots, slots = [], labels = [];
+        for(var si = 0; si < nSlots; si++){
+          var pk = pickChord(), def = pk.def;
+          var mode = pk.force || def.modes[rnd(def.modes.length)];
+          var chord = voice(def, pk.root, pk.degKey);
+          var bassPc = (pk.root + def.stack[def.deg[pk.degKey]]) % 12;
+          var bassMidi = 36 + bassPc;
+          var label = chordLabel(def, pk.root, pk.degKey);
+          var start = si * slotDur, abs = barStart + start;
+          // armonía (respeta el slider Chord simultaneity)
+          var bo = BROKENCHORD.offsetsFor(chord, slotDur);
+          chord.forEach(function(note, ni){
+            chordEvents.push({ midi: note, startBeat: abs + bo[ni], durBeats: Math.max(0.05, slotDur - bo[ni]), bar: bar });
+          });
+          bassEvents.push({ midi: bassMidi, startBeat: abs, durBeats: slotDur, bar: bar });
+          slots.push({ chord: chord, startBeat: start, durBeats: slotDur, setNotes: chord });
+          labels.push(label);
+          // melodía: solo notas del modo del acorde en curso
+          var scalePcs = mode.semis.map(function(s){ return (pk.root + s) % 12; });
+          if(testOn){
+            var m0 = 72 + pk.root, dn = slotDur / mode.semis.length;
+            mode.semis.forEach(function(s, i){
+              melodyEvents.push({ midi: m0 + s, startBeat: abs + i * dn, durBeats: dn, bar: bar });
+            });
+          } else {
+            var pool = [];
+            for(var mm = 72; mm <= 96; mm++) if(scalePcs.indexOf(mm % 12) >= 0) pool.push(mm);
+            var chordPcs = def.pcs.map(function(p){ return (pk.root + p) % 12; });
+            var tonesIdx = [];
+            pool.forEach(function(mv, ix){ if(chordPcs.indexOf(mv % 12) >= 0) tonesIdx.push(ix); });
+            if(!tonesIdx.length) pool.forEach(function(mv, ix){ tonesIdx.push(ix); });
+            var best = tonesIdx[0];
+            tonesIdx.forEach(function(ix){ if(Math.abs(pool[ix] - prevMel) < Math.abs(pool[best] - prevMel)) best = ix; });
+            var cur = best, remaining = slotDur, off = 0, first = true;
+            var DUR = [0.5, 0.5, 1, 1, 1.5, 2];
+            while(remaining > 1e-6){
+              var fits = DUR.filter(function(x){ return x <= remaining + 1e-9; });
+              var dd = fits.length ? fits[rnd(fits.length)] : remaining;
+              if(remaining - dd < 0.25) dd = remaining;
+              if(!first){
+                var rr = Math.random(), stp = rr < 0.6 ? 1 : (rr < 0.85 ? 2 : (rr < 0.95 ? 3 : 0));
+                if(Math.random() < 0.5) stp = -stp;
+                cur += stp;
+                if(cur < 0) cur = Math.min(pool.length - 1, -cur);
+                if(cur > pool.length - 1) cur = Math.max(0, 2 * (pool.length - 1) - cur);
+              }
+              first = false;
+              melodyEvents.push({ midi: pool[cur], startBeat: abs + off, durBeats: Math.round(dd * 1000) / 1000, bar: bar });
+              prevMel = pool[cur];
+              off += dd; remaining -= dd;
+            }
+          }
+          song.push({ bar: bar, label: label, mode: mode.name, root: pk.root, bassPc: bassPc,
+                      chordPcs: chord.map(function(x){ return x % 12; }), scalePcs: scalePcs,
+                      startBeat: abs, durBeats: slotDur });
+        }
+        progression.push(slots[0].chord.slice());
+        slotChords.push(slots);
+        roles.push(testOn ? (labels[0] + " · " + song[song.length - 1].mode) : labels.join(" | "));
+      }
+
+      state.rootChord = progression[0].slice();
+      state.progression = progression;
+      state.roles = roles;
+      state.slotChords = slotChords;
+      state.chordEvents = chordEvents;
+      state.bassEvents = bassEvents;
+      state.melodyEvents = melodyEvents;
+      state.comping2Events = []; state.bebopEvents = []; state.melody2Events = [];
+      state.chordEvents = TEMPODENSITY.apply(state.chordEvents);
+      state.chordEvents = WIDERANGE.apply(state.chordEvents);
+      state.chordEvents = staggerBigChordAttacks(state.chordEvents);
+      DYNAMICS.applyPitched(state);
+      RHYTHMSPACE.reset(0);          // igual que Simplicity: la batería es compartida, sin tramos de respiro ni tresillos
+      TRIPLETS.setActive(false);
+      drumEvents = buildDrumEvents(NUM_BARS);
+      api.lastSong = song;
+
+      var names = song.map(function(s){ return s.label; });
+      var rd = document.getElementById("consolaNotesReadout");
+      if(rd) rd.textContent = names.join("  ");
+      var sol = document.getElementById("consolaSolomonReadout");
+      if(sol) sol.innerHTML = "";
+      if(SONGTITLE) SONGTITLE.next();
+      var sub = document.getElementById("consolaSongSets");
+      if(sub) sub.textContent = "(CommonChords" + (testOn ? " · ModeTest" : "") + " · " + song.length + " acordes · " +
+        (allowRepeat ? "con" : "sin") + " repetición — " +
+        song.map(function(s){ return s.label + " [" + s.mode + "]"; }).join(" | ") + ")";
+      ["consolaPlayBtn", "consolaRegenPlayBtn"].forEach(function(id){
+        var b = document.getElementById(id); if(b) b.disabled = false;
+      });
+      renderRoll();
+      renderBebopRoll();
+    }
+
+    api.build = build;
+    api.start = function(){ api.active = true; regenerateConsola(); };
+    api.off = function(){ api.active = false; };
+    // Cualquier otra Creatura / Compose / Clear / cambio de set sale de CommonChords.
+    document.addEventListener("click", function(e){
+      var t = e.target;
+      if(t && t.closest && t.closest("#creaturaBtn,#creaturaBellaBtn,#creaturaIntervalicBtn,#composeBtn,#clearBtn,#multiSetsRandomFillBtn,#multiSetsComposeBtn,#multiSetsMemBtn2,#consolaRadioBtn")) api.off();
+    }, true);
+    return api;
+  })();
+  window.__commonChords = COMMONCHORDS;
 
   // Ajuste vertical de los piano rolls de fondo: si el roll principal (con el bajo abajo de todo)
   // + el de bebop no entran en la altura de la pantalla, se comprimen verticalmente (solo el alto
@@ -18540,6 +18859,21 @@ function runAnalysis() {
       if(radioChkEl.checked) runCreatura(Math.random() < 0.5); // (runCreatura ya trae el piano roll al frente)
     });
     if(radioChkEl) radioChkEl.addEventListener("change", function(){ if(!radioChkEl.checked) window.__radioKind = null; });
+    // 🎼 CommonChords (ver módulo COMMONCHORDS): detiene lo que suene, genera la canción con acordes de la base y la reproduce.
+    var btnCC = document.getElementById("commonChordsBtn");
+    async function runCommonChords(){
+      if(running) return;
+      running = true;
+      try {
+        window.__radioKind = null; // RadioMode no engancha vueltas de otras creaturas sobre CommonChords
+        if(typeof window.__rollToFront === "function") window.__rollToFront();
+        clickIfEnabled("consolaStopBtn");
+        await wait(300);
+        window.__commonChords.start();
+        clickIfEnabled("consolaPlayBtn");
+      } finally { running = false; }
+    }
+    if(btnCC) btnCC.addEventListener("click", runCommonChords);
     btn.addEventListener("click", function(){ runCreatura(false); });
     if(btnBella) btnBella.addEventListener("click", function(){ runCreatura(true); });
     if(btnInterv) btnInterv.addEventListener("click", function(){ runCreatura("intervalic"); });
