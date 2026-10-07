@@ -706,6 +706,7 @@
   #velLanesHost[hidden]{display:none;}
   .consola-bar-tag{font-family:'JetBrains Mono',monospace;font-size:10px;fill:var(--ink-muted);}
   .consola-cifrado-tag{font-family:'JetBrains Mono',monospace;font-size:9px;fill:var(--gold);font-weight:600;}
+  .consola-cc-tag{font-family:'JetBrains Mono',monospace;font-size:9px;fill:#3ddc84;font-weight:700;}
   .consola-row-label{font-family:'JetBrains Mono',monospace;font-size:9.5px;fill:var(--ink-muted);}
   .consola-legend{
     display:flex;flex-wrap:wrap;gap:14px 20px;margin-top:14px;
@@ -1227,7 +1228,7 @@
         <div style="display:flex;flex-direction:column;align-items:stretch;gap:6px;">
           <button class="chip primary" id="creaturaBtn" type="button" title="Corre sola la secuencia: sortea Chromatism (2–40%), Chords (20–60%), Triplets (0–100%), Melodic/Harmonic/RythmSpace (0–100%) y Rapid runs (0–30%), Simplicity (0–50%), Melody n2 (on/off al azar) y una combinación totalmente al azar de Cycles (intervalos + Chromatism; prende Cycles) → Random Fill (5 o 2 sets al azar; 2–3/2–4/2–5 notas, modo Mezcla) → Compose → tilda Mix time signatures → Detener → espera 2s → 🔀 Regenerar. Una sola pasada por click.">🪄 CreaturaRandom</button>
           <button class="chip primary" id="creaturaBellaBtn" type="button" title="Igual que CreaturaRandom (mismos sliders, incluidos Simplicity 0–50%, Melody n2 on/off y Cycles al azar; Compose, Mix time signatures, Detener, espera 2s y Regenerar), pero los 5 o 2 sets salen SOLO del índice del libro (jerarquías de sets) y con más probabilidad cuanto mayor es su jerarquía: dentro de cada cardinalidad (3 hasta el máximo del slider, el índice no tiene sets de 2 notas) el set 1 del índice es el más probable y el último el menos probable. Cada set sale transportado a una tónica al azar.">🪄 CreaturaBella</button>
-          <div style="display:flex;align-items:center;gap:8px;"><button class="chip primary" id="commonChordsBtn" type="button" style="flex:1;" title="CommonChords: en vez de sets, compone una canción con acordes de la base de acordes (tríadas, sextas, séptimas, add, extendidos, alterados), en cualquier tónica y siempre en inversión: el bajo toca la tónica, la tercera, la quinta o la séptima. Cantidad de acordes al azar (1, 2 o 4 por compás; se pueden repetir o no). La melodía toca solo notas del modo del acorde en curso (Cmaj7 sin #11 = Jónico o Lidio). 🔀 / tecla G sortean otra canción CommonChords.">🎼 CommonChords</button><label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="ModeTest: un acorde por compás y la melodía toca únicamente la escala heptatónica (el modo) de cada acorde, de la tónica hacia arriba."><input type="checkbox" id="commonChordsModeTest"> ModeTest</label></div>
+          <div style="display:flex;align-items:center;gap:8px;"><button class="chip primary" id="commonChordsBtn" type="button" style="flex:1;" title="CommonChords: en vez de sets, compone una canción con acordes de la base de acordes (tríadas, sextas, séptimas, add, extendidos, alterados), en cualquier tónica y siempre en inversión: el bajo toca la tónica, la tercera, la quinta o la séptima. Cantidad de acordes al azar (1, 2 o 4 por compás; se pueden repetir o no). La melodía toca solo notas del modo del acorde en curso (Cmaj7 sin #11 = Jónico o Lidio). 🔀 / tecla G sortean otra canción CommonChords.">🎼 CommonChords</button><div style="display:flex;flex-direction:column;gap:3px;"><label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="ModeTest: un acorde por compás y la melodía toca únicamente la escala heptatónica (el modo) de cada acorde, de la tónica hacia arriba."><input type="checkbox" id="commonChordsModeTest"> ModeTest</label><label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="narrowregister: el registro de un acorde al siguiente no se aleja más de una octava (la nota más grave y la más aguda de cada acorde quedan a no más de 12 semitonos de las del acorde anterior)."> <input type="checkbox" id="commonChordsNarrow"> narrowregister</label></div></div>
           <button class="chip primary" id="creaturaIntervalicBtn" type="button" title="Igual que CreaturaRandom (mismos sliders, Compose, Mix time signatures, Detener, espera 2s y Regenerar, con 5 o 2 sets), pero antes sortea una combinación de clases de intervalo (1, 2 o 3 de ic1..ic6) y los sets salen SOLO de los que tienen todas esas clases en su vector de intervalos, con más probabilidad cuanto mayor parte del vector ocupan esas clases.">🪄 CreaturaIntervalic</button>
         </div>
         <button class="chip" id="composeBtn" type="button" title="Como CreaturaBella pero con TU set y TU compás: con el set elegido en el reloj/piano (2+ notas) y el time signature que dejaste escrito, sortea los sliders, el tempo y los presets al azar (como CreaturaBella), no cambia el set, no mezcla compases, y toca una variación nueva en primer plano. Sin set elegido, sortea uno con la misma regla de CreaturaBella (sets del índice por jerarquía); cada vez que lo apretás de nuevo, sortea otro set distinto (un set que elegiste vos a mano se respeta).">🎹 Compose</button>
@@ -13174,6 +13175,9 @@ function runAnalysis() {
      - Melodía: SOLO notas del modo del acorde en curso (arranca cada acorde en una nota del acorde).
        ModeTest: la melodía toca únicamente la escala de 7 notas del modo, de la tónica hacia arriba, repartida
        en el compás.
+     narrowregister (checkbox): el registro de un acorde al siguiente no se aleja más de una octava: la nota más grave y la más
+       aguda del acorde nuevo quedan a <= 12 semitonos de las del anterior (se sortean candidatos hasta que cumpla).
+     En el piano roll, el cifrado de la base de acordes (ej. Cmaj7/E) va en verde (clase .consola-cc-tag, tercera fila de etiquetas).
      Se engancha en regenerateConsola (flag active): 🔀 / tecla G sortean otra canción CommonChords hasta que
      se use otra Creatura, Compose, Clear o se cambie el set del reloj/piano (COMMONCHORDS.off()).
      ================================================================ */
@@ -13300,9 +13304,9 @@ function runAnalysis() {
     var POOL = ALT_DEF ? CHORDS.concat([{ meta7alt: true }]) : CHORDS;
 
     // Acorde de arriba: arranca por la nota del bajo elegida (inversión) y apila el resto hacia arriba, lo más cerca posible.
-    function voice(def, root, degKey){
+    function voice(def, root, degKey, up){
       var k = def.deg[degKey], n = def.stack.length;
-      var low = 48 + ((root + def.stack[k]) % 12);
+      var low = 48 + ((root + def.stack[k]) % 12) + (up ? 12 : 0);
       var chord = [low], prevV = low;
       for(var j = 1; j < n; j++){
         var pc = (root + def.stack[(k + j) % n]) % 12;
@@ -13326,8 +13330,14 @@ function runAnalysis() {
       return !!(el && el.checked);
     }
 
+    function narrowOn(){
+      var el = document.getElementById("commonChordsNarrow");
+      return !!(el && el.checked);
+    }
+
     function build(){
       var testOn = modeTestOn();
+      var narrow = narrowOn(), prevRange = null, narrowMiss = 0; // narrowregister: [nota más grave, más aguda] del acorde anterior
       NUM_BARS = desiredNumBars();
       RHYTHM.recompute();
       TOTAL_BEATS = RHYTHM.total();
@@ -13346,9 +13356,9 @@ function runAnalysis() {
           key = pick.def.sym + "|" + pick.root + "|" + pick.degKey;
           tries++;
         } while(!allowRepeat && used[key] && tries < 80);
-        used[key] = true; history.push(pick);
         return pick;
       }
+      function record(p){ used[p.def.sym + "|" + p.root + "|" + p.degKey] = true; history.push(p); }
 
       var chordEvents = [], bassEvents = [], melodyEvents = [];
       var progression = [], roles = [], slotChords = [], song = [];
@@ -13363,9 +13373,22 @@ function runAnalysis() {
         }
         var slotDur = beats / nSlots, slots = [], labels = [];
         for(var si = 0; si < nSlots; si++){
-          var pk = pickChord(), def = pk.def;
+          // narrowregister: el acorde siguiente tiene que quedar a <= 12 semitonos (una octava) del anterior, tanto en su nota más
+          // grave como en la más aguda. Se sortean candidatos (a veces una octava arriba) hasta que cumpla; si no, el que más se acerca.
+          var best = null, bestV = 1e9;
+          for(var tr = 0; tr < 400; tr++){
+            var cand = pickChord();
+            var cv = voice(cand.def, cand.root, cand.degKey, narrow && Math.random() < 0.5);
+            if(!narrow || !prevRange){ best = { pk: cand, chord: cv }; break; }
+            var viol = Math.max(Math.abs(cv[0] - prevRange[0]), Math.abs(cv[cv.length - 1] - prevRange[1]));
+            if(viol < bestV){ bestV = viol; best = { pk: cand, chord: cv }; }
+            if(viol <= 12) break;
+          }
+          if(narrow && prevRange && bestV > 12) narrowMiss++;
+          var pk = best.pk, chord = best.chord, def = pk.def;
+          record(pk);
+          if(narrow) prevRange = [chord[0], chord[chord.length - 1]];
           var mode = pk.force || def.modes[rnd(def.modes.length)];
-          var chord = voice(def, pk.root, pk.degKey);
           var bassPc = (pk.root + def.stack[def.deg[pk.degKey]]) % 12;
           var bassMidi = 36 + bassPc;
           var label = chordLabel(def, pk.root, pk.degKey);
@@ -13376,7 +13399,7 @@ function runAnalysis() {
             chordEvents.push({ midi: note, startBeat: abs + bo[ni], durBeats: Math.max(0.05, slotDur - bo[ni]), bar: bar });
           });
           bassEvents.push({ midi: bassMidi, startBeat: abs, durBeats: slotDur, bar: bar });
-          slots.push({ chord: chord, startBeat: start, durBeats: slotDur, setNotes: chord });
+          slots.push({ chord: chord, startBeat: start, durBeats: slotDur, setNotes: chord, ccLabel: label });
           labels.push(label);
           // melodía: solo notas del modo del acorde en curso
           var scalePcs = mode.semis.map(function(s){ return (pk.root + s) % 12; });
@@ -13419,7 +13442,7 @@ function runAnalysis() {
         }
         progression.push(slots[0].chord.slice());
         slotChords.push(slots);
-        roles.push(testOn ? (labels[0] + " · " + song[song.length - 1].mode) : labels.join(" | "));
+        roles.push(song.slice(song.length - nSlots).map(function(s){ return s.mode; }).join(" | "));
       }
 
       state.rootChord = progression[0].slice();
@@ -13437,7 +13460,7 @@ function runAnalysis() {
       RHYTHMSPACE.reset(0);          // igual que Simplicity: la batería es compartida, sin tramos de respiro ni tresillos
       TRIPLETS.setActive(false);
       drumEvents = buildDrumEvents(NUM_BARS);
-      api.lastSong = song;
+      api.lastSong = song; api.narrowMisses = narrowMiss;
 
       var names = song.map(function(s){ return s.label; });
       var rd = document.getElementById("consolaNotesReadout");
@@ -13679,6 +13702,11 @@ function runAnalysis() {
             var cifLab = svgEl("text", {x:xs+4, y:28, class:"consola-cifrado-tag"});
             cifLab.textContent = cifradoLabelForSlot(slot.chord, bassEv ? bassEv.midi : null);
             svg.appendChild(cifLab);
+            if(slot.ccLabel){ // 🎼 CommonChords: el cifrado de la base de acordes, en verde
+              var ccLab = svgEl("text", {x:xs+4, y:38, class:"consola-cc-tag"});
+              ccLab.textContent = slot.ccLabel;
+              svg.appendChild(ccLab);
+            }
           });
         }
       }
