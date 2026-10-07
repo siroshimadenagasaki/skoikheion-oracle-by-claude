@@ -1228,7 +1228,7 @@
         <div style="display:flex;flex-direction:column;align-items:stretch;gap:6px;">
           <button class="chip primary" id="creaturaBtn" type="button" title="Corre sola la secuencia: sortea Chromatism (2–40%), Chords (20–60%), Triplets (0–100%), Melodic/Harmonic/RythmSpace (0–100%) y Rapid runs (0–30%), Simplicity (0–50%), Melody n2 (on/off al azar) y una combinación totalmente al azar de Cycles (intervalos + Chromatism; prende Cycles) → Random Fill (5 o 2 sets al azar; 2–3/2–4/2–5 notas, modo Mezcla) → Compose → tilda Mix time signatures → Detener → espera 2s → 🔀 Regenerar. Una sola pasada por click.">🪄 CreaturaRandom</button>
           <button class="chip primary" id="creaturaBellaBtn" type="button" title="Igual que CreaturaRandom (mismos sliders, incluidos Simplicity 0–50%, Melody n2 on/off y Cycles al azar; Compose, Mix time signatures, Detener, espera 2s y Regenerar), pero los 5 o 2 sets salen SOLO del índice del libro (jerarquías de sets) y con más probabilidad cuanto mayor es su jerarquía: dentro de cada cardinalidad (3 hasta el máximo del slider, el índice no tiene sets de 2 notas) el set 1 del índice es el más probable y el último el menos probable. Cada set sale transportado a una tónica al azar.">🪄 CreaturaBella</button>
-          <div style="display:flex;align-items:center;gap:8px;"><button class="chip primary" id="commonChordsBtn" type="button" style="flex:1;" title="CommonChords: en vez de sets, compone una canción con acordes de la base de acordes (tríadas, sextas, séptimas, add, extendidos, alterados), en cualquier tónica y siempre en inversión: el bajo toca la tónica, la tercera, la quinta o la séptima. Cantidad de acordes al azar (1, 2 o 4 por compás; se pueden repetir o no). La melodía toca solo notas del modo del acorde en curso (Cmaj7 sin #11 = Jónico o Lidio). 🔀 / tecla G sortean otra canción CommonChords.">🎼 CommonChords</button><div style="display:flex;flex-direction:column;gap:3px;"><label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="ModeTest: un acorde por compás y la melodía toca únicamente la escala heptatónica (el modo) de cada acorde, de la tónica hacia arriba."><input type="checkbox" id="commonChordsModeTest"> ModeTest</label><label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="narrowregister: el registro de un acorde al siguiente no se aleja más de una octava (la nota más grave y la más aguda de cada acorde quedan a no más de 12 semitonos de las del acorde anterior)."> <input type="checkbox" id="commonChordsNarrow"> narrowregister</label></div></div>
+          <div style="display:flex;align-items:center;gap:8px;"><button class="chip primary" id="commonChordsBtn" type="button" style="flex:1;" title="CommonChords: en vez de sets, compone una canción con acordes de la base de acordes (tríadas, sextas, séptimas, add, extendidos, alterados), en cualquier tónica y siempre en inversión: el bajo toca la tónica, la tercera, la quinta o la séptima. Cantidad de acordes al azar (1, 2 o 4 por compás; se pueden repetir o no). La melodía toca solo notas del modo del acorde en curso (Cmaj7 sin #11 = Jónico o Lidio). 🔀 / tecla G sortean otra canción CommonChords.">🎼 CommonChords</button><div style="display:flex;flex-direction:column;gap:3px;"><label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="ModeTest: un acorde por compás y la melodía toca únicamente la escala heptatónica (el modo) de cada acorde, de la tónica hacia arriba."><input type="checkbox" id="commonChordsModeTest"> ModeTest</label><label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="narrowregister: el registro de un acorde al siguiente no se aleja más de una octava (la nota más grave y la más aguda de cada acorde quedan a no más de 12 semitonos de las del acorde anterior)."> <input type="checkbox" id="commonChordsNarrow"> narrowregister</label></div><div id="commonChordsScales" style="display:grid;grid-template-columns:auto auto;gap:3px 10px;align-content:start;" title="Escalas: con una o más tildadas, la melodía de cada acorde toca solo modos de esas escalas (solo se sortean acordes que tengan algún modo en esas escalas; si la combinación con las familias no deja ninguno, usa cualquier modo y se marca con * en el subtítulo). Sin tildar = todas."><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Diatónica"> Diatónica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Menor melódica"> Menor melódica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Menor armónica"> Menor armónica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Mayor armónica"> Mayor armónica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Enigmática"> Enigmática</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Aumentada"> Aumentada</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Octatónica"> Octatónica</label></div></div><details style="margin-top:4px;"><summary style="font-size:12px;color:var(--ink-muted);cursor:pointer;" title="Categoría Fusionada: limita los acordes que se sortean a las familias tildadas. Sin tildar ninguna = todas.">🧬 Familias de acordes</summary><div id="commonChordsFamilies" style="display:flex;flex-wrap:wrap;gap:4px 10px;padding:4px 0;"><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Maj7"> Maj7</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="m7"> m7</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="7"> 7</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="7Alt"> 7Alt</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Sus 2b"> Sus 2b</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Semidisminuido"> Semidisminuido</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Disminuida"> Disminuida</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Aumentada"> Aumentada</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Díada"> Díada</label></div></details>
           <button class="chip primary" id="creaturaIntervalicBtn" type="button" title="Igual que CreaturaRandom (mismos sliders, Compose, Mix time signatures, Detener, espera 2s y Regenerar, con 5 o 2 sets), pero antes sortea una combinación de clases de intervalo (1, 2 o 3 de ic1..ic6) y los sets salen SOLO de los que tienen todas esas clases en su vector de intervalos, con más probabilidad cuanto mayor parte del vector ocupan esas clases.">🪄 CreaturaIntervalic</button>
         </div>
         <button class="chip" id="composeBtn" type="button" title="Como CreaturaBella pero con TU set y TU compás: con el set elegido en el reloj/piano (2+ notas) y el time signature que dejaste escrito, sortea los sliders, el tempo y los presets al azar (como CreaturaBella), no cambia el set, no mezcla compases, y toca una variación nueva en primer plano. Sin set elegido, sortea uno con la misma regla de CreaturaBella (sets del índice por jerarquía); cada vez que lo apretás de nuevo, sortea otro set distinto (un set que elegiste vos a mano se respeta).">🎹 Compose</button>
@@ -13167,9 +13167,9 @@ function runAnalysis() {
      (las que existan en ese acorde) y el acorde de arriba arranca por esa misma nota (C/E, C7/Bb...).
      - Cantidad de acordes al azar: cada compás sortea 1, 2 o 4 acordes (partes iguales). Se puede repetir o no
        (sorteo por canción). Con ModeTest tildado: UN acorde por compás.
-     - Modo del acorde: cualquiera de las escalas heptatónicas de la lista (mayor, menor melódica, menor armónica
-       y sus modos) que contengan TODAS las notas del acorde (Cmaj7 sin 11/#11 → Jónico o Lidio; con #11 → solo
-       Lidio). Un acorde que ningún modo contiene entero queda afuera, salvo que el archivo lo asigne a un modo
+     - Modo del acorde: cualquier modo de las 7 escalas del Excel Fusion_categorias_acordes_escalas (diatónica, menor
+       melódica, menor armónica, mayor armónica, enigmática, aumentada, octatónica) que contenga TODAS las notas del
+       acorde (Cmaj7 sin 11/#11 → Jónico o Lidio, además de modos de otras escalas; con #11 → Lidio, etc.). Un acorde que ningún modo contiene entero queda afuera, salvo que el archivo lo asigne a un modo
        (C7#9b13 → Altered). Los que quedan afuera están en COMMONCHORDS.excluded.
        C7alt (el archivo solo trae su escala) = siempre C7#9 (C E G Bb D#) con la melodía en modo Altered (COMMONCHORDS.alt).
      - Melodía: SOLO notas del modo del acorde en curso (arranca cada acorde en una nota del acorde).
@@ -13239,25 +13239,88 @@ function runAnalysis() {
       ["m7b9", "C Eb G Bb Db"],
       ["m9b5", "C Eb Gb Bb D"]
     ];
-    var SCALES_SRC = [
-      ["Ionian", "C D E F G A B"],
-      ["Dorian", "C D Eb F G A Bb"],
-      ["Phrygian", "C Db Eb F G Ab Bb"],
-      ["Lydian", "C D E F# G A B"],
-      ["Mixolydian", "C D E F G A Bb"],
-      ["Aeolian", "C D Eb F G Ab Bb"],
-      ["Locrian", "C Db Eb F Gb Ab Bb"],
-      ["Melodic minor", "C D Eb F G A B"],
-      ["Dorian b2", "C Db Eb F G A Bb"],
-      ["Lydian augmented", "C D E F# G# A B"],
-      ["Lydian dominant", "C D E F# G A Bb"],
-      ["Mixolydian b6", "C D E F G Ab Bb"],
-      ["Locrian nat 2", "C D Eb F Gb Ab Bb"],
-      ["Altered", "C Db Eb E Gb Ab Bb"],
-      ["Harmonic minor", "C D Eb F G Ab B"],
-      ["Phrygian dominant", "C Db E F G Ab Bb"]
+    // Escalas del Excel Fusion_categorias_acordes_escalas: familia → [grados en semitonos, nombres de los modos (rotaciones)].
+    // Los modos se calculan por rotación; en las escalas simétricas (aumentada, octatónica) las rotaciones repetidas cuentan una sola vez.
+    var SCALE_FAMILIES = [
+      ["Diatónica", [0,2,4,5,7,9,11], ["Ionian","Dorian","Phrygian","Lydian","Mixolydian","Aeolian","Locrian"]],
+      ["Menor melódica", [0,2,3,5,7,9,11], ["Melodic minor","Dorian b2","Lydian augmented","Lydian dominant","Mixolydian b6","Locrian nat 2","Altered"]],
+      ["Menor armónica", [0,2,3,5,7,8,11], ["Harmonic minor","Locrian nat 6","Ionian #5","Dorian #4","Phrygian dominant","Lydian #2","Ultralocrian (Super Locrian bb7)"]],
+      ["Mayor armónica", [0,2,4,5,7,8,11], ["Harmonic major","Dorian b5","Phrygian b4","Lydian b3","Mixolydian b2","Lydian augmented #2","Locrian bb7"]],
+      ["Enigmática", [0,1,4,6,8,10,11], ["Enigmática modo 1","Enigmática modo 2","Enigmática modo 3","Enigmática modo 4","Enigmática modo 5","Enigmática modo 6","Enigmática modo 7"]],
+      ["Aumentada", [0,3,4,7,8,11], ["Aumentada modo 1 (3m-st)","Aumentada modo 2 (st-3m)"]],
+      ["Octatónica", [0,2,3,5,6,8,9,11], ["Octatónica modo 1 (t-st)","Octatónica modo 2 (st-t)"]]
     ];
     var EXPLICIT = {"7#9b13": ["Altered"]};
+    // 🧬 Categoría Fusionada (ver claude/Categoria_Fusionada.md): sym → [Familia, Tipo, Extensión, Alteraciones].
+    // Fusiona CommonChords (.txt) + categorías/cifrado de la página + PDF "Tipos de acorde" (Terebeiko). Familia = filtro del modo.
+    var FUSED = {
+      "": ["Maj7", "Δ Jónica (ΔMaj7)", "Tríada", "—"],
+      "m": ["m7", "m7 con 6ª indefinida (Dórica o Eólica)", "Tríada", "—"],
+      "dim": ["Disminuida", "Dism (Modo 1 / Modo 2)", "Tríada", "—"],
+      "aug": ["Aumentada", "+Aug Tonal, sin 7ª", "Tríada", "—"],
+      "sus2": ["7", "Sus (7sus, MixoLidia no3)", "Tríada", "—"],
+      "sus4": ["7", "Sus (7sus, MixoLidia no3)", "Tríada", "—"],
+      "5": ["Díada", "Díada (sin 3ª)", "Díada", "—"],
+      "6": ["Maj7", "Δ Jónica (ΔMaj7)", "Sexta", "—"],
+      "m6": ["m7", "m7(6) Dórica", "Sexta", "—"],
+      "6/9": ["Maj7", "Δ Jónica (ΔMaj7)", "6/9", "—"],
+      "m6/9": ["m7", "m7(6) Dórica", "6/9", "—"],
+      "7": ["7", "7 MixoLidia", "Séptima", "—"],
+      "maj7": ["Maj7", "Δ Jónica (ΔMaj7)", "Séptima", "—"],
+      "m7": ["m7", "m7 con 6ª indefinida (Dórica o Eólica)", "Séptima", "—"],
+      "mMaj7": ["m7", "m7 con 6ª indefinida (Dórica o Eólica)", "Séptima", "—"],
+      "m7b5": ["Semidisminuido", "Ø m7(5b) Locria", "Séptima", "—"],
+      "dim7": ["Disminuida", "Dism (Modo 1 / Modo 2)", "Séptima", "—"],
+      "7sus4": ["7", "Sus (7sus, MixoLidia no3)", "Séptima", "—"],
+      "add9": ["Maj7", "Δ Jónica (ΔMaj7)", "Add9", "—"],
+      "madd9": ["m7", "m7 con 6ª indefinida (Dórica o Eólica)", "Add9", "—"],
+      "m(b6)": ["m7", "m7(6b) Eólica", "Sexta", "—"],
+      "9": ["7", "7 MixoLidia", "Novena (9ª)", "—"],
+      "maj9": ["Maj7", "Δ Jónica (ΔMaj7)", "Novena (9ª)", "—"],
+      "m9": ["m7", "m7 con 6ª indefinida (Dórica o Eólica)", "Novena (9ª)", "—"],
+      "11": ["7", "7 MixoLidia", "Oncena (11ª)", "—"],
+      "m11": ["m7", "m7 con 6ª indefinida (Dórica o Eólica)", "Oncena (11ª)", "—"],
+      "13": ["7", "7 MixoLidia", "Trecena (13ª)", "—"],
+      "9sus4": ["7", "Sus (7sus, MixoLidia no3)", "Novena (9ª)", "—"],
+      "7b5": ["7Alt", "Alt7 Alterada", "Séptima", "5b"],
+      "7#5": ["Aumentada", "+Aug Tonal, con 7b", "Séptima", "—"],
+      "7b9": ["7Alt", "Alt7 Alterada", "Novena (9ª)", "9b"],
+      "7#9": ["7Alt", "Alt7 Alterada", "Novena (9ª)", "9#"],
+      "7#11": ["7", "7 MixoLidia", "Oncena (11ª)", "11#"],
+      "7b13": ["7Alt", "Alt7 Alterada", "Trecena (13ª)", "13b"],
+      "7b5b9": ["7Alt", "Alt7 Alterada", "Novena (9ª)", "5b 9b"],
+      "7b5#9": ["7Alt", "Alt7 Alterada", "Novena (9ª)", "5b 9#"],
+      "7#5b9": ["7Alt", "Alt7 Alterada", "Novena (9ª)", "5# 9b"],
+      "7#5#9": ["7Alt", "Alt7 Alterada", "Novena (9ª)", "5# 9#"],
+      "7b9b13": ["7Alt", "Alt7 Alterada", "Trecena (13ª)", "9b 13b"],
+      "7#9b13": ["7Alt", "Alt7 Alterada", "Trecena (13ª)", "9# 13b"],
+      "7b9#11": ["7Alt", "Alt7 Alterada", "Oncena (11ª)", "9b 11#"],
+      "7#9#11": ["7Alt", "Alt7 Alterada", "Oncena (11ª)", "9# 11#"],
+      "9b5": ["7Alt", "Alt7 Alterada", "Novena (9ª)", "5b"],
+      "9#5": ["Aumentada", "+Aug Tonal, con 7b", "Novena (9ª)", "—"],
+      "13b9": ["7Alt", "Alt7 Alterada", "Trecena (13ª)", "9b"],
+      "13#9": ["7Alt", "Alt7 Alterada", "Trecena (13ª)", "9#"],
+      "13#11": ["7", "7 MixoLidia", "Trecena (13ª)", "11#"],
+      "7sus4b9": ["Sus 2b", "Sus4(2b) Frigia", "Novena (9ª)", "—"],
+      "maj7b5": ["Maj7", "Δ4# Lidia (Maj4#)", "Séptima", "5b"],
+      "maj7#5": ["Aumentada", "+Aug Tonal, con 7♮", "Séptima", "—"],
+      "maj7#11": ["Maj7", "Δ4# Lidia (Maj4#)", "Oncena (11ª)", "11#"],
+      "maj9#11": ["Maj7", "Δ4# Lidia (Maj4#)", "Oncena (11ª)", "11#"],
+      "maj13#11": ["Maj7", "Δ4# Lidia (Maj4#)", "Trecena (13ª)", "11#"],
+      "m7b9": ["Sus 2b", "Sus4(2b) Frigia", "Novena (9ª)", "—"],
+      "m9b5": ["Semidisminuido", "Ø m7(5b) Locria", "Novena (9ª)", "—"]
+    };
+    var FAMILIES = ["Maj7", "m7", "7", "7Alt", "Sus 2b", "Semidisminuido", "Disminuida", "Aumentada", "Díada"];
+    function selectedScales(){ // checkboxes #commonChordsScales: ninguna tildada = todas las escalas
+      var on = [];
+      document.querySelectorAll("#commonChordsScales input[type=checkbox]").forEach(function(c){ if(c.checked) on.push(c.value); });
+      return on;
+    }
+    function selectedFamilies(){ // checkboxes #commonChordsFamilies input: ninguna tildada = todas las familias
+      var on = [];
+      document.querySelectorAll("#commonChordsFamilies input[type=checkbox]").forEach(function(c){ if(c.checked) on.push(c.value); });
+      return on;
+    }
     var ALT_AS = "7#9"; // C7alt (el archivo solo da la escala Altered) = este acorde, siempre en modo Altered
     var PCN = {C:0, D:2, E:4, F:5, G:7, A:9, B:11};
     function pcOf(n){
@@ -13266,8 +13329,16 @@ function runAnalysis() {
       return ((v % 12) + 12) % 12;
     }
     function rnd(n){ return Math.floor(Math.random() * n); }
-    var SCALES = SCALES_SRC.map(function(s){
-      return { name: s[0], semis: s[1].split(" ").map(pcOf) }; // semitonos desde la tónica, en orden ascendente
+    var SCALES = [];
+    SCALE_FAMILIES.forEach(function(f){
+      var seen = {};
+      f[1].forEach(function(_, k){
+        var semis = f[1].map(function(x){ return ((x - f[1][k]) % 12 + 12) % 12; }).sort(function(x, y){ return x - y; });
+        var key = semis.join(",");
+        if(seen[key]) return;
+        seen[key] = true;
+        SCALES.push({ name: f[2][SCALES.filter(function(m){ return m.fam === f[0]; }).length], fam: f[0], semis: semis }); // semitonos desde la tónica, ascendentes
+      });
     });
     var CHORDS = [], EXCLUDED = [], ALT_DEF = null;
     CHORDS_SRC.forEach(function(c){
@@ -13294,7 +13365,9 @@ function runAnalysis() {
         if(deg["5"] === undefined && (m === 6 || m === 7 || m === 8)) deg["5"] = i;
         if(deg["7"] === undefined && (m === 10 || m === 11)) deg["7"] = i;
       }
-      var defObj = { sym: sym, stack: stack, pcs: pcs, modes: modes, deg: deg, degKeys: Object.keys(deg) };
+      var fz = FUSED[sym] || ["?", "?", "?", "?"];
+      var defObj = { sym: sym, stack: stack, pcs: pcs, modes: modes, deg: deg, degKeys: Object.keys(deg),
+                     fam: fz[0], tipo: fz[1], ext: fz[2], alts: fz[3] };
       if(sym === ALT_AS){ ALT_DEF = defObj; return; } // no entra al pool normal: solo sale como C7alt
       CHORDS.push(defObj);
     });
@@ -13336,6 +13409,16 @@ function runAnalysis() {
     }
 
     function build(){
+      var famOn = selectedFamilies(), scOn = selectedScales();
+      var poolNow = famOn.length ? POOL.filter(function(d){ return famOn.indexOf(d.meta7alt ? ALT_DEF.fam : d.fam) >= 0; }) : POOL;
+      if(!poolNow.length) poolNow = POOL;
+      if(scOn.length){ // escalas tildadas: solo entran acordes que tengan al menos un modo en esas escalas (así la melodía siempre toca esa escala)
+        var poolSc = poolNow.filter(function(d){
+          return d.meta7alt ? scOn.indexOf(ALTERED_SCALE.fam) >= 0
+                            : d.modes.some(function(m){ return scOn.indexOf(m.fam) >= 0; });
+        });
+        if(poolSc.length) poolNow = poolSc; // si la combinación con las familias no deja ninguno, se usa el pool de familias y el modo se marca con *
+      }
       var testOn = modeTestOn();
       var narrow = narrowOn(), prevRange = null, narrowMiss = 0; // narrowregister: [nota más grave, más aguda] del acorde anterior
       NUM_BARS = desiredNumBars();
@@ -13349,7 +13432,7 @@ function runAnalysis() {
           if(allowRepeat && history.length && Math.random() < 0.4){
             pick = history[rnd(history.length)];
           } else {
-            var def = POOL[rnd(POOL.length)], force = null;
+            var def = poolNow[rnd(poolNow.length)], force = null;
             if(def.meta7alt){ def = ALT_DEF; force = ALTERED_SCALE; } // C7alt = C7#9 sobre Altered
             pick = { def: def, root: rnd(12), degKey: def.degKeys[rnd(def.degKeys.length)], force: force };
           }
@@ -13388,7 +13471,11 @@ function runAnalysis() {
           var pk = best.pk, chord = best.chord, def = pk.def;
           record(pk);
           if(narrow) prevRange = [chord[0], chord[chord.length - 1]];
-          var mode = pk.force || def.modes[rnd(def.modes.length)];
+          var modeCand = scOn.length ? def.modes.filter(function(m){ return scOn.indexOf(m.fam) >= 0; }) : def.modes;
+          var modeFb = !!scOn.length && !modeCand.length;      // el acorde no entra en las escalas tildadas: usa cualquiera de sus modos
+          if(pk.force && scOn.length && scOn.indexOf(pk.force.fam) < 0) modeFb = true; // C7alt siempre es Altered
+          if(!modeCand.length) modeCand = def.modes;
+          var mode = pk.force || modeCand[rnd(modeCand.length)];
           var bassPc = (pk.root + def.stack[def.deg[pk.degKey]]) % 12;
           var bassMidi = 36 + bassPc;
           var label = chordLabel(def, pk.root, pk.degKey);
@@ -13399,7 +13486,7 @@ function runAnalysis() {
             chordEvents.push({ midi: note, startBeat: abs + bo[ni], durBeats: Math.max(0.05, slotDur - bo[ni]), bar: bar });
           });
           bassEvents.push({ midi: bassMidi, startBeat: abs, durBeats: slotDur, bar: bar });
-          slots.push({ chord: chord, startBeat: start, durBeats: slotDur, setNotes: chord, ccLabel: label });
+          slots.push({ chord: chord, startBeat: start, durBeats: slotDur, setNotes: chord, ccLabel: label, ccCat: def.fam + " › " + def.tipo });
           labels.push(label);
           // melodía: solo notas del modo del acorde en curso
           var scalePcs = mode.semis.map(function(s){ return (pk.root + s) % 12; });
@@ -13436,7 +13523,7 @@ function runAnalysis() {
               off += dd; remaining -= dd;
             }
           }
-          song.push({ bar: bar, label: label, mode: mode.name, root: pk.root, bassPc: bassPc,
+          song.push({ bar: bar, label: label, mode: mode.name, modeFb: modeFb, fam: def.fam, tipo: def.tipo, ext: def.ext, alts: def.alts, root: pk.root, bassPc: bassPc,
                       chordPcs: chord.map(function(x){ return x % 12; }), scalePcs: scalePcs,
                       startBeat: abs, durBeats: slotDur });
         }
@@ -13470,8 +13557,8 @@ function runAnalysis() {
       if(SONGTITLE) SONGTITLE.next();
       var sub = document.getElementById("consolaSongSets");
       if(sub) sub.textContent = "(CommonChords" + (testOn ? " · ModeTest" : "") + " · " + song.length + " acordes · " +
-        (allowRepeat ? "con" : "sin") + " repetición — " +
-        song.map(function(s){ return s.label + " [" + s.mode + "]"; }).join(" | ") + ")";
+        (allowRepeat ? "con" : "sin") + " repetición" + (famOn.length ? " · familias: " + famOn.join(", ") : "") + (scOn.length ? " · escalas: " + scOn.join(", ") : "") + " — " +
+        song.map(function(s){ return s.label + " [" + s.mode + (s.modeFb ? "*" : "") + " · " + s.fam + " › " + s.tipo + "]"; }).join(" | ") + ")";
       ["consolaPlayBtn", "consolaRegenPlayBtn"].forEach(function(id){
         var b = document.getElementById(id); if(b) b.disabled = false;
       });
@@ -13705,6 +13792,7 @@ function runAnalysis() {
             if(slot.ccLabel){ // 🎼 CommonChords: el cifrado de la base de acordes, en verde
               var ccLab = svgEl("text", {x:xs+4, y:38, class:"consola-cc-tag"});
               ccLab.textContent = slot.ccLabel;
+              if(slot.ccCat){ var ccTt = svgEl("title", {}); ccTt.textContent = slot.ccCat; ccLab.appendChild(ccTt); } // Categoría Fusionada al pasar el mouse
               svg.appendChild(ccLab);
             }
           });
