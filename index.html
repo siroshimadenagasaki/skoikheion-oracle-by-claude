@@ -877,7 +877,12 @@
     background-repeat:no-repeat;
     pointer-events:none;
     z-index:-1;
+    opacity:0;transition:opacity .6s ease;
   }
+  /* Fondo de pantalla al azar: un script al final del body elige una imagen de la carpeta BAckgrounds (--page-wallpaper); el velo oscuro es el mismo de siempre.
+     Si la imagen no carga, queda el fondo incrustado de antes. */
+  html.wallpaper-ready .page-bg-avatar{opacity:1;}
+  html.has-wallpaper .page-bg-avatar{background-image:linear-gradient(rgba(20,18,29,.88), rgba(20,18,29,.92)), var(--page-wallpaper);}
   .site-avatar{
     width:128px;
     height:128px;
@@ -905,7 +910,7 @@
     display:block;
   }
   /* Shortcuts: mismo estilo que el "+" de arriba a la derecha, pero arriba a la izquierda */
-  .shortcuts-panel{position:fixed;left:env(safe-area-inset-left,0px);top:env(safe-area-inset-top,0px);z-index:100;display:flex;flex-direction:column;gap:6px;background:var(--surface);padding:12px;border:1px solid var(--line);border-top:0;border-left:0;border-radius:0 0 8px 0;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.06em;color:var(--ink-muted);transform:scale(.7);transform-origin:top left;}
+  .shortcuts-panel{position:fixed;left:env(safe-area-inset-left,0px);top:calc(env(safe-area-inset-top,0px) + 74px);z-index:100;display:flex;flex-direction:column;gap:6px;background:var(--surface);padding:12px;border:1px solid var(--line);border-left:0;border-radius:0 8px 8px 0;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.06em;color:var(--ink-muted);transform:scale(.7);transform-origin:top left;}
   .shortcuts-panel.is-collapsed{padding:0;gap:0;width:32px;overflow:hidden;background:transparent;border:0;}
   .shortcuts-panel.is-collapsed .shortcuts-label,.shortcuts-panel.is-collapsed .shortcuts-list{display:none;}
   .shortcuts-header{display:flex;align-items:center;justify-content:space-between;gap:10px;}
@@ -913,7 +918,7 @@
   .shortcuts-toggle{flex:0 0 auto;width:22px;height:22px;display:flex;align-items:center;justify-content:center;background:var(--surface-2);border:1px solid var(--line);color:var(--gold);border-radius:5px;font-size:15px;line-height:1;font-weight:700;cursor:pointer;padding:0;}
   .shortcuts-toggle:hover{background:var(--surface);border-color:var(--gold);}
   .shortcuts-toggle::after{content:"−";}
-  .shortcuts-panel.is-collapsed .shortcuts-toggle{width:32px;height:32px;font-size:18px;background:var(--surface);border:1px solid var(--line);border-top:0;border-left:0;border-radius:0 0 8px 0;}
+  .shortcuts-panel.is-collapsed .shortcuts-toggle{width:32px;height:32px;font-size:18px;background:var(--surface);border:1px solid var(--line);border-left:0;border-radius:0 8px 8px 0;}
   .shortcuts-panel.is-collapsed .shortcuts-toggle::after{content:"+";}
   .shortcuts-list{display:flex;flex-direction:column;gap:4px;}
   .shortcuts-list kbd{display:inline-block;min-width:18px;text-align:center;padding:1px 6px;margin-right:8px;border:1px solid var(--line);border-radius:4px;color:var(--gold);background:var(--surface-2);font-family:inherit;}
@@ -1068,7 +1073,9 @@
     overflow:hidden;pointer-events:none;opacity:.45;
   }
   #consolaBebopRollLabel{display:none;}
-  #consolaSongTitle{font-size:clamp(18px,2.4vw,30px);font-weight:700;letter-spacing:.02em;text-align:center;color:var(--gold);padding:0 12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  #consolaSongTitle{font-size:clamp(18px,2.4vw,30px);font-weight:700;letter-spacing:.02em;text-align:center;color:var(--gold);padding:0 12px;white-space:normal;line-height:1.15;text-wrap:balance;max-width:min(92vw,1200px);}
+  #consolaSongTitle.song-long{font-size:clamp(16px,2vw,25px);}
+  #consolaSongTitle.song-vlong{font-size:clamp(13px,1.5vw,19px);font-weight:600;}
   #consolaSongTitle:empty{display:none;}
   /* Título de la canción + bpm actual al lado */
   #consolaSongHead{display:flex;align-items:baseline;justify-content:center;gap:14px;padding:0 12px;min-width:0;}
@@ -1126,7 +1133,7 @@
 <!-- Fondo de página: avatar detrás del texto -->
 <div class="page-bg-avatar"></div>
 
-<!-- Panel de Shortcuts (arriba a la izquierda) -->
+<!-- Panel de Shortcuts (a la izquierda, debajo del botón rosa + / − del piano roll) -->
 <div class="shortcuts-panel" id="shortcutsPanel">
   <div class="shortcuts-header">
     <span class="shortcuts-label">Shortcuts</span>
@@ -12845,7 +12852,90 @@ function runAnalysis() {
         default: return (fem ? "Última " : "Último ") + n[0];
       }
     }
-    function show(t){ var el = document.getElementById("consolaSongTitle"); if(el) el.textContent = t; }
+    // ---- Títulos LARGOS (6-10 palabras) y MUY LARGOS (12-22 palabras): armados con las mismas listas de palabras ----
+    var ACT_EN = ["forgot the way home","learned to whisper","kept counting the stars","never stopped dreaming","waited for the tide","followed the last train","painted the sky in secret","remembered every name"];
+    var ACT_ES = ["olvidó el camino a casa","aprendió a susurrar","siguió contando las estrellas","nunca dejó de soñar","esperó a la marea","siguió el último tren","pintó el cielo en secreto","recordó cada nombre"];
+    var WHERE_EN = ["at dawn","in the rain","after midnight","on the water","in orbit","at the edge of the night","beyond the last horizon","under a borrowed moon"];
+    var WHERE_ES = ["al amanecer","bajo la lluvia","después de medianoche","sobre el agua","en órbita","al borde de la noche","más allá del último horizonte","bajo una luna prestada"];
+    var CONN_EN = ["while","until","because","long before","even when"];
+    var CONN_ES = ["mientras","hasta que","aunque","porque","y luego"];
+    var SMALL_EN = {a:1,an:1,the:1,of:1,in:1,on:1,at:1,to:1,and:1,or:1,for:1,from:1,with:1,by:1,as:1,if:1,but:1,nor:1};
+    function titleCaseEN(str){
+      var w = str.split(" ");
+      return w.map(function(x, i){
+        var core = x.replace(/[^A-Za-z]/g, "").toLowerCase();
+        if(i > 0 && i < w.length-1 && SMALL_EN[core]) return x.toLowerCase();
+        return x.charAt(0).toUpperCase() + x.slice(1);
+      }).join(" ");
+    }
+    function npEN(n, a){ return "the " + a.toLowerCase() + " " + n.toLowerCase(); }
+    function longEN(){
+      var n = pick(EN.noun), n2 = pickOther(EN.noun, n), a = pick(EN.adj), a2 = pickOther(EN.adj, a), wh = pick(WHERE_EN), act = pick(ACT_EN);
+      var nl = n.toLowerCase(), n2l = n2.toLowerCase(), al = a.toLowerCase(), a2l = a2.toLowerCase();
+      switch(Math.floor(Math.random()*7)){
+        case 0: return titleCaseEN(nl + " of the " + al + " " + n2l + " " + wh);
+        case 1: return titleCaseEN("the " + al + " " + nl + " that " + act);
+        case 2: return titleCaseEN("letters from a " + al + " " + nl + " to the " + a2l + " " + n2l);
+        case 3: return titleCaseEN("how the " + nl + " learned to love the " + al + " " + n2l);
+        case 4: return titleCaseEN("where the " + al + " " + nl + " meets the " + a2l + " " + n2l);
+        case 5: return titleCaseEN(nl + " for a " + al + " " + n2l + " " + wh);
+        default: return titleCaseEN("the last " + nl + " of the " + al + " " + n2l);
+      }
+    }
+    function veryLongEN(){
+      var n = pick(EN.noun), n2 = pickOther(EN.noun, n), n3 = pickOther(EN.noun, n2);
+      var a = pick(EN.adj), a2 = pickOther(EN.adj, a), a3 = pickOther(EN.adj, a2);
+      var wh = pick(WHERE_EN), wh2 = pickOther(WHERE_EN, wh), act = pick(ACT_EN), act2 = pickOther(ACT_EN, act), cn = pick(CONN_EN);
+      switch(Math.floor(Math.random()*3)){
+        case 0: return titleCaseEN(npEN(n, a) + " that " + act + " " + cn + " " + npEN(n2, a2) + " " + act2 + " " + wh);
+        case 1: return titleCaseEN("everything the " + a.toLowerCase() + " " + n.toLowerCase() + " remembers about the " + a2.toLowerCase() + " " + n2.toLowerCase() + " that " + act + " " + wh);
+        default: return titleCaseEN("a " + a.toLowerCase() + " " + n.toLowerCase() + " " + wh + ", a " + a2.toLowerCase() + " " + n2.toLowerCase() + " " + wh2 + ", and the " + n3.toLowerCase() + " that " + act);
+      }
+    }
+    // ES: concordancia de género. np = artículo definido + sustantivo + adjetivo; de/a_ aplican la contracción del/al.
+    function npES(n, a){ return (n[1] === "f" ? "la " : "el ") + n[0] + " " + (n[1] === "f" ? a[1] : a[0]); }
+    function npBareES(n){ return (n[1] === "f" ? "la " : "el ") + n[0]; }
+    function indefES(n, a){ return (n[1] === "f" ? "una " : "un ") + n[0] + " " + (n[1] === "f" ? a[1] : a[0]); }
+    function deES(n, a){ return (n[1] === "f" ? "de la " : "del ") + n[0] + " " + (n[1] === "f" ? a[1] : a[0]); }
+    function aES(n, a){ return (n[1] === "f" ? "a la " : "al ") + n[0] + " " + (n[1] === "f" ? a[1] : a[0]); }
+    function longES(){
+      var n = pick(ES.noun), n2 = pickOther(ES.noun, n), a = pick(ES.adj), a2 = pickOther(ES.adj, a), wh = pick(WHERE_ES), act = pick(ACT_ES);
+      switch(Math.floor(Math.random()*7)){
+        case 0: return cap(n[0]) + " " + deES(n2, a) + " " + wh;
+        case 1: return cap(npES(n, a)) + " que " + act;
+        case 2: return "Cartas de " + (n[1] === "f" ? "una " : "un ") + n[0] + " " + (n[1] === "f" ? a[1] : a[0]) + " " + aES(n2, a2);
+        case 3: return "Cómo " + npBareES(n) + " aprendió a amar " + npES(n2, a2);
+        case 4: return "Donde " + npES(n, a) + " encuentra " + npES(n2, a2);
+        case 5: return cap(n[0]) + " para " + indefES(n2, a) + " " + wh;
+        default: return (n[1] === "f" ? "La última " : "El último ") + n[0] + " " + deES(n2, a);
+      }
+    }
+    function veryLongES(){
+      var n = pick(ES.noun), n2 = pickOther(ES.noun, n), n3 = pickOther(ES.noun, n2);
+      var a = pick(ES.adj), a2 = pickOther(ES.adj, a);
+      var wh = pick(WHERE_ES), wh2 = pickOther(WHERE_ES, wh), act = pick(ACT_ES), act2 = pickOther(ACT_ES, act), cn = pick(CONN_ES);
+      switch(Math.floor(Math.random()*3)){
+        case 0: return cap(npES(n, a)) + " que " + act + " " + cn + " " + npES(n2, a2) + " " + act2 + " " + wh;
+        case 1: return "Todo lo que " + npES(n, a) + " recuerda sobre " + npES(n2, a2) + " que " + act + " " + wh;
+        default: return cap(indefES(n, a)) + " " + wh + ", " + indefES(n2, a2) + " " + wh2 + " y " + npBareES(n3) + " que " + act;
+      }
+    }
+    // Distribución: 25% corto (como siempre), 50% largo, 25% muy largo; el idioma sigue siendo 50/50.
+    function pickTitle(){
+      var r = Math.random(), es = Math.random() < 0.5;
+      if(r < 0.25) return es ? titleES() : titleEN();
+      if(r < 0.75) return es ? longES() : longEN();
+      return es ? veryLongES() : veryLongEN();
+    }
+    function show(t){
+      var el = document.getElementById("consolaSongTitle");
+      if(!el) return;
+      el.textContent = t;
+      el.title = t;
+      var words = t ? t.trim().split(/\s+/).length : 0;
+      el.classList.toggle("song-long", words >= 6 && words < 12);
+      el.classList.toggle("song-vlong", words >= 12);
+    }
     // Subtítulo: entre paréntesis, código Solomon + nombre del set (ya trae cifrado y slash chord, ej. "4-19B Augmented major tetrachord - Maj7+ - E/C").
     // Con MULTI SETS: un set por casillero, "1: ... | 2: ...", igual que el readout "Set actual".
     function showSets(txt){ var el = document.getElementById("consolaSongSets"); if(el) el.textContent = txt ? "(" + txt + ")" : ""; }
@@ -12863,7 +12953,7 @@ function runAnalysis() {
     return {
       next: function(){
         var t, tries = 0;
-        do { t = Math.random() < 0.5 ? titleEN() : titleES(); tries++; } while(t === last && tries < 5);
+        do { t = pickTitle(); tries++; } while(t === last && tries < 5);
         last = t; show(t); return t;
       },
       clear: function(){ last = ""; show(""); showSets(""); },
@@ -18516,6 +18606,23 @@ function runAnalysis() {
       try { document.getElementById(lastId).click(); } finally { sh.dataset.running = ""; }
     });
   })();
+</script>
+<script>
+// Fondo de pantalla de la página: una imagen al azar de la carpeta BAckgrounds (el nombre lleva B y A mayúsculas: GitHub Pages distingue mayúsculas).
+// Para sumar imágenes nuevas hay que agregar su nombre a esta lista. El nombre del PNG lleva un espacio especial (U+202F) que puso macOS.
+(function(){
+  var FILES = ["i71pz5pqgi3g1.jpg", "terminatoer.jpg", "Screenshot 2026-09-16 at 9.23.59 PM.png"];
+  var url = encodeURI("BAckgrounds/" + FILES[Math.floor(Math.random() * FILES.length)]);
+  var root = document.documentElement;
+  var img = new Image();
+  img.onload = function(){
+    root.style.setProperty("--page-wallpaper", 'url("' + url + '")');
+    root.classList.add("has-wallpaper", "wallpaper-ready");
+  };
+  img.onerror = function(){ root.classList.add("wallpaper-ready"); }; // sin imagen: queda el fondo de siempre
+  img.src = url;
+  setTimeout(function(){ root.classList.add("wallpaper-ready"); }, 3000); // conexión lenta: se muestra el fondo de siempre y la imagen entra cuando llega
+})();
 </script>
 </body>
 </html>
