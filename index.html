@@ -1075,6 +1075,9 @@
   #consolaSongHead #consolaSongTitle{padding:0;min-width:0;}
   #consolaSongBpm{font-family:'JetBrains Mono',monospace;font-size:clamp(12px,1.4vw,18px);color:var(--ink-muted);white-space:nowrap;flex:none;}
   #consolaSongTitle:empty + #consolaSongBpm{display:none;}
+  /* Nombre(s) del set bajo el título: (código Solomon + nombre - cifrado - slash) */
+  #consolaSongSets{text-align:center;font-size:clamp(11px,1.2vw,15px);color:var(--ink-muted);padding:0 12px;margin-top:2px;line-height:1.3;}
+  #consolaSongSets:empty{display:none;}
   /* "+" bajo Shortcuts: trae el piano roll (de fondo, detrás de la página) al primer plano */
   /* + / − del piano roll: fijo arriba a la izquierda, grande y llamativo; por encima del piano roll en primer plano (z 90/95) */
   .shortcuts-roll-btn{position:fixed;top:10px;left:10px;z-index:120;width:56px;height:56px;display:flex;align-items:center;justify-content:center;background:#ff2d95;border:3px solid #fff;color:#fff;border-radius:50%;font-size:36px;font-weight:800;line-height:1;cursor:pointer;padding:0;box-shadow:0 0 0 3px #ff2d95,0 4px 18px rgba(255,45,149,.65);transition:transform .12s ease,box-shadow .12s ease;}
@@ -1169,6 +1172,7 @@
 <!-- Piano rolls de SetMusicBox: fondo fijo a pantalla completa, siempre -->
     <div id="consolaRollsLayer">
     <div id="consolaSongHead"><div id="consolaSongTitle" aria-live="polite"></div><span id="consolaSongBpm" title="Tempo actual"></span></div>
+    <div id="consolaSongSets" aria-live="polite"></div>
     <div id="consolaBebopRollLabel" style="margin-bottom:6px;font-size:12px;font-weight:600;color:var(--ink-muted);padding-top:0;">🎷 bebopMelody — separate piano roll (isolated from the main one)</div>
     <div class="consola-roll-wrap" id="consolaBebopRollHost" style="min-height:60px;margin-bottom:20px;"></div>
     <div class="consola-roll-wrap" id="consolaRollHost"></div>
@@ -1218,7 +1222,7 @@
           <button class="chip primary" id="creaturaBellaBtn" type="button" title="Igual que CreaturaRandom (mismos sliders, incluidos Simplicity 0–50%, Melody n2 on/off y Cycles al azar; Compose, Mix time signatures, Detener, espera 2s y Regenerar), pero los 5 o 2 sets salen SOLO del índice del libro (jerarquías de sets) y con más probabilidad cuanto mayor es su jerarquía: dentro de cada cardinalidad (3 hasta el máximo del slider, el índice no tiene sets de 2 notas) el set 1 del índice es el más probable y el último el menos probable. Cada set sale transportado a una tónica al azar.">🪄 CreaturaBella</button>
           <button class="chip primary" id="creaturaIntervalicBtn" type="button" title="Igual que CreaturaRandom (mismos sliders, Compose, Mix time signatures, Detener, espera 2s y Regenerar, con 5 o 2 sets), pero antes sortea una combinación de clases de intervalo (1, 2 o 3 de ic1..ic6) y los sets salen SOLO de los que tienen todas esas clases en su vector de intervalos, con más probabilidad cuanto mayor parte del vector ocupan esas clases.">🪄 CreaturaIntervalic</button>
         </div>
-        <button class="chip" id="composeBtn" type="button" title="Como CreaturaBella pero con TU set y TU compás: con el set elegido en el reloj/piano (2+ notas) y el time signature que dejaste escrito, sortea los sliders, el tempo y los presets al azar (como CreaturaBella), no cambia el set, no mezcla compases, y toca una variación nueva en primer plano. Sin set elegido, sortea uno con la misma regla de CreaturaBella (sets del índice por jerarquía).">🎹 Compose</button>
+        <button class="chip" id="composeBtn" type="button" title="Como CreaturaBella pero con TU set y TU compás: con el set elegido en el reloj/piano (2+ notas) y el time signature que dejaste escrito, sortea los sliders, el tempo y los presets al azar (como CreaturaBella), no cambia el set, no mezcla compases, y toca una variación nueva en primer plano. Sin set elegido, sortea uno con la misma regla de CreaturaBella (sets del índice por jerarquía); cada vez que lo apretás de nuevo, sortea otro set distinto (un set que elegiste vos a mano se respeta).">🎹 Compose</button>
         <button class="chip" id="clearBtn">Clear</button>
         <button class="chip" id="multiSetsMemBtn2" type="button" disabled title="Mismo botón que To Memory de Multi Sets Input (copia acá para no tener que abrir esa tarjeta): guarda el set actual del reloj/piano en el próximo casillero libre y resetea el reloj. Entre paréntesis, cuántos sets van guardados.">To Memory (0/5)</button>
         <div class="sounds-group">
@@ -1360,7 +1364,7 @@
         <input type="range" id="consolaJazzSlider" min="0" max="100" value="0" step="1">
         <span class="consola-val" id="consolaJazzVal">0%</span>
       </div>
-      <div class="consola-field" title="Qué porcentaje de los acordes de armonía (2+ notas) atacan simultáneamente (en bloque) vs. escalonados (quebrados). Cada reataque tira su propio dado: 0% = ningún reataque queda quebrado, todos en bloque. 100% = todos quebrados (comportamiento histórico, sin cambios). 50% (default) = aproximadamente la mitad de los reataques en bloque y la mitad quebrados, al azar — no es una graduación de 'qué tan separadas' quedan las notas dentro de un acorde, es una mezcla de acordes enteros de cada tipo. Afecta tanto al motor libre como a Simplicity, que comparten el mismo mecanismo.">
+      <div class="consola-field" title="Qué porcentaje de los acordes de armonía (2+ notas) atacan simultáneamente (en bloque) vs. escalonados (quebrados). Cada reataque tira su propio dado: 0% = ningún reataque queda quebrado, todos en bloque. 100% = todos quebrados (comportamiento histórico, sin cambios). 50% (default) = aproximadamente la mitad de los reataques en bloque y la mitad quebrados, al azar — no es una graduación de 'qué tan separadas' quedan las notas dentro de un acorde, es una mezcla de acordes enteros de cada tipo. Los acordes quebrados atacan una nota por vez con el mismo paso entre ataques y en orden al azar (o extremos/centro). Afecta tanto al motor libre como a Simplicity, que comparten el mismo mecanismo.">
         <label for="consolaChordSimulSlider">Chord simultaneity</label>
         <input type="range" id="consolaChordSimulSlider" min="0" max="100" value="50" step="1">
         <span class="consola-val" id="consolaChordSimulVal">50%</span>
@@ -1500,7 +1504,7 @@
         </div>
         <div class="consola-inst-row">
           <span class="consola-inst-toggle" title="Arpegiador de armonía: 0% = nunca (Armonía de siempre). 100% = TODOS los compases se arpegian. Entre medio, cada compás se sortea: con probabilidad = el valor se reemplaza por un arpegio de las notas del acorde vigente (el set no se traiciona: solo sus notas, subiendo de octava si el patrón lo pide). En cada compás arpegiado se sortea de nuevo el patrón (casi siempre aleatorios o asimétricos: paseo aleatorio, permutación, célula irregular, convergente, pedal, saltos de 2 o 3… los lineales arriba/abajo salen poco, ~10%), la subdivisión (corcheas, semicorcheas o tresillos) y el largo de las notas. Con el slider por encima de 0 la Armonía deja el motor libre (como al tildar una casilla). Se combina con inversions, in3rds, guitar y accent; en los compases arpegiados reemplaza el ritmo de sync/poly/rythmicarmonies."><label for="consolaHT_arpSlider">&#127929; Arp</label><input type="range" class="consola-mini-range" id="consolaHT_arpSlider" min="0" max="100" value="0" step="1"><span class="consola-val" id="consolaHT_arpVal">0%</span></span>
-          <span class="consola-inst-toggle" title="3/4/5: intensidad de in3rds / in4ths / in5ths (las casillas eligen CUÁLES entran). 0% = apagado (suena el set entero, como si ninguna estuviera tildada). 100% = encendido: todos los acordes salen apilados en terceras / cuartas / quintas del set. Entre medio, cada acorde sortea al azar entre los dos estados: con probabilidad = el valor suena apilado, si no suena el set entero. Solo afecta a sets de 5+ notas."><label for="consolaHT_stackSlider">3/4/5</label><input type="range" class="consola-mini-range" id="consolaHT_stackSlider" min="0" max="100" value="75" step="1"><span class="consola-val" id="consolaHT_stackVal">75%</span>
+          <span class="consola-inst-toggle" title="3/4/5: intensidad de in3rds / in4ths / in5ths (las casillas eligen CUÁLES entran). 0% = apagado (suena el set entero, como si ninguna estuviera tildada). 100% = encendido: todos los acordes salen apilados en terceras / cuartas / quintas del set. Entre medio, cada acorde sortea al azar entre los dos estados: con probabilidad = el valor suena apilado, si no suena el set entero. Solo afecta a sets de 5+ notas. Default 100%."><label for="consolaHT_stackSlider">3/4/5</label><input type="range" class="consola-mini-range" id="consolaHT_stackSlider" min="0" max="100" value="100" step="1"><span class="consola-val" id="consolaHT_stackVal">100%</span>
           <span class="consola-inst-toggle" title="251: progresiones al azar (presets del Generador de progresiones: V-I, V-Im, II-V, IIø-V, II-V-I, IIø-V-Im, II-V-I-VI, IIø-V-Im-VIø) tratadas como UN acorde: cada progresión dura de medio a 4 compases (se sortea 0.5 / 1 / 2 / 3 / 4, repartido en partes iguales entre sus acordes; no menos de 1 tiempo por acorde). 0% = sin progresiones. 100% = solo progresiones. Entre medio, cada tramo se sortea: con probabilidad = el valor arranca una progresión. Combinado con Chromatism / Cycles, la progresión ENTERA se transpone junta (en vez de un acorde, una progresión). Ojo: los acordes de la progresión salen de la tabla de sets del generador, no del set elegido. Los compases de HarmonicSpace (respiro) no llevan progresión."><label for="consolaHT_progSlider">251</label><input type="range" class="consola-mini-range" id="consolaHT_progSlider" min="0" max="100" value="0" step="1"><span class="consola-val" id="consolaHT_progVal">0%</span></span></span>
           <span class="consola-inst-toggle" title="BlockwithMelody: la armonía toca EN BLOQUE la misma rítmica que la melodía principal (cada nota de la melodía = un acorde en bloque, con el voicing vigente en ese instante, mismo inicio y misma duración; los adornos de Ornaments no cuentan y, si dos notas de la melodía quedan a menos de 1/4 de tiempo, el acorde anterior sigue sonando). 0% = Armonía de siempre. 100% = TODA la melodía armonizada en bloque. Entre medio, se eligen al azar frases / pasajes melódicos completos (grupos de notas separados por silencios de 1 tiempo o más; las frases de más de 2 compases se parten por compás) hasta cubrir ese % de la melodía; el resto queda con la armonía de siempre. Los acordes NUNCA se repiten de un golpe al siguiente: cada nota de la melodía toma el acorde vigente pero en una variante distinta a la anterior — apilado en 3/4/5 (terceras / cuartas / quintas del set, con las casillas in3rds/in4ths/in5ths que estén tildadas, o las tres si ninguna) cuando el set tiene 5+ notas, o un subconjunto del acorde. Solo notas del set: cambia CUÁNDO y CÓMO suenan, nunca fuera del set. Se aplica al final, sobre cualquier otra casilla de Harmony (los compases elegidos pisan sync, poly, arp, 3rdsRuns, etc.)."><label for="consolaHT_bwmSlider">BlockwithMelody</label><input type="range" class="consola-mini-range" id="consolaHT_bwmSlider" min="0" max="100" value="0" step="1"><span class="consola-val" id="consolaHT_bwmVal">0%</span></span>
         </div>
@@ -1828,7 +1832,7 @@
         <button class="chip" id="presetJazzFusionBtn" type="button" title="Copia de Jazz traditional con Armonía → Piano eléctrico y Melodía → Ethan's Bassoon (Soundfonts v2/BasoonFlute.sf2). Doblar armonía → Mute, Doblar melodía → Mute, Bajo → Bajo original (sintetizado). Además prende Swing Drums.">Jazz fusion</button>
         <button class="chip" id="presetBrassSoloBtn" type="button" title="Set de presets tipo SoloPiano pero con metales: Armonía → Metales (Brass Section), Melodía → French Horns, Bajo → Metales. Muda Batería, moreComping, bebopMelody, Doblar melodía y Doblar armonía (gain 0).">Brass solo</button>
         <button class="chip" type="button" id="consolaSoloPianoBtn" title="Modo solo: pone Armonía, Melodía y Bajo en preset Piano, y muda Batería/moreComping/bebopMelody/Doblar melodía/Doblar armonía — sin tocar ningún otro ajuste. Volvé a apretarlo para restaurar los presets y volúmenes que tenías antes.">🎹 SoloPiano</button>
-        <button class="chip" type="button" id="presetShuffleBtn" title="Shuffle!: elige al azar uno de los sets de presets de Styles (Baroque, Jazz traditional, Jazz fusion o Brass solo) y lo aplica, igual que apretar ese botón. Cada click sortea de nuevo (evita repetir el último).">Shuffle!</button>
+        <button class="chip" type="button" id="presetShuffleBtn" title="Shuffle!: elige al azar uno de los sets de presets de Styles (Baroque, Jazz traditional, Jazz fusion o Brass solo) y lo aplica, igual que apretar ese botón. Cada click sortea de nuevo (evita repetir el último). No toca el volumen de Drums (aunque el set sorteado, como Baroque o Brass solo, lo pondría en 0%).">Shuffle!</button>
       </div>
       <div class="mix-presets">
         <div class="mix-preset-group" id="harmonyPresetGroup" data-mix-group="harmony">
@@ -6366,6 +6370,7 @@ tabPiano.addEventListener("click", () => {
 });
 
 document.getElementById("clearBtn").addEventListener("click", clearNotes);
+var composePickedKey = null; // set (pcs ordenados) que puso Compose la última vez; null si el set del reloj lo eligió el usuario
 document.getElementById("composeBtn").addEventListener("click", function(){
   var btn = document.getElementById("consolaPlayBtn");
   // Expandir + llevar a la vista SetMusicBox automáticamente (pedido:
@@ -6382,9 +6387,21 @@ document.getElementById("composeBtn").addEventListener("click", function(){
   }
   // Compose con un set elegido (2+ notas en el reloj/piano): corre la secuencia tipo CreaturaBella sobre ESE set y el compás elegido.
   // Sin set elegido: sortea uno con la regla de CreaturaBella y lo pone en el reloj/piano; luego corre igual que con set elegido.
-  if (selected.size < 2 && typeof window.__multiSetsBellaPickOne === "function") {
-    var rnd = window.__multiSetsBellaPickOne();
-    if (rnd && rnd.length >= 2) setNotes(rnd);
+  // Cada Compose sortea un set NUEVO si el set del reloj/piano lo puso Compose la vez anterior (composePickedKey): se re-sortea
+  // (distinto del anterior). Si el set lo elegiste vos a mano (no coincide con el que puso Compose), se respeta.
+  var selKey = function(){ return Array.from(selected).sort(function(a, b){ return a - b; }).join(","); };
+  var reroll = selected.size >= 2 && composePickedKey !== null && selKey() === composePickedKey;
+  if ((selected.size < 2 || reroll) && typeof window.__multiSetsBellaPickOne === "function") {
+    var rnd = null;
+    for (var tries = 0; tries < 12; tries++) {
+      rnd = window.__multiSetsBellaPickOne();
+      if (!rnd || rnd.length < 2) continue;
+      var rk = rnd.slice().sort(function(a, b){ return a - b; }).join(",");
+      if (!reroll || rk !== composePickedKey) break; // distinto del set anterior
+    }
+    if (rnd && rnd.length >= 2) { setNotes(rnd); composePickedKey = selKey(); }
+  } else if (selected.size >= 2) {
+    composePickedKey = null; // set elegido a mano: se respeta
   }
   if (selected.size >= 2 && typeof window.__composeCreatura === "function") { window.__composeCreatura(); return; }
   if (btn && !btn.disabled && typeof window.consolaStartPlayback === "function") window.consolaStartPlayback();
@@ -10710,7 +10727,7 @@ function runAnalysis() {
                 artic:"consolaHT_artic", subset:"consolaHT_subset", rests:"consolaHT_rests", swing:"consolaHT_swing",
                 inversions:"consolaHT_inversions", rythmicarmonies:"consolaHT_rythmicarmonies", in3rds:"consolaHT_in3rds", runs3:"consolaHT_runs3", runs5:"consolaHT_runs5", in4ths:"consolaHT_in4ths", in5ths:"consolaHT_in5ths", guitar:"consolaHT_guitar", onechord:"consolaHT_onechord", wide:"consolaHT_wide" };
     // 3/4/5: slider #consolaHT_stackSlider (0–100%) = probabilidad (por acorde) de que in3rds/in4ths/in5ths apilen. 0 = esas casillas quedan apagadas.
-    function stackProb(){ var e = document.getElementById("consolaHT_stackSlider"); var v = e ? parseFloat(e.value) : 75; return isNaN(v) ? 0.75 : Math.max(0, Math.min(1, v/100)); }
+    function stackProb(){ var e = document.getElementById("consolaHT_stackSlider"); var v = e ? parseFloat(e.value) : 100; return isNaN(v) ? 1 : Math.max(0, Math.min(1, v/100)); }
     function on(k){ var e = document.getElementById(IDS[k]); if(!(e && e.checked)) return false; if((k === "in3rds" || k === "in4ths" || k === "in5ths") && stackProb() === 0) return false; return true; }
     // Arp: slider #consolaHT_arpSlider (0–100%) = probabilidad por compás de arpegiar la armonía. > 0 activa Harmony.
     function arpProb(){ var e = document.getElementById("consolaHT_arpSlider"); var v = e ? parseFloat(e.value) : 0; return (v > 0) ? Math.min(1, v/100) : 0; }
@@ -11270,8 +11287,9 @@ function runAnalysis() {
          variedad.
      Cuando un reataque SÍ sale quebrado, se sortea al azar una de
      estas formas (igual que siempre):
-       - grave → agudo, una por una (como un arpegio ascendente);
-       - agudo → grave, una por una (arpegio descendente);
+       - una por una, con el mismo paso entre ataques, en ORDEN AL AZAR
+         (ya no grave → agudo ni agudo → grave; con 3+ notas nunca sale
+         un orden que suba o baje de corrido);
        - con 3 notas o más: los dos extremos (la más grave y la más
          aguda) juntos primero, y el resto del centro entra después
          (variación "de afuera hacia adentro");
@@ -11325,12 +11343,19 @@ function runAnalysis() {
       var byRank = {}; // rank (0=grave ... n-1=agudo) -> offset
       var maxPattern = (n >= 3 && n <= 5) ? 3 : 1; // con 6+ notas solo arpegio grave→agudo o agudo→grave: todas las notas entran en instantes distintos
       var pattern = randomInt(0, maxPattern);
-      if(pattern === 0){
-        // Grave -> agudo, una por una.
-        for(var r=0;r<n;r++) byRank[r] = r*step;
-      } else if(pattern === 1){
-        // Agudo -> grave, una por una.
-        for(var r=0;r<n;r++) byRank[r] = (n-1-r)*step;
+      if(pattern <= 1){
+        // Una nota por vez, misma separación entre ataques, pero en ORDEN AL AZAR (antes: grave->agudo o agudo->grave).
+        // Con 3+ notas se evita que el orden sorteado salga igual a subir o bajar de corrido.
+        var perm = null;
+        for(var tryP=0; tryP<30; tryP++){
+          perm = [];
+          for(var q=0;q<n;q++) perm.push(q);
+          for(var qi=n-1; qi>0; qi--){ var qj = randomInt(0, qi), qt = perm[qi]; perm[qi] = perm[qj]; perm[qj] = qt; }
+          if(n < 3) break;
+          var asc = perm.every(function(v, i){ return v === i; }), desc = perm.every(function(v, i){ return v === n-1-i; });
+          if(!asc && !desc) break;
+        }
+        for(var r=0;r<n;r++) byRank[r] = perm[r]*step; // perm[r] = lugar (0..n-1) en el que ataca la nota de rango r
       } else {
         // Extremos primero, centro después (o al revés) — el "después"
         // también escala con la duración disponible (sin techo fijo).
@@ -12821,13 +12846,28 @@ function runAnalysis() {
       }
     }
     function show(t){ var el = document.getElementById("consolaSongTitle"); if(el) el.textContent = t; }
+    // Subtítulo: entre paréntesis, código Solomon + nombre del set (ya trae cifrado y slash chord, ej. "4-19B Augmented major tetrachord - Maj7+ - E/C").
+    // Con MULTI SETS: un set por casillero, "1: ... | 2: ...", igual que el readout "Set actual".
+    function showSets(txt){ var el = document.getElementById("consolaSongSets"); if(el) el.textContent = txt ? "(" + txt + ")" : ""; }
+    function setsText(multi){
+      try {
+        if(multi){
+          var tmp = document.createElement("div");
+          tmp.innerHTML = MULTISETS.solomonReadoutHTML();
+          return (tmp.textContent || "").replace(/\s+/g, " ").trim();
+        }
+        var lbl = solomonLabelFor(Array.from(selected));
+        return lbl ? (lbl.code + (lbl.name ? " " + lbl.name : "")) : "";
+      } catch(e){ return ""; }
+    }
     return {
       next: function(){
         var t, tries = 0;
         do { t = Math.random() < 0.5 ? titleEN() : titleES(); tries++; } while(t === last && tries < 5);
         last = t; show(t); return t;
       },
-      clear: function(){ last = ""; show(""); },
+      clear: function(){ last = ""; show(""); showSets(""); },
+      sets: function(multi){ showSets(setsText(multi)); },
       current: function(){ return last; }
     };
   })();
@@ -12873,7 +12913,7 @@ function runAnalysis() {
       }
     }
     state.rootChord = rootChord;
-    if(SONGTITLE) SONGTITLE.next(); // título nuevo por cada generación de música
+    if(SONGTITLE) { SONGTITLE.next(); SONGTITLE.sets(multi); } // título nuevo por cada generación de música, con el nombre del set debajo
     // Simplicity al 100%: en vez del motor libre, arma la versión simple (con MULTI SETS: cada compás, el set entero que le tocó).
     if(normalitoProb() >= 1){ normalizeConsola(); return; }
     fixedIntervalOffset = 0; // modo test de intervalos fijos: cada variación nueva arranca el ciclo en C (offset 0)
@@ -17385,8 +17425,13 @@ function runAnalysis() {
       // arriba) — Baroque pone Batería a 0%. sliderId sigue la misma
       // convención que ya usan los ids reales: "mix" + Track + "Vol"
       // (ej. "drum" -> "mixDrumVol" / "mixDrumVolVal").
+      // Shuffle!: el botón marca data-running="1" mientras aprieta el preset sorteado — en ese caso
+      // NO se toca el volumen de Drums (Baroque/Brass solo lo ponen en 0%; con Shuffle! queda como lo dejó el usuario).
+      var shuffleBtnEl = document.getElementById("presetShuffleBtn");
+      var fromShuffle = !!(shuffleBtnEl && shuffleBtnEl.dataset.running === "1");
       if(set.gains){
         Object.keys(set.gains).forEach(function(track){
+          if(fromShuffle && track === "drum") return;
           var value = set.gains[track];
           setMixGain(track, value);
           var sliderId = "mix" + track.charAt(0).toUpperCase() + track.slice(1) + "Vol";
@@ -18467,7 +18512,8 @@ function runAnalysis() {
       var pool = ids.filter(function(id){ return id !== lastId && document.getElementById(id); });
       if(!pool.length) return;
       lastId = pool[Math.floor(Math.random() * pool.length)];
-      document.getElementById(lastId).click();
+      sh.dataset.running = "1"; // applyPresetSet: con Shuffle! no se toca el volumen de Drums
+      try { document.getElementById(lastId).click(); } finally { sh.dataset.running = ""; }
     });
   })();
 </script>
