@@ -58,7 +58,7 @@ canvas{display:block}
 <div class="wrap">
   <header>
     <h1>melodicPatterns tester</h1>
-    <p class="lead">Cada patrón es una lista de movimientos (saltos de 1 a 8 posiciones, hacia arriba o abajo) sobre las notas del conjunto elegido. Cada patrón se toca una vez y le sigue otro nuevo, sin repetir en bucle. Probalo acá antes de ampliar el módulo.</p>
+    <p class="lead">Cada número es cuántos pasos diatónicos (grados conjuntos de la escala) salta el movimiento, hacia arriba (↑) o abajo (↓). En la diatónica desde C, <b>2↑ 1↓</b> es C E D, y <b>2↑ 2↑ 3↓</b> es C E G D. Cada patrón se toca una sola vez y le sigue otro nuevo, sin repetir en bucle.</p>
   </header>
 
   <section class="panel" aria-label="Controles">
@@ -72,9 +72,13 @@ canvas{display:block}
       <div class="field"><label for="reps">Ciclos por patrón <span class="val" id="repsV"></span></label><input type="range" id="reps" min="1" max="4" value="1"></div>
       <div class="field"><label for="weight">Reparto de saltos</label><select id="weight"><option value="flat">Parejo (todos igual)</option><option value="small">Más chicos que grandes</option></select></div>
       <div class="field"><label for="bpm">Tempo <span class="val" id="bpmV"></span></label><input type="range" id="bpm" min="50" max="220" value="120"></div>
+      <div class="field"><label for="up">Octavas extra hacia arriba <span class="val" id="upV"></span></label><input type="range" id="up" min="0" max="3" value="2"></div>
+      <div class="field"><label for="sus">Sustain <span class="val" id="susV"></span></label><input type="range" id="sus" min="0" max="100" value="70"></div>
+      <div class="field"><label for="sound">Sonido</label><select id="sound"><option value="strings">Cuerda suave (sustain largo)</option><option value="flute">Flauta suave</option><option value="ep">Piano eléctrico</option><option value="tri">Triángulo (el de antes)</option></select></div>
     </div>
     <div class="row" style="margin-top:12px">
-      <label class="check"><input type="checkbox" id="oct8" checked> el salto 8 es una octava exacta</label>
+      <label class="check"><input type="checkbox" id="fromRoot" checked> cada patrón arranca en la tónica</label>
+      <label class="check"><input type="checkbox" id="oct8"> el salto 8 es siempre una octava exacta</label>
     </div>
   </section>
 
@@ -85,10 +89,11 @@ canvas{display:block}
     <span class="stat" id="stat" aria-live="polite"></span>
   </div>
 
+  <p class="note" id="legend" style="margin:0"></p>
   <div class="rollbox" id="rollbox"><canvas id="roll" aria-label="Piano roll de la secuencia de patrones"></canvas></div>
 
   <section aria-label="Lista de patrones">
-    <p class="note" style="margin:0 0 8px">Tocá un patrón para escucharlo solo. Cada uno arranca desde la nota donde lo dejó el anterior. Si un salto se sale del registro (E2 a E6), la nota se pliega una octava para quedar adentro.</p>
+    <p class="note" style="margin:0 0 8px">Tocá un patrón para escucharlo solo. Sin la opción de arrancar en la tónica, cada uno sigue desde la nota donde dejó el anterior. Si un salto se sale del registro (de E2 al tope elegido), la nota se pliega una octava para quedar adentro.</p>
     <div class="list" id="list"></div>
   </section>
 </div>
@@ -105,14 +110,14 @@ canvas{display:block}
     {id:"tri", name:"Tríada mayor (3 notas)",    semis:[0,4,7]}
   ];
   var NOTES = ["C","C#","D","Eb","E","F","F#","G","Ab","A","Bb","B"];
-  var LO = 40, HI = 88;           // registro permitido (E2 a E6)
+  var LO = 40, HI0 = 88;          // registro permitido: desde E2 hasta E6 más las octavas extra elegidas
   var GAP_BEATS = 0.5, NOTE_BEATS = 0.5, PPB = 44, MARG_L = 34, MARG_T = 26, MARG_B = 10;
   var $ = function(id){ return document.getElementById(id); };
 
   // ---- controles
   NOTES.forEach(function(n, i){ var o = document.createElement("option"); o.value = i; o.textContent = n; $("root").appendChild(o); });
   SETS.forEach(function(s){ var o = document.createElement("option"); o.value = s.id; o.textContent = s.name; $("set").appendChild(o); });
-  ["maxJump","lmin","lmax","count","reps","bpm"].forEach(function(id){
+  ["maxJump","lmin","lmax","count","reps","bpm","up","sus"].forEach(function(id){
     $(id).addEventListener("input", function(){ $(id+"V").textContent = this.value; });
     $(id+"V").textContent = $(id).value;
   });
@@ -121,7 +126,7 @@ canvas{display:block}
     var set = SETS.filter(function(s){ return s.id === $("set").value; })[0];
     var lmin = +$("lmin").value, lmax = Math.max(lmin, +$("lmax").value);
     return { root:+$("root").value, set:set, maxJump:+$("maxJump").value, lmin:lmin, lmax:lmax,
-             count:+$("count").value, reps:+$("reps").value, weight:$("weight").value, oct8:$("oct8").checked, bpm:+$("bpm").value };
+             count:+$("count").value, reps:+$("reps").value, up:+$("up").value, hi:88 + 12*(+$("up").value), sound:$("sound").value, sus:+$("sus").value, weight:$("weight").value, oct8:$("oct8").checked, fromRoot:$("fromRoot").checked, bpm:+$("bpm").value };
   }
   function rnd(n){ return Math.floor(Math.random()*n); }
 
@@ -159,26 +164,33 @@ canvas{display:block}
         tries++;
       } while(used[key] && tries < 200);
       used[key] = true;
-      var notes = [], startPos = pos;
+      if(c.fromRoot) pos = 0;
+      var startPos = pos, notes = [{ pos:pos, midi:midiAt(pos, c) }];   // la nota de arranque también suena (2↑ 1↓ = C E D: tres notas)
       for(var r = 0; r < c.reps; r++){
         moves.forEach(function(mv){
           pos += mv.d * stepsFor(mv.m, c);
           var mi = midiAt(pos, c);
           var n = c.set.semis.length;
-          while(mi > HI){ pos -= n; mi = midiAt(pos, c); }
+          while(mi > c.hi){ pos -= n; mi = midiAt(pos, c); }
           while(mi < LO){ pos += n; mi = midiAt(pos, c); }
           notes.push({ pos:pos, midi:mi });
         });
       }
-      out.push({ moves:moves, notes:notes, startMidi:midiAt(startPos, c), hue:(i*47) % 360 });
+      out.push({ moves:moves, notes:notes, startMidi:midiAt(startPos, c), names:notes.map(function(n){ return NOTES[n.midi % 12]; }), hue:(i*47) % 360 });
     }
     seq = out;
     layout(c);
     draw(-1);
     renderList(c);
+    legend(c);
     $("stat").innerHTML = "<b>" + possible(c).toLocaleString("es-AR") + "</b> patrones posibles con estos ajustes · <b>" + seq.length + "</b> distintos en esta secuencia";
   }
 
+  function legend(c){                                    // a qué nota llega cada salto hacia arriba desde la tónica
+    var parts = [];
+    for(var m = 1; m <= 8; m++) parts.push(m + "\u2191 " + NOTES[midiAt(stepsFor(m, c), c) % 12]);
+    $("legend").textContent = "Desde " + NOTES[c.root] + ": " + parts.join(" · ") + ".";
+  }
   // línea de tiempo: cada patrón arranca tras un silencio corto
   function layout(c){
     var t = 0;
@@ -202,7 +214,7 @@ canvas{display:block}
     var c = cfg();
     var all = []; seq.forEach(function(p){ p.notes.forEach(function(n){ all.push(n.midi); }); });
     var lo = all.length ? Math.min.apply(null, all) - 2 : 55, hi = all.length ? Math.max.apply(null, all) + 2 : 80;
-    var rowH = 9, H = (hi - lo + 1)*rowH + MARG_T + MARG_B;
+    var rowH = 12, H = (hi - lo + 1)*rowH + MARG_T + MARG_B;
     var W = Math.max(box.clientWidth - 2, Math.ceil(total*PPB) + MARG_L + 20);
     var dpr = window.devicePixelRatio || 1;
     cv.style.width = W + "px"; cv.style.height = H + "px";
@@ -230,6 +242,11 @@ canvas{display:block}
       p.ev.forEach(function(e){
         ctx2.fillRect(MARG_L + e.beat*PPB + 1, yOf(e.midi) + 1, e.dur*PPB - 2, rowH - 2);
       });
+      ctx2.fillStyle = isDark() ? "#10141c" : "#ffffff"; ctx2.font = "9px " + css("--font-mono"); ctx2.textBaseline = "middle";
+      p.ev.forEach(function(e){
+        ctx2.fillText(NOTES[e.midi % 12], MARG_L + e.beat*PPB + 4, yOf(e.midi) + rowH/2 + 0.5);
+      });
+      ctx2.textBaseline = "alphabetic"; ctx2.fillStyle = col;
       // contorno que une las notas
       ctx2.strokeStyle = col; ctx2.globalAlpha = .55; ctx2.lineWidth = 1;
       ctx2.beginPath();
@@ -254,11 +271,12 @@ canvas{display:block}
       var b = document.createElement("button");
       b.type = "button"; b.className = "chip"; b.id = "chip" + i;
       var net = p.notes.length ? (p.notes[p.notes.length-1].midi - p.startMidi) : 0;
-      var big = 0, prev = p.startMidi;
-      p.notes.forEach(function(n){ big = Math.max(big, Math.abs(n.midi - prev)); prev = n.midi; });
-      b.innerHTML = '<span class="n"><span class="sw" style="background:hsl(' + p.hue + ',62%,50%)"></span>patrón ' + (i+1) + '</span>' +
+      var big = 0, prev = p.notes[0].midi;
+      p.notes.slice(1).forEach(function(n){ big = Math.max(big, Math.abs(n.midi - prev)); prev = n.midi; });
+      b.innerHTML = '<span class="n"><span class="sw" style="background:hsl(' + p.hue + ',62%,50%)"></span>patrón ' + (i+1) + ' · <span class="mv"></span></span>' +
         '<span class="m"></span><span class="s">salto máx. ' + big + ' st · neto ' + (net >= 0 ? "+" : "") + net + ' st</span>';
-      b.querySelector(".m").textContent = labelOf(p);
+      b.querySelector(".mv").textContent = labelOf(p);
+      b.querySelector(".m").textContent = p.names.join(" ");
       b.addEventListener("click", function(){ playOne(i); });
       host.appendChild(b);
     });
@@ -266,23 +284,76 @@ canvas{display:block}
 
   // ---- audio
   var ac = null, master = null, raf = 0, startAt = 0, playing = false, curChip = -1;
+  var wave = null, reverb = null;
   function ensureAudio(){
-    if(!ac){ var AC = window.AudioContext || window.webkitAudioContext; ac = new AC(); }
+    if(!ac){
+      var AC = window.AudioContext || window.webkitAudioContext; ac = new AC();
+      // timbre de flauta: fundamental fuerte y armónicos que decaen
+      var re = new Float32Array([0,1,.42,.2,.1,.05,.02]), im = new Float32Array(re.length);
+      wave = ac.createPeriodicWave(re, im);
+      // reverb corta: ruido con caída exponencial
+      var len = Math.floor(ac.sampleRate*1.3), ir = ac.createBuffer(2, len, ac.sampleRate);
+      for(var ch = 0; ch < 2; ch++){ var d = ir.getChannelData(ch); for(var i = 0; i < len; i++) d[i] = (Math.random()*2 - 1)*Math.pow(1 - i/len, 2.6); }
+      reverb = ac.createConvolver(); reverb.buffer = ir;
+      var wet = ac.createGain(); wet.gain.value = 0.34; reverb.connect(wet); wet.connect(ac.destination);
+    }
     if(ac.state === "suspended") ac.resume();
   }
   function beatSec(){ return 60/cfg().bpm; }
-  function schedule(events, offsetBeats){
-    ensureAudio();
-    master = ac.createGain(); master.gain.value = 0.22; master.connect(ac.destination);
-    var bs = beatSec(), t0 = ac.currentTime + 0.06;
-    events.forEach(function(e){
-      var t = t0 + (e.beat - offsetBeats)*bs, d = e.dur*bs*0.92;
-      var o = ac.createOscillator(), g = ac.createGain();
-      o.type = "triangle"; o.frequency.value = 440*Math.pow(2, (e.midi - 69)/12);
+  function voice(kind, t, d, freq, out, rel){
+    var o = ac.createOscillator(), g = ac.createGain(), f = ac.createBiquadFilter();
+    f.type = "lowpass"; o.connect(f); f.connect(g); g.connect(out);
+    if(kind === "flute"){
+      o.setPeriodicWave(wave); o.frequency.value = freq;
+      f.frequency.value = Math.min(9000, freq*5); f.Q.value = 0.4;
+      var lfo = ac.createOscillator(), lg = ac.createGain();                 // vibrato leve que entra tarde
+      lfo.frequency.value = 5.2; lg.gain.setValueAtTime(0, t); lg.gain.linearRampToValueAtTime(freq*0.006, t + Math.min(0.25, d));
+      lfo.connect(lg); lg.connect(o.frequency); lfo.start(t); lfo.stop(t + d + 0.3);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.linearRampToValueAtTime(1, t + 0.04);
+      g.gain.setTargetAtTime(0.85, t + 0.06, 0.12);
+      g.gain.setTargetAtTime(0.0001, t + d, rel);
+      o.start(t); o.stop(t + d + rel*7);
+    } else if(kind === "strings"){                     // cuerda: sierra filtrada, ataque suave, vibrato, sustain y cola largos
+      o.type = "sawtooth"; o.frequency.value = freq;
+      var o3 = ac.createOscillator(); o3.type = "sawtooth"; o3.frequency.value = freq; o3.detune.value = 7;   // segunda voz apenas desafinada
+      o3.connect(f);
+      f.frequency.value = Math.min(7000, freq*3.2); f.Q.value = 0.5;
+      var lf = ac.createOscillator(), lq = ac.createGain();
+      lf.frequency.value = 5.4; lq.gain.setValueAtTime(0, t); lq.gain.linearRampToValueAtTime(freq*0.005, t + 0.3);
+      lf.connect(lq); lq.connect(o.frequency); lq.connect(o3.frequency); lf.start(t); lf.stop(t + d + rel*7);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.linearRampToValueAtTime(0.5, t + 0.07);
+      g.gain.setTargetAtTime(0.42, t + 0.08, 0.2);
+      g.gain.setTargetAtTime(0.0001, t + d, rel);
+      o.start(t); o3.start(t); o.stop(t + d + rel*7); o3.stop(t + d + rel*7);
+    } else if(kind === "ep"){
+      o.type = "sine"; o.frequency.value = freq;
+      var o2 = ac.createOscillator(); o2.type = "sine"; o2.frequency.value = freq*4;   // campana del piano eléctrico
+      var g2 = ac.createGain(); g2.gain.setValueAtTime(0.35, t); g2.gain.exponentialRampToValueAtTime(0.0005, t + 0.25);
+      o2.connect(g2); g2.connect(g); o2.start(t); o2.stop(t + 0.3);
+      f.frequency.value = 6000;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(1, t + 0.008);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + Math.max(d + rel*4, 0.5));
+      o.start(t); o.stop(t + Math.max(d + rel*4, 0.5) + 0.05);
+    } else {
+      o.type = "triangle"; o.frequency.value = freq; f.frequency.value = 12000;
       g.gain.setValueAtTime(0.0001, t);
       g.gain.exponentialRampToValueAtTime(1, t + 0.01);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + d);
-      o.connect(g); g.connect(master); o.start(t); o.stop(t + d + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + d*0.92);
+      o.start(t); o.stop(t + d + 0.02);
+    }
+  }
+  function schedule(events, offsetBeats){
+    ensureAudio();
+    master = ac.createGain(); master.gain.value = 0.24;
+    master.connect(ac.destination); master.connect(reverb);
+    var bs = beatSec(), t0 = ac.currentTime + 0.06, c = cfg(), kind = c.sound;
+    var sus = c.sus/100, mult = kind === "tri" ? 0.92 : 1 + sus*1.6, rel = 0.07 + sus*0.5;   // sustain: las notas se solapan y la cola se alarga
+    events.forEach(function(e){
+      var t = t0 + (e.beat - offsetBeats)*bs, d = e.dur*bs*mult;
+      voice(kind, t, d, 440*Math.pow(2, (e.midi - 69)/12), master, rel);
     });
     startAt = t0 - offsetBeats*bs;
   }
@@ -325,7 +396,7 @@ canvas{display:block}
   $("gen").addEventListener("click", generate);
   $("play").addEventListener("click", playAll);
   $("stop").addEventListener("click", function(){ stopAll(); draw(-1); });
-  ["root","set","maxJump","lmin","lmax","count","reps","weight","oct8"].forEach(function(id){
+  ["root","set","maxJump","lmin","lmax","count","reps","weight","oct8","fromRoot","up"].forEach(function(id){
     $(id).addEventListener("change", generate);
   });
   window.addEventListener("resize", function(){ draw(-1); });
