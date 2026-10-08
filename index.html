@@ -707,6 +707,7 @@
   .consola-bar-tag{font-family:'JetBrains Mono',monospace;font-size:10px;fill:var(--ink-muted);}
   .consola-cifrado-tag{font-family:'JetBrains Mono',monospace;font-size:9px;fill:var(--gold);font-weight:600;}
   .consola-cc-tag{font-family:'JetBrains Mono',monospace;font-size:9px;fill:#3ddc84;font-weight:700;}
+  .consola-cc-scale{font-family:'JetBrains Mono',monospace;font-size:9px;fill:#ffd400;font-weight:700;}
   .consola-row-label{font-family:'JetBrains Mono',monospace;font-size:9.5px;fill:var(--ink-muted);}
   .consola-legend{
     display:flex;flex-wrap:wrap;gap:14px 20px;margin-top:14px;
@@ -13225,6 +13226,7 @@ function runAnalysis() {
      narrowregister (checkbox): el registro de un acorde al siguiente no se aleja más de una octava: la nota más grave y la más
        aguda del acorde nuevo quedan a <= 12 semitonos de las del anterior (se sortean candidatos hasta que cumpla).
      En el piano roll, el cifrado de la base de acordes (ej. Cmaj7/E) va en verde (clase .consola-cc-tag, tercera fila de etiquetas).
+     Con ModeTestMelody tildado, debajo del cifrado verde va el nombre de la escala que toca la melodía (ej. "C Lydian") en amarillo (clase .consola-cc-scale, cuarta fila; slot.ccScale).
      Se engancha en regenerateConsola (flag active): 🔀 / tecla G sortean otra canción CommonChords hasta que
      se use otra Creatura, Compose, Clear o se cambie el set del reloj/piano (COMMONCHORDS.off()).
      ================================================================ */
@@ -13553,7 +13555,7 @@ function runAnalysis() {
             chordEvents.push({ midi: note, startBeat: abs + bo[ni], durBeats: Math.max(0.05, slotDur - bo[ni]), bar: bar });
           });
           bassEvents.push({ midi: bassMidi, startBeat: abs, durBeats: slotDur, bar: bar });
-          slots.push({ chord: chord, startBeat: start, durBeats: Math.min(slotDur, beats), setNotes: chord, ccLabel: label, ccCat: def.fam + " › " + def.tipo }); // por compás: un acorde de 2 compases se recorta al 1er compás (el 2º lleva su propio slot "held")
+          slots.push({ chord: chord, startBeat: start, durBeats: Math.min(slotDur, beats), setNotes: chord, ccLabel: label, ccCat: def.fam + " › " + def.tipo, ccScale: testM ? spellPitchClass(pk.root) + " " + mode.name : null }); // ccScale (solo ModeTestMelody): nombre de la escala, en amarillo debajo del cifrado verde. Por compás: un acorde de 2 compases se recorta al 1er compás (el 2º lleva su propio slot "held")
           labels.push(label);
           // melodía: solo notas del modo del acorde en curso
           var scalePcs = mode.semis.map(function(s){ return (pk.root + s) % 12; });
@@ -13719,7 +13721,7 @@ function runAnalysis() {
   })();
 
   // ---------- piano roll (SVG) ----------
-  var PPB = 39, ROW_H = 14, MARGIN_L = 44, MARGIN_T = 40, MARGIN_B = 10;
+  var PPB = 39, ROW_H = 14, MARGIN_L = 44, MARGIN_T = 52, MARGIN_B = 10; // MARGIN_T 52: entra la 4ª fila de etiquetas (escala de ModeTestMelody, y=48)
   var svgNS2 = "http://www.w3.org/2000/svg";
 
   function svgEl(tag, attrs){
@@ -13890,6 +13892,11 @@ function runAnalysis() {
               ccLab.textContent = slot.ccLabel;
               if(slot.ccCat){ var ccTt = svgEl("title", {}); ccTt.textContent = slot.ccCat; ccLab.appendChild(ccTt); } // Categoría Fusionada al pasar el mouse
               svg.appendChild(ccLab);
+            }
+            if(slot.ccScale){ // ModeTestMelody: nombre de la escala de la melodía, en amarillo debajo del cifrado verde
+              var scLab = svgEl("text", {x:xs+4, y:48, class:"consola-cc-scale"});
+              scLab.textContent = slot.ccScale;
+              svg.appendChild(scLab);
             }
           });
         }
