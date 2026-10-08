@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>melodicPatterns tester</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&display=swap">
+<style>
+/* Layout: panel de controles arriba, piano roll con scroll horizontal en el centro, lista de patrones clicable abajo. */
+:root{
+  --bg:#f4f5f8; --surface:#ffffff; --ink:#1c2230; --ink-soft:#5a6478; --line:#d9dde7;
+  --accent:#0f7b8a; --accent-ink:#ffffff; --roll-bg:#fbfbfd; --grid:#e6e9f0; --grid-set:#cfd5e2; --playhead:#d6452d;
+  --font-body:"DM Sans",system-ui,sans-serif; --font-mono:"DM Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#12161f; --surface:#1a2030; --ink:#e7eaf2; --ink-soft:#97a1b8; --line:#2b3347;
+    --accent:#4cc3d3; --accent-ink:#0b1a1d; --roll-bg:#0f131c; --grid:#1b2232; --grid-set:#2a344b; --playhead:#ff7a5c; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#12161f; --surface:#1a2030; --ink:#e7eaf2; --ink-soft:#97a1b8; --line:#2b3347;
+  --accent:#4cc3d3; --accent-ink:#0b1a1d; --roll-bg:#0f131c; --grid:#1b2232; --grid-set:#2a344b; --playhead:#ff7a5c; color-scheme:dark;
+}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);padding-inline:16px;padding-block:20px 40px;line-height:1.45}
+.wrap{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+h1{font-size:1.5rem;margin:0;text-wrap:balance}
+.lead{margin:4px 0 0;color:var(--ink-soft);max-width:70ch}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px}
+.controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px 14px}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field label{font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft)}
+.field .val{font-family:var(--font-mono);color:var(--ink);letter-spacing:0;text-transform:none;margin-left:6px}
+select,input[type=range]{width:100%;font:inherit;color:var(--ink)}
+select{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 8px}
+input[type=range]{accent-color:var(--accent)}
+.check{display:flex;align-items:center;gap:8px;font-size:.88rem;min-width:0}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+button{font:inherit;cursor:pointer;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:8px 14px}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700}
+button:focus-visible,select:focus-visible,input:focus-visible,.chip:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.stat{font-family:var(--font-mono);font-size:.82rem;color:var(--ink-soft)}
+.stat b{color:var(--ink);font-weight:500}
+.rollbox{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--roll-bg)}
+canvas{display:block}
+.list{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px}
+.chip{display:flex;flex-direction:column;gap:2px;text-align:left;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--surface);min-width:0}
+.chip .n{font-size:.7rem;color:var(--ink-soft);font-family:var(--font-mono)}
+.chip .m{font-family:var(--font-mono);font-size:.95rem;overflow-wrap:anywhere}
+.chip .s{font-size:.72rem;color:var(--ink-soft)}
+.chip.on{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent) inset}
+.sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:baseline}
+.note{font-size:.82rem;color:var(--ink-soft);max-width:80ch}
+</style>
+<style>html,body{margin:0}</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>melodicPatterns tester</h1>
+    <p class="lead">Cada patrón es una lista de movimientos (saltos de 1 a 8 posiciones, hacia arriba o abajo) sobre las notas del conjunto elegido. Cada patrón se toca una vez y le sigue otro nuevo, sin repetir en bucle. Probalo acá antes de ampliar el módulo.</p>
+  </header>
+
+  <section class="panel" aria-label="Controles">
+    <div class="controls">
+      <div class="field"><label for="root">Tónica</label><select id="root"></select></div>
+      <div class="field"><label for="set">Conjunto de notas</label><select id="set"></select></div>
+      <div class="field"><label for="maxJump">Salto máximo <span class="val" id="maxJumpV"></span></label><input type="range" id="maxJump" min="1" max="8" value="8"></div>
+      <div class="field"><label for="lmin">Movimientos por patrón, mín <span class="val" id="lminV"></span></label><input type="range" id="lmin" min="2" max="6" value="2"></div>
+      <div class="field"><label for="lmax">Movimientos por patrón, máx <span class="val" id="lmaxV"></span></label><input type="range" id="lmax" min="2" max="6" value="4"></div>
+      <div class="field"><label for="count">Patrones en la secuencia <span class="val" id="countV"></span></label><input type="range" id="count" min="4" max="32" value="12"></div>
+      <div class="field"><label for="reps">Ciclos por patrón <span class="val" id="repsV"></span></label><input type="range" id="reps" min="1" max="4" value="1"></div>
+      <div class="field"><label for="weight">Reparto de saltos</label><select id="weight"><option value="flat">Parejo (todos igual)</option><option value="small">Más chicos que grandes</option></select></div>
+      <div class="field"><label for="bpm">Tempo <span class="val" id="bpmV"></span></label><input type="range" id="bpm" min="50" max="220" value="120"></div>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <label class="check"><input type="checkbox" id="oct8" checked> el salto 8 es una octava exacta</label>
+    </div>
+  </section>
+
+  <div class="row">
+    <button class="primary" id="gen" type="button">Generar secuencia nueva</button>
+    <button id="play" type="button">Tocar todo</button>
+    <button id="stop" type="button">Parar</button>
+    <span class="stat" id="stat" aria-live="polite"></span>
+  </div>
+
+  <div class="rollbox" id="rollbox"><canvas id="roll" aria-label="Piano roll de la secuencia de patrones"></canvas></div>
+
+  <section aria-label="Lista de patrones">
+    <p class="note" style="margin:0 0 8px">Tocá un patrón para escucharlo solo. Cada uno arranca desde la nota donde lo dejó el anterior. Si un salto se sale del registro (E2 a E6), la nota se pliega una octava para quedar adentro.</p>
+    <div class="list" id="list"></div>
+  </section>
+</div>
+
+<script>
+(function(){
+  var SETS = [
+    {id:"dia", name:"Escala diatónica (jónica)", semis:[0,2,4,5,7,9,11]},
+    {id:"mm",  name:"Menor melódica",            semis:[0,2,3,5,7,9,11]},
+    {id:"ma",  name:"Menor armónica",            semis:[0,2,3,5,7,8,11]},
+    {id:"oct", name:"Octatónica (t-st)",         semis:[0,2,3,5,6,8,9,11]},
+    {id:"pen", name:"Pentatónica mayor",         semis:[0,2,4,7,9]},
+    {id:"maj7",name:"Acorde Cmaj7 (4 notas)",    semis:[0,4,7,11]},
+    {id:"tri", name:"Tríada mayor (3 notas)",    semis:[0,4,7]}
+  ];
+  var NOTES = ["C","C#","D","Eb","E","F","F#","G","Ab","A","Bb","B"];
+  var LO = 40, HI = 88;           // registro permitido (E2 a E6)
+  var GAP_BEATS = 0.5, NOTE_BEATS = 0.5, PPB = 44, MARG_L = 34, MARG_T = 26, MARG_B = 10;
+  var $ = function(id){ return document.getElementById(id); };
+
+  // ---- controles
+  NOTES.forEach(function(n, i){ var o = document.createElement("option"); o.value = i; o.textContent = n; $("root").appendChild(o); });
+  SETS.forEach(function(s){ var o = document.createElement("option"); o.value = s.id; o.textContent = s.name; $("set").appendChild(o); });
+  ["maxJump","lmin","lmax","count","reps","bpm"].forEach(function(id){
+    $(id).addEventListener("input", function(){ $(id+"V").textContent = this.value; });
+    $(id+"V").textContent = $(id).value;
+  });
+
+  function cfg(){
+    var set = SETS.filter(function(s){ return s.id === $("set").value; })[0];
+    var lmin = +$("lmin").value, lmax = Math.max(lmin, +$("lmax").value);
+    return { root:+$("root").value, set:set, maxJump:+$("maxJump").value, lmin:lmin, lmax:lmax,
+             count:+$("count").value, reps:+$("reps").value, weight:$("weight").value, oct8:$("oct8").checked, bpm:+$("bpm").value };
+  }
+  function rnd(n){ return Math.floor(Math.random()*n); }
+
+  // ---- generación
+  function stepsFor(m, c){ return (m === 8 && c.oct8) ? c.set.semis.length : m; }  // 8 = octava exacta (n posiciones)
+  function midiAt(pos, c){
+    var n = c.set.semis.length;
+    return 60 + c.root + 12*Math.floor(pos/n) + c.set.semis[((pos % n) + n) % n];
+  }
+  function pickMagnitude(c){
+    if(c.weight === "flat") return 1 + rnd(c.maxJump);
+    var w = [], tot = 0, i;                       // peso 1/m: los saltos chicos salen más
+    for(i = 1; i <= c.maxJump; i++){ w.push(1/i); tot += 1/i; }
+    var r = Math.random()*tot;
+    for(i = 0; i < w.length; i++){ r -= w[i]; if(r <= 0) return i+1; }
+    return c.maxJump;
+  }
+  function possible(c){                            // cuántos patrones distintos hay con estos ajustes
+    var kinds = 2*c.maxJump, total = 0, L;
+    for(L = c.lmin; L <= c.lmax; L++) total += Math.pow(kinds, L);
+    return total;
+  }
+  var seq = [], total = 0;
+  function generate(){
+    stopAll();
+    var c = cfg(), used = {}, pos = 0, out = [], i, tries;
+    for(i = 0; i < c.count; i++){
+      var key, moves;
+      tries = 0;
+      do {
+        var L = c.lmin + rnd(c.lmax - c.lmin + 1);
+        moves = [];
+        for(var k = 0; k < L; k++) moves.push({ m:pickMagnitude(c), d:(Math.random() < 0.5 ? 1 : -1) });
+        key = moves.map(function(x){ return x.m + (x.d > 0 ? "u" : "d"); }).join(",");
+        tries++;
+      } while(used[key] && tries < 200);
+      used[key] = true;
+      var notes = [], startPos = pos;
+      for(var r = 0; r < c.reps; r++){
+        moves.forEach(function(mv){
+          pos += mv.d * stepsFor(mv.m, c);
+          var mi = midiAt(pos, c);
+          var n = c.set.semis.length;
+          while(mi > HI){ pos -= n; mi = midiAt(pos, c); }
+          while(mi < LO){ pos += n; mi = midiAt(pos, c); }
+          notes.push({ pos:pos, midi:mi });
+        });
+      }
+      out.push({ moves:moves, notes:notes, startMidi:midiAt(startPos, c), hue:(i*47) % 360 });
+    }
+    seq = out;
+    layout(c);
+    draw(-1);
+    renderList(c);
+    $("stat").innerHTML = "<b>" + possible(c).toLocaleString("es-AR") + "</b> patrones posibles con estos ajustes · <b>" + seq.length + "</b> distintos en esta secuencia";
+  }
+
+  // línea de tiempo: cada patrón arranca tras un silencio corto
+  function layout(c){
+    var t = 0;
+    seq.forEach(function(p, i){
+      p.t0 = t;
+      p.ev = p.notes.map(function(n, k){ return { beat:t + k*NOTE_BEATS, midi:n.midi, dur:NOTE_BEATS }; });
+      t += p.notes.length*NOTE_BEATS + GAP_BEATS;
+    });
+    total = t;
+  }
+
+  // ---- dibujo
+  var cv = $("roll"), ctx2 = cv.getContext("2d"), box = $("rollbox");
+  function css(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+  function isDark(){                       // luminancia del fondo del tema actual
+    var h = css("--bg").replace("#","");
+    return (parseInt(h.substr(0,2),16) + parseInt(h.substr(2,2),16) + parseInt(h.substr(4,2),16)) < 384;
+  }
+  function labelOf(p){ return p.moves.map(function(x){ return x.m + (x.d > 0 ? "↑" : "↓"); }).join(" "); }
+  function draw(playBeat){
+    var c = cfg();
+    var all = []; seq.forEach(function(p){ p.notes.forEach(function(n){ all.push(n.midi); }); });
+    var lo = all.length ? Math.min.apply(null, all) - 2 : 55, hi = all.length ? Math.max.apply(null, all) + 2 : 80;
+    var rowH = 9, H = (hi - lo + 1)*rowH + MARG_T + MARG_B;
+    var W = Math.max(box.clientWidth - 2, Math.ceil(total*PPB) + MARG_L + 20);
+    var dpr = window.devicePixelRatio || 1;
+    cv.style.width = W + "px"; cv.style.height = H + "px";
+    cv.width = Math.round(W*dpr); cv.height = Math.round(H*dpr);
+    ctx2.setTransform(dpr,0,0,dpr,0,0);
+    ctx2.clearRect(0,0,W,H);
+    var yOf = function(m){ return MARG_T + (hi - m)*rowH; };
+    // líneas del conjunto de notas
+    ctx2.font = "10px " + css("--font-mono");
+    ctx2.textBaseline = "middle";
+    for(var m = lo; m <= hi; m++){
+      var pc = ((m - 60 - c.root) % 12 + 12) % 12;
+      var inSet = c.set.semis.indexOf(pc) >= 0;
+      ctx2.fillStyle = inSet ? css("--grid-set") : css("--grid");
+      ctx2.fillRect(MARG_L, yOf(m) + rowH/2 - 0.5, W - MARG_L, inSet ? 1 : 0.5);
+      if(inSet && (m % 12 === (60 + c.root) % 12)){
+        ctx2.fillStyle = css("--ink-soft");
+        ctx2.fillText(NOTES[c.root] + (Math.floor(m/12) - 1), 2, yOf(m) + rowH/2);
+      }
+    }
+    // patrones
+    seq.forEach(function(p){
+      var col = "hsl(" + p.hue + ",62%," + (isDark() ? "62%" : "46%") + ")";
+      ctx2.fillStyle = col;
+      p.ev.forEach(function(e){
+        ctx2.fillRect(MARG_L + e.beat*PPB + 1, yOf(e.midi) + 1, e.dur*PPB - 2, rowH - 2);
+      });
+      // contorno que une las notas
+      ctx2.strokeStyle = col; ctx2.globalAlpha = .55; ctx2.lineWidth = 1;
+      ctx2.beginPath();
+      p.ev.forEach(function(e, k){
+        var x = MARG_L + e.beat*PPB + e.dur*PPB/2, y = yOf(e.midi) + rowH/2;
+        if(k === 0) ctx2.moveTo(x, y); else ctx2.lineTo(x, y);
+      });
+      ctx2.stroke(); ctx2.globalAlpha = 1;
+      ctx2.fillStyle = css("--ink"); ctx2.textBaseline = "alphabetic";
+      ctx2.font = "11px " + css("--font-mono");
+      ctx2.fillText(labelOf(p), MARG_L + p.t0*PPB + 1, MARG_T - 9);
+    });
+    if(playBeat >= 0){
+      ctx2.fillStyle = css("--playhead");
+      ctx2.fillRect(MARG_L + playBeat*PPB, MARG_T - 4, 2, H - MARG_T);
+    }
+  }
+
+  function renderList(c){
+    var host = $("list"); host.innerHTML = "";
+    seq.forEach(function(p, i){
+      var b = document.createElement("button");
+      b.type = "button"; b.className = "chip"; b.id = "chip" + i;
+      var net = p.notes.length ? (p.notes[p.notes.length-1].midi - p.startMidi) : 0;
+      var big = 0, prev = p.startMidi;
+      p.notes.forEach(function(n){ big = Math.max(big, Math.abs(n.midi - prev)); prev = n.midi; });
+      b.innerHTML = '<span class="n"><span class="sw" style="background:hsl(' + p.hue + ',62%,50%)"></span>patrón ' + (i+1) + '</span>' +
+        '<span class="m"></span><span class="s">salto máx. ' + big + ' st · neto ' + (net >= 0 ? "+" : "") + net + ' st</span>';
+      b.querySelector(".m").textContent = labelOf(p);
+      b.addEventListener("click", function(){ playOne(i); });
+      host.appendChild(b);
+    });
+  }
+
+  // ---- audio
+  var ac = null, master = null, raf = 0, startAt = 0, playing = false, curChip = -1;
+  function ensureAudio(){
+    if(!ac){ var AC = window.AudioContext || window.webkitAudioContext; ac = new AC(); }
+    if(ac.state === "suspended") ac.resume();
+  }
+  function beatSec(){ return 60/cfg().bpm; }
+  function schedule(events, offsetBeats){
+    ensureAudio();
+    master = ac.createGain(); master.gain.value = 0.22; master.connect(ac.destination);
+    var bs = beatSec(), t0 = ac.currentTime + 0.06;
+    events.forEach(function(e){
+      var t = t0 + (e.beat - offsetBeats)*bs, d = e.dur*bs*0.92;
+      var o = ac.createOscillator(), g = ac.createGain();
+      o.type = "triangle"; o.frequency.value = 440*Math.pow(2, (e.midi - 69)/12);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(1, t + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+      o.connect(g); g.connect(master); o.start(t); o.stop(t + d + 0.02);
+    });
+    startAt = t0 - offsetBeats*bs;
+  }
+  function stopAll(){
+    cancelAnimationFrame(raf); playing = false;
+    if(master){ try{ master.disconnect(); }catch(e){} master = null; }
+    if(curChip >= 0 && $("chip"+curChip)) $("chip"+curChip).classList.remove("on");
+    curChip = -1;
+  }
+  function animate(endBeat, scroll){
+    playing = true;
+    (function tick(){
+      if(!playing) return;
+      var beat = (ac.currentTime - startAt)/beatSec();
+      if(beat >= endBeat){ stopAll(); draw(-1); return; }
+      draw(beat);
+      if(scroll){
+        var x = MARG_L + beat*PPB, bx = box.scrollLeft, w = box.clientWidth;
+        if(x > bx + w - 60 || x < bx) box.scrollLeft = Math.max(0, x - 80);
+      }
+      raf = requestAnimationFrame(tick);
+    })();
+  }
+  function playAll(){
+    stopAll();
+    var ev = []; seq.forEach(function(p){ ev = ev.concat(p.ev); });
+    schedule(ev, 0);
+    box.scrollLeft = 0;
+    animate(total, true);
+  }
+  function playOne(i){
+    stopAll();
+    curChip = i; $("chip"+i).classList.add("on");
+    var p = seq[i];
+    schedule(p.ev, p.t0);
+    animate(p.t0 + p.notes.length*NOTE_BEATS, false);
+    box.scrollLeft = Math.max(0, MARG_L + p.t0*PPB - 40);
+  }
+
+  $("gen").addEventListener("click", generate);
+  $("play").addEventListener("click", playAll);
+  $("stop").addEventListener("click", function(){ stopAll(); draw(-1); });
+  ["root","set","maxJump","lmin","lmax","count","reps","weight","oct8"].forEach(function(id){
+    $(id).addEventListener("change", generate);
+  });
+  window.addEventListener("resize", function(){ draw(-1); });
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function(){ draw(-1); });
+
+  window.__tester = { generate:generate, get seq(){ return seq; }, cfg:cfg, possible:possible, stepsFor:stepsFor };
+  generate();
+})();
+</script>
+
+</body>
+</html>
