@@ -1,0 +1,618 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MGU a MIDI</title>
+<style>
+:root{--bg:#f6f6f4;--fg:#1c1c1a;--mut:#6b6b66;--card:#fff;--bd:#d9d9d3;--ac:#2a5bd7;--acfg:#fff;--ok:#1b7a3e;--warn:#9a5b00;--bad:#b3261e}
+@media (prefers-color-scheme:dark){:root{--bg:#161616;--fg:#ececea;--mut:#9a9a94;--card:#1f1f1e;--bd:#383835;--ac:#6f9bff;--acfg:#101010;--ok:#5fcf8a;--warn:#e8b04a;--bad:#ff8a80}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
+main{max-width:860px;margin:0 auto;padding:20px 16px 60px}
+h1{font-size:22px;margin:0 0 4px}h2{font-size:15px;margin:0 0 10px}
+p.sub{margin:0 0 18px;color:var(--mut)}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:14px 16px;margin-bottom:14px}
+.drop{border:2px dashed var(--bd);border-radius:10px;padding:26px;text-align:center;color:var(--mut);cursor:pointer}
+.drop.over{border-color:var(--ac);color:var(--fg)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+label{display:block;font-size:13px;color:var(--mut);margin-bottom:3px}
+input,select{width:100%;padding:7px 8px;border:1px solid var(--bd);border-radius:6px;background:var(--bg);color:var(--fg);font:inherit}
+.row{display:flex;gap:8px;align-items:center}.row input[type=checkbox]{width:auto}
+.row label{margin:0;color:var(--fg)}
+button{background:var(--ac);color:var(--acfg);border:0;border-radius:8px;padding:10px 18px;font:inherit;font-weight:600;cursor:pointer}
+button:disabled{opacity:.4;cursor:default}
+.tag{display:inline-block;font-size:12px;border-radius:99px;padding:1px 8px;border:1px solid currentColor;margin-left:6px;vertical-align:1px}
+.ok{color:var(--ok)}.warn{color:var(--warn)}.bad{color:var(--bad)}
+table.k{border-collapse:collapse;width:100%}table.k td{padding:3px 0;vertical-align:top}table.k td:first-child{color:var(--mut);width:42%}
+ul{margin:6px 0 0;padding-left:20px}li{margin:2px 0}
+canvas{width:100%;height:150px;display:block;border:1px solid var(--bd);border-radius:6px;background:var(--bg)}
+small{color:var(--mut)}
+#cvw{position:relative}
+#ph{position:absolute;top:0;bottom:0;width:2px;background:var(--bad);left:0;display:none;pointer-events:none}
+.pl{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.pl button{padding:8px 14px}
+button.sec{background:var(--card);color:var(--fg);border:1px solid var(--bd)}
+.pl input[type=range]{flex:1;min-width:160px;padding:0}
+.pl select{width:auto}
+#tracksUi{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px}
+#tracksUi label{display:flex;gap:5px;align-items:center;color:var(--fg);margin:0}
+#tracksUi input{width:auto}
+#err{color:var(--bad);margin-top:8px;white-space:pre-wrap}
+</style>
+</head>
+<body>
+<main>
+<h1>MGU → MIDI multitrack</h1>
+<p class="sub">Convierte la melodía y los acordes de un .MGU de Band-in-a-Box a un archivo MIDI (formato 1). Todo ocurre en tu navegador; no se sube nada.</p>
+
+<div class="card">
+  <div class="drop" id="drop">Soltá acá el archivo <b>.MGU</b> o hacé clic para elegirlo</div>
+  <input type="file" id="fMgu" accept=".mgu,.MGU,.sgu,.SGU" hidden>
+  <div id="err"></div>
+</div>
+
+<div id="panel" hidden>
+<div class="card">
+  <h2>Qué se leyó del archivo</h2>
+  <table class="k" id="sum"></table>
+</div>
+
+<div class="card">
+  <h2>Archivo de apoyo (opcional) <small>— da la posición exacta de los acordes</small></h2>
+  <input type="file" id="fSup" accept=".mid,.midi,.xml,.musicxml">
+  <small>MIDI o MusicXML exportado por Band-in-a-Box de la <b>misma</b> canción. Se usan sus acordes (posición real), tempo y compás.</small>
+  <div id="supInfo" style="margin-top:6px"></div>
+</div>
+
+<div class="card">
+  <h2>Opciones</h2>
+  <div class="grid">
+    <div><label for="tempo">Tempo (negras/min)</label><input type="number" id="tempo" min="30" max="300"><small id="tempoSrc"></small></div>
+    <div><label for="num">Compás</label>
+      <div class="row"><input type="number" id="num" min="1" max="16" value="4"> <span>/</span>
+      <select id="den"><option>2</option><option selected>4</option><option>8</option></select></div>
+      <small id="tsSrc">Asumido 4/4 (no verificado dónde se guarda en el MGU)</small></div>
+    <div><label for="ppq">Resolución (ticks por negra)</label><select id="ppq"><option value="480" selected>480</option><option value="120">120 (nativa)</option><option value="960">960</option></select></div>
+    <div><label for="prog">Instrumento de la melodía (GM)</label>
+      <select id="prog">
+        <option value="11" selected>Vibráfono (como "Vibes" en BiaB)</option><option value="0">Piano</option><option value="65">Sax alto</option>
+        <option value="66">Sax tenor</option><option value="73">Flauta</option><option value="56">Trompeta</option><option value="26">Guitarra eléctrica (jazz)</option>
+      </select></div>
+    <div><label for="startBar">Compás del 1er acorde</label><input type="number" id="startBar" min="1"><small>Por defecto: compás de la 1ª nota</small></div>
+    <div><label for="maxBar">Último compás (vacío = todos)</label><input type="number" id="maxBar" min="1" placeholder="todos"></div>
+  </div>
+  <div style="margin-top:12px">
+    <label for="chSrc">Posición de los acordes</label>
+    <select id="chSrc"></select>
+  </div>
+  <div class="row" style="margin-top:10px"><input type="checkbox" id="gen"><label for="gen">Agregar pista «Chords (generados)» — acordes en bloque creados por este conversor, <b>no</b> vienen del MGU</label></div>
+</div>
+
+<div class="card">
+  <h2>Vista previa <small id="prevInfo"></small></h2>
+  <div id="cvw"><canvas id="cv" width="1600" height="300"></canvas><div id="ph"></div></div>
+  <small>Clic en la vista previa para saltar a ese punto.</small>
+</div>
+
+<div class="card">
+  <h2>Reproductor <small>— suena lo mismo que se descarga (sintetizador básico del navegador, no es General MIDI)</small></h2>
+  <div class="pl">
+    <button id="bPlay">▶ Reproducir</button>
+    <button id="bPause" class="sec">⏸ Pausa</button>
+    <button id="bStop" class="sec">⏹ Inicio</button>
+    <select id="spd"><option value="0.5">50%</option><option value="0.75">75%</option><option value="1" selected>100%</option></select>
+    <input type="range" id="seek" min="0" max="1" step="0.01" value="0">
+    <span id="tpos" style="min-width:150px;font-variant-numeric:tabular-nums">compás — · 0:00</span>
+  </div>
+  <div id="tracksUi"></div>
+</div>
+
+<div class="card">
+  <button id="dl">Descargar .mid</button> <span id="dlInfo" style="margin-left:8px"></span>
+</div>
+
+<div class="card">
+  <h2>Qué está verificado y qué no</h2>
+  <ul>
+    <li class="ok">Verificado (1 canción, 2 versiones del archivo): notas (altura, inicio, duración, velocidad), 120 ticks/negra, nombres de acordes de la tabla.</li>
+    <li class="ok">Verificado: con archivo de apoyo, los acordes quedan en las posiciones de BiaB.</li>
+    <li class="warn">Experimental: posición de acordes por regla propia (sin archivo de apoyo) — deducida de una sola canción; sólo cubre los acordes de la tabla (76 en la canción de prueba, no toda la grilla).</li>
+    <li class="warn">Sin confirmar: tempo del byte 0x22 (visto en un archivo), compás 4/4, tonalidad.</li>
+    <li class="bad">No incluido: bajo, piano y batería (los genera el estilo .STY, no están en el MGU) y letra.</li>
+  </ul>
+</div>
+</div>
+</main>
+
+<script>
+/* mgu2midi core: parser parcial de .MGU (Band-in-a-Box) + escritor de MIDI (SMF formato 1).
+   Solo lo VERIFICADO contra exports de BiaB de una cancion ("The Way You Look Tonight").
+   Sin dependencias. Se usa en el navegador y en Node (tests). */
+(function (root) {
+  'use strict';
+
+  var SRC_PPQ = 120; // ticks por negra de las notas del MGU (verificado)
+  var ROOTS = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B']; // raiz 1..12 (1 = C)
+  // byte de tipo -> calidad (verificado 76/76 contra el XML de BiaB)
+  var TYPE = { 0x01: '', 0x0e: '', 0x05: '6', 0x06: 'Maj7', 0x13: 'm7', 0x20: 'm7b5', 0x21: 'dim', 0x40: '7', 0x46: '9' };
+  // calidad -> intervalos (semitonos desde la raiz). No viene del MGU: es para generar acordes.
+  var QUAL = {
+    '': [0, 4, 7], 'm': [0, 3, 7], '6': [0, 4, 7, 9], '69': [0, 4, 7, 9, 14], '7': [0, 4, 7, 10],
+    '9': [0, 4, 7, 10, 14], 'm7': [0, 3, 7, 10], 'Maj7': [0, 4, 7, 11], 'dim': [0, 3, 6, 9],
+    'm7b5': [0, 3, 6, 10], '7+': [0, 4, 8, 10], '7b9': [0, 4, 7, 10, 13]
+  };
+  var PC = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+
+  function latin1(u8) { var s = ''; for (var i = 0; i < u8.length; i++) s += String.fromCharCode(u8[i]); return s; }
+
+  /* ---------- MGU ---------- */
+  function parseMGU(u8) {
+    if (u8.length < 0x400) throw new Error('El archivo es demasiado chico para ser un .MGU de Band-in-a-Box.');
+    var dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+    var e = 2; while (e < u8.length && u8[e] !== 0) e++;
+    var title = latin1(u8.subarray(2, e)).replace(/\s+$/, '');
+    var warnings = [];
+
+    // tablas de acordes: runs de triplets (flag in {1,3,7}, valor, 0x00); 1a = tipos, 2a = raices
+    var runs = [], i = 0x20;
+    while (i < 0x400) {
+      var j = i;
+      while (j + 3 <= u8.length && (u8[j] === 1 || u8[j] === 3 || u8[j] === 7) && u8[j + 2] === 0) j += 3;
+      if ((j - i) / 3 >= 20) { runs.push([i, j]); i = j; } else i++;
+    }
+    var table = [];
+    if (runs.length >= 2) {
+      var n = Math.min((runs[0][1] - runs[0][0]) / 3, (runs[1][1] - runs[1][0]) / 3);
+      for (var k = 0; k < n; k++) {
+        table.push({ flag: u8[runs[0][0] + 3 * k], typeByte: u8[runs[0][0] + 3 * k + 1], rootByte: u8[runs[1][0] + 3 * k + 1] });
+      }
+    } else warnings.push('No encontre las tablas de acordes.');
+
+    // notas: registros de 12 bytes  u32 tick | 0x90 pitch vel 0x01 | u32 dur(24 bits)
+    function ok(p) { return p + 12 <= u8.length && u8[p + 4] === 0x90 && u8[p + 5] < 128 && u8[p + 6] < 128 && u8[p + 7] === 1; }
+    var start = -1;
+    for (var s = 0x300; s < u8.length - 100; s++) {
+      var good = true;
+      for (var q = 0; q < 8; q++) if (!ok(s + 12 * q)) { good = false; break; }
+      if (good) { start = s; break; }
+    }
+    var notes = [];
+    if (start >= 0) {
+      for (var p = start; ok(p); p += 12) {
+        notes.push({ tick: dv.getUint32(p, true), pitch: u8[p + 5], vel: Math.max(1, u8[p + 6]), dur: dv.getUint32(p + 8, true) & 0xFFFFFF });
+      }
+    } else warnings.push('No encontre registros de notas.');
+
+    var sty = latin1(u8).match(/[A-Z0-9_]{3,}\.STY/);
+    var t = u8[0x22];
+    return {
+      title: title, style: sty ? sty[0] : null,
+      headerTempo: (t >= 30 && t <= 300) ? t : null,            // byte 0x22 (visto en 1 solo archivo)
+      headerChord: { flag: 3, typeByte: u8[0x20], rootByte: u8[0x21] }, // (visto en 1 solo archivo)
+      table: table, notes: notes, warnings: warnings, startOffset: start
+    };
+  }
+
+  function chordName(typeByte, rootByte) {
+    var q = TYPE[typeByte];
+    var r = ROOTS[(rootByte - 1 + 12) % 12];
+    return q === undefined ? r + '?' : r + q;
+  }
+
+  // Posiciona los acordes de la tabla con reglas inferidas de UNA cancion (experimental).
+  function placeChords(header, table, startBar, bpb) {
+    bpb = bpb || 4;
+    var items = [header].concat(table), start = [(startBar - 1) * bpb];
+    for (var k = 0; k < items.length - 1; k++) {
+      var s = start[k], p = s % bpb, nb = (Math.floor(s / bpb) + 1) * bpb, f = items[k + 1].flag, n;
+      if (f === 3) n = nb; else if (f === 7) n = nb + bpb; else n = (p === 0) ? s + bpb / 2 : nb;
+      start.push(n);
+    }
+    return items.map(function (it, k) { return { beat: start[k], name: chordName(it.typeByte, it.rootByte) }; });
+  }
+
+  function nameToPcs(name) {
+    var m = /^([A-G])([b#]?)(.*?)(?:\/([A-G][b#]?))?$/.exec(name);
+    if (!m) return null;
+    var root = (PC[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0) + 12) % 12;
+    var iv = QUAL[m[3]];
+    return iv ? { root: root, iv: iv } : null;
+  }
+
+  /* ---------- Archivo de apoyo: MIDI exportado por BiaB (marcadores de acordes) ---------- */
+  function vlqRead(d, i) { var v = 0, b; do { b = d[i++]; v = (v << 7) | (b & 0x7f); } while (b & 0x80); return [v, i]; }
+  function parseMidiMarkers(u8) {
+    if (latin1(u8.subarray(0, 4)) !== 'MThd') throw new Error('No es un archivo MIDI.');
+    var dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+    var ntr = dv.getUint16(10), ppq = dv.getUint16(12), i = 14, markers = [], tempo = null, ts = null;
+    for (var t = 0; t < ntr && i + 8 <= u8.length; t++) {
+      var len = dv.getUint32(i + 4), j = i + 8, end = j + len, tick = 0, run = 0;
+      while (j < end) {
+        var r = vlqRead(u8, j); tick += r[0]; j = r[1];
+        var st = u8[j];
+        if (st === 0xff) {
+          var ty = u8[j + 1], r2 = vlqRead(u8, j + 2), l = r2[0], b0 = r2[1];
+          var data = u8.subarray(b0, b0 + l); j = b0 + l;
+          if (ty === 0x06) markers.push({ beat: tick / ppq, name: latin1(data).trim() });
+          else if (ty === 0x51 && tempo === null) tempo = Math.round(6e7 / ((data[0] << 16) | (data[1] << 8) | data[2]));
+          else if (ty === 0x58 && ts === null) ts = [data[0], Math.pow(2, data[1])];
+        } else if (st === 0xf0 || st === 0xf7) { var r3 = vlqRead(u8, j + 1); j = r3[1] + r3[0]; }
+        else {
+          if (st & 0x80) { run = st; j++; }
+          j += ((run & 0xf0) === 0xc0 || (run & 0xf0) === 0xd0) ? 1 : 2;
+        }
+      }
+      i = end;
+    }
+    return { tempo: tempo, timeSig: ts, chords: markers };
+  }
+
+  /* ---------- Archivo de apoyo: MusicXML exportado por BiaB (<harmony>) ---------- */
+  function parseMusicXML(text) {
+    var doc = new DOMParser().parseFromString(text, 'application/xml');
+    if (doc.getElementsByTagName('parsererror').length) throw new Error('XML invalido.');
+    var part = doc.getElementsByTagName('part')[0];
+    if (!part) throw new Error('El XML no tiene <part>.');
+    var chords = [], tempo = null, ts = null, divisions = 120, bpb = 4;
+    var measures = Array.prototype.filter.call(part.childNodes, function (n) { return n.nodeName === 'measure'; });
+    measures.forEach(function (m, idx) {
+      var pos = 0;
+      Array.prototype.forEach.call(m.childNodes, function (el) {
+        var tag = el.nodeName;
+        if (tag === 'attributes') {
+          var dvn = el.getElementsByTagName('divisions')[0]; if (dvn) divisions = +dvn.textContent;
+          var b = el.getElementsByTagName('beats')[0], bt = el.getElementsByTagName('beat-type')[0];
+          if (b && bt) { ts = ts || [+b.textContent, +bt.textContent]; bpb = (+b.textContent) * 4 / (+bt.textContent); }
+        } else if (tag === 'sound') {
+          if (tempo === null && el.getAttribute('tempo')) tempo = Math.round(+el.getAttribute('tempo'));
+        } else if (tag === 'harmony') {
+          var rs = el.getElementsByTagName('root-step')[0], ra = el.getElementsByTagName('root-alter')[0], kd = el.getElementsByTagName('kind')[0];
+          var al = ra ? +ra.textContent : 0;
+          var q = kd && kd.getAttribute('text');
+          if (q === null || q === undefined) q = (kd && kd.textContent === 'major') ? '' : (kd ? kd.textContent : '');
+          chords.push({ beat: idx * bpb + pos / divisions, name: rs.textContent + (al === 1 ? '#' : al === -1 ? 'b' : '') + q });
+        } else if (tag === 'forward') {
+          pos += +el.getElementsByTagName('duration')[0].textContent;
+        } else if (tag === 'backup') {
+          pos -= +el.getElementsByTagName('duration')[0].textContent;
+        } else if (tag === 'note' && !el.getElementsByTagName('chord').length) {
+          var du = el.getElementsByTagName('duration')[0]; if (du) pos += +du.textContent;
+        }
+      });
+    });
+    return { tempo: tempo, timeSig: ts, chords: chords };
+  }
+
+  /* ---------- Escritor SMF ---------- */
+  function vlq(n) { var b = [n & 0x7f]; while ((n >>= 7) > 0) b.unshift((n & 0x7f) | 0x80); return b; }
+  function strBytes(s) {
+    if (typeof TextEncoder !== 'undefined') return Array.prototype.slice.call(new TextEncoder().encode(s));
+    var o = []; for (var i = 0; i < s.length; i++) o.push(s.charCodeAt(i) & 0xff); return o;
+  }
+  function metaText(type, s) { var b = strBytes(s); return [0xff, type].concat(vlq(b.length), b); }
+  function u32(n) { return [(n >>> 24) & 255, (n >>> 16) & 255, (n >>> 8) & 255, n & 255]; }
+  function u16(n) { return [(n >> 8) & 255, n & 255]; }
+  function trackBytes(ev) {
+    ev.sort(function (a, b) { return a.t - b.t || a.o - b.o; });
+    var out = [], last = 0;
+    ev.forEach(function (e) { out = out.concat(vlq(e.t - last), e.d); last = e.t; });
+    out = out.concat(vlq(0), [0xff, 0x2f, 0x00]);
+    return [0x4d, 0x54, 0x72, 0x6b].concat(u32(out.length), out);
+  }
+
+  /* o: {title, tempo, num, den, ppq, notes[{tick,pitch,vel,dur}], program, chords[{beat,name}]|null,
+         genChords:bool, maxBar:number|null} */
+  function buildSMF(o) {
+    var scale = o.ppq / SRC_PPQ, bpb = o.num * 4 / o.den;
+    var bar = function (beat) { return Math.floor(beat / bpb) + 1; };
+
+    // --- pista 0: conductor
+    var c = [];
+    c.push({ t: 0, o: 0, d: metaText(0x03, o.title || 'MGU') });
+    c.push({ t: 0, o: 0, d: [0xff, 0x58, 0x04, o.num, Math.round(Math.log(o.den) / Math.LN2), 24, 8] });
+    var mpq = Math.round(6e7 / o.tempo);
+    c.push({ t: 0, o: 0, d: [0xff, 0x51, 0x03, (mpq >> 16) & 255, (mpq >> 8) & 255, mpq & 255] });
+    var chords = (o.chords || []).filter(function (x) { return !o.maxBar || bar(x.beat) <= o.maxBar; });
+    chords.forEach(function (x) { c.push({ t: Math.round(x.beat * o.ppq), o: 3, d: metaText(0x06, x.name) }); });
+
+    // --- pista 1: melodia
+    var m = [{ t: 0, o: 0, d: metaText(0x03, 'Melody') }, { t: 0, o: 0, d: [0xc0, o.program & 127] }];
+    var lastOff = {}, pending = {}, kept = 0;
+    o.notes.slice().sort(function (a, b) { return a.tick - b.tick || a.pitch - b.pitch; }).forEach(function (n) {
+      var beat = n.tick / SRC_PPQ;
+      if (o.maxBar && bar(beat) > o.maxBar) return;
+      var on = Math.round(n.tick * scale), off = Math.max(on + 1, Math.round((n.tick + n.dur) * scale));
+      var prev = pending[n.pitch];
+      if (prev && prev.off > on) prev.ev.t = Math.max(prev.on + 1, on); // recorta solapes del mismo pitch
+      var offEv = { t: off, o: 1, d: [0x80, n.pitch, 0] };
+      m.push({ t: on, o: 2, d: [0x90, n.pitch, n.vel] }); m.push(offEv);
+      pending[n.pitch] = { on: on, off: off, ev: offEv }; kept++;
+    });
+
+    var tracks = [c, m], nChordNotes = 0;
+    // --- pista 2: acordes generados (NO estan en el MGU)
+    if (o.genChords && chords.length) {
+      var g = [{ t: 0, o: 0, d: metaText(0x03, 'Chords (generados)') }, { t: 0, o: 0, d: [0xc1, 0] }];
+      chords.forEach(function (x, k) {
+        var pcs = nameToPcs(x.name); if (!pcs) return;
+        var nextBeat = k + 1 < chords.length ? chords[k + 1].beat : x.beat + bpb;
+        var on = Math.round(x.beat * o.ppq), off = Math.round(nextBeat * o.ppq);
+        pcs.iv.forEach(function (iv) {
+          var p = 48 + pcs.root + iv; if (p > 127) return;
+          g.push({ t: on, o: 2, d: [0x91, p, 64] }); g.push({ t: off, o: 1, d: [0x81, p, 0] }); nChordNotes++;
+        });
+      });
+      tracks.push(g);
+    }
+
+    var bytes = [0x4d, 0x54, 0x68, 0x64].concat(u32(6), u16(1), u16(tracks.length), u16(o.ppq));
+    tracks.forEach(function (t) { bytes = bytes.concat(trackBytes(t)); });
+    return { bytes: new Uint8Array(bytes), melodyNotes: kept, chordMarkers: chords.length, chordNotes: nChordNotes, tracks: tracks.length };
+  }
+
+  var api = {
+    SRC_PPQ: SRC_PPQ, ROOTS: ROOTS, TYPE: TYPE, parseMGU: parseMGU, chordName: chordName, placeChords: placeChords,
+    nameToPcs: nameToPcs, parseMidiMarkers: parseMidiMarkers, parseMusicXML: parseMusicXML, buildSMF: buildSMF
+  };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.MGU2MIDI = api;
+})(typeof self !== 'undefined' ? self : this);
+
+</script>
+<script>
+(function () {
+  var M = window.MGU2MIDI, $ = function (id) { return document.getElementById(id); };
+  var S = { mgu: null, sup: null, name: '' };
+
+  function err(m) { $('err').textContent = m || ''; }
+  function esc(s) { return String(s).replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; }); }
+
+  // --- carga MGU
+  var drop = $('drop'), fMgu = $('fMgu');
+  drop.onclick = function () { fMgu.click(); };
+  ['dragover', 'dragenter'].forEach(function (e) { drop.addEventListener(e, function (ev) { ev.preventDefault(); drop.classList.add('over'); }); });
+  ['dragleave', 'drop'].forEach(function (e) { drop.addEventListener(e, function () { drop.classList.remove('over'); }); });
+  drop.addEventListener('drop', function (ev) { ev.preventDefault(); if (ev.dataTransfer.files[0]) loadMgu(ev.dataTransfer.files[0]); });
+  fMgu.onchange = function () { if (fMgu.files[0]) loadMgu(fMgu.files[0]); };
+
+  function readBuf(f, cb) { var r = new FileReader(); r.onload = function () { cb(new Uint8Array(r.result)); }; r.readAsArrayBuffer(f); }
+
+  function loadMgu(f) {
+    err('');
+    readBuf(f, function (u8) {
+      try {
+        var g = M.parseMGU(u8);
+        if (!g.notes.length && !g.table.length) throw new Error('No se reconoció contenido en este archivo (¿es un .MGU de Band-in-a-Box?).');
+        S.mgu = g; S.name = f.name; S.sup = null; $('fSup').value = ''; $('supInfo').innerHTML = '';
+        init();
+      } catch (e) { err(e.message); $('panel').hidden = true; }
+    });
+  }
+
+  function barOf(tick) { return Math.floor(tick / M.SRC_PPQ / bpb()) + 1; }
+  function bpb() { return (+$('num').value || 4) * 4 / (+$('den').value || 4); }
+
+  function init() {
+    var g = S.mgu;
+    $('panel').hidden = false;
+    $('tempo').value = g.headerTempo || 120;
+    $('tempoSrc').textContent = g.headerTempo ? 'del byte 0x22 del MGU (sin confirmar)' : 'no encontrado en el MGU: valor por defecto';
+    $('startBar').value = g.notes.length ? barOf(g.notes[0].tick) : 1;
+    $('maxBar').value = ''; $('num').value = 4; $('den').value = '4';
+    $('tsSrc').textContent = 'Asumido 4/4 (no verificado dónde se guarda en el MGU)';
+    $('gen').checked = false;
+    fillChSrc();
+    playerStop(); P.pos = g.notes.length ? Math.floor(g.notes[0].tick / M.SRC_PPQ / 4) * 4 * 60 / (+$('tempo').value) : 0;
+    summary(); refresh();
+  }
+
+  function fillChSrc() {
+    var s = $('chSrc'), keep = s.value; s.innerHTML = '';
+    function add(v, t) { var o = document.createElement('option'); o.value = v; o.textContent = t; s.appendChild(o); }
+    if (S.sup && S.sup.chords.length) add('sup', 'Del archivo de apoyo (exacto, ' + S.sup.chords.length + ' acordes)');
+    if (S.mgu.table.length) add('rule', 'Regla experimental sobre la tabla del MGU (' + (S.mgu.table.length + 1) + ' acordes) — sin confirmar');
+    add('none', 'Sin acordes');
+    s.value = (keep && Array.prototype.some.call(s.options, function (o) { return o.value === keep; })) ? keep : s.options[0].value;
+    if (!S.sup && s.value === 'rule') s.value = 'none'; // la regla experimental no se activa sola
+  }
+
+  function summary() {
+    var g = S.mgu, n = g.notes, last = n.length ? n[n.length - 1] : null;
+    var lo = n.length ? Math.min.apply(null, n.map(function (x) { return x.pitch; })) : 0, hi = n.length ? Math.max.apply(null, n.map(function (x) { return x.pitch; })) : 0;
+    var rows = [
+      ['Archivo', esc(S.name)], ['Título', esc(g.title)], ['Estilo (.STY)', esc(g.style || '—')],
+      ['Notas de melodía', n.length + (n.length ? ' · compases ' + barOf(n[0].tick) + '–' + barOf(last.tick + last.dur) + ' · rango MIDI ' + lo + '–' + hi : '')],
+      ['Acordes en la tabla', g.table.length ? (g.table.length + 1) + ' (con el inicial)' : '—']
+    ];
+    if (g.warnings.length) rows.push(['Avisos', '<span class="warn">' + esc(g.warnings.join(' ')) + '</span>']);
+    $('sum').innerHTML = rows.map(function (r) { return '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td></tr>'; }).join('');
+  }
+
+  // --- archivo de apoyo
+  $('fSup').onchange = function () {
+    var f = $('fSup').files[0]; if (!f) { S.sup = null; fillChSrc(); refresh(); return; }
+    readBuf(f, function (u8) {
+      try {
+        var isMidi = String.fromCharCode(u8[0], u8[1], u8[2], u8[3]) === 'MThd', sup;
+        if (isMidi) sup = M.parseMidiMarkers(u8);
+        else { var t = new TextDecoder('utf-8').decode(u8); sup = M.parseMusicXML(t); }
+        if (!sup.chords.length) throw new Error('No encontré acordes en ese archivo.');
+        S.sup = sup; err('');
+        $('supInfo').innerHTML = '<span class="ok">' + sup.chords.length + ' acordes' + (sup.tempo ? ' · tempo ' + sup.tempo : '') + (sup.timeSig ? ' · compás ' + sup.timeSig.join('/') : '') + '</span>';
+        if (sup.tempo) { $('tempo').value = sup.tempo; $('tempoSrc').textContent = 'del archivo de apoyo'; }
+        if (sup.timeSig) { $('num').value = sup.timeSig[0]; $('den').value = String(sup.timeSig[1]); $('tsSrc').textContent = 'del archivo de apoyo'; }
+        fillChSrc(); $('chSrc').value = 'sup'; refresh();
+      } catch (e) { S.sup = null; $('supInfo').innerHTML = '<span class="bad">' + esc(e.message) + '</span>'; fillChSrc(); refresh(); }
+    });
+  };
+
+  // --- construir
+  function opts() {
+    var src = $('chSrc').value, chords = null, sb = Math.max(1, +$('startBar').value || 1);
+    if (src === 'sup' && S.sup) chords = S.sup.chords;
+    else if (src === 'rule') chords = M.placeChords(S.mgu.headerChord, S.mgu.table, sb, bpb());
+    var mb = +$('maxBar').value;
+    return {
+      title: S.mgu.title, tempo: Math.min(300, Math.max(30, +$('tempo').value || 120)), num: +$('num').value || 4, den: +$('den').value || 4,
+      ppq: +$('ppq').value, notes: S.mgu.notes, program: +$('prog').value, chords: chords, genChords: $('gen').checked && !!chords,
+      maxBar: mb > 0 ? mb : null
+    };
+  }
+  function build() { return M.buildSMF(opts()); }
+
+  ['tempo', 'num', 'den', 'ppq', 'prog', 'startBar', 'maxBar', 'chSrc', 'gen'].forEach(function (id) { $(id).addEventListener('input', refresh); $(id).addEventListener('change', refresh); });
+
+  function refresh() {
+    if (!S.mgu) return;
+    var o = opts(), r = build();
+    $('gen').disabled = !o.chords;
+    $('dlInfo').innerHTML = '<small>' + r.tracks + ' pistas · ' + r.melodyNotes + ' notas' + (r.chordMarkers ? ' · ' + r.chordMarkers + ' acordes' : '') + (r.chordNotes ? ' · ' + r.chordNotes + ' notas de acordes generados' : '') + ' · ' + r.bytes.length + ' bytes</small>';
+    preview(o);
+    playerLoad(r.bytes, o.tempo);
+  }
+
+  $('dl').onclick = function () {
+    var r = build(), name = (S.mgu.title || 'cancion').replace(/[^\w\-. ()]+/g, '_').trim() + '.mid';
+    var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([r.bytes], { type: 'audio/midi' }));
+    a.download = name; document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  };
+
+
+  // --- lector SMF mínimo (para reproducir exactamente los bytes que se descargan)
+  function smfNotes(u8) {
+    var dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength), ntr = dv.getUint16(10), ppq = dv.getUint16(12), i = 14, out = [];
+    function vl(j) { var v = 0, b; do { b = u8[j++]; v = (v << 7) | (b & 127); } while (b & 128); return [v, j]; }
+    for (var t = 0; t < ntr; t++) {
+      var len = dv.getUint32(i + 4), j = i + 8, end = j + len, tick = 0, run = 0, tr = { name: 'Pista ' + t, notes: [] }, open = {};
+      while (j < end) {
+        var r = vl(j); tick += r[0]; j = r[1];
+        var st = u8[j];
+        if (st === 0xff) {
+          var ty = u8[j + 1], r2 = vl(j + 2); if (ty === 3) { var s = ''; for (var k = 0; k < r2[0]; k++) s += String.fromCharCode(u8[r2[1] + k]); try { s = decodeURIComponent(escape(s)); } catch (e) {} tr.name = s; }
+          j = r2[1] + r2[0];
+        } else if (st === 0xf0 || st === 0xf7) { var r3 = vl(j + 1); j = r3[1] + r3[0]; }
+        else {
+          if (st & 128) { run = st; j++; }
+          var hi = run & 0xf0, a = u8[j], b2 = u8[j + 1];
+          j += (hi === 0xc0 || hi === 0xd0) ? 1 : 2;
+          if (hi === 0x90 && b2 > 0) { open[a] = [tick, b2]; }
+          else if (hi === 0x80 || (hi === 0x90 && b2 === 0)) { var o = open[a]; if (o) { tr.notes.push({ on: o[0], off: tick, pitch: a, vel: o[1] }); delete open[a]; } }
+        }
+      }
+      if (tr.notes.length) out.push(tr);
+      i = end;
+    }
+    return { ppq: ppq, tracks: out };
+  }
+
+  // --- reproductor básico (WebAudio)
+  var P = { ctx: null, out: null, notes: [], tracks: [], dur: 0, pos: 0, playing: false, from: 0, base: 0, idx: 0, timer: 0, raf: 0, speed: 1, tempo: 120, mute: {}, scheduled: 0, view: null };
+  function secOf(tick, ppq) { return tick / ppq * 60 / P.tempo; }
+  function playerLoad(bytes, tempo) {
+    playerStop(false);
+    var s = smfNotes(bytes); P.tempo = tempo; P.tracks = s.tracks.map(function (t) { return t.name; });
+    P.notes = [];
+    s.tracks.forEach(function (t, ti) { t.notes.forEach(function (n) { P.notes.push({ on: secOf(n.on, s.ppq), off: secOf(n.off, s.ppq), pitch: n.pitch, vel: n.vel, tr: ti }); }); });
+    P.notes.sort(function (a, b) { return a.on - b.on; });
+    P.dur = P.notes.reduce(function (m, n) { return Math.max(m, n.off); }, 0);
+    P.pos = Math.min(P.pos, P.dur);
+    var seek = $('seek'); seek.max = P.dur.toFixed(2); seek.value = P.pos;
+    var ui = $('tracksUi'), prev = P.mute; P.mute = {}; ui.innerHTML = '';
+    P.tracks.forEach(function (nm, ti) {
+      var l = document.createElement('label'), c = document.createElement('input'); c.type = 'checkbox'; c.checked = !prev[nm]; P.mute[nm] = !c.checked;
+      c.onchange = function () { P.mute[nm] = !c.checked; };
+      l.appendChild(c); l.appendChild(document.createTextNode(nm)); ui.appendChild(l);
+    });
+    showPos();
+  }
+  function curPos() { return P.playing ? Math.min(P.dur, P.from + (P.ctx.currentTime - P.base) * P.speed) : P.pos; }
+  function fmt(s) { s = Math.max(0, Math.floor(s)); return Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2); }
+  function showPos() {
+    var p = curPos(), beat = p * P.tempo / 60, b = bpb();
+    $('tpos').textContent = 'compás ' + (Math.floor(beat / b) + 1) + ' · ' + fmt(p) + ' / ' + fmt(P.dur);
+    if (document.activeElement !== $('seek')) $('seek').value = p;
+    var ph = $('ph'), v = P.view;
+    if (v && beat >= v.t0 && beat < v.t0 + v.span) { ph.style.display = 'block'; ph.style.left = ((beat - v.t0) / v.span * 100) + '%'; } else ph.style.display = 'none';
+  }
+  function voice(n, when, dur) {
+    var c = P.ctx, f = 440 * Math.pow(2, (n.pitch - 69) / 12), mel = n.tr === 0 || /melod/i.test(P.tracks[n.tr]);
+    var g = c.createGain(), peak = (mel ? 0.30 : 0.07) * n.vel / 127, end = when + Math.max(dur, 0.06);
+    g.gain.setValueAtTime(0, when); g.gain.linearRampToValueAtTime(peak, when + 0.008);
+    g.gain.exponentialRampToValueAtTime(peak * (mel ? 0.25 : 0.6), end); g.gain.linearRampToValueAtTime(0, end + 0.12);
+    g.connect(P.out);
+    var o = c.createOscillator(); o.type = mel ? 'sine' : 'triangle'; o.frequency.value = f; o.connect(g); o.start(when); o.stop(end + 0.15);
+    if (mel) { var h = c.createOscillator(), hg = c.createGain(); h.type = 'sine'; h.frequency.value = f * 4; hg.gain.value = 0.12; h.connect(hg); hg.connect(g); h.start(when); h.stop(end + 0.15); }
+    P.scheduled++;
+  }
+  function pump() {
+    var now = P.ctx.currentTime, cp = P.from + (now - P.base) * P.speed, ahead = cp + 0.25 * P.speed;
+    while (P.idx < P.notes.length && P.notes[P.idx].on < ahead) {
+      var n = P.notes[P.idx++], nm = P.tracks[n.tr];
+      if (P.mute[nm]) continue;
+      var when = P.base + (n.on - P.from) / P.speed;
+      if (when < now) { if (when + (n.off - n.on) / P.speed < now) continue; when = now; }
+      voice(n, when, (n.off - n.on) / P.speed);
+    }
+    if (cp >= P.dur + 0.3) { P.pos = 0; playerStop(true); }
+  }
+  function tick() { if (!P.playing) return; showPos(); P.raf = requestAnimationFrame(tick); }
+  function playerPlay() {
+    if (!P.notes.length) return;
+    if (P.playing) return;
+    var AC = window.AudioContext || window.webkitAudioContext; if (!AC) { err('Este navegador no soporta WebAudio.'); return; }
+    if (!P.ctx) { P.ctx = new AC(); P.comp = P.ctx.createDynamicsCompressor(); P.comp.connect(P.ctx.destination); }
+    if (P.ctx.state === 'suspended') P.ctx.resume();
+    P.out = P.ctx.createGain(); P.out.gain.value = 0.8; P.out.connect(P.comp);
+    P.speed = +$('spd').value || 1; if (P.pos >= P.dur) P.pos = 0;
+    P.from = P.pos; P.base = P.ctx.currentTime + 0.05; P.idx = 0;
+    while (P.idx < P.notes.length && P.notes[P.idx].off <= P.from) P.idx++;
+    P.playing = true; P.timer = setInterval(pump, 25); tick();
+  }
+  function playerStop(keepPos) {
+    if (P.playing) { P.pos = curPos(); }
+    P.playing = false; clearInterval(P.timer); cancelAnimationFrame(P.raf);
+    if (P.out) { var o = P.out; o.gain.setTargetAtTime(0, P.ctx.currentTime, 0.015); setTimeout(function () { try { o.disconnect(); } catch (e) {} }, 400); P.out = null; }
+    if (keepPos === false) { /* recarga: conserva posición */ }
+    showPos();
+  }
+  function seekTo(sec) { var was = P.playing; if (was) playerStop(); P.pos = Math.max(0, Math.min(P.dur, sec)); showPos(); if (was) playerPlay(); }
+  $('bPlay').onclick = playerPlay;
+  $('bPause').onclick = function () { playerStop(); };
+  $('bStop').onclick = function () { var was = P.playing; playerStop(); P.pos = 0; showPos(); };
+  $('seek').addEventListener('input', function () { seekTo(+$('seek').value); });
+  $('spd').onchange = function () { seekTo(curPos()); };
+  $('cv').addEventListener('click', function (e) {
+    if (!P.view) return; var r = this.getBoundingClientRect(), beat = P.view.t0 + (e.clientX - r.left) / r.width * P.view.span;
+    seekTo(beat * 60 / P.tempo);
+  });
+
+  // --- piano roll (primeros 64 compases)
+  function preview(o) {
+    var cv = $('cv'), x = cv.getContext('2d'), W = cv.width, H = cv.height, b = bpb();
+    var css = getComputedStyle(document.body);
+    x.clearRect(0, 0, W, H);
+    var ns = o.notes.filter(function (n) { return !o.maxBar || barOf(n.tick) <= o.maxBar; });
+    if (!ns.length) { $('prevInfo').textContent = ''; return; }
+    var t0 = Math.floor(ns[0].tick / M.SRC_PPQ / b) * b, span = 64 * b; P.view = { t0: t0, span: span };
+    var vis = ns.filter(function (n) { return n.tick / M.SRC_PPQ < t0 + span; });
+    var lo = Math.min.apply(null, vis.map(function (n) { return n.pitch; })) - 1, hi = Math.max.apply(null, vis.map(function (n) { return n.pitch; })) + 1;
+    x.strokeStyle = css.getPropertyValue('--bd'); x.lineWidth = 1;
+    for (var k = 0; k <= 64; k += 4) { var gx = k * b / span * W; x.beginPath(); x.moveTo(gx, 0); x.lineTo(gx, H); x.stroke(); }
+    x.fillStyle = css.getPropertyValue('--ac');
+    vis.forEach(function (n) {
+      var bx = (n.tick / M.SRC_PPQ - t0) / span * W, bw = Math.max(2, n.dur / M.SRC_PPQ / span * W);
+      var by = H - (n.pitch - lo + 1) / (hi - lo + 1) * H; x.fillRect(bx, by, bw, Math.max(3, H / (hi - lo + 1) - 1));
+    });
+    if (o.chords) {
+      x.fillStyle = css.getPropertyValue('--mut'); x.font = '14px system-ui';
+      o.chords.forEach(function (c) { if (c.beat >= t0 && c.beat < t0 + span) x.fillText(c.name, (c.beat - t0) / span * W + 2, 14); });
+    }
+    $('prevInfo').textContent = '— compases ' + (Math.floor(t0 / b) + 1) + ' a ' + (Math.floor(t0 / b) + 64);
+  }
+  if (window.matchMedia) window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change', function () { if (S.mgu) refresh(); });
+  window.__S = S; window.__P = P; window.__pump = pump; // para pruebas
+})();
+</script>
+</body>
+</html>
