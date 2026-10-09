@@ -13801,6 +13801,12 @@ function runAnalysis() {
       meyer:     { name: "Meyer",        long: "Esquema Meyer (bajo 1–2–7–1)",               len: 4, w: 14, onI: true,  group: "schema" },
       doremi:    { name: "Do-Re-Mi",     long: "Esquema Do-Re-Mi (soprano 1–2–3)",           len: 3, w: 14, onI: true,  group: "schema" },
       solfami:   { name: "Sol-Fa-Mi",    long: "Esquema Sol-Fa-Mi (soprano 5–4–4–3)",        len: 4, w: 14, onI: true,  group: "schema" },
+      aprile:    { name: "Aprile",       long: "Esquema Aprile (soprano 1–7–2–1, bajo 1–2–7–1)", len: 4, w: 8, onI: true,  group: "schema" },
+      jupiter:   { name: "Jupiter",      long: "Esquema Jupiter (soprano 1–2–4–3, bajo 1–7–5–1)", len: 4, w: 8, onI: true,  group: "schema" },
+      pastorella:{ name: "Pastorella",   long: "Esquema Pastorella (soprano 3–2–4–3, bajo 1–5–5–1)", len: 4, w: 8, onI: true, group: "schema" },
+      fenaroli:  { name: "Fenaroli",     long: "Esquema Fenaroli (soprano 4–3–7–1, bajo 7–1–2–3)", len: 4, w: 8, onI: false, group: "schema" },
+      ponte:     { name: "Ponte",        long: "Esquema Ponte (soprano 5–7–2, pedal de dominante)", len: 3, w: 8, onI: false, group: "schema" },
+      passo:     { name: "Passo Indietro", long: "Esquema Passo Indietro (soprano 7–1, bajo 4–3)", len: 2, w: 8, onI: false, group: "schema" },
       cadS:      { name: "Cad. simple",  long: "Cadencia simple (V–I)",                      len: 2, w: 8,  onI: false, group: "cad", cad: true, finalW: 45 },
       cadC:      { name: "Cad. compuesta", long: "Cadencia compuesta (V6/4 o V5/4 → V → I)", len: 3, w: 8,  onI: false, group: "cad", cad: true, finalW: 35 },
       cadD:      { name: "Cad. doble",   long: "Cadencia doble (V → V6/4 → V5/4 → V → I)",   len: 5, w: 6,  onI: false, group: "cad", cad: true, finalW: 20 }
@@ -13893,6 +13899,19 @@ function runAnalysis() {
       }
       if(type === "solfami")     // bajo 1-2-7-1, soprano 5-4-4-3, cifras 5-5-6/5-5 (I, ii, V6/5, I)
         it = [X(0, "5/3", { sop: 4, near: 1 }), X(1, "5/3", { sop: 3, near: 1 }), X(6, "6/5/3", { sop: 3, near: 1 }), X(0, "5/3", { sop: 2, near: 1 })];
+      // Esquemas agregados 2026-10-09 (tablas de Gotham, Open Music Theory "Galant Schemas – Summary", y Gjerdingen, Apéndice A; solo los diatónicos).
+      if(type === "aprile")      // soprano 1-7-2-1, bajo 1-2-7-1, cifras 5, 6/4/3, 6/5, 5 (I, V4/3, V6/5, I) — la forma del Meyer con otro soprano
+        it = [X(0, "5/3", { sop: 0, near: 1 }), X(1, "6/4/3", { sop: 6, near: 1 }), X(6, "6/5/3", { sop: 1, near: 1 }), X(0, "5/3", { sop: 0, near: 1 })];
+      if(type === "jupiter")     // soprano 1-2-4-3, bajo 1-7-5-1, cifras 5, 6, 5, 5 (I, V6, V, I); el fa (4º) del soprano pide el V con 7ª
+        it = [X(0, "5/3", { sop: 0, near: 1 }), X(6, "6/3", { sop: 1, near: 1 }), X(4, "7", { sop: 3, near: 1 }), X(0, "5/3", { sop: 2, near: 1 })];
+      if(type === "pastorella")  // soprano 3-2-4-3, bajo 1-5-5-1, cifras 5, 5, 7, 5 (I, V, V7, I): el ⑤ se sostiene en los acordes 2 y 3
+        it = [X(0, "5/3", { sop: 2, near: 1 }), X(4, "5/3", { sop: 1, near: 1 }), X(4, "7", { sop: 3, hold: 1 }), X(0, "5/3", { sop: 2, near: 1 })];
+      if(type === "fenaroli")    // bajo 7-1-2-3, soprano 4-3-7-1, cifras de Gjerdingen 6/5, 5, 6, 6 (V6/5, I, vii°6, I6)
+        it = [X(6, "6/5/3", { sop: 3, near: 1 }), X(0, "5/3", { sop: 2, near: 1 }), X(1, "6/3", { sop: 6, near: 1 }), X(2, "6/3", { sop: 0, near: 1 })];
+      if(type === "ponte")       // pedal de dominante, soprano 5-7-2, cifras 5, 7, 7 (V, V7, V7)
+        it = [X(4, "5/3", { sop: 4, near: 1 }), X(4, "7", { sop: 6, hold: 1 }), X(4, "7", { sop: 1, hold: 1 })];
+      if(type === "passo")       // bajo 4-3, soprano 7-1, cifras 6/4/2, 6 (V4/2 → I6): los dos primeros pasos de un Prinner
+        it = [X(3, "4/2", { sop: 6, near: 1 }), X(2, "6/3", { sop: 0, near: 1 })];
       // Cadencias (bajo ① – ⑤ – ①). Simple: ⑤ un acorde. Compuesta: ⑤ dos acordes (6/4 o 5/4, luego 5/3). Doble: ⑤ cuatro acordes (5/3 o 7, 6/4, 5/4, 5/3 o 7).
       if(type === "cadS") it = [X(4, Math.random() < 0.5 ? "7" : "5/3"), X(0, "5/3")];
       if(type === "cadC"){
@@ -14232,6 +14251,25 @@ function runAnalysis() {
       var isMin = (mode === "minor");
       if(CTP) CTP.minor = isMin;
       function myPick(role, maxLen, finalOnly){ var pl = myPool(role, isMin, maxLen, finalOnly); return pl.length ? pl[rnd(pl.length)] : null; }
+      // Sliders de grupo (opts.groups = { cad: p|null, sch: p|null }, p en 0–1; null = slider apagado → el sorteo de siempre, sin cambios).
+      // Por cada celda del CUERPO: con prob. cad sale una cadencia; si no, con prob. sch un esquema galante; si no, una celda de las demás.
+      // 0 = ninguna de ese grupo en el cuerpo, 1 = solo de ese grupo (si los dos están en 100%, gana Cadencias). La cadencia final de la canción no cambia.
+      // Dentro de un grupo se respetan las casillas tildadas; si no hay ninguna tildada en ese grupo, entran todas las de ese grupo (con RofO: solo las que RofO permite).
+      var grp = opts.groups || {}, grpOn = (grp.cad != null || grp.sch != null);
+      function groupCells(g){
+        var l = allowed.filter(function(t){ return CELLS[t].group === g; });
+        if(!l.length && !rofo) l = Object.keys(CELLS).filter(function(t){ return CELLS[t].group === g; });
+        return l;
+      }
+      function bodyPool(){
+        if(!grpOn) return allowed;
+        var gc = grp.cad != null ? groupCells("cad") : [], gs = grp.sch != null ? groupCells("schema") : [];
+        if(gc.length && Math.random() < grp.cad) return gc;
+        if(gs.length && Math.random() < grp.sch) return gs;
+        var rest = allowed.filter(function(t){ return !(grp.cad != null && CELLS[t].group === "cad") && !(grp.sch != null && CELLS[t].group === "schema"); });
+        if(!rest.length) rest = Object.keys(CELLS).filter(function(t){ return CELLS[t].group === "base" && (!rofo || t === "up" || t === "down"); });
+        return rest.length ? rest : allowed;
+      }
       var stats = { fbParallel: 0, fbLT: 0, fbCover: 0, fbSop: 0, cells: [], rofoSteps: 0, rofoVar: 0, myCells: 0 };
       var finalType, finalLen, finalMy, items, bodyN, lastType, guard, fin, lastIt, attempt = 0;
       do {                                                      // con MyCadences, si la unión se comió acordes y la canción queda más corta que N, se rearma (hasta 8 veces)
@@ -14240,7 +14278,7 @@ function runAnalysis() {
         if(my && Math.random() < my.p){ finalMy = myPick("c", N, true); if(finalMy){ finalType = "my"; finalLen = finalMy[5].length; } }
         items = []; bodyN = Math.max(0, N - finalLen); lastType = null; guard = 0;
         while(items.length < bodyN && guard++ < 400){
-          var type = pickCell(lastType, allowed, bodyN - items.length, items.length === 0), cell = null;
+          var type = pickCell(lastType, bodyPool(), bodyN - items.length, items.length === 0), cell = null;
           if(my && Math.random() < my.p){
             var mu = myPick(items.length === 0 ? "o" : (CELLS[type].cad ? "c" : "b"), bodyN - items.length, false);
             if(mu){ cell = myCell(mu); type = "my"; stats.myCells++; }
@@ -14499,7 +14537,13 @@ function runAnalysis() {
       prinner:   "Prinner: bajo 4–3–2–1, soprano 6–5–4–3, cifras 5 / 6 / 7–6 / 5 → IV · I6 · ii7 → vii°6 (bajo sostenido) · I.",
       meyer:     "Meyer: bajo 1–2–7–1, soprano 1–7–4–3, cifras 5/3, 4/3, 6/5, 5/3 → I · V4/3 · V6/5 · I.",
       doremi:    "Do-Re-Mi: soprano 1–2–3, bajo 1–7–1 (o 1–5–1) → I · V6 (o V) · I.",
-      solfami:   "Sol-Fa-Mi: bajo 1–2–7–1, soprano 5–4–4–3, cifras 5–5–6/5–5 → I · ii · V6/5 · I."
+      solfami:   "Sol-Fa-Mi: bajo 1–2–7–1, soprano 5–4–4–3, cifras 5–5–6/5–5 → I · ii · V6/5 · I.",
+      aprile:    "Aprile: bajo 1–2–7–1, soprano 1–7–2–1, cifras 5, 6/4/3, 6/5, 5 → I · V4/3 · V6/5 · I (la forma del Meyer con otro soprano).",
+      jupiter:   "Jupiter: bajo 1–7–5–1, soprano 1–2–4–3 → I · V6 · V7 · I (el 4º grado del soprano pide la 7ª del V).",
+      pastorella:"Pastorella: bajo 1–5–5–1, soprano 3–2–4–3 → I · V · V7 · I (el ⑤ se sostiene).",
+      fenaroli:  "Fenaroli: bajo 7–1–2–3, soprano 4–3–7–1, cifras 6/5, 5, 6, 6 (Gjerdingen) → V6/5 · I · vii°6 · I6. Termina sin cerrar.",
+      ponte:     "Ponte: pedal de ⑤, soprano 5–7–2 → V · V7 · V7. Un puente sobre la dominante: termina en V.",
+      passo:     "Passo Indietro: bajo 4–3, soprano 7–1, cifras 6/4/2, 6 → V4/2 · I6 (los dos primeros pasos de un Prinner)."
     };
     var CAD_TIP = {
       cadS: "Cadencia simple: bajo ①–⑤–①, el ⑤ dura 1 acorde (V o V7) → I.",
@@ -14542,6 +14586,24 @@ function runAnalysis() {
       b.appendChild(group("Celdas de bajo", "Regla de la octava, quintas descendentes e I–IV–V–I. Sin tildar nada en ningún grupo = todas las celdas.", "cell", rowsOf("base")));
       b.appendChild(group("Esquemas galantes", "Esquemas de Gjerdingen/Riepel con bajo y soprano fijos. Fonte, Monte, Quiescenza, Indugio, Fenaroli y Ponte no están: necesitan cromatismo o cifras que no pude verificar.", "cell", rowsOf("schema", SCHEMA_TIP)));
       b.appendChild(group("Cadencias", "Simple, compuesta y doble: valen para el medio de la canción y para el final.", "cell", rowsOf("cad", CAD_TIP)));
+      // Sliders de mezcla por grupo (Schemata / Cadencias): tildado, el % es la parte de las celdas del cuerpo que sale de ese grupo (0 = ninguna, 100 = solo ese grupo). Destildado: el sorteo de siempre.
+      var xb = mk("div", "padding:2px 0 6px;");
+      var xh = mk("div", "font-size:12px;font-weight:700;color:var(--ink-muted);margin-bottom:2px;", "Mezcla de celdas");
+      xh.title = "Schemata y Cadencias: con la casilla tildada, el slider fija qué parte de las celdas del cuerpo de la canción sale de ese grupo. 0% = ninguna celda de ese grupo (la cadencia final se mantiene para que la canción cierre), 100% = solo celdas de ese grupo. Si los dos están en 100%, gana Cadencias. Dentro del grupo se respetan las casillas tildadas arriba. Destildado = el sorteo de siempre. Valen desde la próxima canción (🔀 / G).";
+      xb.appendChild(xh);
+      function mixRow(text, tip, chkId, pctId){
+        var row = mk("div", "display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;");
+        var ck = label(text, tip, "opt", chkId, false); ck.firstChild.id = "partimenti" + chkId; row.appendChild(ck);
+        var sl = mk("label", LBL); sl.title = tip;
+        var rg = mk("input"); rg.type = "range"; rg.min = 0; rg.max = 100; rg.step = 5; rg.value = 50; rg.id = "partimenti" + pctId; rg.style.cssText = "width:90px;";
+        var vv = mk("span", "min-width:34px;text-align:right;", "50%");
+        rg.addEventListener("input", function(){ vv.textContent = rg.value + "%"; });
+        sl.appendChild(rg); sl.appendChild(vv); row.appendChild(sl);
+        xb.appendChild(row);
+      }
+      mixRow("Schemata", "Esquemas galantes (Romanesca, Prinner, Meyer, Do-Re-Mi, Sol-Fa-Mi) en las celdas del cuerpo: 0% = ninguno, 100% = solo esquemas.", "SchMix", "SchMixPct");
+      mixRow("Cadencias", "Cadencias (simple, compuesta, doble) en las celdas del cuerpo: 0% = ninguna en el medio (la final se mantiene), 100% = solo cadencias.", "CadMix", "CadMixPct");
+      b.appendChild(xb);
       // RofO: Regla de la octava con tus reemplazos de acordes (datos de tus .gp). Tildado: la canción es de Regla ↑/↓ y cada paso mezcla el acorde base con una variante.
       var rb = mk("div", "padding:2px 0 6px;");
       var rh = mk("div", "font-size:12px;font-weight:700;color:var(--ink-muted);margin-bottom:2px;", "Regla de la octava (RofO)");
@@ -14643,7 +14705,11 @@ function runAnalysis() {
       var mycad = (myEl && myEl.checked) ? { on: true, p: (myPctEl ? parseInt(myPctEl.value, 10) : 50) / 100 } : null;
       var ctpEl = document.getElementById("partimentiCtp");
       var ctp = (ctpEl && ctpEl.checked) ? { on: true, rules: checkedKeys("ctp") } : null;     // TestContrapunctus (null = apagado: nada cambia)
-      var song = core.compose(N, { cells: checkedKeys("cell"), rofo: rofo, mycad: mycad, spell: spellPitchClass, ctp: ctp });
+      var schEl = document.getElementById("partimentiSchMix"), schPctEl = document.getElementById("partimentiSchMixPct");
+      var cadEl = document.getElementById("partimentiCadMix"), cadPctEl = document.getElementById("partimentiCadMixPct");
+      var groups = { sch: (schEl && schEl.checked) ? (schPctEl ? parseInt(schPctEl.value, 10) : 50) / 100 : null,
+                     cad: (cadEl && cadEl.checked) ? (cadPctEl ? parseInt(cadPctEl.value, 10) : 50) / 100 : null };   // null = slider apagado
+      var song = core.compose(N, { cells: checkedKeys("cell"), rofo: rofo, mycad: mycad, groups: groups, spell: spellPitchClass, ctp: ctp });
       var orn = core.ornFor(tempo.bpm);
       var dimEl = document.getElementById("partimentiDimPct"), dimPct = dimEl ? parseInt(dimEl.value, 10) : 25;
       var silEl = document.getElementById("partimentiRests");
