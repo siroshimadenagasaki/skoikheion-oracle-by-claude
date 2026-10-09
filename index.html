@@ -1231,8 +1231,7 @@
           <button class="chip primary" id="creaturaBtn" type="button" title="Corre sola la secuencia: sortea Chromatism (2–40%), Chords (20–60%), Triplets (0–100%), Melodic/Harmonic/RythmSpace (0–100%) y Rapid runs (0–30%), Simplicity (0–50%), Melody n2 (on/off al azar) y una combinación totalmente al azar de Cycles (intervalos + Chromatism; prende Cycles) → Random Fill (5 o 2 sets al azar; 2–3/2–4/2–5 notas, modo Mezcla) → Compose → tilda Mix time signatures → Detener → espera 2s → 🔀 Regenerar. Una sola pasada por click.">🪄 CreaturaRandom</button>
           <button class="chip primary" id="creaturaBellaBtn" type="button" title="Igual que CreaturaRandom (mismos sliders, incluidos Simplicity 0–50%, Melody n2 on/off y Cycles al azar; Compose, Mix time signatures, Detener, espera 2s y Regenerar), pero los 5 o 2 sets salen SOLO del índice del libro (jerarquías de sets) y con más probabilidad cuanto mayor es su jerarquía: dentro de cada cardinalidad (3 hasta el máximo del slider, el índice no tiene sets de 2 notas) el set 1 del índice es el más probable y el último el menos probable. Cada set sale transportado a una tónica al azar.">🪄 CreaturaBella</button>
           <div style="display:flex;align-items:center;gap:8px;"><button class="chip primary" id="commonChordsBtn" type="button" style="flex:1;" title="CommonChords: en vez de sets, compone una canción con acordes de la base de acordes (tríadas, sextas, séptimas, add, extendidos, alterados), en cualquier tónica y siempre en inversión: el bajo toca la tónica, la tercera, la quinta o la séptima. Cantidad de acordes al azar (1, 2 o 4 por compás; se pueden repetir o no). La melodía toca solo notas del modo del acorde en curso (Cmaj7 sin #11 = Jónico o Lidio). 🔀 / tecla G sortean otra canción CommonChords.">🎼 CommonChords</button><div style="display:flex;flex-direction:column;gap:3px;"><label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="ModeTestHarmony: la armonía del ModeTest — un solo acorde cada 2 compases, con todas las notas atacando juntas (simultáneo) y sonando los 2 compases completos. La melodía queda normal. Con ModeTestMelody también tildado = ModeTest completo."><input type="checkbox" id="commonChordsModeTestH"> ModeTestHarmony</label><label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="ModeTestMelody: la melodía del ModeTest — toca únicamente la escala (el modo) de cada acorde, de la tónica hacia arriba o abajo, 1–3 octavas. La armonía queda normal (1, 2 o 4 acordes por compás). Con ModeTestHarmony también tildado = ModeTest completo."><input type="checkbox" id="commonChordsModeTestM"> ModeTestMelody</label><label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="narrowregister: el registro de un acorde al siguiente no se aleja más de una octava (la nota más grave y la más aguda de cada acorde quedan a no más de 12 semitonos de las del acorde anterior)."> <input type="checkbox" id="commonChordsNarrow"> narrowregister</label></div></div><details style="margin-top:4px;"><summary style="font-size:12px;color:var(--ink-muted);cursor:pointer;" title="Categoría Fusionada: limita los acordes que se sortean a las familias tildadas. Sin tildar ninguna = todas.">🧬 Familias de acordes</summary><div id="commonChordsFamilies" style="display:flex;flex-wrap:wrap;gap:4px 10px;padding:4px 0;"><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;font-weight:700;" title="All: tilda o destilda todas las familias."><input type="checkbox" id="commonChordsFamiliesAll"> All</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Maj7"> Maj7</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="m7"> m7</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="7"> 7</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="7Alt"> 7Alt</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Sus 2b"> Sus 2b</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Semidisminuido"> Semidisminuido</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Disminuida"> Disminuida</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Aumentada"> Aumentada</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Díada"> Díada</label></div></details><details style="margin-top:4px;"><summary style="font-size:12px;color:var(--ink-muted);cursor:pointer;" title="Escalas: con una o más tildadas, la melodía de cada acorde toca solo modos de esas escalas (solo se sortean acordes que tengan algún modo en esas escalas; si la combinación con las familias no deja ninguno, usa cualquier modo y se marca con * en el subtítulo). Sin tildar = todas (menos las 4 de Barry Harris, que solo entran si se tildan y cuyas corridas de escala siempre bajan).">🎼 Escalas de la melodía</summary><div id="commonChordsScales" style="display:flex;flex-wrap:wrap;gap:4px 10px;padding:4px 0;"><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;font-weight:700;" title="All: tilda o destilda todas las escalas."><input type="checkbox" id="commonChordsScalesAll"> All</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Diatónica"> Diatónica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Menor melódica"> Menor melódica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Menor armónica"> Menor armónica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Mayor armónica"> Mayor armónica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Enigmática"> Enigmática</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Aumentada"> Aumentada</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Octatónica"> Octatónica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-35"> Pent. 5-35 (tradicional)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-34"> Pent. 5-34 (Prometeo)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-29B"> Pent. 5-29B (Kumoi I)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-29"> Pent. 5-29 (Kumoi II)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-30"> Pent. 5-30 (Enigmática)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-30B"> Pent. 5-30B (Enigmática II)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="Barry Harris: sexta mayor + disminuido (C D E F G Ab A B). Solo entra si la tildás; la corrida de escala (ModeTestMelody / Semis) siempre baja."><input type="checkbox" value="Harris Major 6th dim"> Harris Major 6th dim (8-26)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="Barry Harris: sexta menor + disminuido (C D Eb F G Ab A B). Solo entra si la tildás; la corrida de escala siempre baja."><input type="checkbox" value="Harris Minor 6th dim"> Harris Minor 6th dim (8-27)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="Barry Harris: séptima dominante + disminuido (C D E F G Ab Bb B). Solo entra si la tildás; la corrida de escala siempre baja."><input type="checkbox" value="Harris Dominant dim"> Harris Dominant dim (8-27B)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="Barry Harris: séptima dominante b5 + disminuido (C D E F Gb Ab Bb B). Solo entra si la tildás; la corrida de escala siempre baja."><input type="checkbox" value="Harris Dominant b5 dim"> Harris Dominant b5 dim (8-25)</label></div><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;padding-bottom:4px;" title="Semis: la melodía toca la escala del modo de cada acorde, de la tónica hacia arriba, al doble de velocidad que ModeTest (cada nota dura la mitad y la escala se repite desde la tónica hasta llenar el acorde). Funciona con o sin ModeTestMelody."><input type="checkbox" id="commonChordsSemis"> Semis (escalas al doble de velocidad)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;padding-bottom:4px;" title="MelodicPatternsV2: la melodía recorre las notas del modo del acorde con patrones del tester (1 a 8 pasos diatónicos, 2 a 4 movimientos, hacia arriba o abajo; ej. 2↑ 1↓ = C E D). Cada patrón se usa una sola vez y le sigue otro nuevo. No aplica con ModeTestMelody ni Semis (corridas de escala)."><input type="checkbox" id="commonChordsPatV2"> MelodicPatternsV2 (patrones del tester)</label></details>
-          <button class="chip primary" id="partimentiBtn" type="button" title="Partimenti (experimental): el motor inventa un bajo (Regla de la octava ascendente/descendente, quintas descendentes, I–IV–V–I, esquemas galantes y cadencias simple/compuesta/doble) en una tonalidad mayor al azar y lo completa a 4 voces con conducción de voces (sin quintas ni octavas paralelas, la 7ª baja, la sensible sube): bajo en Bass, tenor y alto en Harmony, soprano con diminuciones en Melody. Al entrar pone Clavecín en los tres y Batería a 0%. Cada canción sortea un movimiento de tempo (Grave…Prestissimo). En el piano roll: cifra romana e inversión (V4/3, V6/4, I6...). Las opciones están en el desplegable de abajo. 🔀 / tecla G sortean otra canción.">🎹 Partimenti</button>
-          <details id="partimentiOpts" style="margin-top:2px;"><summary style="font-size:12px;color:var(--ink-muted);cursor:pointer;" title="Partimenti: elegí qué celdas de bajo, esquemas galantes (Romanesca, Prinner, Meyer, Do-Re-Mi, Sol-Fa-Mi), cadencias (simple, compuesta, doble) y movimientos de tempo (Grave…Prestissimo) puede sortear. Sin tildar nada = todo.">🎹 Partimenti: esquemas, cadencias, tempo</summary><div id="partimentiOptsBody" style="padding:4px 0;"></div></details>
+          <button class="chip primary" id="partimentiBtn" type="button" title="Partimenti (experimental): el motor inventa un bajo (Regla de la octava ascendente/descendente, secuencia de quintas descendentes, cadencias) en una tonalidad mayor al azar y lo completa a 4 voces con conducción de voces (sin quintas ni octavas paralelas, la 7ª baja, la sensible sube): bajo en Bass, tenor y alto en Harmony, soprano con diminuciones en Melody. En el piano roll: cifra romana e inversión (V4/3, I6...). 🔀 / tecla G sortean otra canción.">🎹 Partimenti</button>
           <button class="chip primary" id="creaturaIntervalicBtn" type="button" title="Igual que CreaturaRandom (mismos sliders, Compose, Mix time signatures, Detener, espera 2s y Regenerar, con 5 o 2 sets), pero antes sortea una combinación de clases de intervalo (1, 2 o 3 de ic1..ic6) y los sets salen SOLO de los que tienen todas esas clases en su vector de intervalos, con más probabilidad cuanto mayor parte del vector ocupan esas clases.">🪄 CreaturaIntervalic</button>
         </div>
         <button class="chip" id="composeBtn" type="button" title="Como CreaturaBella pero con TU set y TU compás: con el set elegido en el reloj/piano (2+ notas) y el time signature que dejaste escrito, sortea los sliders, el tempo y los presets al azar (como CreaturaBella), no cambia el set, no mezcla compases, y toca una variación nueva en primer plano. Sin set elegido, sortea uno con la misma regla de CreaturaBella (sets del índice por jerarquía); cada vez que lo apretás de nuevo, sortea otro set distinto (un set que elegiste vos a mano se respeta).">🎹 Compose</button>
@@ -13700,10 +13699,7 @@ function runAnalysis() {
      En el piano roll: el cifrado verde es la cifra romana + inversión (V4/3, I6, ii6/5...; el tooltip trae la celda y el cifrado
      de la Regla) y debajo, en amarillo, la celda (y la tonalidad en el primer acorde). 🔀 / tecla G sortean otra canción hasta que
      se use CommonChords, otra Creatura, Compose, Clear o se cambie el set del reloj/piano (PARTIMENTI.off()).
-     RofO (checkbox en las opciones): canción de Regla de la octava ↑/↓ con TUS reemplazos de acordes, leídos de tus archivos de Guitar Pro
-     (ROFO, dentro del núcleo). Mayor: cada paso mezcla (con probabilidad p) el cifrado de Fenaroli con una variante tuya sobre el mismo bajo.
-     Menor (solo con RofO): el acorde base es el de tus compases "Menor" y la variante sale de tus variaciones; el motor de 4 voces es el mismo
-     (los acordes de RofO traen sus notas; adornos del soprano en menor armónica). La Regla en menor de Fenaroli NO está cifrada en el motor: no la verifiqué.
+     Sin menor todavía (la Regla en menor tiene variantes y no la verifiqué contra una fuente).
      ================================================================ */
 /* PARTIMENTI_CORE_BEGIN */
   var PARTIMENTI_CORE = (function(){
@@ -13715,97 +13711,11 @@ function runAnalysis() {
     var RO_UP   = ["5/3", "6/4/3", "6/3", "6/5/3", "5/3", "6/3", "6/5/3", "5/3"];   // ① → ⑧
     var RO_DOWN = ["5/3", "6/3", "6/4/3", "5/3", "4/2", "6/3", "6/4/3", "5/3"];     // ⑧ → ①
     // Intervalos (diatónicos) sobre el bajo que implica cada cifrado.
-    var FIG = { "5/3": [3, 5], "6/3": [3, 6], "6/4/3": [3, 4, 6], "6/5/3": [3, 5, 6], "4/2": [2, 4, 6], "7": [3, 5, 7],
-                "6/4": [4, 6], "5/4": [4, 5] };                // 6/4 y 5/4: acordes de cuarta (cadencia compuesta y doble)
+    var FIG = { "5/3": [3, 5], "6/3": [3, 6], "6/4/3": [3, 4, 6], "6/5/3": [3, 5, 6], "4/2": [2, 4, 6], "7": [3, 5, 7] };
+    var CELL_NAME = { up: "Regla ↑", down: "Regla ↓", seq: "5tas ↓", cad4: "I–IV–V–I", cad: "Cadencia" };
+    var CELL_LONG = { up: "Regla de la octava ascendente", down: "Regla de la octava descendente",
+                      seq: "Secuencia de quintas descendentes", cad4: "Cadencia I–IV–V–I", cad: "Cadencia final V–I" };
     var ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII"];
-
-    // ---- RofO: Regla de la octava con TUS reemplazos de acordes. Datos leídos (por código) de tus archivos de Guitar Pro:
-    // My_R.O_v7_major.gp (Mi♭, La♭ y Mi mayor), My_R.O_v8_minor.gp (do♯, mi y la menor) y Remplazo_de_acordes_v2.gp (Do/Sol mayor y menor).
-    // Cada acorde = [raíz, sufijo del nombre, notas]; raíz y notas en semitonos sobre la tónica. vars[x] = acordes cuyo bajo (nota más grave) está
-    // x semitonos sobre la tónica. minor.canon = los acordes de tus compases "Menor" por paso (↑ y ↓, con alternativas). En mayor el cifrado base es el
-    // de Fenaroli (arriba) y las variantes salen de vars. En menor no hay cifrado verificado en el motor: base = tu canon, variantes = vars.
-    var ROFO = {"minor":{"canon":{"up":[[[0,"m",[0,3,7]]],[[7,"",[2,5,7,11]],[11,"dim",[2,5,11]]],[[0,"m",[0,3,7]]],[[5,"m6",[0,2,5,8]]],[[7,"",[2,7,11]],[7,"(no5)",[7,11]]],[[5,"",[0,5,9]]],[[11,"dim",[2,5,7,11]],[7,"7",[2,5,7,11]],[7,"",[2,7,11]]],[[0,"m",[0,3,7]]]],"down":[[[0,"m",[0,3,7]]],[[7,"m",[2,7,10]]],[[5,"m",[0,5,7,8]],[8,"7",[0,6,8]],[8,"7",[0,3,6,8]]],[[7,"",[2,7,11]],[7,"(no5)",[7,11]],[7,"7",[2,5,7,11]]],[[7,"",[2,5,7,11]]],[[0,"m",[0,3,7]]],[[11,"dim",[2,5,11]],[7,"7",[2,5,7,11]]],[[0,"m",[0,3,7]]]]},"vars":{"0":[[0,"m",[0,3,7]],[8,"",[0,3,8]],[5,"m",[0,5,8]],[2,"Ø",[0,2,5,8]],[0,"sus4",[0,5,7]],[0,"madd11",[0,3,5,7]],[7,"",[0,2,7,11]],[0,"5",[0,7]],[8,"6",[0,3,5,8]],[8,"(b5)",[0,2,8]],[8,"sus2",[0,3,10]],[7,"7",[0,5,7,11]],[8,"dim",[0,2,8,11]],[5,"",[0,5,9]],[0,"m11",[0,3,5]],[7,"7sus4",[0,2,5,7]],[0,"m",[0,2,3,7]],[0,"sus2",[0,2,7]]],"2":[[7,"7",[2,5,7,11]],[2,"Ø",[0,2,5,8]],[10,"",[2,5,10]],[11,"dim",[2,5,11]],[0,"",[0,2,4,7]],[2,"m7",[0,2,5]],[5,"2",[0,2,5,7]],[2,"°",[2,5,8,11]],[2,"m(#11)",[2,5,7,8]],[0,"sus2",[0,2]]],"3":[[0,"m",[0,3,7]],[8,"",[0,3,8]],[3,"",[3,7,10]],[3,"7M",[2,3,7]],[7,"sus4",[0,2,3,7]],[3,"add11",[3,7,8]]],"5":[[5,"m6",[0,2,5,8]],[7,"",[2,5,7,11]],[10,"add9",[0,2,5,10]],[5,"madd11",[0,5,8,10]],[5,"dim7",[2,5,8,11]],[5,"m7",[0,3,5,8]],[2,"dim",[2,5,8]]],"6":[[2,"7",[0,2,6,9]]],"7":[[7,"",[2,7,11]],[7,"m",[2,7,10]],[3,"",[3,7,10]],[7,"m(no5)",[7,10]],[7,"(no5)",[7,11]],[7,"7",[2,5,7,11]],[7,"sus4",[0,2,5,7]],[9,"Ø",[0,3,7,9]],[7,"sus4",[0,2,7]],[7,"7",[5,7,11]],[0,"m",[0,3,7]],[2,"7sus4",[0,2,7,9]],[7,"add9",[2,7,9,11]]],"8":[[5,"m",[0,5,8]],[2,"Ø",[0,2,5,8]],[5,"m",[0,5,7,8]],[8,"7",[0,6,8]],[8,"7",[0,3,6,8]],[8,"7M(13)",[0,5,7,8]],[7,"7sus4",[0,5,7,8]],[0,"",[0,4,7,8]],[5,"m9(no5)",[5,7,8]],[8,"Maj11#",[2,3,8]]],"9":[[5,"",[0,5,9]],[9,"Ø",[0,3,7,9]],[9,"m7(6b)",[0,5,7,9]],[5,"7",[0,3,5,9]]],"10":[[10,"",[2,5,10]],[7,"m",[2,7,10]],[8,"",[0,3,8,10]],[8,"7M",[0,7,8,10]],[3,"6",[0,3,7,10]],[10,"sus213",[0,7,10]]],"11":[[11,"dim7",[2,5,8,11]],[7,"7",[2,5,7,11]],[11,"dim",[2,5,7,11]],[7,"",[2,7,11]],[5,"Ø",[3,5,8,11]]]}},"major":{"vars":{"0":[[0,"",[0,4,7]],[9,"m",[0,4,9]],[2,"m",[0,2,5,9]],[5,"",[0,5,9]],[0,"(no5)",[0,4]],[0,"add9",[0,2,4,7]],[4,"m7",[0,2,4,7]],[7,"7",[0,5,7,11]],[0,"5",[0,7]],[0,"sus2",[0,2,7]],[7,"7sus4",[0,2,5,7]],[0,"6",[0,4,7,9]],[9,"m",[0,4,5,9]]],"2":[[2,"m",[2,5,9]],[2,"m6",[2,5,9,11]],[7,"7",[2,5,7,11]],[11,"dim",[2,5,11]],[5,"sus2",[0,2,5,7]],[2,"madd11",[2,5,7,9]],[2,"7sus4",[0,2,7]],[2,"m7",[0,2,5]]],"4":[[0,"",[0,4,7]],[4,"m",[4,7,11]],[9,"m",[0,4,9]],[5,"",[0,4,5,9]],[4,"m7",[2,4,7]],[0,"7",[0,4,10]]],"5":[[5,"6",[0,2,5,9]],[2,"m",[2,5,9]],[11,"Ø",[2,5,9,11]],[7,"",[2,5,7,11]],[5,"",[0,5,9]],[2,"m6",[2,5,9,11]],[0,"7sus4",[0,5,7,10]],[0,"sus2",[0,2,5,7]],[7,"7sus2",[5,7,9]]],"7":[[7,"",[2,7,11]],[4,"m",[4,7,11]],[0,"",[0,4,7]],[2,"m7",[0,2,5,7]],[7,"(no5)",[7,11]],[7,"add11",[0,2,7,11]],[7,"add11(no5)",[0,7,11]],[2,"7sus4",[0,2,7,9]],[7,"sus2",[2,7,9]],[7,"sus4",[0,2,7]],[7,"sus4add9",[0,2,7,9]]],"9":[[5,"",[0,5,9]],[9,"m",[0,4,9]],[11,"Ø",[2,5,9,11]],[2,"7",[0,2,6,9]],[2,"m6",[2,5,9,11]],[9,"m7(#5)",[0,5,7,9]],[7,"sus4",[0,2,7,9]],[9,"m7",[0,7,9]]],"11":[[11,"dim",[2,5,11]],[7,"7",[2,5,7,11]],[7,"",[2,7,11]],[11,"dim7",[2,5,8,11]],[11,"dim",[2,5,7,11]]]}}};
-    var MIN_UP = [0, 2, 3, 5, 7, 9, 11, 12], MIN_DOWN = [12, 10, 8, 7, 5, 3, 2, 0];   // bajo de la Regla en menor: ↑ con ⑥ y ⑦ elevados, ↓ con ⑦ y ⑥ naturales
-    var HMIN = [0, 2, 3, 5, 7, 8, 11];                                                  // escala (menor armónica) para los adornos del soprano en menor
-    // Item "explícito": el acorde viene de los datos (no de un cifrado). bo = semitonos del bajo sobre la tónica.
-    function exItem(spec, bo, abs, step, variant){
-      return { deg: -1, bo: bo % 12, fig: "R:" + spec[0] + ":" + spec[1] + ":" + spec[2].join("."), figText: variant ? "RofO var" : "RofO",
-               abs: abs, step: step, ex: { r: spec[0], s: spec[1], t: spec[2] }, rofo: variant ? 2 : 1 };
-    }
-    // Mayor: cada paso de la Regla ↑/↓ cambia, con probabilidad p, el acorde de Fenaroli por una variante cuyo bajo es ese mismo grado.
-    function mixMajor(it, p){
-      it.forEach(function(x, i){
-        var off = (x.abs === 12 ? 0 : x.abs) % 12, pool = ROFO.major.vars[off];
-        if(pool && pool.length && Math.random() < p){ var e = exItem(pool[rnd(pool.length)], off, x.abs, x.step, true); e.deg = x.deg; it[i] = e; }
-      });
-    }
-    // Menor: toda la celda sale de los datos (canon por paso; con probabilidad p, una variante con el mismo bajo). Cadencia simple: V(7) → i.
-    function minorCell(type, p){
-      var it = [], k;
-      if(type === "cadS"){
-        it = [exItem(Math.random() < 0.5 ? [7, "7", [2, 5, 7, 11]] : [7, "", [2, 7, 11]], 7, null, "", false), exItem([0, "m", [0, 3, 7]], 0, null, "", false)];
-      } else {
-        var offs = type === "up" ? MIN_UP : MIN_DOWN, canon = ROFO.minor.canon[type];
-        for(k = 0; k < 8; k++){
-          var off = offs[k] % 12, vp = ROFO.minor.vars[off], useVar = !!(vp && vp.length && Math.random() < p);
-          var spec = useVar ? vp[rnd(vp.length)] : canon[k][rnd(canon[k].length)];
-          it.push(exItem(spec, off, offs[k], CIRC[type === "up" ? k : 7 - k], useVar));
-        }
-      }
-      it.forEach(function(x){ x.cell = type; });
-      return it;
-    }
-    // Completa un item explícito (tonos, raíz, 3ª, 5ª, 7ª y etiqueta) a partir de los semitonos de los datos.
-    function fillEx(it, key, spell){
-      var e = it.ex, sp = spell || function(pc){ return ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"][mod(pc, 12)]; };
-      it.tones = uniq(e.t.map(function(o){ return (key + o) % 12; }));
-      it.rootPc = (key + e.r) % 12;
-      var has = function(i){ return it.tones.indexOf((it.rootPc + i) % 12) >= 0; };
-      var th = has(3) ? 3 : (has(4) ? 4 : null), fi = has(7) ? 7 : (has(6) ? 6 : (has(8) ? 8 : null));
-      it.thirdPc = th === null ? -1 : (it.rootPc + th) % 12;
-      it.fifthPc = fi === null ? -1 : (it.rootPc + fi) % 12;
-      var sv = has(10) ? 10 : (has(11) ? 11 : ((has(9) && th === 3 && fi === 6) ? 9 : null));
-      it.sev = sv === null ? null : (it.rootPc + sv) % 12;
-      it.root = e.r === 0 ? 0 : 20 + e.r;                       // 0 = acorde de tónica (la sensible sube); el resto, índice propio
-      var bpc = it.bass % 12;
-      it.label = sp(it.rootPc) + e.s + (bpc !== it.rootPc ? "/" + sp(bpc) : "");
-      it.sus = null; it.sopPc = null;
-    }
-
-    // Biblioteca de celdas. len = largo nominal en acordes; w = peso al sortear; onI = empieza en I (la primera celda de la canción prefiere estas).
-    // group: "base" (celdas de la regla de la octava), "schema" (esquemas galantes), "cad" (cadencias).
-    var CELLS = {
-      up:        { name: "Regla ↑",      long: "Regla de la octava ascendente",              len: 8, w: 30, onI: true,  group: "base" },
-      down:      { name: "Regla ↓",      long: "Regla de la octava descendente",             len: 8, w: 30, onI: true,  group: "base" },
-      seq:       { name: "5tas ↓",       long: "Secuencia de quintas descendentes",          len: 8, w: 25, onI: true,  group: "base" },
-      cad4:      { name: "I–IV–V–I",     long: "Cadencia I–IV–V–I",                          len: 4, w: 15, onI: true,  group: "base" },
-      romanesca: { name: "Romanesca",    long: "Esquema Romanesca (bajo 1–7–6–3)",           len: 4, w: 14, onI: true,  group: "schema" },
-      prinner:   { name: "Prinner",      long: "Esquema Prinner (bajo 4–3–2–1)",             len: 5, w: 14, onI: false, group: "schema" },
-      meyer:     { name: "Meyer",        long: "Esquema Meyer (bajo 1–2–7–1)",               len: 4, w: 14, onI: true,  group: "schema" },
-      doremi:    { name: "Do-Re-Mi",     long: "Esquema Do-Re-Mi (soprano 1–2–3)",           len: 3, w: 14, onI: true,  group: "schema" },
-      solfami:   { name: "Sol-Fa-Mi",    long: "Esquema Sol-Fa-Mi (soprano 5–4–4–3)",        len: 4, w: 14, onI: true,  group: "schema" },
-      cadS:      { name: "Cad. simple",  long: "Cadencia simple (V–I)",                      len: 2, w: 8,  onI: false, group: "cad", cad: true, finalW: 45 },
-      cadC:      { name: "Cad. compuesta", long: "Cadencia compuesta (V6/4 o V5/4 → V → I)", len: 3, w: 8,  onI: false, group: "cad", cad: true, finalW: 35 },
-      cadD:      { name: "Cad. doble",   long: "Cadencia doble (V → V6/4 → V5/4 → V → I)",   len: 5, w: 6,  onI: false, group: "cad", cad: true, finalW: 20 }
-    };
-    var CELL_NAME = {}, CELL_LONG = {};
-    Object.keys(CELLS).forEach(function(k){ CELL_NAME[k] = CELLS[k].name; CELL_LONG[k] = CELLS[k].long; });
-
-    // Movimientos de tempo (BPM aproximados; Wikipedia "Tempo", marcados como "very rough approximations"). El slider del motor va de 25 a 200.
-    var TEMPOS = [
-      { key: "grave",       name: "Grave",       lo: 25,  hi: 40 },
-      { key: "largo",       name: "Largo",       lo: 40,  hi: 66 },
-      { key: "lento",       name: "Lento",       lo: 40,  hi: 60 },
-      { key: "larghetto",   name: "Larghetto",   lo: 44,  hi: 66 },
-      { key: "adagio",      name: "Adagio",      lo: 44,  hi: 66 },
-      { key: "andante",     name: "Andante",     lo: 56,  hi: 108 },
-      { key: "moderato",    name: "Moderato",    lo: 108, hi: 120 },
-      { key: "allegretto",  name: "Allegretto",  lo: 112, hi: 120 },
-      { key: "allegro",     name: "Allegro",     lo: 120, hi: 156 },
-      { key: "vivace",      name: "Vivace",      lo: 156, hi: 176 },
-      { key: "presto",      name: "Presto",      lo: 168, hi: 200 },
-      { key: "prestissimo", name: "Prestissimo", lo: 200, hi: 200 }
-    ];
 
     function rnd(n){ return Math.floor(Math.random() * n); }
     function mod(a, n){ return ((a % n) + n) % n; }
@@ -13844,88 +13754,39 @@ function runAnalysis() {
       return { root: root, size: size, inv: inv, label: rn + q + fg, seventhPc: sev === null ? null : MAJ[(root + 6) % 7] };
     }
 
-    // x: un acorde de la celda. deg = grado del bajo (0–6), fig = cifrado, sop = grado que debe tener el soprano (esquemas),
-    // near = bajo por el camino más corto, hold = el bajo sigue (no se vuelve a atacar), susDegs = grados de las notas de cuarta/sexta que
-    // deben resolver bajando, lab = etiqueta (V6/4, V5/4: son acordes de dominante con retardos, no el I en segunda inversión).
-    function X(deg, fig, o){ var x = { deg: deg, fig: fig, abs: null, step: "" }; if(o) for(var k in o) x[k] = o[k]; return x; }
-
-    function makeCell(type, ctx){
-      var it = [], k, j, v7;
-      if(ctx && ctx.mode === "minor") return minorCell(type, ctx.p);   // RofO en menor: la celda sale entera de los datos
+    function makeCell(type){
+      var it = [], k, j;
       if(type === "up")   for(k = 0; k < 8; k++) it.push({ deg: k % 7, fig: RO_UP[k], abs: k === 7 ? 12 : MAJ[k], step: CIRC[k] });
       if(type === "down") for(j = 0; j < 8; j++){ k = 7 - j; it.push({ deg: k % 7, fig: RO_DOWN[j], abs: k === 7 ? 12 : MAJ[k], step: CIRC[k] }); }
       if(type === "seq"){
-        [0, 3, 6, 2, 5, 1, 4, 0].forEach(function(d, i, a){ it.push(X(d, (i === 0 || i === a.length - 1) ? "5/3" : "7")); });
+        [0, 3, 6, 2, 5, 1, 4, 0].forEach(function(d, i, a){ it.push({ deg: d, fig: (i === 0 || i === a.length - 1) ? "5/3" : "7", abs: null, step: "" }); });
       }
       if(type === "cad4"){
-        v7 = Math.random() < 0.5;
-        [0, 3, 4, 0].forEach(function(d, i){ it.push(X(d, (i === 2 && v7) ? "7" : "5/3")); });
+        var v7 = Math.random() < 0.5;
+        [0, 3, 4, 0].forEach(function(d, i){ it.push({ deg: d, fig: (i === 2 && v7) ? "7" : "5/3", abs: null, step: "" }); });
       }
-      // Esquemas galantes (grados de bajo y soprano de Open Music Theory / Wikipedia "Galant Schemata"; cifrados de OMT).
-      if(type === "romanesca")   // bajo 1-7-6-3, soprano 1-5-1-1, cifras 5-6-5-6 (I, V6, vi, I6)
-        it = [X(0, "5/3", { sop: 0, near: 1 }), X(6, "6/3", { sop: 4, near: 1 }), X(5, "5/3", { sop: 0, near: 1 }), X(2, "6/3", { sop: 0, near: 1 })];
-      if(type === "prinner")     // bajo 4-3-2-1, soprano 6-5-4-3, cifras 5 / 6 / 7-6 / I (IV, I6, ii7 → vii°6, I)
-        it = [X(3, "5/3", { sop: 5, near: 1 }), X(2, "6/3", { sop: 4, near: 1 }), X(1, "7", { sop: 3, near: 1 }),
-              X(1, "6/3", { sop: 3, hold: 1 }), X(0, "5/3", { sop: 2, near: 1 })];
-      if(type === "meyer")       // bajo 1-2-7-1, soprano 1-7-4-3, cifras 5/3, 4/3, 6/5, 5/3 (I, V4/3, V6/5, I)
-        it = [X(0, "5/3", { sop: 0, near: 1 }), X(1, "6/4/3", { sop: 6, near: 1 }), X(6, "6/5/3", { sop: 3, near: 1 }), X(0, "5/3", { sop: 2, near: 1 })];
-      if(type === "doremi"){     // soprano 1-2-3, bajo 1-7-1 (o 1-5-1): I, V6 (o V), I
-        var five = Math.random() < 0.5;
-        it = [X(0, "5/3", { sop: 0, near: 1 }), five ? X(4, "5/3", { sop: 1, near: 1 }) : X(6, "6/3", { sop: 1, near: 1 }), X(0, "5/3", { sop: 2, near: 1 })];
-      }
-      if(type === "solfami")     // bajo 1-2-7-1, soprano 5-4-4-3, cifras 5-5-6/5-5 (I, ii, V6/5, I)
-        it = [X(0, "5/3", { sop: 4, near: 1 }), X(1, "5/3", { sop: 3, near: 1 }), X(6, "6/5/3", { sop: 3, near: 1 }), X(0, "5/3", { sop: 2, near: 1 })];
-      // Cadencias (bajo ① – ⑤ – ①). Simple: ⑤ un acorde. Compuesta: ⑤ dos acordes (6/4 o 5/4, luego 5/3). Doble: ⑤ cuatro acordes (5/3 o 7, 6/4, 5/4, 5/3 o 7).
-      if(type === "cadS") it = [X(4, Math.random() < 0.5 ? "7" : "5/3"), X(0, "5/3")];
-      if(type === "cadC"){
-        var c64 = Math.random() < 0.5;
-        it = [X(4, c64 ? "6/4" : "5/4", { susDegs: c64 ? [0, 2] : [0], lab: c64 ? "V6/4" : "V5/4" }), X(4, "5/3", { hold: 1 }), X(0, "5/3")];
-      }
-      if(type === "cadD")
-        it = [X(4, Math.random() < 0.5 ? "7" : "5/3"), X(4, "6/4", { hold: 1, susDegs: [0, 2], lab: "V6/4" }), X(4, "5/4", { hold: 1, susDegs: [0], lab: "V5/4" }),
-              X(4, Math.random() < 0.5 ? "7" : "5/3", { hold: 1 }), X(0, "5/3")];
-      if(ctx && ctx.mode === "major" && (type === "up" || type === "down")) mixMajor(it, ctx.p);   // RofO en mayor: mezcla Fenaroli / tus variantes
       it.forEach(function(x){ x.cell = type; });
       return it;
     }
 
-    // allowed: lista de tipos de celda permitidos. remaining: cuántos acordes faltan (se prefieren celdas que entren enteras).
-    function pickCell(last, allowed, remaining, first){
-      var pool = allowed.filter(function(t){ return CELLS[t].len <= remaining; });
-      if(first){ var p2 = pool.filter(function(t){ return CELLS[t].onI; }); if(p2.length) pool = p2; }
-      if(!pool.length){                                           // no entra ninguna entera: se recorta la más corta de las tildadas (de las no-cadencia si hay)
-        var nc = allowed.filter(function(t){ return !CELLS[t].cad; }), src = nc.length ? nc : allowed, mn = 99;
-        src.forEach(function(t){ mn = Math.min(mn, CELLS[t].len); });
-        pool = src.filter(function(t){ return CELLS[t].len === mn; });
-      }
-      if(last && pool.length > 1 && Math.random() < 0.6) pool = pool.filter(function(t){ return t !== last; });
-      var tot = 0; pool.forEach(function(t){ tot += CELLS[t].w; });
+    function pickCell(last){
+      var W = [["up", 30], ["down", 30], ["seq", 25], ["cad4", 15]], tot = 0;
+      if(last && Math.random() < 0.6) W = W.filter(function(w){ return w[0] !== last; });
+      W.forEach(function(w){ tot += w[1]; });
       var r = Math.random() * tot;
-      for(var i = 0; i < pool.length; i++){ r -= CELLS[pool[i]].w; if(r < 0) return pool[i]; }
-      return pool[0];
-    }
-    function pickFinal(allowed, N){
-      var pool = allowed.filter(function(t){ return CELLS[t].cad; });
-      if(!pool.length) pool = ["cadS", "cadC", "cadD"];
-      pool = pool.filter(function(t){ return CELLS[t].len <= N; });
-      if(!pool.length) return "cadS";
-      var tot = 0; pool.forEach(function(t){ tot += CELLS[t].finalW; });
-      var r = Math.random() * tot;
-      for(var i = 0; i < pool.length; i++){ r -= CELLS[pool[i]].finalW; if(r < 0) return pool[i]; }
-      return pool[0];
+      for(var i = 0; i < W.length; i++){ r -= W[i][1]; if(r < 0) return W[i][0]; }
+      return W[0][0];
     }
 
     // Une una celda a la cadena: resuelve el bajo y elimina el acorde repetido en la unión.
     function appendCell(items, cell, key, base){
       var flag = true;
       cell.forEach(function(x, j){
-        var pc = (key + (x.bo != null ? x.bo : MAJ[x.deg])) % 12, prev = items.length ? items[items.length - 1].bass : null, bass;
-        if(x.hold && prev !== null) bass = prev;                                              // el bajo sigue
-        else if(x.abs !== null) bass = base + x.abs;
-        else if(j === 0 || x.near) bass = nearestIn(pc, prev === null ? base + 6 : prev);   // por grados conjuntos o el salto más corto
-        else bass = walk(items[items.length - 1].bass, pc);
+        var pc = (key + MAJ[x.deg]) % 12, prev = items.length ? items[items.length - 1].bass : null, bass;
+        if(x.abs !== null) bass = base + x.abs;
+        else bass = (j === 0) ? nearestIn(pc, prev === null ? base + 6 : prev) : walk(items[items.length - 1].bass, pc);
         var last = items[items.length - 1];
-        if(j === 0 && last && last.bass === bass && ((last.fig === x.fig && last.deg === x.deg) || last.ex || x.ex)){ return; }   // misma nota y mismo acorde (o, en RofO, el ⑧ y el ① de la unión ↑/↓): no se repite
+        if(j === 0 && last && last.bass === bass && last.fig === x.fig && last.deg === x.deg){ return; }   // misma nota y mismo acorde: no se repite
         x.bass = bass; x.cellStart = flag; flag = false;
         items.push(x);
       });
@@ -13940,68 +13801,38 @@ function runAnalysis() {
       return false;
     }
 
-    // Reglas duras de una realización (t, a, s) sobre el bajo de `item`, dado el acorde anterior `prev` (o null).
-    // stage: 0 = todas; 1 sin paralelas; 2 sin "LT ni retardos sin doblar"; 3 sin cobertura completa; 4 sin la nota fija del soprano.
-    function allowedV(item, prev, t, a, s, stage, key){
-      var tones = item.tones, bassPc = item.bass % 12, lt = (key + 11) % 12;
-      if(tones.indexOf(t % 12) < 0 || tones.indexOf(a % 12) < 0 || tones.indexOf(s % 12) < 0) return false;
-      if(stage < 4 && item.sopPc != null && s % 12 !== item.sopPc) return false;   // esquemas: el soprano del esquema es obligatorio
-      var up = [t % 12, a % 12, s % 12];
-      if(stage < 3 && !item.essential.every(function(p){ return up.indexOf(p) >= 0; })) return false;
-      var cnt = function(p){ return (bassPc === p ? 1 : 0) + (up[0] === p ? 1 : 0) + (up[1] === p ? 1 : 0) + (up[2] === p ? 1 : 0); };
-      if(stage < 2 && cnt(lt) > 1) return false;
-      if(stage < 2 && item.sus && item.sus.some(function(p){ return cnt(p) > 1; })) return false;   // la 4ª / la 6ª del acorde de cuarta no se duplican
-      if(item.sev !== null && cnt(item.sev) > 1) return false;
-      if(stage < 1 && prev && hasParallel([prev.bass, prev.t, prev.a, prev.s], [item.bass, t, a, s])) return false;
-      return true;
-    }
-    // ¿Hay al menos una realización de `item` (sin romper reglas duras) a partir de la voz `cand`? (mira un acorde adelante)
-    function feasible(item, cand, key){
-      for(var t = Math.max(RT[0], item.bass + 1); t <= RT[1]; t++){
-        if(item.tones.indexOf(t % 12) < 0) continue;
-        for(var a = Math.max(RA[0], t + 1); a <= Math.min(RA[1], t + 12); a++){
-          if(item.tones.indexOf(a % 12) < 0) continue;
-          for(var s = Math.max(RS[0], a + 1); s <= Math.min(RS[1], a + 12); s++)
-            if(allowedV(item, cand, t, a, s, 0, key)) return true;
-        }
-      }
-      return false;
-    }
-
     // Conducción de voces (tenor, alto, soprano) sobre el bajo dado: búsqueda del menor costo bajo reglas duras.
-    function voiceChord(item, prev, ctx, isLast, stats, next){
-      var tones = item.tones, bassPc = item.bass % 12, key = ctx.key;
-      var canOmit5 = item.canOmit5;
+    function voiceChord(item, prev, ctx, isLast, stats){
+      var tones = item.tones, bassPc = item.bass % 12, key = ctx.key, lt = (key + 11) % 12;
+      var need = tones.filter(function(p){ return p !== bassPc; });
+      var canOmit5 = item.fifthPc !== bassPc && ((tones.length === 3 && bassPc === item.rootPc) || (tones.length === 4 && (bassPc === item.rootPc || bassPc === item.thirdPc)));
+      var essential = canOmit5 ? need.filter(function(p){ return p !== item.fifthPc; }) : need;   // la 5ª puede faltar (tríada fundamental; 7ª con bajo en raíz o 3ª)
       var pv = prev ? [prev.bass, prev.t, prev.a, prev.s] : [item.bass, 55, 64, 72];
       var prevInfo = prev || null;
-      var look = !!(next && (next.sopPc != null || next.sus || next.ex));    // el que sigue tiene soprano fijo, retardos o es un acorde de RofO: se comprueba que se pueda continuar
       var stage, best = null;
-      for(stage = 0; stage < 5 && !best; stage++){
+      for(stage = 0; stage < 4 && !best; stage++){              // 0 = todas las reglas; 1 sin paralelas; 2 sin "LT no se dobla"; 3 sin cobertura completa
         var bestC = 1e9;
         for(var t = Math.max(RT[0], item.bass + 1); t <= RT[1]; t++){
           if(tones.indexOf(t % 12) < 0) continue;
           for(var a = Math.max(RA[0], t + 1); a <= Math.min(RA[1], t + 12); a++){
             if(tones.indexOf(a % 12) < 0) continue;
             for(var s = Math.max(RS[0], a + 1); s <= Math.min(RS[1], a + 12); s++){
-              if(!allowedV(item, prev, t, a, s, stage, key)) continue;
+              if(tones.indexOf(s % 12) < 0) continue;
               var up = [t % 12, a % 12, s % 12];
+              if(stage < 3 && !essential.every(function(p){ return up.indexOf(p) >= 0; })) continue;
               var cnt = function(p){ return (bassPc === p ? 1 : 0) + up.filter(function(x){ return x === p; }).length; };
+              if(stage < 2 && cnt(lt) > 1) continue;
+              if(item.sev !== null && cnt(item.sev) > 1) continue;
+              var cv = [item.bass, t, a, s];
+              if(stage < 1 && prev && hasParallel(pv, cv)) continue;
               var c = 1.0 * Math.abs(t - pv[1]) + 1.0 * Math.abs(a - pv[2]) + 1.3 * Math.abs(s - pv[3]);
               [t - pv[1], a - pv[2], s - pv[3]].forEach(function(d){ d = Math.abs(d); if(d > 4) c += (d - 4) * 1.5; });
               c += 0.15 * Math.abs(s - 72);
               if(prevInfo){
-                if(prevInfo.sev !== null && !(prevInfo.root === item.root && item.sev === prevInfo.sev)){   // la 7ª del acorde anterior baja por grado (salvo que el mismo acorde de 7ª siga)
+                if(prevInfo.sev !== null){                       // la 7ª del acorde anterior baja por grado
                   [[prev.t, t], [prev.a, a], [prev.s, s]].forEach(function(m){ if(m[0] % 12 === prevInfo.sev && !(m[1] === m[0] - 1 || m[1] === m[0] - 2)) c += 10; });
                 }
-                if(prevInfo.sus){                                 // 4ª y 6ª de la cadencia: bajan por grado (o se quedan si siguen siendo retardo)
-                  [[prev.t, t], [prev.a, a], [prev.s, s]].forEach(function(m){
-                    if(prevInfo.sus.indexOf(m[0] % 12) < 0) return;
-                    var stay = item.sus && item.sus.indexOf(m[0] % 12) >= 0 && m[1] === m[0];
-                    if(!(stay || m[1] === m[0] - 1 || m[1] === m[0] - 2)) c += 10;
-                  });
-                }
                 if(item.root === 0){                              // sensible → tónica sube
-                  var lt = (key + 11) % 12;
                   [[prev.t, t], [prev.a, a], [prev.s, s]].forEach(function(m){ if(m[0] % 12 === lt && m[1] !== m[0] + 1) c += 6; });
                 }
                 var sm = Math.sign(s - pv[3]), bm = Math.sign(item.bass - pv[0]);            // quintas/octavas ocultas entre bajo y soprano
@@ -14012,208 +13843,83 @@ function runAnalysis() {
               if(prev && s === pv[3]) c += 1.4;                 // el soprano prefiere moverse
               if(isLast && s % 12 !== key) c += 5;
               c += Math.random() * 0.6;
-              if(c < bestC){
-                if(look && stage === 0 && !feasible(next, { bass: item.bass, t: t, a: a, s: s }, key)) continue;   // callejón sin salida: se descarta
-                bestC = c; best = { t: t, a: a, s: s };
-              }
+              if(c < bestC){ bestC = c; best = { t: t, a: a, s: s }; }
             }
           }
         }
-        if(best && stage > 0){ if(stage === 1) stats.fbParallel++; else if(stage === 2) stats.fbLT++; else if(stage === 3) stats.fbCover++; else stats.fbSop++; }
+        if(best && stage > 0){ if(stage === 1) stats.fbParallel++; else if(stage === 2) stats.fbLT++; else stats.fbCover++; }
       }
       return best;
     }
 
-    // opts: key (0–11), cells (tipos de celda permitidos; vacío = todos). Las cadencias tildadas valen para el medio y para el final.
     function compose(N, opts){
       opts = opts || {};
       var key = opts.key != null ? opts.key : rnd(12), base = 36 + key;
-      var allowed = (opts.cells && opts.cells.length) ? opts.cells.filter(function(t){ return CELLS[t]; }) : Object.keys(CELLS);
-      if(!allowed.length) allowed = Object.keys(CELLS);
-      // RofO (opts.rofo = { on, p (0–1), modes: ["major","minor"] o vacío = al azar }): la canción es de Regla de la octava ↑/↓ con tus reemplazos de acordes.
-      // Sin celdas tildadas: solo Regla ↑/↓ + cadencias (en menor, solo la cadencia simple). Con celdas tildadas se respetan (en menor, solo ↑ ↓ y cad. simple).
-      var rofo = (opts.rofo && opts.rofo.on) ? opts.rofo : null, mode = "major", ctx = null;
-      if(rofo){
-        var rm = (rofo.modes && rofo.modes.length) ? rofo.modes : ["major", "minor"], ticked = !!(opts.cells && opts.cells.length);
-        mode = rm[rnd(rm.length)];
-        ctx = { mode: mode, p: Math.max(0, Math.min(1, rofo.p == null ? 0.5 : rofo.p)) };
-        if(mode === "minor"){
-          var okm = ticked ? allowed.filter(function(t){ return t === "up" || t === "down" || t === "cadS"; }) : [];
-          if(!okm.some(function(t){ return t === "up" || t === "down"; })) okm = ["up", "down", "cadS"];
-          if(okm.indexOf("cadS") < 0) okm.push("cadS");
-          allowed = okm;
-        } else if(!ticked) allowed = ["up", "down", "cadS", "cadC", "cadD"];
-      }
-      var stats = { fbParallel: 0, fbLT: 0, fbCover: 0, fbSop: 0, cells: [], rofoSteps: 0, rofoVar: 0 };
-      var finalType = pickFinal(allowed, N), finalLen = CELLS[finalType].len;
-      var items = [], bodyN = Math.max(0, N - finalLen), lastType = null, guard = 0;
+      var stats = { fbParallel: 0, fbLT: 0, fbCover: 0, cells: [] };
+      var items = [], bodyN = Math.max(0, N - 2), lastType = null, guard = 0;
       while(items.length < bodyN && guard++ < 400){
-        var type = pickCell(lastType, allowed, bodyN - items.length, items.length === 0);
-        appendCell(items, makeCell(type, ctx), key, base);
+        var type = pickCell(lastType);
+        appendCell(items, makeCell(type), key, base);
         stats.cells.push(type); lastType = type;
       }
       items.length = Math.min(items.length, bodyN);
-      // Cadencia final (simple, compuesta o doble). Si el último acorde del cuerpo ya era V, se arranca con la otra figura para no fundirse con él.
-      var fin = makeCell(finalType, ctx), lastIt = items[items.length - 1];
-      if(lastIt && lastIt.deg === 4 && fin[0].deg === 4 && (fin[0].fig === "7" || fin[0].fig === "5/3") && fin[0].fig === lastIt.fig) fin[0].fig = fin[0].fig === "7" ? "5/3" : "7";
-      appendCell(items, fin, key, base);
-      stats.cells.push(finalType);
+      // Cadencia final V → I (V7 si el acorde anterior ya era V)
+      var lastIt = items[items.length - 1];
+      var vFig = (lastIt && lastIt.deg === 4) ? (lastIt.fig === "7" ? "5/3" : "7") : (Math.random() < 0.5 ? "7" : "5/3");   // si ya venía V, el V final cambia de figura (así no se funde con el anterior)
+      appendCell(items, [{ deg: 4, fig: vFig, abs: null, step: "", cell: "cad" },
+                         { deg: 0, fig: "5/3", abs: null, step: "", cell: "cad" }], key, base);
+      stats.cells.push("cad");
       if(items.length > N) items.splice(0, items.length - N);        // N muy chico: queda solo el final
-      items.forEach(function(it){
-        if(rofo && (it.cell === "up" || it.cell === "down")){ stats.rofoSteps++; if(it.rofo === 2) stats.rofoVar++; }
-        if(it.ex) fillEx(it, key, opts.spell); else {
+      var chords = [], prev = null;
+      items.forEach(function(it, i){
         var ints = FIG[it.fig], an = analyze(it.deg, ints);
-        if(it.lab) an = { root: 4, size: 3, inv: 0, label: it.lab, seventhPc: null };     // V6/4, V5/4: dominante con retardos
         var degs = uniq([it.deg].concat(ints.map(function(n){ return (it.deg + n - 1) % 7; })));
         it.tones = uniq(degs.map(function(d){ return (key + MAJ[d]) % 12; }));
         it.sev = an.seventhPc === null ? null : (key + an.seventhPc) % 12;
         it.rootPc = (key + MAJ[an.root]) % 12;
         it.thirdPc = (key + MAJ[(an.root + 2) % 7]) % 12;
         it.fifthPc = (key + MAJ[(an.root + 4) % 7]) % 12;
-        it.root = an.root; it.label = an.label;
-        it.sus = it.susDegs ? it.susDegs.map(function(d){ return (key + MAJ[d]) % 12; }) : null;
-        it.sopPc = it.sop != null ? (key + MAJ[it.sop]) % 12 : null;
-        }
-        var bpc = it.bass % 12, need = it.tones.filter(function(p){ return p !== bpc; });
-        var om5 = !it.sus && it.fifthPc !== bpc && ((it.tones.length === 3 && bpc === it.rootPc) || (it.tones.length === 4 && (bpc === it.rootPc || bpc === it.thirdPc)));
-        it.canOmit5 = om5;
-        it.essential = om5 ? need.filter(function(p){ return p !== it.fifthPc; }) : need;   // la 5ª puede faltar (tríada fundamental; 7ª con bajo en raíz o 3ª)
-      });
-      var chords = [], prev = null;
-      items.forEach(function(it, i){
-        var v = voiceChord(it, prev, { key: key }, i === items.length - 1, stats, items[i + 1] || null);
-        var ch = { bass: it.bass, t: v.t, a: v.a, s: v.s, tones: it.tones, sev: it.sev, root: it.root, label: it.label, fig: it.fig, deg: it.deg,
-                   cell: it.cell, cellStart: it.cellStart, step: it.step, rootPc: it.rootPc, sus: it.sus, hold: !!(it.hold && prev) };
-        ch.cat = CELL_LONG[it.cell] + (it.step ? " · " + it.step : "") + " · " + (it.figText || it.fig);
+        it.root = an.root;
+        var v = voiceChord(it, prev, { key: key }, i === items.length - 1, stats);
+        var ch = { bass: it.bass, t: v.t, a: v.a, s: v.s, tones: it.tones, sev: it.sev, root: an.root, label: an.label, fig: it.fig, deg: it.deg,
+                   cell: it.cell, cellStart: it.cellStart, step: it.step, rootPc: it.rootPc };
+        ch.cat = CELL_LONG[it.cell] + (it.step ? " · " + it.step : "") + " · " + it.fig;
         chords.push(ch); prev = ch;
       });
-      return { key: key, base: base, chords: chords, stats: stats, cellName: CELL_NAME, finalType: finalType, mode: mode, rofo: !!rofo };
+      return { key: key, base: base, chords: chords, stats: stats, cellName: CELL_NAME };
     }
 
     // Soprano con diminuciones: nota de paso entre terceras, bordadura sobre notas repetidas. Solo notas de la escala de la tonalidad.
-    // orn escala la probabilidad (tempos lentos → más adornos, rápidos → menos). Sin adornos sobre acordes de cuarta (la 4ª/6ª es un retardo).
-    function scaleHas(p, key, mode){ return (mode === "minor" ? HMIN : MAJ).indexOf(mod(p - key, 12)) >= 0; }
-    function melody(chords, i, dur, key, orn, mode){
-      var o = orn == null ? 1 : orn;
+    function scaleHas(p, key){ return MAJ.indexOf(mod(p - key, 12)) >= 0; }
+    function melody(chords, i, dur, key){
       var s = chords[i].s, nx = i + 1 < chords.length ? chords[i + 1].s : null, d = nx === null ? null : nx - s;
-      if(nx !== null && dur >= 1 && !chords[i].sus){
-        if(d !== null && Math.abs(d) >= 3 && Math.abs(d) <= 4 && Math.random() < 0.55 * o){
+      if(nx !== null && dur >= 1){
+        if(d !== null && Math.abs(d) >= 3 && Math.abs(d) <= 4 && Math.random() < 0.55){
           var lo = Math.min(s, nx), mid = null;
-          for(var p = lo + 1; p < Math.max(s, nx); p++) if(scaleHas(p, key, mode)) mid = p;
+          for(var p = lo + 1; p < Math.max(s, nx); p++) if(scaleHas(p, key)) mid = p;
           if(mid !== null) return [{ midi: s, off: 0, dur: dur / 2 }, { midi: mid, off: dur / 2, dur: dur / 2 }];
         }
-        if(d === 0 && Math.random() < 0.4 * o){
+        if(d === 0 && Math.random() < 0.4){
           var dir = Math.random() < 0.6 ? 1 : -1, q = s + dir;
-          while(!scaleHas(q, key, mode)) q += dir;
+          while(!scaleHas(q, key)) q += dir;
           return [{ midi: s, off: 0, dur: dur / 2 }, { midi: q, off: dur / 2, dur: dur / 2 }];
         }
       }
       return [{ midi: s, off: 0, dur: dur }];
     }
-    function ornFor(bpm){ return bpm < 66 ? 1.4 : (bpm < 108 ? 1 : (bpm < 156 ? 0.8 : 0.5)); }
 
-    return { compose: compose, melody: melody, analyze: analyze, FIG: FIG, RO_UP: RO_UP, RO_DOWN: RO_DOWN, MAJ: MAJ, ROFO: ROFO, MIN_UP: MIN_UP, MIN_DOWN: MIN_DOWN, hasParallel: hasParallel,
-             CELL_NAME: CELL_NAME, CELL_LONG: CELL_LONG, CELLS: CELLS, TEMPOS: TEMPOS, ornFor: ornFor, LOW: LOW, HIGH: HIGH, RT: RT, RA: RA, RS: RS };
+    return { compose: compose, melody: melody, analyze: analyze, FIG: FIG, RO_UP: RO_UP, RO_DOWN: RO_DOWN, MAJ: MAJ, hasParallel: hasParallel,
+             CELL_NAME: CELL_NAME, LOW: LOW, HIGH: HIGH, RT: RT, RA: RA, RS: RS };
   })();
 /* PARTIMENTI_CORE_END */
   var PARTIMENTI = (function(){
     var core = PARTIMENTI_CORE;
     var api = { active: false, core: core, lastSong: null };
 
-    // ---- Opciones: celdas / esquemas / cadencias / movimientos de tempo (checkboxes bajo el botón; vacío = todos) ----
-    var SCHEMA_TIP = {
-      romanesca: "Romanesca: bajo 1–7–6–3, soprano 1–5–1–1, cifras 5–6–5–6 → I · V6 · vi · I6.",
-      prinner:   "Prinner: bajo 4–3–2–1, soprano 6–5–4–3, cifras 5 / 6 / 7–6 / 5 → IV · I6 · ii7 → vii°6 (bajo sostenido) · I.",
-      meyer:     "Meyer: bajo 1–2–7–1, soprano 1–7–4–3, cifras 5/3, 4/3, 6/5, 5/3 → I · V4/3 · V6/5 · I.",
-      doremi:    "Do-Re-Mi: soprano 1–2–3, bajo 1–7–1 (o 1–5–1) → I · V6 (o V) · I.",
-      solfami:   "Sol-Fa-Mi: bajo 1–2–7–1, soprano 5–4–4–3, cifras 5–5–6/5–5 → I · ii · V6/5 · I."
-    };
-    var CAD_TIP = {
-      cadS: "Cadencia simple: bajo ①–⑤–①, el ⑤ dura 1 acorde (V o V7) → I.",
-      cadC: "Cadencia compuesta: bajo ①–⑤–①, el ⑤ dura 2 acordes: 6/4 o 5/4, luego 5/3 (la 4ª baja a 3ª, la 6ª a 5ª) → I.",
-      cadD: "Cadencia doble: bajo ①–⑤–①, el ⑤ dura 4 acordes: 5/3 (o 7), 6/4, 5/4, 5/3 (o 7) → I."
-    };
-    function body(){ return document.getElementById("partimentiOptsBody"); }
-    function checkedKeys(g){
-      var b = body(); if(!b) return [];
-      return Array.prototype.slice.call(b.querySelectorAll('input[data-g="' + g + '"]')).filter(function(c){ return c.checked; }).map(function(c){ return c.getAttribute("data-k"); });
-    }
-    function buildUI(){
-      var b = body(); if(!b || b.getAttribute("data-built")) return;
-      b.setAttribute("data-built", "1");
-      var LBL = "display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;";
-      function mk(tag, css, html){ var e = document.createElement(tag); if(css) e.style.cssText = css; if(html != null) e.innerHTML = html; return e; }
-      function label(text, tip, g, k, checked){
-        var l = mk("label", LBL); l.title = tip || "";
-        var c = mk("input"); c.type = "checkbox"; c.setAttribute("data-g", g); c.setAttribute("data-k", k); if(checked) c.checked = true;
-        l.appendChild(c); l.appendChild(document.createTextNode(" " + text)); return l;
-      }
-      function group(title, tip, g, rows){
-        var box = mk("div", "padding:2px 0 6px;");
-        var h = mk("div", "font-size:12px;font-weight:700;color:var(--ink-muted);margin-bottom:2px;", title); h.title = tip; box.appendChild(h);
-        var wrap = mk("div", "display:flex;flex-wrap:wrap;gap:4px 10px;");
-        var all = mk("label", LBL + "font-weight:700;"); all.title = "All: tilda o destilda todo el grupo.";
-        var ac = mk("input"); ac.type = "checkbox"; all.appendChild(ac); all.appendChild(document.createTextNode(" All")); wrap.appendChild(all);
-        rows.forEach(function(r){ wrap.appendChild(label(r.text, r.tip, g, r.k, false)); });
-        ac.addEventListener("change", function(){
-          Array.prototype.forEach.call(wrap.querySelectorAll('input[data-g="' + g + '"]'), function(c){ c.checked = ac.checked; });
-        });
-        box.appendChild(wrap); return box;
-      }
-      var C = core.CELLS;
-      function rowsOf(grp, tips){
-        return Object.keys(C).filter(function(k){ return C[k].group === grp; }).map(function(k){ return { k: k, text: C[k].name, tip: (tips && tips[k]) || C[k].long }; });
-      }
-      var hint = mk("div", "font-size:11px;color:var(--ink-muted);padding:2px 0 4px;", "Sin tildar nada = todo. Los cambios valen desde la próxima canción (🔀 / G). La cadencia final sale de las cadencias tildadas (si no hay ninguna, de las tres).");
-      b.appendChild(hint);
-      b.appendChild(group("Celdas de bajo", "Regla de la octava, quintas descendentes e I–IV–V–I. Sin tildar nada en ningún grupo = todas las celdas.", "cell", rowsOf("base")));
-      b.appendChild(group("Esquemas galantes", "Esquemas de Gjerdingen/Riepel con bajo y soprano fijos. Fonte, Monte, Quiescenza, Indugio, Fenaroli y Ponte no están: necesitan cromatismo o cifras que no pude verificar.", "cell", rowsOf("schema", SCHEMA_TIP)));
-      b.appendChild(group("Cadencias", "Simple, compuesta y doble: valen para el medio de la canción y para el final.", "cell", rowsOf("cad", CAD_TIP)));
-      // RofO: Regla de la octava con tus reemplazos de acordes (datos de tus .gp). Tildado: la canción es de Regla ↑/↓ y cada paso mezcla el acorde base con una variante.
-      var rb = mk("div", "padding:2px 0 6px;");
-      var rh = mk("div", "font-size:12px;font-weight:700;color:var(--ink-muted);margin-bottom:2px;", "Regla de la octava (RofO)");
-      rh.title = "RofO: la canción se arma con la Regla de la octava ↑/↓ y TUS reemplazos de acordes (leídos de My_R.O_v7_major.gp, My_R.O_v8_minor.gp y Remplazo_de_acordes_v2.gp). En mayor, cada paso mezcla el cifrado de Fenaroli con una variante tuya sobre el mismo bajo; en menor, el acorde base es el de tus compases 'Menor' y la variante sale de tus variaciones. Sin celdas tildadas = solo Regla ↑/↓ y cadencias (en menor, cadencia simple). Si tildás celdas, se respetan (en menor solo ↑, ↓ y cad. simple).";
-      rb.appendChild(rh);
-      var rw = mk("div", "display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;");
-      var rofoChk = label("RofO", "Activa la Regla de la octava con tus reemplazos de acordes (valen desde la próxima canción: 🔀 / G).", "opt", "rofo", false);
-      rofoChk.firstChild.id = "partimentiRofO"; rw.appendChild(rofoChk);
-      rw.appendChild(label("Mayor", "Con RofO: solo canciones en mayor. Sin tildar Mayor ni Menor = cada canción sortea el modo.", "rmode", "major", false));
-      rw.appendChild(label("Menor", "Con RofO: solo canciones en menor (menor armónica: ⑥ y ⑦ elevados al subir, naturales al bajar). Sin tildar Mayor ni Menor = cada canción sortea el modo.", "rmode", "minor", false));
-      var pl = mk("label", LBL); pl.title = "Probabilidad de que cada paso de la Regla use una variante tuya en vez del acorde base (0 = solo el base, 100 = siempre variante).";
-      var pr = mk("input"); pr.type = "range"; pr.min = 0; pr.max = 100; pr.step = 5; pr.value = 50; pr.id = "partimentiRofOPct"; pr.style.cssText = "width:90px;";
-      var pv = mk("span", "min-width:34px;text-align:right;", "50%");
-      pr.addEventListener("input", function(){ pv.textContent = pr.value + "%"; });
-      pl.appendChild(document.createTextNode("variantes ")); pl.appendChild(pr); pl.appendChild(pv); rw.appendChild(pl);
-      rb.appendChild(rw); b.appendChild(rb);
-      // Tempo
-      var tb = mk("div", "padding:2px 0 6px;");
-      var th = mk("div", "font-size:12px;font-weight:700;color:var(--ink-muted);margin-bottom:2px;", "Movimiento (tempo)"); th.title = "Cada canción sortea un movimiento de los tildados (todos si no hay ninguno) y un BPM dentro de su rango; mueve el slider Tempo. BPM aproximados (Wikipedia: Tempo); el slider va de 25 a 200."; tb.appendChild(th);
-      var auto = label("Tempo automático", "Con esto tildado, cada canción sortea su tempo según el movimiento. Destildado: Partimenti respeta el slider Tempo.", "opt", "auto", true);
-      auto.firstChild.id = "partimentiAutoTempo"; tb.appendChild(auto);
-      tb.appendChild(group("", "", "tempo", core.TEMPOS.map(function(t){ return { k: t.key, text: t.name + " " + t.lo + (t.hi !== t.lo ? "–" + t.hi : ""), tip: t.name + ": " + t.lo + (t.hi !== t.lo ? "–" + t.hi : "") + " BPM" }; })));
-      b.appendChild(tb);
-    }
-    buildUI();
-
-    // Tempo: sortea movimiento y BPM, mueve el slider (evento "input", como CreaturaRandom) y devuelve {name,bpm}.
-    function setTempo(){
-      var sl = document.getElementById("consolaTempo"); if(!sl) return { name: null, bpm: 100 };
-      var mn = parseInt(sl.min, 10) || 25, mx = parseInt(sl.max, 10) || 200, info = { name: null, bpm: parseInt(sl.value, 10) || 100 };
-      var auto = document.getElementById("partimentiAutoTempo");
-      if(auto && !auto.checked) return info;
-      var keys = checkedKeys("tempo");
-      var pool = core.TEMPOS.filter(function(t){ return !keys.length || keys.indexOf(t.key) >= 0; });
-      var mv = pool[Math.floor(Math.random() * pool.length)];
-      var bpm = Math.max(mn, Math.min(mx, mv.lo + Math.floor(Math.random() * (mv.hi - mv.lo + 1))));
-      sl.value = bpm; sl.dispatchEvent(new Event("input", { bubbles: true }));
-      return { name: mv.name, bpm: bpm };
-    }
-
     function build(){
       NUM_BARS = desiredNumBars();
       RHYTHM.recompute();
       TOTAL_BEATS = RHYTHM.total();
-      var tempo = setTempo();     // antes de TEMPODENSITY.apply: ese módulo mira el tempo vigente al generar
       // Ritmo armónico de la canción (sorteo por canción): 1, 2 o 4 acordes por compás (acotado por los pulsos de cada compás).
       var r0 = Math.random(), dens = r0 < 0.2 ? 1 : (r0 < 0.7 ? 2 : 4);
       var per = [], N = 0, b0;
@@ -14222,23 +13928,19 @@ function runAnalysis() {
         if(bt < 2) n0 = 1; else if(bt < 4 && n0 === 4) n0 = 2;
         per.push(n0); N += n0;
       }
-      var rofoEl = document.getElementById("partimentiRofO"), pctEl = document.getElementById("partimentiRofOPct");
-      var rofo = (rofoEl && rofoEl.checked) ? { on: true, p: (pctEl ? parseInt(pctEl.value, 10) : 50) / 100, modes: checkedKeys("rmode") } : null;
-      var song = core.compose(N, { cells: checkedKeys("cell"), rofo: rofo, spell: spellPitchClass });
-      var orn = core.ornFor(tempo.bpm);
-      var keyName = spellPitchClass(song.key) + (song.mode === "minor" ? " menor" : " mayor");
+      var song = core.compose(N);
+      var keyName = spellPitchClass(song.key) + " mayor";
       var chordEvents = [], bassEvents = [], melodyEvents = [];
-      var progression = [], roles = [], slotChords = [], labels = [], lastBass = null;
+      var progression = [], roles = [], slotChords = [], labels = [];
       var ci = 0;
       for(var bar = 0; bar < NUM_BARS; bar++){
         var beats = RHYTHM.beats(bar), barStart = RHYTHM.start(bar), nSl = per[bar], dur = beats / nSl, slots = [];
         for(var si = 0; si < nSl; si++){
           var idx = ci++, ch = song.chords[Math.min(idx, song.chords.length - 1)], abs = barStart + si * dur;
-          if(ch.hold && lastBass) lastBass.durBeats += dur;                                                              // el bajo sigue (cadencias compuesta y doble, Prinner)
-          else { lastBass = { midi: ch.bass, startBeat: abs, durBeats: dur, bar: bar }; bassEvents.push(lastBass); }     // bajo (el partimento)
+          bassEvents.push({ midi: ch.bass, startBeat: abs, durBeats: dur, bar: bar });                                   // bajo (el partimento)
           chordEvents.push({ midi: ch.t, startBeat: abs, durBeats: dur, bar: bar });                                     // tenor
           chordEvents.push({ midi: ch.a, startBeat: abs, durBeats: dur, bar: bar });                                     // alto
-          core.melody(song.chords, Math.min(idx, song.chords.length - 1), dur, song.key, orn, song.mode).forEach(function(m){      // soprano con diminuciones
+          core.melody(song.chords, Math.min(idx, song.chords.length - 1), dur, song.key).forEach(function(m){            // soprano con diminuciones
             melodyEvents.push({ midi: m.midi, startBeat: abs + m.off, durBeats: m.dur, bar: bar });
           });
           var voiced = [ch.bass, ch.t, ch.a, ch.s];
@@ -14273,7 +13975,7 @@ function runAnalysis() {
       if(sol) sol.innerHTML = "";
       if(SONGTITLE) SONGTITLE.next();
       var sub = document.getElementById("consolaSongSets");
-      if(sub) sub.textContent = "(Partimenti · experimental · " + keyName + (song.rofo ? " · RofO " + (song.stats.rofoSteps ? Math.round(100 * song.stats.rofoVar / song.stats.rofoSteps) : 0) + "% variantes" : "") + " · " + (tempo.name ? tempo.name + " " : "") + "♩=" + tempo.bpm + " · " + N + " acordes · " + dens + " por compás · " +
+      if(sub) sub.textContent = "(Partimenti · experimental · " + keyName + " · " + N + " acordes · " + dens + " por compás · " +
         song.stats.cells.map(function(c){ return core.CELL_NAME[c]; }).join(" → ") + " · " + labels.join(" ") + ")";
       ["consolaPlayBtn", "consolaRegenPlayBtn"].forEach(function(id){
         var bt2 = document.getElementById(id); if(bt2) bt2.disabled = false;
@@ -14283,14 +13985,7 @@ function runAnalysis() {
     }
 
     api.build = build;
-    // Al entrar (no en cada 🔀): Clavecín en Armonía/Bajo/Melodía y Batería a 0% (set "partimenti" de PRESET_SETS); después se pueden cambiar a mano.
-    api.start = function(){
-      if(window.__commonChords) window.__commonChords.off();
-      var entering = !api.active;
-      api.active = true;
-      if(entering && typeof window.__applyPresetSet === "function") window.__applyPresetSet("partimenti");
-      regenerateConsola();
-    };
+    api.start = function(){ if(window.__commonChords) window.__commonChords.off(); api.active = true; regenerateConsola(); };
     api.off = function(){ api.active = false; };
     // CommonChords, otra Creatura, Compose, Clear o RadioMode sacan de Partimenti (igual que CommonChords).
     document.addEventListener("click", function(e){
@@ -18682,9 +18377,7 @@ function runAnalysis() {
       // Jazz fusion = copia de Jazz traditional con Armonía → Piano
       // eléctrico y Melodía → "Ethan's Bassoon" (Soundfonts v2/BasoonFlute.sf2,
       // único preset: banco 0 / programa 0, leído del phdr).
-      jazzfusion: { harmony: "epiano", chordDouble: "mute", melody: sfKeyForFile("BasoonFlute.sf2", 0, 0), melodyDouble: "mute", bass: "synthBass", swingDrums: true },
-      // Partimenti: Clavecín en Armonía, Bajo y Melodía y Batería a 0% (se aplica al entrar al modo 🎹 Partimenti; después se puede cambiar a mano).
-      partimenti: { harmony: "harpsichord", bass: "harpsichord", melody: "harpsichord", gains: { drum: 0 } }
+      jazzfusion: { harmony: "epiano", chordDouble: "mute", melody: sfKeyForFile("BasoonFlute.sf2", 0, 0), melodyDouble: "mute", bass: "synthBass", swingDrums: true }
     };
     function applyPresetSet(setKey){
       var set = PRESET_SETS[setKey];
@@ -18733,7 +18426,6 @@ function runAnalysis() {
         drumEvents = buildDrumEvents(NUM_BARS);
       }
     }
-    window.__applyPresetSet = applyPresetSet;   // lo usa 🎹 Partimenti para poner Clavecín y Batería muteada al entrar
     var baroqueBtn = document.getElementById("presetBaroqueBtn");
     if(baroqueBtn) baroqueBtn.addEventListener("click", function(){ applyPresetSet("baroque"); });
     var brassSoloBtn = document.getElementById("presetBrassSoloBtn");
