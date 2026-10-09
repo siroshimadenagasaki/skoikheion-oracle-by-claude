@@ -14141,7 +14141,8 @@ function runAnalysis() {
     // Soprano con diminuciones: nota de paso entre terceras, bordadura sobre notas repetidas. Solo notas de la escala de la tonalidad.
     // orn escala la probabilidad (tempos lentos → más adornos, rápidos → menos). Sin adornos sobre acordes de cuarta (la 4ª/6ª es un retardo).
     function scaleHas(p, key, mode){ return (mode === "minor" ? HMIN : MAJ).indexOf(mod(p - key, 12)) >= 0; }
-    function melody(chords, i, dur, key, orn, mode){
+    function melody(chords, i, dur, key, orn, mode, dim){
+      if(dim) return diminish(chords, i, dur, key, orn, mode, dim);      // disminución (slider + figuras + silencios); sin dim: adornos simples de siempre
       var o = orn == null ? 1 : orn;
       var s = chords[i].s, nx = i + 1 < chords.length ? chords[i + 1].s : null, d = nx === null ? null : nx - s;
       if(nx !== null && dur >= 1 && !chords[i].sus){
@@ -14158,9 +14159,171 @@ function runAnalysis() {
       }
       return [{ midi: s, off: 0, dur: dur }];
     }
+    // ---- Disminución (diminuzione) del soprano: convierte la nota larga de cada acorde en una figura más florida y rápida.
+    // Definición (Wikipedia "Partimento", citando a Sanguinetti 2012): "convertir una melodía lenta y básica en otra más florida y rápida".
+    // Las figuras (notas de paso, bordaduras, giros, arpegios, anticipaciones, escalas, terceras) son de la teoría general; las fuentes que leí no las enumeran para el partimento.
+    // La primera nota de cada acorde es siempre la del soprano armonizado (sobre el tiempo); las demás van sobre una grilla de negras, corcheas, semicorcheas o fusas.
+    // Slider 0–100%: hasta 50% es la escala de siempre (corcheas/semicorcheas, una figura por acorde); de 50% a 100% crece la probabilidad del modo FLORIDO:
+    // grilla a la mitad (semicorcheas/fusas) y el acorde entero se llena encadenando figuras distintas (escalas, terceras, giros, bordaduras, arpegios) que cierran acercándose al soprano siguiente.
+    var DIM_FIGS = { passing: "Notas de paso", neighbor: "Bordaduras", turn: "Giros", arpeggio: "Arpegios", anticipation: "Anticipaciones", scale: "Escalas", thirds: "Terceras rotas" };
+    var DIM_W = { passing: 3, neighbor: 2, turn: 1, arpeggio: 1.5, anticipation: 1, scale: 2, thirds: 1.5 };
+    var DIM_REST_P = 0.3;                                                  // con "Silences" tildado: probabilidad de que un acorde lleve una pausa
+    function scaleList(key, mode){
+      var set = mode === "minor" ? HMIN : MAJ, out = [];
+      for(var p = 40; p <= 100; p++) if(set.indexOf(mod(p - key, 12)) >= 0) out.push(p);
+      return out;
+    }
+    // Modo florido: n casilleros de duración u; devuelve [{midi, off, dur, fig}] (suma exacta dur) o null si no se puede.
+    function florid(ch, s, nx, u, n, key, mode, allow){
+      var sc = scaleList(key, mode), LO = 55, HI = 84;
+      var is = sc.indexOf(s), inx = sc.indexOf(nx);
+      if(is < 0 || inx < 0) return null;
+      var okk = function(k){ return k >= 0 && k < sc.length && sc[k] >= LO && sc[k] <= HI; };
+      var near = function(p){ var b = 0; for(var k = 1; k < sc.length; k++) if(Math.abs(sc[k] - p) < Math.abs(sc[b] - p)) b = k; return b; };
+      var has = function(f){ return allow.indexOf(f) >= 0; };
+      var seq = [], ci = is, k;
+      var h = (n >= 8 && Math.random() < 0.5) ? 2 : 1;                     // el soprano armonizado se queda 1–2 casilleros
+      for(k = 0; k < h; k++) seq.push(s);
+      function push(arr){                                                  // arr = índices de la escala
+        if(arr.length > n - seq.length) return false;
+        for(var a = 0; a < arr.length; a++) if(!okk(arr[a])) return false;
+        arr.forEach(function(x){ seq.push(sc[x]); });
+        ci = arr[arr.length - 1];
+        return true;
+      }
+      var guard = 0;
+      while(seq.length < n && guard++ < 40){
+        var r = n - seq.length, toward = inx > ci ? 1 : (inx < ci ? -1 : 0), dist = Math.abs(inx - ci);
+        if(r <= 2 || r <= dist) break;                                     // los últimos casilleros se reservan para acercarse al soprano siguiente
+        var dir = (toward !== 0 && Math.random() < 0.65) ? toward : (Math.random() < 0.5 ? 1 : -1);
+        var cand = [];
+        if(has("scale") && r >= 4) cand.push({ w: DIM_W.scale, f: function(){ var a = [], L2 = Math.min(r - 1, 3 + Math.floor(Math.random() * 5)); for(var j = 1; j <= L2; j++) a.push(ci + dir * j); return push(a); } });
+        if(has("passing") && toward !== 0 && dist >= 2 && r >= 3) cand.push({ w: DIM_W.passing, f: function(){ var a = [], m = Math.min(r - 2, dist - 1); for(var j = 1; j <= m; j++) a.push(ci + toward * j); return a.length >= 2 && push(a); } });
+        if(has("neighbor") && r >= 3) cand.push({ w: DIM_W.neighbor, f: function(){ return push([ci + dir, ci]); } });
+        if(has("turn") && r >= 5) cand.push({ w: DIM_W.turn, f: function(){ return push([ci + 1, ci, ci - 1, ci]); } });
+        if(has("thirds") && r >= 5) cand.push({ w: DIM_W.thirds, f: function(){ return push([ci + 2 * dir, ci + dir, ci + 3 * dir]); } });
+        if(has("arpeggio") && r >= 4) cand.push({ w: DIM_W.arpeggio, f: function(){
+          var cur = sc[ci], got = [], cnt = Math.min(r - 1, 3 + Math.floor(Math.random() * 3));
+          for(var a2 = 0; a2 < cnt; a2++){
+            var nxt = null;
+            for(var p = cur + dir; p >= LO && p <= HI && Math.abs(p - cur) <= 5; p += dir) if(ch.tones.indexOf(mod(p, 12)) >= 0){ nxt = p; break; }
+            if(nxt === null) break;
+            got.push(nxt); cur = nxt;
+          }
+          if(got.length < 2) return false;
+          got.forEach(function(x){ seq.push(x); }); ci = near(cur);
+          return true;
+        } });
+        var done = false;
+        while(cand.length && !done){
+          var tot = 0; cand.forEach(function(c){ tot += c.w; });
+          var rv = Math.random() * tot, ix = 0;
+          for(; ix < cand.length - 1; ix++){ rv -= cand[ix].w; if(rv < 0) break; }
+          if(cand[ix].f()) done = true; else cand.splice(ix, 1);
+        }
+        if(!done) break;
+      }
+      while(seq.length < n){                                               // cierre: acerca la melodía al soprano del acorde siguiente
+        var rr = n - seq.length;
+        if(rr === 1 && has("anticipation") && sc[ci] !== nx && Math.abs(nx - sc[ci]) <= 4 && Math.random() < 0.5){ seq.push(nx); ci = inx; continue; }
+        if(ci !== inx) ci += (inx > ci ? 1 : -1); else ci += (rr % 2 ? 1 : -1);
+        if(!okk(ci)) ci = inx;
+        seq.push(sc[ci]);
+      }
+      var out = [];
+      for(k = 0; k < seq.length; k++){
+        if(out.length && out[out.length - 1].midi === seq[k]) out[out.length - 1].dur += u;   // misma nota seguida = una sola más larga
+        else out.push({ midi: seq[k], off: k * u, dur: u, fig: "florid" });
+      }
+      return out;
+    }
+    // dim = { level: 0..1 (posición del slider), figs: [claves] (vacío = todas), rests: bool }; orn = factor de tempo (lento más, rápido menos).
+    // Devuelve [{midi, off, dur, fig, rest?}] que suma exactamente `dur` (rest:true = pausa, midi null).
+    function diminishNotes(chords, i, dur, key, orn, mode, dim){
+      var ch = chords[i], s = ch.s, nx = i + 1 < chords.length ? chords[i + 1].s : null;
+      var plain = [{ midi: s, off: 0, dur: dur, fig: null }];
+      // slider 0–100% → T 0–2. Hasta 50% (T=1) = la escala de antes; de 50% a 100% (X 0→1) crece la probabilidad del modo florido.
+      var T = Math.max(0, dim.level * 2 * (orn == null ? 1 : orn));
+      var L = Math.min(1, T), X = Math.min(1, Math.max(0, T - 1));
+      if(L <= 0 || ch.sus || nx === null) return plain;                    // sin adorno: nivel 0, acordes de cuarta (la 4ª/6ª es un retardo) y el acorde final
+      if(Math.random() > 0.12 + 0.88 * L) return plain;
+      // grilla: negras (nivel bajo), corcheas, semicorcheas (nivel alto), fusas (modo florido); n = notas que caben en el acorde
+      var pref = L < 0.25 ? [1, 0.5, 0.25] : (L < 0.55 ? [0.5, 0.25, 1] : (Math.random() < (L - 0.55) / 0.45 ? [0.25, 0.5, 1] : [0.5, 0.25, 1]));
+      var fast = Math.random() < X;
+      if(fast) pref = [Math.random() < 0.3 + 0.6 * X ? 0.125 : 0.25, 0.25, 0.5, 1];
+      var u = null, n = 0;
+      for(var g = 0; g < pref.length; g++){ var q = dur / pref[g]; if(q >= 2 - 1e-9 && Math.abs(q - Math.round(q)) < 1e-9){ u = pref[g]; n = Math.round(q); break; } }
+      if(u === null) return plain;
+      var allow = (dim.figs && dim.figs.length) ? dim.figs : Object.keys(DIM_FIGS);
+      if(fast && n >= 4){ var fl = florid(ch, s, nx, u, n, key, mode, allow); if(fl) return fl; }
+      var sc = scaleList(key, mode), is = sc.indexOf(s), inx = sc.indexOf(nx), d = nx - s;
+      var LO = 55, HI = 84, ok = function(p){ return p >= LO && p <= HI; };
+      var opts = [];                                                       // cada opción: { fig, tail: [alturas] } (la nota s ocupa lo que sobra)
+      if(allow.indexOf("passing") >= 0 && is >= 0 && inx >= 0 && Math.abs(is - inx) >= 2){
+        var k = Math.abs(is - inx), dir = inx > is ? 1 : -1, m = Math.min(n - 1, k - 1), tl = [];
+        for(var j = 1; j <= m; j++) tl.push(sc[is + dir * j]);
+        if(tl.length && tl.every(ok)) opts.push({ fig: "passing", tail: tl });
+      }
+      if(allow.indexOf("neighbor") >= 0 && is >= 0){
+        var nbDir = Math.random() < 0.5 ? 1 : -1, nb = sc[is + nbDir];
+        if(nb != null && ok(nb)){
+          if(n >= 3) opts.push({ fig: "neighbor", tail: [nb, s] });
+          else if(Math.abs(nx - nb) <= 2) opts.push({ fig: "neighbor", tail: [nb] });
+        }
+      }
+      if(allow.indexOf("turn") >= 0 && is >= 0 && n >= 5 && sc[is + 1] != null && sc[is - 1] != null && ok(sc[is + 1]) && ok(sc[is - 1]))
+        opts.push({ fig: "turn", tail: [sc[is + 1], s, sc[is - 1], s] });
+      if(allow.indexOf("arpeggio") >= 0 && n >= 3){
+        var ad = d > 0 ? 1 : (d < 0 ? -1 : (Math.random() < 0.5 ? 1 : -1)), cur = s, at = [];
+        for(var a = 0; a < Math.min(n - 1, 3); a++){
+          var nxt = null;
+          for(var p = cur + ad; p >= LO && p <= HI && Math.abs(p - cur) <= 5; p += ad) if(ch.tones.indexOf(mod(p, 12)) >= 0){ nxt = p; break; }
+          if(nxt === null) break;
+          at.push(nxt); cur = nxt;
+        }
+        if(at.length >= 2) opts.push({ fig: "arpeggio", tail: at });
+      }
+      if(allow.indexOf("anticipation") >= 0 && d !== 0 && Math.abs(d) <= 4 && ok(nx)) opts.push({ fig: "anticipation", tail: [nx] });
+      if(allow.indexOf("scale") >= 0 && is >= 0 && n >= 4){
+        var sd = d !== 0 ? (d > 0 ? 1 : -1) : (Math.random() < 0.5 ? 1 : -1), st = [];
+        for(var j2 = 1; j2 <= Math.min(n - 1, 5); j2++){ var q2 = sc[is + sd * j2]; if(q2 == null || !ok(q2)) break; st.push(q2); }
+        if(st.length >= 3) opts.push({ fig: "scale", tail: st });
+      }
+      if(allow.indexOf("thirds") >= 0 && is >= 0 && n >= 5){
+        var td = d >= 0 ? 1 : -1, tq = [sc[is + 2 * td], sc[is + td], sc[is + 3 * td]];
+        if(tq.every(function(q3){ return q3 != null && ok(q3); })) opts.push({ fig: "thirds", tail: tq });
+      }
+      if(!opts.length) return plain;
+      var tot = 0; opts.forEach(function(o){ tot += DIM_W[o.fig]; });
+      var r = Math.random() * tot, pick = opts[0];
+      for(var oi = 0; oi < opts.length; oi++){ r -= DIM_W[opts[oi].fig]; if(r < 0){ pick = opts[oi]; break; } }
+      var mt = pick.tail.length, out = [{ midi: s, off: 0, dur: (n - mt) * u, fig: pick.fig }];
+      for(var t = 0; t < mt; t++) out.push({ midi: pick.tail[t], off: (n - mt + t) * u, dur: u, fig: pick.fig });
+      return out;
+    }
+    // Silencios: con probabilidad DIM_REST_P el acorde lleva una pausa. Una sola nota: se acorta y queda pausa al final; con figura: una de las notas
+    // que no es la primera (la del soprano armonizado) pasa a pausa. Nunca en el acorde final ni en acordes de cuarta.
+    function addRest(out, dur){
+      if(Math.random() >= DIM_REST_P) return out;
+      if(out.length === 1){
+        var rl = dur >= 1 ? (Math.random() < 0.5 ? dur / 4 : dur / 2) : dur / 2;
+        out[0] = { midi: out[0].midi, off: 0, dur: dur - rl, fig: out[0].fig };
+        out.push({ midi: null, off: dur - rl, dur: rl, fig: null, rest: true });
+        return out;
+      }
+      var jx = Math.random() < 0.5 ? out.length - 1 : 1 + Math.floor(Math.random() * (out.length - 1));
+      out[jx] = { midi: null, off: out[jx].off, dur: out[jx].dur, fig: null, rest: true };
+      return out;
+    }
+    function diminish(chords, i, dur, key, orn, mode, dim){
+      var out = diminishNotes(chords, i, dur, key, orn, mode, dim);
+      if(dim.rests && !chords[i].sus && i + 1 < chords.length) out = addRest(out, dur);
+      return out;
+    }
+
     function ornFor(bpm){ return bpm < 66 ? 1.4 : (bpm < 108 ? 1 : (bpm < 156 ? 0.8 : 0.5)); }
 
-    return { compose: compose, melody: melody, analyze: analyze, FIG: FIG, RO_UP: RO_UP, RO_DOWN: RO_DOWN, MAJ: MAJ, ROFO: ROFO, MYCAD: MYCAD, MIN_UP: MIN_UP, MIN_DOWN: MIN_DOWN, hasParallel: hasParallel,
+    return { compose: compose, melody: melody, diminish: diminish, DIM_FIGS: DIM_FIGS, analyze: analyze, FIG: FIG, RO_UP: RO_UP, RO_DOWN: RO_DOWN, MAJ: MAJ, ROFO: ROFO, MYCAD: MYCAD, MIN_UP: MIN_UP, MIN_DOWN: MIN_DOWN, hasParallel: hasParallel,
              CELL_NAME: CELL_NAME, CELL_LONG: CELL_LONG, CELLS: CELLS, TEMPOS: TEMPOS, ornFor: ornFor, LOW: LOW, HIGH: HIGH, RT: RT, RA: RA, RS: RS };
   })();
 /* PARTIMENTI_CORE_END */
@@ -14247,6 +14410,27 @@ function runAnalysis() {
       mr.addEventListener("input", function(){ mv.textContent = mr.value + "%"; });
       ml.appendChild(document.createTextNode("tuyas ")); ml.appendChild(mr); ml.appendChild(mv); mw.appendChild(ml);
       mb.appendChild(mw); b.appendChild(mb);
+      // Disminución de la melodía
+      var db = mk("div", "padding:2px 0 6px;");
+      var dh = mk("div", "font-size:12px;font-weight:700;color:var(--ink-muted);margin-bottom:2px;", "Disminución de la melodía");
+      dh.title = "Disminución (diminuzione): convertir la melodía lenta y básica en una más florida y rápida (Wikipedia 'Partimento', citando a Sanguinetti 2012). El soprano de cada acorde se subdivide en negras, corcheas, semicorcheas o (por encima de 50%) fusas con las figuras tildadas (sin tildar = todas). 0% = soprano liso. Los tempos lentos adornan más y los rápidos menos. Las figuras son de la teoría general: las fuentes que leí no las enumeran para el partimento.";
+      db.appendChild(dh);
+      var dl = mk("label", LBL); dl.title = "Cuánto se adorna: 0 = sin disminución; 50 = casi todos los acordes llevan una figura (corcheas/semicorcheas); 100 = modo florido: semicorcheas y fusas, con el acorde entero lleno de figuras encadenadas (escalas, terceras, giros, bordaduras, arpegios).";
+      var dr = mk("input"); dr.type = "range"; dr.min = 0; dr.max = 100; dr.step = 5; dr.value = 25; dr.id = "partimentiDimPct"; dr.style.cssText = "width:110px;";
+      var dv = mk("span", "min-width:34px;text-align:right;", "25%");
+      dr.addEventListener("input", function(){ dv.textContent = dr.value + "%"; });
+      dl.appendChild(document.createTextNode("disminución ")); dl.appendChild(dr); dl.appendChild(dv); db.appendChild(dl);
+      var silChk = label("Silences", "Silencios en la melodía: algunos acordes llevan una pausa (al final de la nota o dentro de la figura). Nunca en el acorde final ni en los de cuarta.", "opt", "rests", true);
+      silChk.firstChild.id = "partimentiRests"; db.appendChild(silChk);
+      var DIM_TIP = { passing: "Notas de paso: la melodía llena por grados conjuntos el salto hacia el soprano del acorde siguiente.",
+                      neighbor: "Bordaduras: sube o baja un grado y vuelve a la nota del acorde.",
+                      turn: "Giros: nota superior, nota, nota inferior, nota (solo con subdivisión rápida).",
+                      arpeggio: "Arpegios: recorre notas del acorde en la dirección de la melodía.",
+                      anticipation: "Anticipaciones: la última subdivisión adelanta la nota del acorde siguiente.",
+                      scale: "Escalas: carreras por grados conjuntos de 3 a 7 notas.",
+                      thirds: "Terceras rotas: salta una tercera, vuelve por grado y salta de nuevo (do-mi-re-fa)." };
+      db.appendChild(group("", "", "dim", Object.keys(core.DIM_FIGS).map(function(k){ return { k: k, text: core.DIM_FIGS[k], tip: DIM_TIP[k] }; })));
+      b.appendChild(db);
       // Tempo
       var tb = mk("div", "padding:2px 0 6px;");
       var th = mk("div", "font-size:12px;font-weight:700;color:var(--ink-muted);margin-bottom:2px;", "Movimiento (tempo)"); th.title = "Cada canción sortea un movimiento de los tildados (todos si no hay ninguno) y un BPM dentro de su rango; mueve el slider Tempo. BPM aproximados (Wikipedia: Tempo); el slider va de 25 a 200."; tb.appendChild(th);
@@ -14290,6 +14474,9 @@ function runAnalysis() {
       var mycad = (myEl && myEl.checked) ? { on: true, p: (myPctEl ? parseInt(myPctEl.value, 10) : 50) / 100 } : null;
       var song = core.compose(N, { cells: checkedKeys("cell"), rofo: rofo, mycad: mycad, spell: spellPitchClass });
       var orn = core.ornFor(tempo.bpm);
+      var dimEl = document.getElementById("partimentiDimPct"), dimPct = dimEl ? parseInt(dimEl.value, 10) : 25;
+      var silEl = document.getElementById("partimentiRests");
+      var dim = { level: dimPct / 100, figs: checkedKeys("dim"), rests: !!(silEl && silEl.checked) };
       var keyName = spellPitchClass(song.key) + (song.mode === "minor" ? " menor" : " mayor");
       var chordEvents = [], bassEvents = [], melodyEvents = [];
       var progression = [], roles = [], slotChords = [], labels = [], lastBass = null;
@@ -14302,7 +14489,8 @@ function runAnalysis() {
           else { lastBass = { midi: ch.bass, startBeat: abs, durBeats: dur, bar: bar }; bassEvents.push(lastBass); }     // bajo (el partimento)
           chordEvents.push({ midi: ch.t, startBeat: abs, durBeats: dur, bar: bar });                                     // tenor
           chordEvents.push({ midi: ch.a, startBeat: abs, durBeats: dur, bar: bar });                                     // alto
-          core.melody(song.chords, Math.min(idx, song.chords.length - 1), dur, song.key, orn, song.mode).forEach(function(m){      // soprano con diminuciones
+          core.melody(song.chords, Math.min(idx, song.chords.length - 1), dur, song.key, orn, song.mode, dim).forEach(function(m){      // soprano con diminuciones
+            if(m.rest) return;                                                                                                  // pausa: sin evento
             melodyEvents.push({ midi: m.midi, startBeat: abs + m.off, durBeats: m.dur, bar: bar });
           });
           var voiced = [ch.bass, ch.t, ch.a, ch.s];
@@ -14337,7 +14525,7 @@ function runAnalysis() {
       if(sol) sol.innerHTML = "";
       if(SONGTITLE) SONGTITLE.next();
       var sub = document.getElementById("consolaSongSets");
-      if(sub) sub.textContent = "(Partimenti · experimental · " + keyName + (song.mycad ? " · MyCadences " + song.stats.myCells + (song.stats.myCells === 1 ? " celda" : " celdas") : "") + (song.rofo && song.stats.rofoSteps ? " · RofO " + Math.round(100 * song.stats.rofoVar / song.stats.rofoSteps) + "% variantes" : (song.rofo ? " · RofO" : "")) + " · " + (tempo.name ? tempo.name + " " : "") + "♩=" + tempo.bpm + " · " + N + " acordes · " + dens + " por compás · " +
+      if(sub) sub.textContent = "(Partimenti · experimental · " + keyName + (song.mycad ? " · MyCadences " + song.stats.myCells + (song.stats.myCells === 1 ? " celda" : " celdas") : "") + (song.rofo && song.stats.rofoSteps ? " · RofO " + Math.round(100 * song.stats.rofoVar / song.stats.rofoSteps) + "% variantes" : (song.rofo ? " · RofO" : "")) + " · " + (tempo.name ? tempo.name + " " : "") + "♩=" + tempo.bpm + " · dim " + dimPct + "%" + (dim.rests ? " · silences" : "") + " · " + N + " acordes · " + dens + " por compás · " +
         song.stats.cells.map(function(c){ return core.CELL_NAME[c]; }).join(" → ") + " · " + labels.join(" ") + ")";
       ["consolaPlayBtn", "consolaRegenPlayBtn"].forEach(function(id){
         var bt2 = document.getElementById(id); if(bt2) bt2.disabled = false;
@@ -19799,6 +19987,7 @@ function runAnalysis() {
         if(typeof window.__rollToFront === "function") window.__rollToFront();
         clickIfEnabled("consolaStopBtn");
         await wait(300);
+        randomizeSlider("consolaTempo", 30, 120); // tempo al azar con el mismo rango que CreaturaRandom/Bella (se sortea antes de generar: el motor lo lee al armar la canción)
         window.__commonChords.start();
         clickIfEnabled("consolaPlayBtn");
       } finally { running = false; }
