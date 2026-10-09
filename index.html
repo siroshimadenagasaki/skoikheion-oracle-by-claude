@@ -1231,7 +1231,7 @@
           <button class="chip primary" id="creaturaBtn" type="button" title="Corre sola la secuencia: sortea Chromatism (2–40%), Chords (20–60%), Triplets (0–100%), Melodic/Harmonic/RythmSpace (0–100%) y Rapid runs (0–30%), Simplicity (0–50%), Melody n2 (on/off al azar) y una combinación totalmente al azar de Cycles (intervalos + Chromatism; prende Cycles) → Random Fill (5 o 2 sets al azar; 2–3/2–4/2–5 notas, modo Mezcla) → Compose → tilda Mix time signatures → Detener → espera 2s → 🔀 Regenerar. Una sola pasada por click.">🪄 CreaturaRandom</button>
           <button class="chip primary" id="creaturaBellaBtn" type="button" title="Igual que CreaturaRandom (mismos sliders, incluidos Simplicity 0–50%, Melody n2 on/off y Cycles al azar; Compose, Mix time signatures, Detener, espera 2s y Regenerar), pero los 5 o 2 sets salen SOLO del índice del libro (jerarquías de sets) y con más probabilidad cuanto mayor es su jerarquía: dentro de cada cardinalidad (3 hasta el máximo del slider, el índice no tiene sets de 2 notas) el set 1 del índice es el más probable y el último el menos probable. Cada set sale transportado a una tónica al azar.">🪄 CreaturaBella</button>
           <div style="display:flex;align-items:center;gap:8px;"><button class="chip primary" id="commonChordsBtn" type="button" style="flex:1;" title="CommonChords: en vez de sets, compone una canción con acordes de la base de acordes (tríadas, sextas, séptimas, add, extendidos, alterados), en cualquier tónica y siempre en inversión: el bajo toca la tónica, la tercera, la quinta o la séptima. Cantidad de acordes al azar (1, 2 o 4 por compás; se pueden repetir o no). La melodía toca solo notas del modo del acorde en curso (Cmaj7 sin #11 = Jónico o Lidio). 🔀 / tecla G sortean otra canción CommonChords.">🎼 CommonChords</button><div style="display:flex;flex-direction:column;gap:3px;"><label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="ModeTestHarmony: la armonía del ModeTest — un solo acorde cada 2 compases, con todas las notas atacando juntas (simultáneo) y sonando los 2 compases completos. La melodía queda normal. Con ModeTestMelody también tildado = ModeTest completo."><input type="checkbox" id="commonChordsModeTestH"> ModeTestHarmony</label><label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="ModeTestMelody: la melodía del ModeTest — toca únicamente la escala (el modo) de cada acorde, de la tónica hacia arriba o abajo, 1–3 octavas. La armonía queda normal (1, 2 o 4 acordes por compás). Con ModeTestHarmony también tildado = ModeTest completo."><input type="checkbox" id="commonChordsModeTestM"> ModeTestMelody</label><label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="narrowregister: el registro de un acorde al siguiente no se aleja más de una octava (la nota más grave y la más aguda de cada acorde quedan a no más de 12 semitonos de las del acorde anterior)."> <input type="checkbox" id="commonChordsNarrow"> narrowregister</label></div></div><details style="margin-top:4px;"><summary style="font-size:12px;color:var(--ink-muted);cursor:pointer;" title="Categoría Fusionada: limita los acordes que se sortean a las familias tildadas. Sin tildar ninguna = todas.">🧬 Familias de acordes</summary><div id="commonChordsFamilies" style="display:flex;flex-wrap:wrap;gap:4px 10px;padding:4px 0;"><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;font-weight:700;" title="All: tilda o destilda todas las familias."><input type="checkbox" id="commonChordsFamiliesAll"> All</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Maj7"> Maj7</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="m7"> m7</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="7"> 7</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="7Alt"> 7Alt</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Sus 2b"> Sus 2b</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Semidisminuido"> Semidisminuido</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Disminuida"> Disminuida</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Aumentada"> Aumentada</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Díada"> Díada</label></div></details><details style="margin-top:4px;"><summary style="font-size:12px;color:var(--ink-muted);cursor:pointer;" title="Escalas: con una o más tildadas, la melodía de cada acorde toca solo modos de esas escalas (solo se sortean acordes que tengan algún modo en esas escalas; si la combinación con las familias no deja ninguno, usa cualquier modo y se marca con * en el subtítulo). Sin tildar = todas (menos las 4 de Barry Harris, que solo entran si se tildan y cuyas corridas de escala siempre bajan).">🎼 Escalas de la melodía</summary><div id="commonChordsScales" style="display:flex;flex-wrap:wrap;gap:4px 10px;padding:4px 0;"><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;font-weight:700;" title="All: tilda o destilda todas las escalas."><input type="checkbox" id="commonChordsScalesAll"> All</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Diatónica"> Diatónica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Menor melódica"> Menor melódica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Menor armónica"> Menor armónica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Mayor armónica"> Mayor armónica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Enigmática"> Enigmática</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Aumentada"> Aumentada</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Octatónica"> Octatónica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-35"> Pent. 5-35 (tradicional)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-34"> Pent. 5-34 (Prometeo)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-29B"> Pent. 5-29B (Kumoi I)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-29"> Pent. 5-29 (Kumoi II)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-30"> Pent. 5-30 (Enigmática)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-30B"> Pent. 5-30B (Enigmática II)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="Barry Harris: sexta mayor + disminuido (C D E F G Ab A B). Solo entra si la tildás; la corrida de escala (ModeTestMelody / Semis) siempre baja."><input type="checkbox" value="Harris Major 6th dim"> Harris Major 6th dim (8-26)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="Barry Harris: sexta menor + disminuido (C D Eb F G Ab A B). Solo entra si la tildás; la corrida de escala siempre baja."><input type="checkbox" value="Harris Minor 6th dim"> Harris Minor 6th dim (8-27)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="Barry Harris: séptima dominante + disminuido (C D E F G Ab Bb B). Solo entra si la tildás; la corrida de escala siempre baja."><input type="checkbox" value="Harris Dominant dim"> Harris Dominant dim (8-27B)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="Barry Harris: séptima dominante b5 + disminuido (C D E F Gb Ab Bb B). Solo entra si la tildás; la corrida de escala siempre baja."><input type="checkbox" value="Harris Dominant b5 dim"> Harris Dominant b5 dim (8-25)</label></div><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;padding-bottom:4px;" title="Semis: la melodía toca la escala del modo de cada acorde, de la tónica hacia arriba, al doble de velocidad que ModeTest (cada nota dura la mitad y la escala se repite desde la tónica hasta llenar el acorde). Funciona con o sin ModeTestMelody."><input type="checkbox" id="commonChordsSemis"> Semis (escalas al doble de velocidad)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;padding-bottom:4px;" title="MelodicPatternsV2: la melodía recorre las notas del modo del acorde con patrones del tester (1 a 8 pasos diatónicos, 2 a 4 movimientos, hacia arriba o abajo; ej. 2↑ 1↓ = C E D). Cada patrón se usa una sola vez y le sigue otro nuevo. No aplica con ModeTestMelody ni Semis (corridas de escala)."><input type="checkbox" id="commonChordsPatV2"> MelodicPatternsV2 (patrones del tester)</label></details>
-          <button class="chip primary" id="partimentiBtn" type="button" title="Partimenti (experimental): el motor inventa un bajo (Regla de la octava ascendente/descendente, quintas descendentes, I–IV–V–I, esquemas galantes y cadencias simple/compuesta/doble) en una tonalidad mayor al azar y lo completa a 4 voces con conducción de voces (sin quintas ni octavas paralelas, la 7ª baja, la sensible sube): bajo en Bass, tenor y alto en Harmony, soprano con diminuciones en Melody. Al entrar pone Clavecín en los tres y Batería a 0%; al salir devuelve los instrumentos, la Batería y el tempo de antes. Cada canción sortea un movimiento de tempo (Grave…Prestissimo). En el piano roll: cifra romana e inversión (V4/3, V6/4, I6...). Las opciones están en el desplegable de abajo. 🔀 / tecla G sortean otra canción.">🎹 Partimenti</button>
+          <button class="chip primary" id="partimentiBtn" type="button" title="Partimenti (experimental): el motor inventa un bajo (Regla de la octava ascendente/descendente, quintas descendentes, I–IV–V–I, esquemas galantes y cadencias simple/compuesta/doble) en una tonalidad mayor al azar y lo completa a 4 voces con conducción de voces (sin quintas ni octavas paralelas, la 7ª baja, la sensible sube): bajo en Bass, tenor y alto en Harmony, soprano con diminuciones en Melody. Al entrar pone Clavecín en los tres y Batería a 0%. Cada canción sortea un movimiento de tempo (Grave…Prestissimo). En el piano roll: cifra romana e inversión (V4/3, V6/4, I6...). Las opciones están en el desplegable de abajo. 🔀 / tecla G sortean otra canción.">🎹 Partimenti</button>
           <details id="partimentiOpts" style="margin-top:2px;"><summary style="font-size:12px;color:var(--ink-muted);cursor:pointer;" title="Partimenti: elegí qué celdas de bajo, esquemas galantes (Romanesca, Prinner, Meyer, Do-Re-Mi, Sol-Fa-Mi), cadencias (simple, compuesta, doble) y movimientos de tempo (Grave…Prestissimo) puede sortear. Sin tildar nada = todo.">🎹 Partimenti: esquemas, cadencias, tempo</summary><div id="partimentiOptsBody" style="padding:4px 0;"></div></details>
           <button class="chip primary" id="creaturaIntervalicBtn" type="button" title="Igual que CreaturaRandom (mismos sliders, Compose, Mix time signatures, Detener, espera 2s y Regenerar, con 5 o 2 sets), pero antes sortea una combinación de clases de intervalo (1, 2 o 3 de ic1..ic6) y los sets salen SOLO de los que tienen todas esas clases en su vector de intervalos, con más probabilidad cuanto mayor parte del vector ocupan esas clases.">🪄 CreaturaIntervalic</button>
         </div>
@@ -13727,6 +13727,22 @@ function runAnalysis() {
     var ROFO = {"minor":{"canon":{"up":[[[0,"m",[0,3,7]]],[[7,"",[2,5,7,11]],[11,"dim",[2,5,11]]],[[0,"m",[0,3,7]]],[[5,"m6",[0,2,5,8]]],[[7,"",[2,7,11]],[7,"(no5)",[7,11]]],[[5,"",[0,5,9]]],[[11,"dim",[2,5,7,11]],[7,"7",[2,5,7,11]],[7,"",[2,7,11]]],[[0,"m",[0,3,7]]]],"down":[[[0,"m",[0,3,7]]],[[7,"m",[2,7,10]]],[[5,"m",[0,5,7,8]],[8,"7",[0,6,8]],[8,"7",[0,3,6,8]]],[[7,"",[2,7,11]],[7,"(no5)",[7,11]],[7,"7",[2,5,7,11]]],[[7,"",[2,5,7,11]]],[[0,"m",[0,3,7]]],[[11,"dim",[2,5,11]],[7,"7",[2,5,7,11]]],[[0,"m",[0,3,7]]]]},"vars":{"0":[[0,"m",[0,3,7]],[8,"",[0,3,8]],[5,"m",[0,5,8]],[2,"Ø",[0,2,5,8]],[0,"sus4",[0,5,7]],[0,"madd11",[0,3,5,7]],[7,"",[0,2,7,11]],[0,"5",[0,7]],[8,"6",[0,3,5,8]],[8,"(b5)",[0,2,8]],[8,"sus2",[0,3,10]],[7,"7",[0,5,7,11]],[8,"dim",[0,2,8,11]],[5,"",[0,5,9]],[0,"m11",[0,3,5]],[7,"7sus4",[0,2,5,7]],[0,"m",[0,2,3,7]],[0,"sus2",[0,2,7]]],"2":[[7,"7",[2,5,7,11]],[2,"Ø",[0,2,5,8]],[10,"",[2,5,10]],[11,"dim",[2,5,11]],[0,"",[0,2,4,7]],[2,"m7",[0,2,5]],[5,"2",[0,2,5,7]],[2,"°",[2,5,8,11]],[2,"m(#11)",[2,5,7,8]],[0,"sus2",[0,2]]],"3":[[0,"m",[0,3,7]],[8,"",[0,3,8]],[3,"",[3,7,10]],[3,"7M",[2,3,7]],[7,"sus4",[0,2,3,7]],[3,"add11",[3,7,8]]],"5":[[5,"m6",[0,2,5,8]],[7,"",[2,5,7,11]],[10,"add9",[0,2,5,10]],[5,"madd11",[0,5,8,10]],[5,"dim7",[2,5,8,11]],[5,"m7",[0,3,5,8]],[2,"dim",[2,5,8]]],"6":[[2,"7",[0,2,6,9]]],"7":[[7,"",[2,7,11]],[7,"m",[2,7,10]],[3,"",[3,7,10]],[7,"m(no5)",[7,10]],[7,"(no5)",[7,11]],[7,"7",[2,5,7,11]],[7,"sus4",[0,2,5,7]],[9,"Ø",[0,3,7,9]],[7,"sus4",[0,2,7]],[7,"7",[5,7,11]],[0,"m",[0,3,7]],[2,"7sus4",[0,2,7,9]],[7,"add9",[2,7,9,11]]],"8":[[5,"m",[0,5,8]],[2,"Ø",[0,2,5,8]],[5,"m",[0,5,7,8]],[8,"7",[0,6,8]],[8,"7",[0,3,6,8]],[8,"7M(13)",[0,5,7,8]],[7,"7sus4",[0,5,7,8]],[0,"",[0,4,7,8]],[5,"m9(no5)",[5,7,8]],[8,"Maj11#",[2,3,8]]],"9":[[5,"",[0,5,9]],[9,"Ø",[0,3,7,9]],[9,"m7(6b)",[0,5,7,9]],[5,"7",[0,3,5,9]]],"10":[[10,"",[2,5,10]],[7,"m",[2,7,10]],[8,"",[0,3,8,10]],[8,"7M",[0,7,8,10]],[3,"6",[0,3,7,10]],[10,"sus213",[0,7,10]]],"11":[[11,"dim7",[2,5,8,11]],[7,"7",[2,5,7,11]],[11,"dim",[2,5,7,11]],[7,"",[2,7,11]],[5,"Ø",[3,5,8,11]]]}},"major":{"vars":{"0":[[0,"",[0,4,7]],[9,"m",[0,4,9]],[2,"m",[0,2,5,9]],[5,"",[0,5,9]],[0,"(no5)",[0,4]],[0,"add9",[0,2,4,7]],[4,"m7",[0,2,4,7]],[7,"7",[0,5,7,11]],[0,"5",[0,7]],[0,"sus2",[0,2,7]],[7,"7sus4",[0,2,5,7]],[0,"6",[0,4,7,9]],[9,"m",[0,4,5,9]]],"2":[[2,"m",[2,5,9]],[2,"m6",[2,5,9,11]],[7,"7",[2,5,7,11]],[11,"dim",[2,5,11]],[5,"sus2",[0,2,5,7]],[2,"madd11",[2,5,7,9]],[2,"7sus4",[0,2,7]],[2,"m7",[0,2,5]]],"4":[[0,"",[0,4,7]],[4,"m",[4,7,11]],[9,"m",[0,4,9]],[5,"",[0,4,5,9]],[4,"m7",[2,4,7]],[0,"7",[0,4,10]]],"5":[[5,"6",[0,2,5,9]],[2,"m",[2,5,9]],[11,"Ø",[2,5,9,11]],[7,"",[2,5,7,11]],[5,"",[0,5,9]],[2,"m6",[2,5,9,11]],[0,"7sus4",[0,5,7,10]],[0,"sus2",[0,2,5,7]],[7,"7sus2",[5,7,9]]],"7":[[7,"",[2,7,11]],[4,"m",[4,7,11]],[0,"",[0,4,7]],[2,"m7",[0,2,5,7]],[7,"(no5)",[7,11]],[7,"add11",[0,2,7,11]],[7,"add11(no5)",[0,7,11]],[2,"7sus4",[0,2,7,9]],[7,"sus2",[2,7,9]],[7,"sus4",[0,2,7]],[7,"sus4add9",[0,2,7,9]]],"9":[[5,"",[0,5,9]],[9,"m",[0,4,9]],[11,"Ø",[2,5,9,11]],[2,"7",[0,2,6,9]],[2,"m6",[2,5,9,11]],[9,"m7(#5)",[0,5,7,9]],[7,"sus4",[0,2,7,9]],[9,"m7",[0,7,9]]],"11":[[11,"dim",[2,5,11]],[7,"7",[2,5,7,11]],[7,"",[2,7,11]],[11,"dim7",[2,5,8,11]],[11,"dim",[2,5,7,11]]]}}};
     var MIN_UP = [0, 2, 3, 5, 7, 9, 11, 12], MIN_DOWN = [12, 10, 8, 7, 5, 3, 2, 0];   // bajo de la Regla en menor: ↑ con ⑥ y ⑦ elevados, ↓ con ⑦ y ⑥ naturales
     var HMIN = [0, 2, 3, 5, 7, 8, 11];                                                  // escala (menor armónica) para los adornos del soprano en menor
+    // ---- MyCadences: tu biblioteca de My_cadences_v5.gp (173 compases). Cada unidad = una cadencia/apertura/secuencia ya transportada a tónica 0:
+    // [sección, compases, menor(0/1), rol, ¿cierra con bajo en la tónica? (0/1), acordes]; rol: c = cadencia (termina en I), o = apertura, b = cuerpo (secuencias, marchas, 6ª aumentada…).
+    // Cada acorde = [bajo, raíz, sufijo del nombre, notas] en semitonos sobre la tónica. Los retardos que resuelven en notas sueltas (Gsus4 → B) se leen como el acorde de V.
+    var MYCAD = {"secs":["Cadencia simple (I-V-I) Mayor","Inversiones horizontal","Inversiones vertical","Cadencia simple (I-V-I) Menor","Cadencia compuesta (I-Vsus-V-I)","Cadencia compuesta menor","Cadencia IV Vsus V V7 I (compuesta)","Cadencia I6 Vsus V V7 I (compuesta)","Cadencia doble ( I - V Vsus6 - Vsus- V- I)","Cadencia doble menor","Functional diminished VIIdim (V) I","I dim (V/V) V","Fenaroli dissonances I IV6 Vsus V I","Cadenze lunghe (Based on Pasquini) I6 IV Vsus V I","Cadenze lunghe (Based on Pasquini) Im6 IVm Vsus V Im","From relative minor to major","Major opening (Pedals) I IIm/I VII°/I I","Variaciones sobre opening mayor","Minor opening","Variaciones sobre opening menor","Haendel opening (Aria HWV7) I IIm Vsus V V7 Isus I","Variaciones sobre opening de Haendel","2 down 1 up diatonic cycle","1 up 2 down","5 down 4 up (cycle of fourths)","5 down 4 up ( holding strong beat bass)","4 DOWN 1 UP con suspenciones","IV V I","Cadencia Plagal","Marches harmoniques","Acorde 6ta aumentada","V/I I Vb° V//V V","Im/V V","Keith Jarrett like Cadence"],"u":[[0,"c1",0,"c",1,[[0,0,"",[0,4,7]],[7,7,"",[2,7,11]],[0,0,"",[0,4,7]]]],[0,"c2",0,"c",1,[[0,0,"",[0,4,7]],[7,7,"",[2,7,11]],[0,0,"5",[0,7]]]],[0,"c4",0,"c",1,[[0,0,"(no5)",[0,4]],[7,7,"",[2,7,11]],[0,0,"(no5)",[0,4]]]],[1,"c6",0,"b",0,[[7,0,"",[0,4,7]],[11,7,"7",[2,5,7,11]],[0,0,"",[0,4,7]],[2,11,"dim",[2,5,11]]]],[1,"c7",0,"b",0,[[4,0,"",[0,4,7]],[5,7,"",[2,5,7,11]],[7,0,"",[0,4,7]],[7,7,"",[2,7,11]]]],[1,"c8",0,"c",1,[[4,0,"",[0,4,7]],[2,7,"7",[2,5,7,11]],[0,0,"",[0,4,7]]]],[2,"c9",0,"b",0,[[7,0,"",[0,4,7]],[7,7,"",[2,7,11]],[0,0,"(no5)",[0,4]],[11,7,"",[2,7,11]]]],[2,"c10",0,"b",0,[[0,0,"",[0,4,7]],[2,7,"7",[2,5,7,11]],[4,0,"",[0,4,7]],[5,7,"",[2,5,7,11]]]],[2,"c11",0,"b",0,[[7,0,"",[0,4,7]],[11,7,"7",[2,5,7,11]],[0,0,"",[0,4,7]],[2,7,"",[2,7,11]]]],[2,"c12",0,"c",1,[[4,0,"",[0,4,7]],[7,7,"",[2,7,11]],[0,0,"",[0,4,7]]]],[3,"c13",1,"c",1,[[0,0,"m",[0,3,7]],[7,7,"",[2,7,11]],[0,0,"m(no5)",[0,3]]]],[3,"c14",1,"c",1,[[0,0,"m",[0,3,7]],[7,7,"7",[2,5,7,11]],[0,0,"5",[0,7]]]],[3,"c15",1,"c",1,[[0,0,"m",[0,3,7]],[7,7,"",[2,7,11]],[0,0,"m",[0,3,7]]]],[1,"c17",1,"b",0,[[7,0,"m",[0,3,7]],[11,7,"7",[2,5,7,11]],[0,0,"m",[0,3,7]],[2,11,"dim",[2,5,11]]]],[1,"c18",1,"b",0,[[3,0,"m",[0,3,7]],[5,7,"",[2,5,7,11]],[7,0,"m",[0,3,7]],[7,7,"",[2,7,11]]]],[1,"c19",1,"c",1,[[3,0,"m",[0,3,7]],[2,7,"7",[2,5,7,11]],[0,0,"m",[0,3,7]]]],[2,"c20",1,"c",0,[[7,7,"",[2,7,11]],[0,0,"m",[0,3,7]],[2,7,"7",[2,5,7,11]],[3,0,"m",[0,3,7]]]],[2,"c21",1,"c",1,[[5,7,"",[2,5,7,11]],[7,0,"m",[0,3,7]],[11,7,"7",[2,5,7,11]],[0,0,"m",[0,3,7]]]],[2,"c22",1,"c",1,[[2,7,"7",[2,5,7,11]],[3,0,"m",[0,3,7]],[7,7,"",[2,7,11]],[0,0,"m(no5)",[0,3]]]],[4,"c23",0,"c",1,[[0,0,"",[0,4,7]],[7,7,"sus4",[0,2,7]],[7,7,"",[2,7,11]],[0,0,"",[0,4,7]]]],[4,"c24",0,"c",1,[[0,0,"(no5)",[0,4]],[7,7,"add11(no5)",[0,7]],[7,7,"",[2,7,11]],[0,0,"(no5)",[0,4]]]],[4,"c25",0,"c",1,[[0,0,"",[0,4,7]],[7,0,"",[0,4,7]],[7,7,"",[2,7,11]],[0,0,"",[0,4,7]]]],[4,"c26",0,"c",1,[[0,0,"",[0,4,7]],[7,7,"add11(no5)",[0,7]],[7,7,"",[2,7,11]],[0,0,"",[0,4,7]]]],[4,"c28",0,"c",1,[[0,0,"",[0,4,7]],[7,2,"m7",[0,2,5,7]],[7,7,"",[2,7,11]],[0,0,"",[0,4,7]]]],[5,"c30",1,"c",1,[[0,0,"m",[0,3,7]],[7,7,"sus4",[0,2,7]],[7,7,"",[2,7,11]],[0,0,"m(no5)",[0,3]]]],[5,"c32",1,"c",1,[[0,0,"m",[0,3,7]],[7,7,"add11(no5)",[0,7]],[7,7,"",[2,7,11]],[0,0,"5",[0,7]]]],[5,"c33",1,"c",1,[[0,0,"m",[0,3,7]],[7,7,"add11(no5)",[0,7]],[7,7,"",[2,7,11]],[0,0,"m(no5)",[0,3]]]],[5,"c34",1,"c",1,[[0,0,"m",[0,3,7]],[7,2,"m7",[0,2,5,7]],[7,7,"",[2,7,11]],[0,0,"m",[0,3,7]]]],[5,"c35",1,"c",1,[[0,0,"m",[0,3,7]],[7,0,"m",[0,3,7]],[7,7,"",[2,7,11]],[0,0,"m",[0,3,7]]]],[6,"c37",0,"c",1,[[5,5,"",[0,5,9]],[7,7,"sus4",[0,2,7]],[7,7,"",[2,7,11]],[7,7,"7",[2,5,7,11]],[0,0,"",[0,4,7]]]],[6,"c38",0,"c",1,[[5,5,"(no5)",[5,9]],[7,7,"sus4",[0,2,7]],[7,7,"",[2,7,11]],[7,7,"7",[2,5,7,11]],[0,0,"",[0,4,7]]]],[6,"c39",1,"c",1,[[5,5,"m",[0,5,8]],[7,7,"sus4",[0,2,7]],[7,7,"",[2,7,11]],[7,7,"7",[2,5,7,11]],[0,0,"m(no5)",[0,3]]]],[6,"c40",1,"c",1,[[5,5,"m(no5)",[5,8]],[7,7,"sus4",[0,2,7]],[7,7,"",[2,7,11]],[7,7,"7",[2,5,7,11]],[0,0,"m",[0,3,7]]]],[7,"c41",0,"c",1,[[4,0,"",[0,4,7]],[7,7,"sus4",[0,2,7]],[7,7,"",[2,7,11]],[7,7,"7",[2,5,7,11]],[0,0,"",[0,4,7]]]],[7,"c43",1,"c",1,[[3,0,"m",[0,3,7]],[7,7,"sus4",[0,2,7]],[7,7,"",[2,7,11]],[7,7,"7",[2,5,7,11]],[0,0,"m",[0,3,7]]]],[8,"c45",0,"c",1,[[0,0,"",[0,4,7]],[7,7,"",[2,7,11]],[7,0,"",[0,4,7]],[7,7,"sus4",[0,2,7]],[7,7,"",[2,7,11]],[0,0,"",[0,4,7]]]],[8,"c48",0,"c",1,[[0,0,"",[0,4,7]],[7,7,"",[2,7,11]],[7,0,"",[0,4,7]],[7,7,"7sus4",[0,5,7]],[7,7,"7",[5,7,11]],[0,0,"",[0,4,7]]]],[9,"c49",1,"c",1,[[0,0,"m(no5)",[0,3]],[7,7,"",[2,7,11]],[7,0,"m",[0,3,7]],[7,7,"sus4",[0,2,7]],[7,7,"",[2,7,11]],[0,0,"m(no5)",[0,3]]]],[9,"c50",1,"c",1,[[0,0,"m",[0,3,7]],[7,7,"",[2,7,11]],[7,0,"m",[0,3,7]],[7,7,"sus4",[0,2,7]],[7,7,"",[2,7,11]],[0,0,"m",[0,3,7]]]],[9,"c52",1,"c",1,[[0,0,"m",[0,3,7]],[7,7,"",[2,7,11]],[7,0,"m",[0,3,7]],[7,7,"7sus4",[0,5,7]],[7,7,"7",[5,7,11]],[0,0,"m",[0,3,7]]]],[10,"c53",0,"c",1,[[0,11,"dim",[0,2,5,11]],[0,0,"",[0,4,7]]]],[10,"c55",1,"c",1,[[0,11,"dim",[0,2,5,11]],[0,0,"m",[0,3,7]]]],[11,"c57",0,"b",0,[[0,0,"dim",[0,3,6]],[7,7,"",[2,7,11]]]],[12,"c58",0,"c",1,[[0,0,"",[0,4,7]],[9,5,"",[0,5,9]],[7,2,"m7",[0,2,5,7]],[7,7,"",[2,7,11]],[0,0,"",[0,4,7]]]],[12,"c60",0,"c",1,[[0,0,"",[0,4,7]],[9,5,"",[0,5,9]],[7,7,"sus4",[0,2,7]],[7,7,"",[2,7,11]],[0,0,"",[0,4,7]]]],[12,"c61",1,"c",1,[[0,0,"m",[0,3,7]],[8,8,"6",[0,3,5,8]],[7,2,"m7",[0,2,5,7]],[7,7,"",[2,7,11]],[0,0,"m(no5)",[0,3]]]],[12,"c62",1,"c",1,[[0,0,"m",[0,3,7]],[8,5,"m",[0,5,8]],[7,7,"sus4",[0,2,7]],[7,7,"",[2,7,11]],[0,0,"m",[0,3,7]]]],[13,"c63-64",0,"c",1,[[4,0,"",[0,4,7]],[5,5,"6",[0,2,5,9]],[7,7,"sus4",[0,2,7]],[7,7,"",[2,7,11]],[0,0,"",[0,4,7]]]],[13,"c65-66",0,"c",1,[[4,0,"",[0,4,7]],[5,5,"6",[0,2,5,9]],[7,2,"m7",[0,2,5,7]],[7,7,"7",[2,5,7,11]],[0,0,"",[0,4,7]]]],[14,"c67-68",1,"c",1,[[3,0,"m",[0,3,7]],[5,5,"m6",[0,2,5,8]],[7,7,"sus4",[0,2,7]],[7,7,"",[2,7,11]],[0,0,"m(no5)",[0,3]]]],[14,"c69-70",1,"c",1,[[3,0,"m",[0,3,7]],[5,5,"m6",[0,2,5,8]],[7,2,"m7",[0,2,5,7]],[7,7,"7",[2,5,7,11]],[0,0,"m",[0,3,7]]]],[15,"c71-72",0,"c",1,[[9,9,"m",[0,4,9]],[5,5,"6",[0,2,5,9]],[7,7,"sus4",[0,2,7]],[7,7,"",[2,7,11]],[0,0,"",[0,4,7]]]],[15,"c73-74",0,"c",1,[[9,9,"m",[0,4,9]],[5,5,"6",[0,2,5,9]],[7,7,"sus4",[0,2,7]],[7,7,"",[2,7,11]],[0,0,"5",[0,7]]]],[16,"c75",0,"o",0,[[0,0,"",[0,4,7]],[0,5,"6",[0,2,5,9]],[11,7,"7",[2,5,7,11]],[0,0,"",[0,4,7]]]],[17,"c77",0,"o",0,[[4,4,"m7(#5)",[0,2,4,7]],[4,0,"",[0,4,7]]]],[17,"c78",0,"o",0,[[0,5,"6",[0,2,5,9]],[11,7,"7",[2,5,7,11]]]],[17,"c79",0,"o",0,[[9,9,"m7",[0,4,7,9]],[5,2,"m",[2,5,9]],[7,2,"madd11(no5)",[2,5,7]]]],[17,"c80",0,"o",0,[[0,0,"sus4add9",[0,2,5,7]],[0,0,"(no5)",[0,4]]]],[17,"c81",0,"o",0,[[0,0,"7M",[0,4,11]],[0,4,"m7",[0,2,4,7]],[0,5,"7M",[0,5,9]]]],[17,"c82",0,"o",0,[[11,7,"7",[2,5,7,11]],[0,7,"7sus4",[0,2,5,7]],[0,0,"",[0,4,7]]]],[17,"c83",0,"o",0,[[0,0,"add11",[0,4,7]],[0,2,"m7",[0,2,5]],[0,5,"add9",[0,5,7,9]],[0,4,"7",[0,2,4,8]]]],[17,"c84",0,"o",0,[[0,11,"dim",[0,2,5,11]],[0,2,"Ø",[0,2,5,8]],[0,7,"7sus4",[0,2,5,7]],[0,0,"",[0,2,4,7]]]],[17,"c85",0,"o",0,[[0,0,"6",[0,4,7,9]],[0,0,"7M",[0,4,11]],[0,5,"7M",[0,4,5,9]],[0,2,"m7",[0,2,5]]]],[17,"c86",0,"o",0,[[0,11,"dim",[0,2,5,11]],[0,0,"aug",[0,4,8]],[0,0,"sus4",[0,5,7]],[0,0,"",[0,4,7]]]],[18,"c87",1,"o",0,[[0,0,"m",[0,3,7]],[0,2,"Ø",[0,2,5,8]],[11,7,"7",[2,5,7,11]],[0,0,"m",[0,3,7]]]],[18,"c88",1,"o",0,[[0,0,"m",[0,3,7]],[0,5,"m",[0,5,8]],[0,11,"dim",[0,2,5,11]],[0,0,"m",[0,3,7]]]],[19,"c91",1,"o",0,[[0,0,"sus2",[0,2,7]],[0,0,"madd11",[0,3,5,7]]]],[19,"c92",1,"o",0,[[0,2,"Ø",[0,2,5,8]],[0,11,"dim",[0,2,5,11]],[11,7,"7",[2,5,7,11]]]],[19,"c93",1,"o",0,[[0,0,"sus4add9",[0,2,5,7]],[0,0,"m",[0,3,7]]]],[19,"c94",1,"o",0,[[0,0,"sus4add9",[0,2,5,7]],[0,0,"m",[0,3,7]],[0,8,"6",[0,3,5,8]],[0,2,"Ø",[0,2,5,8]]]],[19,"c95",1,"o",0,[[11,11,"dim7",[2,5,8,11]],[11,7,"7",[2,5,7,11]],[0,7,"7sus4",[0,2,5,7]],[0,0,"m",[0,3,7]]]],[19,"c96",1,"o",0,[[0,0,"sus2",[0,2,7]],[0,0,"m(no5)",[0,3]],[0,8,"6",[0,3,8]],[0,5,"m",[0,5,8]]]],[19,"c97",1,"o",0,[[0,11,"dim",[0,2,5,11]],[0,7,"7sus4",[0,2,5,7]],[0,0,"madd11",[0,3,5,7]]]],[19,"c98",1,"o",0,[[0,0,"m",[0,3,7]],[0,8,"6",[0,3,5,8]],[0,5,"m",[0,5,8]],[0,8,"(b5)",[0,2,8]],[0,7,"",[0,5,7,11]],[0,11,"dim",[0,2,5,11]],[0,0,"m",[0,3,7]]]],[20,"c99-101",0,"o",0,[[0,0,"",[0,4,7]],[2,2,"m7",[0,2,5]],[7,2,"m7",[0,2,5,7]],[7,7,"(no5)",[5,7,11]],[7,7,"7",[2,5,7,11]],[0,0,"sus4",[0,5,7]],[0,0,"",[0,4,7]]]],[20,"c102-104",0,"o",0,[[0,0,"",[0,4,7]],[2,2,"m7",[0,2,5,9]],[7,7,"sus4",[0,2,7]],[0,0,"sus4",[0,5,7]],[0,0,"",[0,4,7]]]],[21,"c105-108",0,"o",0,[[0,0,"add11",[0,4,5,7]],[0,0,"add9",[0,2,7]],[2,2,"madd11",[2,5,7,9]],[2,2,"m",[2,5]],[7,2,"m7",[0,2,5,7]],[7,7,"",[2,7,11]],[0,0,"sus4",[0,5,7]],[0,0,"add9",[0,2,4,7]]]],[21,"c109-112",0,"o",0,[[0,0,"7M",[0,4,11]],[0,0,"",[0,4,7]],[2,9,"7sus4",[2,4,7,9]],[2,2,"m",[2,5,9]],[7,7,"sus4",[0,2,7]],[7,2,"m7",[0,2,5,7]],[0,0,"sus4",[0,5,7]],[0,0,"",[0,4,7]]]],[22,"c113-123",0,"b",0,[[0,0,"",[0,4,7]],[9,9,"m",[0,4,9]],[11,7,"",[2,7,11]],[7,7,"",[2,7,11]],[9,9,"m",[0,4,9]],[5,5,"",[0,5,9]],[7,7,"",[2,7,11]],[4,4,"m",[4,7,11]],[5,5,"",[0,5,9]],[2,2,"m",[2,5,9]],[4,4,"m",[4,7,11]],[0,0,"",[0,4,7]],[2,2,"m",[2,5,9]],[11,11,"m(no5)",[2,11]],[0,0,"",[0,4,7]],[9,9,"m7",[0,4,7,9]],[11,7,"7",[2,5,7,11]],[7,7,"5",[2,7]],[9,9,"m",[0,4,9]],[5,5,"6",[0,2,5,9]],[7,7,"sus4",[0,2,7]],[7,7,"",[2,7,11]],[4,0,"",[0,4,7]]]],[23,"c124-127",0,"b",0,[[11,7,"7",[2,5,7,11]],[0,0,"",[0,4,7]],[9,5,"7M9",[4,5,7,9]],[11,7,"",[2,7,11]],[7,4,"m",[4,7,11]],[9,9,"m",[0,4,9]],[5,2,"m",[2,5,9]],[7,7,"",[2,7,11]],[4,0,"",[0,4,7]],[5,5,"(no5)",[5,9]],[2,11,"dim",[2,5,11]],[4,4,"m",[4,7,11]],[0,9,"m",[0,4,9]],[2,2,"m",[2,5,9]],[11,7,"7",[2,5,7,11]],[0,0,"",[0,4,7]]]],[24,"c128-131",0,"b",0,[[9,9,"m",[0,4,9]],[2,5,"",[0,2,5,9]],[7,7,"7",[5,7,11]],[0,0,"",[0,4,7]],[5,5,"7M",[0,4,5,9]],[11,11,"Ø",[2,5,9,11]],[4,4,"m7",[2,4,7]],[4,4,"7",[2,4,8,11]],[9,9,"m",[0,4,9]]]],[25,"c132-135",0,"b",0,[[9,9,"m",[0,4,9]],[9,5,"",[0,5,9]],[7,7,"7",[5,7,11]],[7,0,"",[0,4,7]],[5,5,"7M",[0,4,5,9]],[5,2,"m",[2,5,9]],[4,4,"m7",[2,4,7]],[4,4,"7",[2,4,8,11]],[4,9,"m",[0,4,9]]]],[25,"c136-141",0,"b",0,[[0,0,"",[0,4,7]],[5,5,"7M",[0,4,5,9]],[11,7,"add9",[2,7,9,11]],[4,7,"",[2,4,7,11]],[9,9,"m",[0,4,9]],[2,5,"",[0,2,5,9]],[7,7,"7",[5,7,11]],[0,0,"7M",[0,4,7,11]],[5,5,"",[0,5,9]],[11,11,"Ø",[2,5,9,11]],[4,4,"7",[2,4,8,11]],[9,9,"m",[0,4,9]]]],[26,"c142-144",0,"b",0,[[0,0,"",[0,4,7]],[7,7,"sus4",[0,2,7]],[9,0,"7M",[0,4,9,11]],[4,4,"sus4",[4,9,11]],[5,7,"7sus2",[5,7,9]],[0,0,"sus4",[0,5,7]],[2,2,"sus4",[2,7,9]],[9,9,"sus4",[2,4,9]],[11,7,"sus4",[0,2,7,11]],[5,7,"",[2,5,7,11]],[0,5,"",[0,5,9]]]],[27,"c145",0,"c",1,[[5,2,"dim",[2,5,8]],[7,0,"5",[0,7]],[0,0,"5",[0,7]]]],[27,"c147",0,"c",1,[[5,2,"m",[2,5,9]],[7,0,"",[0,4,7]],[0,0,"(no5)",[0,4]]]],[27,"c148",0,"c",1,[[5,2,"m",[2,5,9]],[7,0,"5",[0,7]],[0,0,"",[0,4,7]]]],[28,"c149",0,"b",0,[[5,5,"",[0,5,9]],[7,0,"",[0,4,7]],[7,7,"",[2,7,11]],[9,0,"7M",[0,4,9,11]]]],[28,"c150",0,"b",0,[[5,5,"",[0,5,9]],[7,0,"",[0,4,7]],[7,7,"",[2,7,11]],[9,9,"m",[0,4,9]]]],[28,"c151",0,"b",0,[[5,2,"m",[2,5,9]],[7,0,"",[0,4,7]],[7,7,"",[2,7,11]],[9,0,"7M",[0,4,9,11]]]],[28,"c152",0,"b",0,[[5,2,"m",[2,5,9]],[7,0,"",[0,4,7]],[7,7,"",[2,7,11]],[9,9,"m",[0,4,9]]]],[29,"c153",0,"b",0,[[4,0,"",[0,4,7]],[2,7,"",[2,7,11]],[0,0,"",[0,4,7]],[2,7,"",[2,7,11]]]],[29,"c155",0,"b",0,[[4,0,"",[0,4,7]],[2,11,"dim",[2,5,11]],[0,0,"",[0,4,7]],[2,11,"dim",[2,5,11]]]],[29,"c156",1,"b",0,[[3,0,"m",[0,3,7]],[2,7,"",[2,7,11]],[0,0,"m",[0,3,7]],[2,7,"",[2,7,11]]]],[29,"c157",1,"b",0,[[3,0,"m",[0,3,7]],[2,11,"dim",[2,5,11]],[0,0,"m(no5)",[0,3]],[2,11,"dim",[2,5,11]]]],[29,"c158",1,"b",0,[[3,0,"m",[0,3,7]],[2,11,"dim",[2,5,11]],[0,0,"m",[0,3,7]],[2,11,"dim",[2,5,11]]]],[30,"c159",0,"b",0,[[7,6,"dim",[0,6,7,9]],[7,7,"(no5)",[7,11]]]],[30,"c160",0,"b",0,[[7,6,"dim",[0,6,7,9]],[7,7,"",[2,7,11]]]],[30,"c161",0,"b",0,[[8,8,"7",[0,6,8]],[7,7,"7Msus4",[0,6,7]],[7,7,"(no5)",[7,11]]]],[31,"c165-166",0,"b",0,[[0,0,"7Msus2",[0,2,11]],[0,0,"m(no5)",[0,3]],[6,6,"dim7",[0,3,6,9]],[6,2,"7",[0,2,6,9]],[7,7,"sus4",[0,2,7]],[7,7,"",[2,7,11]]]],[32,"c169",1,"b",0,[[7,0,"m",[0,3,7]],[7,7,"sus4",[0,2,7]],[7,7,"",[2,7,11]]]],[32,"c170",1,"b",0,[[7,0,"m",[0,3,7]],[7,5,"7sus2",[0,3,5,7]],[7,7,"7",[5,7,11]]]],[33,"c171",0,"b",0,[[9,4,"7sus4",[2,4,9,11]],[9,9,"m",[0,4,9]],[7,2,"7sus4",[0,2,7,9]],[7,7,"add9",[2,7,9,11]],[7,7,"",[2,7,11]]]],[33,"c172",1,"b",0,[[8,8,"sus2",[2,3,8,10]],[8,8,"",[0,3,8]],[6,2,"7",[0,2,6,9]],[7,7,"sus4add9",[0,2,7,9]],[7,7,"",[2,7,11]]]]]};
+    function myPool(role, minor, maxLen, finalOnly){
+      return MYCAD.u.filter(function(u){ return u[3] === role && (u[2] === 1) === !!minor && u[5].length <= maxLen && (!finalOnly || u[4]); });
+    }
+    function myCell(u){
+      var title = "MyCadences: " + MYCAD.secs[u[0]], note = MYCAD.secs[u[0]] + " (" + u[1] + ")";
+      return u[5].map(function(c){
+        var e = exItem([c[1], c[2], c[3]], c[0], null, "", false);
+        e.figText = "MyCad"; e.rofo = 0; e.my = 1; e.cell = "my"; e.cellTitle = title; e.myText = note;
+        return e;
+      });
+    }
+
     // Item "explícito": el acorde viene de los datos (no de un cifrado). bo = semitonos del bajo sobre la tónica.
     function exItem(spec, bo, abs, step, variant){
       return { deg: -1, bo: bo % 12, fig: "R:" + spec[0] + ":" + spec[1] + ":" + spec[2].join("."), figText: variant ? "RofO var" : "RofO",
@@ -13760,6 +13776,7 @@ function runAnalysis() {
       var e = it.ex, sp = spell || function(pc){ return ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"][mod(pc, 12)]; };
       it.tones = uniq(e.t.map(function(o){ return (key + o) % 12; }));
       it.rootPc = (key + e.r) % 12;
+      if(it.my && it.tones.length === 2 && /\(no5\)/.test(e.s)) it.tones.push((it.rootPc + 7) % 12);   // MyCadences: "(no5)" con solo 2 notas → la 5ª queda disponible para las 4 voces (la etiqueta no cambia)
       var has = function(i){ return it.tones.indexOf((it.rootPc + i) % 12) >= 0; };
       var th = has(3) ? 3 : (has(4) ? 4 : null), fi = has(7) ? 7 : (has(6) ? 6 : (has(8) ? 8 : null));
       it.thirdPc = th === null ? -1 : (it.rootPc + th) % 12;
@@ -13790,6 +13807,7 @@ function runAnalysis() {
     };
     var CELL_NAME = {}, CELL_LONG = {};
     Object.keys(CELLS).forEach(function(k){ CELL_NAME[k] = CELLS[k].name; CELL_LONG[k] = CELLS[k].long; });
+    CELL_NAME.my = "MyCadences"; CELL_LONG.my = "MyCadences (tu biblioteca)";   // "my" no está en CELLS: no se sortea como celda genérica
 
     // Movimientos de tempo (BPM aproximados; Wikipedia "Tempo", marcados como "very rough approximations"). El slider del motor va de 25 a 200.
     var TEMPOS = [
@@ -13925,7 +13943,13 @@ function runAnalysis() {
         else if(j === 0 || x.near) bass = nearestIn(pc, prev === null ? base + 6 : prev);   // por grados conjuntos o el salto más corto
         else bass = walk(items[items.length - 1].bass, pc);
         var last = items[items.length - 1];
-        if(j === 0 && last && last.bass === bass && ((last.fig === x.fig && last.deg === x.deg) || last.ex || x.ex)){ return; }   // misma nota y mismo acorde (o, en RofO, el ⑧ y el ① de la unión ↑/↓): no se repite
+        if(j === 0 && last && last.bass === bass){                                            // misma nota en la unión: ¿se repite el acorde?
+          var tonL = last.ex ? last.ex.r === 0 : last.deg === 0;
+          if((last.fig === x.fig && last.deg === x.deg) ||                                      // mismo acorde
+             (!last.my && !x.my && (last.ex || x.ex)) ||                                        // RofO: el ⑧ y el ① de la unión ↑/↓ se funden
+             (x.my && x.ex.r === 0 && tonL) ||                                                  // MyCadences: ya está el I, no se repite
+             (last.my && !x.my && x.deg === 0 && last.ex.r === 0)) return;                     // ... ni el ① de la celda siguiente tras un I tuyo
+        }
         x.bass = bass; x.cellStart = flag; flag = false;
         items.push(x);
       });
@@ -14044,20 +14068,35 @@ function runAnalysis() {
           allowed = okm;
         } else if(!ticked) allowed = ["up", "down", "cadS", "cadC", "cadD"];
       }
-      var stats = { fbParallel: 0, fbLT: 0, fbCover: 0, fbSop: 0, cells: [], rofoSteps: 0, rofoVar: 0 };
-      var finalType = pickFinal(allowed, N), finalLen = CELLS[finalType].len;
-      var items = [], bodyN = Math.max(0, N - finalLen), lastType = null, guard = 0;
-      while(items.length < bodyN && guard++ < 400){
-        var type = pickCell(lastType, allowed, bodyN - items.length, items.length === 0);
-        appendCell(items, makeCell(type, ctx), key, base);
-        stats.cells.push(type); lastType = type;
-      }
-      items.length = Math.min(items.length, bodyN);
-      // Cadencia final (simple, compuesta o doble). Si el último acorde del cuerpo ya era V, se arranca con la otra figura para no fundirse con él.
-      var fin = makeCell(finalType, ctx), lastIt = items[items.length - 1];
-      if(lastIt && lastIt.deg === 4 && fin[0].deg === 4 && (fin[0].fig === "7" || fin[0].fig === "5/3") && fin[0].fig === lastIt.fig) fin[0].fig = fin[0].fig === "7" ? "5/3" : "7";
-      appendCell(items, fin, key, base);
-      stats.cells.push(finalType);
+      // MyCadences (opts.mycad = { on, p (0–1) }): con probabilidad p, una celda es de tu biblioteca: la cadencia final y las del medio salen de tus cadencias,
+      // la primera celda de tus aperturas y el resto de tus secuencias/marchas. Mayor o menor según la canción (menor: solo con RofO Menor).
+      var my = (opts.mycad && opts.mycad.on) ? { p: Math.max(0, Math.min(1, opts.mycad.p == null ? 0.5 : opts.mycad.p)) } : null;
+      var isMin = (mode === "minor");
+      function myPick(role, maxLen, finalOnly){ var pl = myPool(role, isMin, maxLen, finalOnly); return pl.length ? pl[rnd(pl.length)] : null; }
+      var stats = { fbParallel: 0, fbLT: 0, fbCover: 0, fbSop: 0, cells: [], rofoSteps: 0, rofoVar: 0, myCells: 0 };
+      var finalType, finalLen, finalMy, items, bodyN, lastType, guard, fin, lastIt, attempt = 0;
+      do {                                                      // con MyCadences, si la unión se comió acordes y la canción queda más corta que N, se rearma (hasta 8 veces)
+        stats.cells = []; stats.myCells = 0; attempt++;
+        finalType = pickFinal(allowed, N); finalLen = CELLS[finalType].len; finalMy = null;
+        if(my && Math.random() < my.p){ finalMy = myPick("c", N, true); if(finalMy){ finalType = "my"; finalLen = finalMy[5].length; } }
+        items = []; bodyN = Math.max(0, N - finalLen); lastType = null; guard = 0;
+        while(items.length < bodyN && guard++ < 400){
+          var type = pickCell(lastType, allowed, bodyN - items.length, items.length === 0), cell = null;
+          if(my && Math.random() < my.p){
+            var mu = myPick(items.length === 0 ? "o" : (CELLS[type].cad ? "c" : "b"), bodyN - items.length, false);
+            if(mu){ cell = myCell(mu); type = "my"; stats.myCells++; }
+          }
+          appendCell(items, cell || makeCell(type, ctx), key, base);
+          stats.cells.push(type); lastType = type;
+        }
+        items.length = Math.min(items.length, bodyN);
+        // Cadencia final (simple, compuesta o doble). Si el último acorde del cuerpo ya era V, se arranca con la otra figura para no fundirse con él.
+        fin = finalMy ? myCell(finalMy) : makeCell(finalType, ctx); lastIt = items[items.length - 1];
+        if(finalMy) stats.myCells++;
+        if(lastIt && lastIt.deg === 4 && fin[0].deg === 4 && (fin[0].fig === "7" || fin[0].fig === "5/3") && fin[0].fig === lastIt.fig) fin[0].fig = fin[0].fig === "7" ? "5/3" : "7";
+        appendCell(items, fin, key, base);
+        stats.cells.push(finalType);
+      } while(my && items.length < N && attempt < 8);
       if(items.length > N) items.splice(0, items.length - N);        // N muy chico: queda solo el final
       items.forEach(function(it){
         if(rofo && (it.cell === "up" || it.cell === "down")){ stats.rofoSteps++; if(it.rofo === 2) stats.rofoVar++; }
@@ -14079,22 +14118,30 @@ function runAnalysis() {
         it.canOmit5 = om5;
         it.essential = om5 ? need.filter(function(p){ return p !== it.fifthPc; }) : need;   // la 5ª puede faltar (tríada fundamental; 7ª con bajo en raíz o 3ª)
       });
-      var chords = [], prev = null;
-      items.forEach(function(it, i){
-        var v = voiceChord(it, prev, { key: key }, i === items.length - 1, stats, items[i + 1] || null);
-        var ch = { bass: it.bass, t: v.t, a: v.a, s: v.s, tones: it.tones, sev: it.sev, root: it.root, label: it.label, fig: it.fig, deg: it.deg,
-                   cell: it.cell, cellStart: it.cellStart, step: it.step, rootPc: it.rootPc, sus: it.sus, hold: !!(it.hold && prev) };
-        ch.cat = CELL_LONG[it.cell] + (it.step ? " · " + it.step : "") + " · " + (it.figText || it.fig);
-        chords.push(ch); prev = ch;
-      });
-      return { key: key, base: base, chords: chords, stats: stats, cellName: CELL_NAME, finalType: finalType, mode: mode, rofo: !!rofo };
+      var chords, bestChords = null, bestFb = 1e9, vt;
+      for(vt = 0; vt < 8; vt++){                               // si hubo que relajar alguna regla, se vuelve a realizar (hay azar en el desempate) y se queda la mejor
+        var tmp = { fbParallel: 0, fbLT: 0, fbCover: 0, fbSop: 0 }, prev = null;
+        chords = [];
+        items.forEach(function(it, i){
+          var v = voiceChord(it, prev, { key: key }, i === items.length - 1, tmp, items[i + 1] || null);
+          var ch = { bass: it.bass, t: v.t, a: v.a, s: v.s, tones: it.tones, sev: it.sev, root: it.root, label: it.label, fig: it.fig, deg: it.deg,
+                     cell: it.cell, cellStart: it.cellStart, step: it.step, rootPc: it.rootPc, sus: it.sus, hold: !!(it.hold && prev) };
+          ch.cat = (it.myText ? "MyCadences · " + it.myText : CELL_LONG[it.cell]) + (it.step ? " · " + it.step : "") + " · " + (it.figText || it.fig);
+          ch.cellTitle = it.cellTitle || null;
+          chords.push(ch); prev = ch;
+        });
+        var fbn = tmp.fbParallel * 4 + tmp.fbLT + tmp.fbCover + tmp.fbSop;
+        if(fbn < bestFb){ bestFb = fbn; bestChords = chords; stats.fbParallel = tmp.fbParallel; stats.fbLT = tmp.fbLT; stats.fbCover = tmp.fbCover; stats.fbSop = tmp.fbSop; }
+        if(!fbn) break;
+      }
+      chords = bestChords;
+      return { key: key, base: base, chords: chords, stats: stats, cellName: CELL_NAME, finalType: finalType, mode: mode, rofo: !!rofo, mycad: !!my };
     }
 
     // Soprano con diminuciones: nota de paso entre terceras, bordadura sobre notas repetidas. Solo notas de la escala de la tonalidad.
     // orn escala la probabilidad (tempos lentos → más adornos, rápidos → menos). Sin adornos sobre acordes de cuarta (la 4ª/6ª es un retardo).
     function scaleHas(p, key, mode){ return (mode === "minor" ? HMIN : MAJ).indexOf(mod(p - key, 12)) >= 0; }
-    function melody(chords, i, dur, key, orn, mode, dim){
-      if(dim) return diminish(chords, i, dur, key, orn, mode, dim);      // disminución (slider + figuras); sin dim: adornos simples de siempre
+    function melody(chords, i, dur, key, orn, mode){
       var o = orn == null ? 1 : orn;
       var s = chords[i].s, nx = i + 1 < chords.length ? chords[i + 1].s : null, d = nx === null ? null : nx - s;
       if(nx !== null && dur >= 1 && !chords[i].sus){
@@ -14111,71 +14158,9 @@ function runAnalysis() {
       }
       return [{ midi: s, off: 0, dur: dur }];
     }
-    // ---- Disminución (diminuzione) del soprano: convierte la nota larga de cada acorde en una figura más florida y rápida.
-    // Definición (Wikipedia "Partimento", citando a Sanguinetti 2012): "convertir una melodía lenta y básica en otra más florida y rápida".
-    // Las figuras (notas de paso, bordaduras, giros, arpegios, anticipaciones) son de la teoría general; las fuentes que leí no las enumeran para el partimento.
-    // La primera nota de cada acorde es siempre la del soprano armonizado (sobre el tiempo); las demás van sobre una grilla de negras, corcheas o semicorcheas.
-    var DIM_FIGS = { passing: "Notas de paso", neighbor: "Bordaduras", turn: "Giros", arpeggio: "Arpegios", anticipation: "Anticipaciones" };
-    var DIM_W = { passing: 3, neighbor: 2, turn: 1, arpeggio: 1.5, anticipation: 1 };
-    function scaleList(key, mode){
-      var set = mode === "minor" ? HMIN : MAJ, out = [];
-      for(var p = 40; p <= 100; p++) if(set.indexOf(mod(p - key, 12)) >= 0) out.push(p);
-      return out;
-    }
-    // dim = { level: 0..1 (ya con el factor de tempo no aplicado), figs: [claves] (vacío = todas) }; orn = factor de tempo (lento más, rápido menos).
-    // Devuelve [{midi, off, dur, fig}] que suma exactamente `dur`.
-    function diminish(chords, i, dur, key, orn, mode, dim){
-      var ch = chords[i], s = ch.s, nx = i + 1 < chords.length ? chords[i + 1].s : null;
-      var plain = [{ midi: s, off: 0, dur: dur, fig: null }];
-      var L = Math.max(0, Math.min(1, dim.level * (orn == null ? 1 : orn)));
-      if(L <= 0 || ch.sus || nx === null) return plain;                    // sin adorno: nivel 0, acordes de cuarta (la 4ª/6ª es un retardo) y el acorde final
-      if(Math.random() > 0.12 + 0.88 * L) return plain;
-      // grilla: negras (nivel bajo), corcheas, semicorcheas (nivel alto); n = notas que caben en el acorde
-      var pref = L < 0.25 ? [1, 0.5, 0.25] : (L < 0.55 ? [0.5, 0.25, 1] : (Math.random() < (L - 0.55) / 0.45 ? [0.25, 0.5, 1] : [0.5, 0.25, 1]));
-      var u = null, n = 0;
-      for(var g = 0; g < pref.length; g++){ var q = dur / pref[g]; if(q >= 2 - 1e-9 && Math.abs(q - Math.round(q)) < 1e-9){ u = pref[g]; n = Math.round(q); break; } }
-      if(u === null) return plain;
-      var sc = scaleList(key, mode), is = sc.indexOf(s), inx = sc.indexOf(nx), d = nx - s;
-      var LO = 55, HI = 84, ok = function(p){ return p >= LO && p <= HI; };
-      var allow = (dim.figs && dim.figs.length) ? dim.figs : Object.keys(DIM_FIGS);
-      var opts = [];                                                       // cada opción: { fig, tail: [alturas] } (la nota s ocupa lo que sobra)
-      if(allow.indexOf("passing") >= 0 && is >= 0 && inx >= 0 && Math.abs(is - inx) >= 2){
-        var k = Math.abs(is - inx), dir = inx > is ? 1 : -1, m = Math.min(n - 1, k - 1), tl = [];
-        for(var j = 1; j <= m; j++) tl.push(sc[is + dir * j]);
-        if(tl.length && tl.every(ok)) opts.push({ fig: "passing", tail: tl });
-      }
-      if(allow.indexOf("neighbor") >= 0 && is >= 0){
-        var nbDir = Math.random() < 0.5 ? 1 : -1, nb = sc[is + nbDir];
-        if(nb != null && ok(nb)){
-          if(n >= 3) opts.push({ fig: "neighbor", tail: [nb, s] });
-          else if(Math.abs(nx - nb) <= 2) opts.push({ fig: "neighbor", tail: [nb] });
-        }
-      }
-      if(allow.indexOf("turn") >= 0 && is >= 0 && n >= 5 && sc[is + 1] != null && sc[is - 1] != null && ok(sc[is + 1]) && ok(sc[is - 1]))
-        opts.push({ fig: "turn", tail: [sc[is + 1], s, sc[is - 1], s] });
-      if(allow.indexOf("arpeggio") >= 0 && n >= 3){
-        var ad = d > 0 ? 1 : (d < 0 ? -1 : (Math.random() < 0.5 ? 1 : -1)), cur = s, at = [];
-        for(var a = 0; a < Math.min(n - 1, 3); a++){
-          var nxt = null;
-          for(var p = cur + ad; p >= LO && p <= HI && Math.abs(p - cur) <= 5; p += ad) if(ch.tones.indexOf(mod(p, 12)) >= 0){ nxt = p; break; }
-          if(nxt === null) break;
-          at.push(nxt); cur = nxt;
-        }
-        if(at.length >= 2) opts.push({ fig: "arpeggio", tail: at });
-      }
-      if(allow.indexOf("anticipation") >= 0 && d !== 0 && Math.abs(d) <= 4 && ok(nx)) opts.push({ fig: "anticipation", tail: [nx] });
-      if(!opts.length) return plain;
-      var tot = 0; opts.forEach(function(o){ tot += DIM_W[o.fig]; });
-      var r = Math.random() * tot, pick = opts[0];
-      for(var oi = 0; oi < opts.length; oi++){ r -= DIM_W[opts[oi].fig]; if(r < 0){ pick = opts[oi]; break; } }
-      var mt = pick.tail.length, out = [{ midi: s, off: 0, dur: (n - mt) * u, fig: pick.fig }];
-      for(var t = 0; t < mt; t++) out.push({ midi: pick.tail[t], off: (n - mt + t) * u, dur: u, fig: pick.fig });
-      return out;
-    }
-
     function ornFor(bpm){ return bpm < 66 ? 1.4 : (bpm < 108 ? 1 : (bpm < 156 ? 0.8 : 0.5)); }
 
-    return { compose: compose, melody: melody, diminish: diminish, DIM_FIGS: DIM_FIGS, analyze: analyze, FIG: FIG, RO_UP: RO_UP, RO_DOWN: RO_DOWN, MAJ: MAJ, ROFO: ROFO, MIN_UP: MIN_UP, MIN_DOWN: MIN_DOWN, hasParallel: hasParallel,
+    return { compose: compose, melody: melody, analyze: analyze, FIG: FIG, RO_UP: RO_UP, RO_DOWN: RO_DOWN, MAJ: MAJ, ROFO: ROFO, MYCAD: MYCAD, MIN_UP: MIN_UP, MIN_DOWN: MIN_DOWN, hasParallel: hasParallel,
              CELL_NAME: CELL_NAME, CELL_LONG: CELL_LONG, CELLS: CELLS, TEMPOS: TEMPOS, ornFor: ornFor, LOW: LOW, HIGH: HIGH, RT: RT, RA: RA, RS: RS };
   })();
 /* PARTIMENTI_CORE_END */
@@ -14248,23 +14233,20 @@ function runAnalysis() {
       pr.addEventListener("input", function(){ pv.textContent = pr.value + "%"; });
       pl.appendChild(document.createTextNode("variantes ")); pl.appendChild(pr); pl.appendChild(pv); rw.appendChild(pl);
       rb.appendChild(rw); b.appendChild(rb);
-      // Disminución de la melodía
-      var db = mk("div", "padding:2px 0 6px;");
-      var dh = mk("div", "font-size:12px;font-weight:700;color:var(--ink-muted);margin-bottom:2px;", "Disminución de la melodía");
-      dh.title = "Disminución (diminuzione): convertir la melodía lenta y básica en una más florida y rápida (Wikipedia 'Partimento', citando a Sanguinetti 2012). El soprano de cada acorde se subdivide en negras, corcheas o semicorcheas con las figuras tildadas (sin tildar = todas). 0% = soprano liso. Los tempos lentos adornan más y los rápidos menos. Las figuras son de la teoría general: las fuentes que leí no las enumeran para el partimento.";
-      db.appendChild(dh);
-      var dl = mk("label", LBL); dl.title = "Cuánto se adorna: 0 = sin disminución; 100 = casi todos los acordes llevan figura y con subdivisiones más rápidas.";
-      var dr = mk("input"); dr.type = "range"; dr.min = 0; dr.max = 100; dr.step = 5; dr.value = 50; dr.id = "partimentiDimPct"; dr.style.cssText = "width:110px;";
-      var dv = mk("span", "min-width:34px;text-align:right;", "50%");
-      dr.addEventListener("input", function(){ dv.textContent = dr.value + "%"; });
-      dl.appendChild(document.createTextNode("disminución ")); dl.appendChild(dr); dl.appendChild(dv); db.appendChild(dl);
-      var DIM_TIP = { passing: "Notas de paso: la melodía llena por grados conjuntos el salto hacia el soprano del acorde siguiente.",
-                      neighbor: "Bordaduras: sube o baja un grado y vuelve a la nota del acorde.",
-                      turn: "Giros: nota superior, nota, nota inferior, nota (solo con subdivisión rápida).",
-                      arpeggio: "Arpegios: recorre notas del acorde en la dirección de la melodía.",
-                      anticipation: "Anticipaciones: la última subdivisión adelanta la nota del acorde siguiente." };
-      db.appendChild(group("", "", "dim", Object.keys(core.DIM_FIGS).map(function(k){ return { k: k, text: core.DIM_FIGS[k], tip: DIM_TIP[k] }; })));
-      b.appendChild(db);
+      // MyCadences: tu biblioteca de My_cadences_v5.gp. Tildado: con probabilidad p cada celda (apertura, cuerpo, cadencia) sale de tus unidades.
+      var mb = mk("div", "padding:2px 0 6px;");
+      var mh = mk("div", "font-size:12px;font-weight:700;color:var(--ink-muted);margin-bottom:2px;", "MyCadences");
+      mh.title = "MyCadences: tu biblioteca de My_cadences_v5.gp (" + core.MYCAD.u.length + " unidades). Con probabilidad p, la cadencia final y las del medio salen de tus cadencias, la primera celda de tus aperturas (pedal, Händel) y el resto de tus secuencias, marchas y 6ª aumentada. Mayor o menor según la canción (el menor aparece con RofO Menor).";
+      mb.appendChild(mh);
+      var mw = mk("div", "display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;");
+      var myChk = label("MyCadences", "Usa tu biblioteca de cadencias, aperturas y secuencias (valen desde la próxima canción: 🔀 / G).", "opt", "mycad", false);
+      myChk.firstChild.id = "partimentiMyCad"; mw.appendChild(myChk);
+      var ml = mk("label", LBL); ml.title = "Probabilidad de que cada celda sea tuya en vez de la generada (0 = ninguna, 100 = siempre que haya una que entre).";
+      var mr = mk("input"); mr.type = "range"; mr.min = 0; mr.max = 100; mr.step = 5; mr.value = 50; mr.id = "partimentiMyCadPct"; mr.style.cssText = "width:90px;";
+      var mv = mk("span", "min-width:34px;text-align:right;", "50%");
+      mr.addEventListener("input", function(){ mv.textContent = mr.value + "%"; });
+      ml.appendChild(document.createTextNode("tuyas ")); ml.appendChild(mr); ml.appendChild(mv); mw.appendChild(ml);
+      mb.appendChild(mw); b.appendChild(mb);
       // Tempo
       var tb = mk("div", "padding:2px 0 6px;");
       var th = mk("div", "font-size:12px;font-weight:700;color:var(--ink-muted);margin-bottom:2px;", "Movimiento (tempo)"); th.title = "Cada canción sortea un movimiento de los tildados (todos si no hay ninguno) y un BPM dentro de su rango; mueve el slider Tempo. BPM aproximados (Wikipedia: Tempo); el slider va de 25 a 200."; tb.appendChild(th);
@@ -14304,10 +14286,10 @@ function runAnalysis() {
       }
       var rofoEl = document.getElementById("partimentiRofO"), pctEl = document.getElementById("partimentiRofOPct");
       var rofo = (rofoEl && rofoEl.checked) ? { on: true, p: (pctEl ? parseInt(pctEl.value, 10) : 50) / 100, modes: checkedKeys("rmode") } : null;
-      var song = core.compose(N, { cells: checkedKeys("cell"), rofo: rofo, spell: spellPitchClass });
+      var myEl = document.getElementById("partimentiMyCad"), myPctEl = document.getElementById("partimentiMyCadPct");
+      var mycad = (myEl && myEl.checked) ? { on: true, p: (myPctEl ? parseInt(myPctEl.value, 10) : 50) / 100 } : null;
+      var song = core.compose(N, { cells: checkedKeys("cell"), rofo: rofo, mycad: mycad, spell: spellPitchClass });
       var orn = core.ornFor(tempo.bpm);
-      var dimEl = document.getElementById("partimentiDimPct"), dimPct = dimEl ? parseInt(dimEl.value, 10) : 50;
-      var dim = { level: dimPct / 100, figs: checkedKeys("dim") };
       var keyName = spellPitchClass(song.key) + (song.mode === "minor" ? " menor" : " mayor");
       var chordEvents = [], bassEvents = [], melodyEvents = [];
       var progression = [], roles = [], slotChords = [], labels = [], lastBass = null;
@@ -14320,12 +14302,12 @@ function runAnalysis() {
           else { lastBass = { midi: ch.bass, startBeat: abs, durBeats: dur, bar: bar }; bassEvents.push(lastBass); }     // bajo (el partimento)
           chordEvents.push({ midi: ch.t, startBeat: abs, durBeats: dur, bar: bar });                                     // tenor
           chordEvents.push({ midi: ch.a, startBeat: abs, durBeats: dur, bar: bar });                                     // alto
-          core.melody(song.chords, Math.min(idx, song.chords.length - 1), dur, song.key, orn, song.mode, dim).forEach(function(m){      // soprano con diminuciones
+          core.melody(song.chords, Math.min(idx, song.chords.length - 1), dur, song.key, orn, song.mode).forEach(function(m){      // soprano con diminuciones
             melodyEvents.push({ midi: m.midi, startBeat: abs + m.off, durBeats: m.dur, bar: bar });
           });
           var voiced = [ch.bass, ch.t, ch.a, ch.s];
           slots.push({ chord: voiced, startBeat: si * dur, durBeats: dur, setNotes: voiced, ccLabel: ch.label, ccCat: ch.cat,
-                       ccScale: ch.cellStart ? ((idx === 0 ? keyName + " · " : "") + core.CELL_NAME[ch.cell]) : null });
+                       ccScale: ch.cellStart ? ((idx === 0 ? keyName + " · " : "") + (ch.cellTitle || core.CELL_NAME[ch.cell])) : null });
           labels.push(ch.label);
         }
         progression.push(slots[0].chord.slice());
@@ -14355,7 +14337,7 @@ function runAnalysis() {
       if(sol) sol.innerHTML = "";
       if(SONGTITLE) SONGTITLE.next();
       var sub = document.getElementById("consolaSongSets");
-      if(sub) sub.textContent = "(Partimenti · experimental · " + keyName + (song.rofo ? " · RofO " + (song.stats.rofoSteps ? Math.round(100 * song.stats.rofoVar / song.stats.rofoSteps) : 0) + "% variantes" : "") + " · " + (tempo.name ? tempo.name + " " : "") + "♩=" + tempo.bpm + " · dim " + dimPct + "% · " + N + " acordes · " + dens + " por compás · " +
+      if(sub) sub.textContent = "(Partimenti · experimental · " + keyName + (song.mycad ? " · MyCadences " + song.stats.myCells + (song.stats.myCells === 1 ? " celda" : " celdas") : "") + (song.rofo && song.stats.rofoSteps ? " · RofO " + Math.round(100 * song.stats.rofoVar / song.stats.rofoSteps) + "% variantes" : (song.rofo ? " · RofO" : "")) + " · " + (tempo.name ? tempo.name + " " : "") + "♩=" + tempo.bpm + " · " + N + " acordes · " + dens + " por compás · " +
         song.stats.cells.map(function(c){ return core.CELL_NAME[c]; }).join(" → ") + " · " + labels.join(" ") + ")";
       ["consolaPlayBtn", "consolaRegenPlayBtn"].forEach(function(id){
         var bt2 = document.getElementById(id); if(bt2) bt2.disabled = false;
@@ -14370,25 +14352,10 @@ function runAnalysis() {
       if(window.__commonChords) window.__commonChords.off();
       var entering = !api.active;
       api.active = true;
-      if(entering){
-        // lo que había antes (instrumentos, volumen de Batería y tempo) se devuelve al salir (api.off)
-        var tl = document.getElementById("consolaTempo");
-        saved = { mix: typeof window.__mixSnapshot === "function" ? window.__mixSnapshot() : null, tempo: tl ? tl.value : null };
-        if(typeof window.__applyPresetSet === "function") window.__applyPresetSet("partimenti");
-      }
+      if(entering && typeof window.__applyPresetSet === "function") window.__applyPresetSet("partimenti");
       regenerateConsola();
     };
-    var saved = null;
-    api.off = function(){
-      var was = api.active;
-      api.active = false;
-      if(was && saved){
-        var sv = saved; saved = null;
-        if(sv.mix && typeof window.__mixRestore === "function") window.__mixRestore(sv.mix);
-        var tl = document.getElementById("consolaTempo");
-        if(tl && sv.tempo != null){ tl.value = sv.tempo; tl.dispatchEvent(new Event("input", { bubbles: true })); }
-      }
-    };
+    api.off = function(){ api.active = false; };
     // CommonChords, otra Creatura, Compose, Clear o RadioMode sacan de Partimenti (igual que CommonChords).
     document.addEventListener("click", function(e){
       var t = e.target;
@@ -18831,25 +18798,6 @@ function runAnalysis() {
       }
     }
     window.__applyPresetSet = applyPresetSet;   // lo usa 🎹 Partimenti para poner Clavecín y Batería muteada al entrar
-    // 🎹 Partimenti guarda los instrumentos y el volumen de Batería de antes de entrar y los devuelve al salir (así CommonChords y los demás modos suenan igual que antes).
-    window.__mixSnapshot = function(){
-      var snap = { presets: {}, drumGain: mixGains.drum };
-      SELECTS.forEach(function(cfg){ snap.presets[cfg.key] = mixPresets[cfg.key]; });
-      return snap;
-    };
-    window.__mixRestore = function(snap){
-      if(!snap) return;
-      SELECTS.forEach(function(cfg){
-        if(!(cfg.key in snap.presets)) return;
-        mixPresets[cfg.key] = snap.presets[cfg.key];
-        var el = document.getElementById(cfg.id);
-        if(el) el.value = snap.presets[cfg.key];
-      });
-      setMixGain("drum", snap.drumGain);
-      var sl = document.getElementById("mixDrumVol"), lb = document.getElementById("mixDrumVolVal");
-      if(sl) sl.value = Math.round(snap.drumGain * 100);
-      if(lb) lb.textContent = Math.round(snap.drumGain * 100) + "%";
-    };
     var baroqueBtn = document.getElementById("presetBaroqueBtn");
     if(baroqueBtn) baroqueBtn.addEventListener("click", function(){ applyPresetSet("baroque"); });
     var brassSoloBtn = document.getElementById("presetBrassSoloBtn");
