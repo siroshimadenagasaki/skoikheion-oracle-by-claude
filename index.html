@@ -13980,20 +13980,166 @@ function runAnalysis() {
       return true;
     }
     // ¿Hay al menos una realización de `item` (sin romper reglas duras) a partir de la voz `cand`? (mira un acorde adelante)
-    function feasible(item, cand, key){
+    function feasible(item, cand, key, ctpL, nextLast){
       for(var t = Math.max(RT[0], item.bass + 1); t <= RT[1]; t++){
         if(item.tones.indexOf(t % 12) < 0) continue;
         for(var a = Math.max(RA[0], t + 1); a <= Math.min(RA[1], t + 12); a++){
           if(item.tones.indexOf(a % 12) < 0) continue;
           for(var s = Math.max(RS[0], a + 1); s <= Math.min(RS[1], a + 12); s++)
-            if(allowedV(item, cand, t, a, s, 0, key)) return true;
+            if(allowedV(item, cand, t, a, s, 0, key) && (!(ctpL < 2) || ctpOK(item, cand, t, a, s, nextLast, ctpL))) return true;   // con TestContrapunctus, el que sigue también debe poder cumplir las reglas CTP
         }
       }
       return false;
     }
 
+
+    // ======================= TestContrapunctus (checkbox; apagado = este bloque no se ejecuta y el motor queda idéntico) =======================
+    // Contrapunto tradicional aplicado a TODAS las voces: bajo (el partimento dado), tenor, alto y soprano (incluidas las figuras de la disminución).
+    // Fuentes que leí (no de memoria): Fux, Gradus ad Parnassum (1725) vía Open Music Theory, Strasheela (Fuxian-Counterpoint) y un foro con el resumen de Fux;
+    // reglas de curso UVM (modernas, basadas en David Lewin) para quintas directas, solapamiento, saltos grandes, terceras/sextas paralelas, apertura y final;
+    // Open Music Theory (4ª especie) para los retardos. NO verificado: que la práctica de los partimenti siga estas reglas al pie de la letra (ver CTP_RULES.*.tip).
+    // CTP = null cuando está apagado. Si está activo: { rules: {clave:true}, key, minor, stats }.
+    var CTP = null;
+    var CTP_RULES = {
+      leap:    { short: "saltos", name: "Saltos melódicos", tip: "Fux (vía Open Music Theory, resumen de Fux y Strasheela): sin tritono, sin 7ª, sin 6ª mayor, sin saltos mayores que una 8ª; la 6ª menor solo ascendente; sin 2ª aumentada (♭6–7 de la menor armónica). Vale para tenor, alto, soprano y las figuras de la disminución. En el bajo solo se AUDITA (es el partimento dado: no lo reescribo). Ojo: el curso UVM permite 6ªs mayor y menor en ambos sentidos; acá se usa Fux." },
+      hid:     { short: "5as/8as directas", name: "5tas/8vas directas", tip: "Entre bajo y soprano no se llega a 5ª u 8ª por movimiento directo, salvo que el soprano se mueva por grado conjunto (UVM: 'a vertical 5th or 8ve may not be approached in direct motion unless the upper voice moves by step'; Fux lo prohíbe sin excepción en 2 voces). Aplicarlo solo al par de voces extremas es decisión mía." },
+      ovl:     { short: "solapamiento", name: "Sin solapamiento (overlap)", tip: "UVM: overlap = una voz pasa más allá de la nota anterior de la otra voz; está prohibido. Se aplica a cada par de voces vecinas (incluido el bajo). El cruce de voces ya estaba prohibido siempre." },
+      dis:     { short: "disonancia", name: "7ª y retardos bajan por grado", tip: "Los retardos (4–3, 7–6) resuelven bajando por grado (Open Music Theory, 4ª especie). La 7ª del acorde que baja por grado ya era regla blanda del motor (Fenaroli): acá pasa a regla dura." },
+      dirleap: { short: "dirección", name: "Saltos y cambio de sentido", tip: "UVM: los saltos grandes (6ªs y 8ª) llevan cambio de sentido antes y después; la 5ª lo necesita de un lado; dos saltos seguidos en el mismo sentido solo si arpegian una tríada u octava y están enmarcados por cambios de sentido." },
+      par3:    { short: "3as/6as paralelas", name: "Máx. 3 terceras (o sextas) seguidas", tip: "UVM: no más de tres terceras consecutivas (ni sextas, ni décimas) entre un par de voces. (El curso lo dice para 2 voces: aplicarlo a cada par de las 4 es decisión mía.)" },
+      ends:    { short: "inicio/final", name: "Inicio y final", tip: "UVM: se abre con 8ª, 5ª arriba o unísono respecto del bajo y se cierra en 8ª o unísono. Acá: primer acorde con el soprano a 8ª/5ª del bajo; último con el soprano en la tónica." }
+    };
+    function ctpTriad(a, b, c){                                  // ¿las tres alturas forman una tríada mayor o menor (cualquier inversión)?
+      var p = uniq([mod(a, 12), mod(b, 12), mod(c, 12)]).sort(function(x, y){ return x - y; });
+      if(p.length !== 3) return false;
+      return [p[1] - p[0], p[2] - p[1], 12 - (p[2] - p[0])].sort(function(x, y){ return x - y; }).join() === "3,4,5";
+    }
+    function ctpLeapOK(p0, p1, key, minor){
+      var d = p1 - p0, ad = Math.abs(d);
+      if(ad > 12) return false;
+      if([0, 1, 2, 3, 4, 5, 7, 12].indexOf(ad) < 0 && d !== 8) return false;      // 6ª menor solo ascendente
+      if(minor && ad === 3){ var x = mod(p0 - key, 12), y = mod(p1 - key, 12); if((x === 8 && y === 11) || (x === 11 && y === 8)) return false; }   // 2ª aumentada
+      return true;
+    }
+    // p = nota anterior; m2 = movimiento antes del anterior, m1 = movimiento anterior (p-m1 → p), m = movimiento actual. null = no hay.
+    function ctpDirOK(p, m2, m1, m){
+      var A = Math.abs, o2 = (m2 == null) ? 0 : m2, o1 = (m1 == null) ? 0 : m1;
+      if(A(m) >= 8 && o1 * m > 0) return false;                                       // salto grande: antes cambia de sentido
+      if(A(o1) >= 8 && !(o1 * m < 0)) return false;                                   // salto grande: después cambia de sentido
+      if(A(o1) === 7 && o2 * o1 > 0 && m * o1 > 0) return false;                      // 5ª: de un lado al menos cambia
+      if(A(o1) >= 3 && A(m) >= 3 && o1 * m > 0){                                      // dos saltos seguidos en el mismo sentido:
+        if(!(A(o1 + m) === 12 || ctpTriad(p - o1, p, p + m))) return false;             //   arpegian tríada u octava
+        if(o2 * o1 > 0) return false;                                                  //   y vienen de un cambio de sentido
+      }
+      if(A(o1) >= 3 && A(o2) >= 3 && o1 * o2 > 0 && !(o1 * m < 0)) return false;       //   y después cambia de sentido
+      return true;
+    }
+    function ctpPairs(){ return [[0, 1], [0, 2], [0, 3], [1, 2], [1, 3], [2, 3]]; }
+    function ctpRunsOf(cv, d, pr){                                                      // largo de la racha de terceras (3/4) o sextas (8/9) seguidas por par
+      return ctpPairs().map(function(pq, k){
+        var ic = mod(cv[pq[1]] - cv[pq[0]], 12), cat = (ic === 3 || ic === 4) ? 3 : ((ic === 8 || ic === 9) ? 6 : 0);
+        if(!cat) return { n: 0, cat: 0 };
+        var moved = d && (d[pq[0]] !== 0 || d[pq[1]] !== 0);
+        return { n: (pr && pr[k].cat === cat && moved) ? pr[k].n + 1 : 1, cat: cat };
+      });
+    }
+    function ctpAnnotate(ch, prev){                                                     // guarda movimientos y rachas para mirar hacia atrás en el acorde siguiente
+      var cv = [ch.bass, ch.t, ch.a, ch.s];
+      if(!prev){ ch.d = null; ch.pd = null; ch.runs = ctpRunsOf(cv, null, null); return; }
+      ch.d = [ch.bass - prev.bass, ch.t - prev.t, ch.a - prev.a, ch.s - prev.s];
+      ch.pd = prev.d || null;
+      ch.runs = ctpRunsOf(cv, ch.d, prev.runs);
+    }
+    // nivel 0 = todas las reglas tildadas; nivel 1 = sin dirección / 3as-6as / inicio-final; (nivel 2 = sin CTP, no pasa por acá)
+    function ctpOK(item, prev, t, a, s, isLast, lvl){
+      var R = CTP.rules, cv = [item.bass, t, a, s], k, i, ic;
+      if(lvl === 0 && R.ends){
+        if(isLast && s % 12 !== CTP.key) return false;
+        if(!prev){ ic = mod(s - item.bass, 12); if(ic !== 0 && ic !== 7) return false; }
+      }
+      if(!prev) return true;
+      var pv = [prev.bass, prev.t, prev.a, prev.s], d = [cv[0] - pv[0], cv[1] - pv[1], cv[2] - pv[2], cv[3] - pv[3]];
+      if(R.leap) for(k = 1; k < 4; k++) if(!ctpLeapOK(pv[k], cv[k], CTP.key, CTP.minor)) return false;
+      if(R.hid && d[0] * d[3] > 0 && Math.abs(d[3]) > 2){ ic = mod(cv[3] - cv[0], 12); if(ic === 0 || ic === 7) return false; }
+      if(R.ovl) for(i = 0; i < 3; i++) if(cv[i] > pv[i + 1] || cv[i + 1] < pv[i]) return false;
+      if(R.dis){
+        var mv = [[prev.t, t], [prev.a, a], [prev.s, s]];
+        if(prev.sev !== null && !(prev.root === item.root && item.sev === prev.sev))
+          for(k = 0; k < 3; k++) if(mv[k][0] % 12 === prev.sev && !(mv[k][1] === mv[k][0] - 1 || mv[k][1] === mv[k][0] - 2)) return false;
+        if(prev.sus)
+          for(k = 0; k < 3; k++) if(prev.sus.indexOf(mv[k][0] % 12) >= 0){
+            var stay = item.sus && item.sus.indexOf(mv[k][0] % 12) >= 0 && mv[k][1] === mv[k][0];
+            if(!(stay || mv[k][1] === mv[k][0] - 1 || mv[k][1] === mv[k][0] - 2)) return false;
+          }
+      }
+      if(lvl === 0 && R.dirleap){
+        var pd = prev.d || [null, null, null, null], ppd = prev.pd || [null, null, null, null];
+        for(k = 1; k < 4; k++) if(!ctpDirOK(pv[k], ppd[k], pd[k], d[k])) return false;
+      }
+      if(lvl === 0 && R.par3){
+        var runs = ctpRunsOf(cv, d, prev.runs);
+        for(k = 0; k < 6; k++) if(runs[k].n > 3) return false;
+      }
+      return true;
+    }
+    // Auditoría independiente del resultado final (cuenta infracciones por regla; "leapB" = saltos del bajo dado, que no se reescribe).
+    function ctpAudit(chords, key, minor, R){
+      var o = { par: 0, leap: 0, leapB: 0, hid: 0, ovl: 0, dis: 0, dirleap: 0, par3: 0, ends: 0 }, i, k, j;
+      var runs = null;
+      chords.forEach(function(ch, n){
+        var cv = [ch.bass, ch.t, ch.a, ch.s], prev = n ? chords[n - 1] : null, pp = n > 1 ? chords[n - 2] : null;
+        if(R.ends){
+          if(!n){ var ic0 = mod(ch.s - ch.bass, 12); if(ic0 !== 0 && ic0 !== 7) o.ends++; }
+          if(n === chords.length - 1 && ch.s % 12 !== key) o.ends++;
+        }
+        if(!prev){ runs = ctpRunsOf(cv, null, null); return; }
+        var pv = [prev.bass, prev.t, prev.a, prev.s], d = [], pd = [null, null, null, null], ppd = [null, null, null, null];
+        for(k = 0; k < 4; k++){ d.push(cv[k] - pv[k]); if(pp) pd[k] = pv[k] - (k === 0 ? pp.bass : (k === 1 ? pp.t : (k === 2 ? pp.a : pp.s))); }
+        if(n > 2){ var p3 = chords[n - 3], p3v = [p3.bass, p3.t, p3.a, p3.s], p2v = [pp.bass, pp.t, pp.a, pp.s]; for(k = 0; k < 4; k++) ppd[k] = p2v[k] - p3v[k]; }
+        if(hasParallel(pv, cv)) o.par++;
+        if(R.leap) for(k = 0; k < 4; k++) if(!ctpLeapOK(pv[k], cv[k], key, minor)) o[k ? "leap" : "leapB"]++;
+        if(R.hid && d[0] * d[3] > 0 && Math.abs(d[3]) > 2){ var ic = mod(cv[3] - cv[0], 12); if(ic === 0 || ic === 7) o.hid++; }
+        if(R.ovl) for(i = 0; i < 3; i++) if(cv[i] > pv[i + 1] || cv[i + 1] < pv[i]) o.ovl++;
+        if(R.dis){
+          var mv = [[prev.t, ch.t], [prev.a, ch.a], [prev.s, ch.s]];
+          if(prev.sev !== null && !(prev.root === ch.root && ch.sev === prev.sev))
+            for(k = 0; k < 3; k++) if(mv[k][0] % 12 === prev.sev && !(mv[k][1] === mv[k][0] - 1 || mv[k][1] === mv[k][0] - 2)) o.dis++;
+          if(prev.sus)
+            for(k = 0; k < 3; k++) if(prev.sus.indexOf(mv[k][0] % 12) >= 0){
+              var stay = ch.sus && ch.sus.indexOf(mv[k][0] % 12) >= 0 && mv[k][1] === mv[k][0];
+              if(!(stay || mv[k][1] === mv[k][0] - 1 || mv[k][1] === mv[k][0] - 2)) o.dis++;
+            }
+        }
+        if(R.dirleap) for(k = 1; k < 4; k++) if(!ctpDirOK(pv[k], ppd[k] === null ? null : ppd[k], pd[k], d[k])) o.dirleap++;
+        if(R.par3){ var rr = ctpRunsOf(cv, d, runs); runs = rr; for(j = 0; j < 6; j++) if(rr[j].n > 3) o.par3++; }
+        else runs = ctpRunsOf(cv, d, runs);
+      });
+      return o;
+    }
+    // Soprano con disminución bajo CTP: las figuras se sortean de nuevo (hasta 14 veces) hasta que sus saltos cumplan "leap" y la disonancia (nota fuera
+    // del acorde) entre y salga por grado (Fux / Jeppesen: notas de paso y bordaduras). Si ninguna cumple, queda el soprano liso (cuenta en stats.dimPlain).
+    function melodyCT(chords, i, dur, key, orn, mode, dim, prevMidi){
+      var ch = chords[i], nxt = i + 1 < chords.length ? chords[i + 1].s : null, minor = (mode === "minor"), R = CTP.rules, tries, k, out;
+      for(tries = 0; tries < 14; tries++){
+        out = melody(chords, i, dur, key, orn, mode, dim);
+        var seq = out.filter(function(n){ return !n.rest; }).map(function(n){ return n.midi; }), ok = true;
+        var line = (prevMidi == null ? [] : [prevMidi]).concat(seq); if(nxt !== null) line.push(nxt);
+        var base = prevMidi == null ? 0 : 1;
+        for(k = 1; k < line.length && ok; k++){
+          if(R.leap && !ctpLeapOK(line[k - 1], line[k], key, minor)) ok = false;
+          if(R.dis && ok){
+            var idx = k - base;                                             // índice en seq (0 = primera nota = soprano del acorde)
+            if(idx > 0 && idx < seq.length && ch.tones.indexOf(line[k] % 12) < 0 && (Math.abs(line[k] - line[k - 1]) > 2 || (k + 1 < line.length && Math.abs(line[k + 1] - line[k]) > 2))) ok = false;
+          }
+        }
+        if(ok){ CTP.stats.dimTry += tries; return out; }
+      }
+      CTP.stats.dimTry += tries; CTP.stats.dimPlain++;
+      return [{ midi: ch.s, off: 0, dur: dur }];
+    }
+
     // Conducción de voces (tenor, alto, soprano) sobre el bajo dado: búsqueda del menor costo bajo reglas duras.
-    function voiceChord(item, prev, ctx, isLast, stats, next){
+    function voiceChord(item, prev, ctx, isLast, stats, next, nextLast){
       var tones = item.tones, bassPc = item.bass % 12, key = ctx.key;
       var canOmit5 = item.canOmit5;
       var pv = prev ? [prev.bass, prev.t, prev.a, prev.s] : [item.bass, 55, 64, 72];
@@ -14001,6 +14147,9 @@ function runAnalysis() {
       var look = !!(next && (next.sopPc != null || next.sus || next.ex));    // el que sigue tiene soprano fijo, retardos o es un acorde de RofO: se comprueba que se pueda continuar
       var stage, best = null;
       for(stage = 0; stage < 5 && !best; stage++){
+        var lvN = CTP ? 3 : 1, lv, ctpL;                          // TestContrapunctus: en cada etapa se prueba primero con todas las reglas CTP, luego con menos, al final sin ellas
+        for(lv = 0; lv < lvN && !best; lv++){
+        ctpL = CTP ? lv : 2;
         var bestC = 1e9;
         for(var t = Math.max(RT[0], item.bass + 1); t <= RT[1]; t++){
           if(tones.indexOf(t % 12) < 0) continue;
@@ -14008,6 +14157,7 @@ function runAnalysis() {
             if(tones.indexOf(a % 12) < 0) continue;
             for(var s = Math.max(RS[0], a + 1); s <= Math.min(RS[1], a + 12); s++){
               if(!allowedV(item, prev, t, a, s, stage, key)) continue;
+              if(ctpL < 2 && !ctpOK(item, prev, t, a, s, isLast, ctpL)) continue;
               var up = [t % 12, a % 12, s % 12];
               var cnt = function(p){ return (bassPc === p ? 1 : 0) + up.filter(function(x){ return x === p; }).length; };
               var c = 1.0 * Math.abs(t - pv[1]) + 1.0 * Math.abs(a - pv[2]) + 1.3 * Math.abs(s - pv[3]);
@@ -14037,11 +14187,17 @@ function runAnalysis() {
               if(isLast && s % 12 !== key) c += 5;
               c += Math.random() * 0.6;
               if(c < bestC){
-                if(look && stage === 0 && !feasible(next, { bass: item.bass, t: t, a: a, s: s }, key)) continue;   // callejón sin salida: se descarta
+                if(stage === 0 && (look || (ctpL < 2 && next))){                  // callejón sin salida: se descarta (con CTP, también si el que sigue no podría cumplir las reglas CTP)
+                  var cand = { bass: item.bass, t: t, a: a, s: s };
+                  if(ctpL < 2){ cand.sev = item.sev; cand.root = item.root; cand.sus = item.sus; cand.d = prev ? [item.bass - prev.bass, t - prev.t, a - prev.a, s - prev.s] : null; cand.pd = prev ? (prev.d || null) : null; cand.runs = ctpRunsOf([item.bass, t, a, s], cand.d, prev ? prev.runs : null); }
+                  if(!feasible(next, cand, key, ctpL, nextLast)) continue;
+                }
                 bestC = c; best = { t: t, a: a, s: s };
               }
             }
           }
+        }
+        if(best && CTP && lv > 0){ if(lv === 1) stats.ctpL1++; else stats.ctpL2++; }   // hubo que aflojar reglas CTP (nivel 1) o dejarlas (nivel 2)
         }
         if(best && stage > 0){ if(stage === 1) stats.fbParallel++; else if(stage === 2) stats.fbLT++; else if(stage === 3) stats.fbCover++; else stats.fbSop++; }
       }
@@ -14052,6 +14208,8 @@ function runAnalysis() {
     function compose(N, opts){
       opts = opts || {};
       var key = opts.key != null ? opts.key : rnd(12), base = 36 + key;
+      var ctpRules = {}; CTP = null;                              // TestContrapunctus: apagado salvo que opts.ctp.on
+      if(opts.ctp && opts.ctp.on){ (opts.ctp.rules || []).forEach(function(r){ ctpRules[r] = true; }); CTP = { rules: ctpRules, key: key, minor: false, stats: { dimTry: 0, dimPlain: 0 } }; }
       var allowed = (opts.cells && opts.cells.length) ? opts.cells.filter(function(t){ return CELLS[t]; }) : Object.keys(CELLS);
       if(!allowed.length) allowed = Object.keys(CELLS);
       // RofO (opts.rofo = { on, p (0–1), modes: ["major","minor"] o vacío = al azar }): la canción es de Regla de la octava ↑/↓ con tus reemplazos de acordes.
@@ -14072,6 +14230,7 @@ function runAnalysis() {
       // la primera celda de tus aperturas y el resto de tus secuencias/marchas. Mayor o menor según la canción (menor: solo con RofO Menor).
       var my = (opts.mycad && opts.mycad.on) ? { p: Math.max(0, Math.min(1, opts.mycad.p == null ? 0.5 : opts.mycad.p)) } : null;
       var isMin = (mode === "minor");
+      if(CTP) CTP.minor = isMin;
       function myPick(role, maxLen, finalOnly){ var pl = myPool(role, isMin, maxLen, finalOnly); return pl.length ? pl[rnd(pl.length)] : null; }
       var stats = { fbParallel: 0, fbLT: 0, fbCover: 0, fbSop: 0, cells: [], rofoSteps: 0, rofoVar: 0, myCells: 0 };
       var finalType, finalLen, finalMy, items, bodyN, lastType, guard, fin, lastIt, attempt = 0;
@@ -14120,22 +14279,24 @@ function runAnalysis() {
       });
       var chords, bestChords = null, bestFb = 1e9, vt;
       for(vt = 0; vt < 8; vt++){                               // si hubo que relajar alguna regla, se vuelve a realizar (hay azar en el desempate) y se queda la mejor
-        var tmp = { fbParallel: 0, fbLT: 0, fbCover: 0, fbSop: 0 }, prev = null;
+        var tmp = { fbParallel: 0, fbLT: 0, fbCover: 0, fbSop: 0, ctpL1: 0, ctpL2: 0 }, prev = null;
         chords = [];
         items.forEach(function(it, i){
-          var v = voiceChord(it, prev, { key: key }, i === items.length - 1, tmp, items[i + 1] || null);
+          var v = voiceChord(it, prev, { key: key }, i === items.length - 1, tmp, items[i + 1] || null, i + 1 === items.length - 1);
           var ch = { bass: it.bass, t: v.t, a: v.a, s: v.s, tones: it.tones, sev: it.sev, root: it.root, label: it.label, fig: it.fig, deg: it.deg,
                      cell: it.cell, cellStart: it.cellStart, step: it.step, rootPc: it.rootPc, sus: it.sus, hold: !!(it.hold && prev) };
           ch.cat = (it.myText ? "MyCadences · " + it.myText : CELL_LONG[it.cell]) + (it.step ? " · " + it.step : "") + " · " + (it.figText || it.fig);
           ch.cellTitle = it.cellTitle || null;
+          if(CTP) ctpAnnotate(ch, prev);
           chords.push(ch); prev = ch;
         });
-        var fbn = tmp.fbParallel * 4 + tmp.fbLT + tmp.fbCover + tmp.fbSop;
-        if(fbn < bestFb){ bestFb = fbn; bestChords = chords; stats.fbParallel = tmp.fbParallel; stats.fbLT = tmp.fbLT; stats.fbCover = tmp.fbCover; stats.fbSop = tmp.fbSop; }
+        var fbn = tmp.fbParallel * 4 + tmp.fbLT + tmp.fbCover + tmp.fbSop + tmp.ctpL1 + tmp.ctpL2 * 2;
+        if(fbn < bestFb){ bestFb = fbn; bestChords = chords; stats.fbParallel = tmp.fbParallel; stats.fbLT = tmp.fbLT; stats.fbCover = tmp.fbCover; stats.fbSop = tmp.fbSop; stats.ctpL1 = tmp.ctpL1; stats.ctpL2 = tmp.ctpL2; }
         if(!fbn) break;
       }
       chords = bestChords;
-      return { key: key, base: base, chords: chords, stats: stats, cellName: CELL_NAME, finalType: finalType, mode: mode, rofo: !!rofo, mycad: !!my };
+      return { key: key, base: base, chords: chords, stats: stats, cellName: CELL_NAME, finalType: finalType, mode: mode, rofo: !!rofo, mycad: !!my,
+               ctp: CTP, audit: CTP ? ctpAudit(chords, key, isMin, ctpRules) : null };
     }
 
     // Soprano con diminuciones: nota de paso entre terceras, bordadura sobre notas repetidas. Solo notas de la escala de la tonalidad.
@@ -14324,7 +14485,8 @@ function runAnalysis() {
     function ornFor(bpm){ return bpm < 66 ? 1.4 : (bpm < 108 ? 1 : (bpm < 156 ? 0.8 : 0.5)); }
 
     return { compose: compose, melody: melody, diminish: diminish, DIM_FIGS: DIM_FIGS, analyze: analyze, FIG: FIG, RO_UP: RO_UP, RO_DOWN: RO_DOWN, MAJ: MAJ, ROFO: ROFO, MYCAD: MYCAD, MIN_UP: MIN_UP, MIN_DOWN: MIN_DOWN, hasParallel: hasParallel,
-             CELL_NAME: CELL_NAME, CELL_LONG: CELL_LONG, CELLS: CELLS, TEMPOS: TEMPOS, ornFor: ornFor, LOW: LOW, HIGH: HIGH, RT: RT, RA: RA, RS: RS };
+             CELL_NAME: CELL_NAME, CELL_LONG: CELL_LONG, CELLS: CELLS, TEMPOS: TEMPOS, ornFor: ornFor, LOW: LOW, HIGH: HIGH, RT: RT, RA: RA, RS: RS,
+             melodyCT: melodyCT, ctpAudit: ctpAudit, CTP_RULES: CTP_RULES, ctpLeapOK: ctpLeapOK, ctpDirOK: ctpDirOK };
   })();
 /* PARTIMENTI_CORE_END */
   var PARTIMENTI = (function(){
@@ -14438,6 +14600,13 @@ function runAnalysis() {
       auto.firstChild.id = "partimentiAutoTempo"; tb.appendChild(auto);
       tb.appendChild(group("", "", "tempo", core.TEMPOS.map(function(t){ return { k: t.key, text: t.name + " " + t.lo + (t.hi !== t.lo ? "–" + t.hi : ""), tip: t.name + ": " + t.lo + (t.hi !== t.lo ? "–" + t.hi : "") + " BPM" }; })));
       b.appendChild(tb);
+      // TestContrapunctus: contrapunto tradicional en las 4 voces (apagado por defecto: apagado no cambia nada). Reglas y fuentes en core.CTP_RULES.
+      var cb = mk("div", "padding:2px 0 6px;border-top:1px solid var(--line, #8884);margin-top:4px;");
+      var ch0 = label("TestContrapunctus", "TEST. Aplica contrapunto tradicional (Fux; reglas de curso UVM) a todas las voces de 🎹 Partimenti: bajo (auditado: es el partimento dado), tenor, alto, soprano y sus figuras de disminución. Apagado: no cambia nada. Vale desde la próxima canción (🔀 / G). Si una regla no deja ninguna realización posible, se afloja (el subtítulo cuenta cuántas veces). Pasá el mouse por cada regla para ver su fuente.", "opt", "ctp", false);
+      ch0.firstChild.id = "partimentiCtp"; ch0.style.fontWeight = "700"; cb.appendChild(ch0);
+      var cw = mk("div", "display:flex;flex-wrap:wrap;gap:4px 10px;padding-left:18px;");
+      Object.keys(core.CTP_RULES).forEach(function(k){ cw.appendChild(label(core.CTP_RULES[k].name, core.CTP_RULES[k].tip, "ctp", k, true)); });
+      cb.appendChild(cw); b.appendChild(cb);
     }
     buildUI();
 
@@ -14472,7 +14641,9 @@ function runAnalysis() {
       var rofo = (rofoEl && rofoEl.checked) ? { on: true, p: (pctEl ? parseInt(pctEl.value, 10) : 50) / 100, modes: checkedKeys("rmode") } : null;
       var myEl = document.getElementById("partimentiMyCad"), myPctEl = document.getElementById("partimentiMyCadPct");
       var mycad = (myEl && myEl.checked) ? { on: true, p: (myPctEl ? parseInt(myPctEl.value, 10) : 50) / 100 } : null;
-      var song = core.compose(N, { cells: checkedKeys("cell"), rofo: rofo, mycad: mycad, spell: spellPitchClass });
+      var ctpEl = document.getElementById("partimentiCtp");
+      var ctp = (ctpEl && ctpEl.checked) ? { on: true, rules: checkedKeys("ctp") } : null;     // TestContrapunctus (null = apagado: nada cambia)
+      var song = core.compose(N, { cells: checkedKeys("cell"), rofo: rofo, mycad: mycad, spell: spellPitchClass, ctp: ctp });
       var orn = core.ornFor(tempo.bpm);
       var dimEl = document.getElementById("partimentiDimPct"), dimPct = dimEl ? parseInt(dimEl.value, 10) : 25;
       var silEl = document.getElementById("partimentiRests");
@@ -14480,7 +14651,7 @@ function runAnalysis() {
       var keyName = spellPitchClass(song.key) + (song.mode === "minor" ? " menor" : " mayor");
       var chordEvents = [], bassEvents = [], melodyEvents = [];
       var progression = [], roles = [], slotChords = [], labels = [], lastBass = null;
-      var ci = 0;
+      var ci = 0, lastMel = null;
       for(var bar = 0; bar < NUM_BARS; bar++){
         var beats = RHYTHM.beats(bar), barStart = RHYTHM.start(bar), nSl = per[bar], dur = beats / nSl, slots = [];
         for(var si = 0; si < nSl; si++){
@@ -14489,9 +14660,13 @@ function runAnalysis() {
           else { lastBass = { midi: ch.bass, startBeat: abs, durBeats: dur, bar: bar }; bassEvents.push(lastBass); }     // bajo (el partimento)
           chordEvents.push({ midi: ch.t, startBeat: abs, durBeats: dur, bar: bar });                                     // tenor
           chordEvents.push({ midi: ch.a, startBeat: abs, durBeats: dur, bar: bar });                                     // alto
-          core.melody(song.chords, Math.min(idx, song.chords.length - 1), dur, song.key, orn, song.mode, dim).forEach(function(m){      // soprano con diminuciones
+          var msx = idx < song.chords.length ? (song.ctp ? core.melodyCT(song.chords, idx, dur, song.key, orn, song.mode, dim, lastMel)      // TestContrapunctus: figuras que cumplen las reglas
+                                                         : core.melody(song.chords, idx, dur, song.key, orn, song.mode, dim))
+                                              : core.melody(song.chords, song.chords.length - 1, dur, song.key, orn, song.mode, dim);
+          msx.forEach(function(m){      // soprano con diminuciones
             if(m.rest) return;                                                                                                  // pausa: sin evento
             melodyEvents.push({ midi: m.midi, startBeat: abs + m.off, durBeats: m.dur, bar: bar });
+            lastMel = m.midi;
           });
           var voiced = [ch.bass, ch.t, ch.a, ch.s];
           slots.push({ chord: voiced, startBeat: si * dur, durBeats: dur, setNotes: voiced, ccLabel: ch.label, ccCat: ch.cat,
@@ -14524,9 +14699,16 @@ function runAnalysis() {
       var sol = document.getElementById("consolaSolomonReadout");
       if(sol) sol.innerHTML = "";
       if(SONGTITLE) SONGTITLE.next();
+      var ctpTxt = "";
+      if(song.ctp){                                               // TestContrapunctus: auditoría del resultado final + cuántas veces hubo que aflojar reglas
+        var au = song.audit, bad = Object.keys(au).filter(function(k){ return au[k]; });
+        var AU = { par: "5as/8as paralelas", leap: "saltos", leapB: "saltos del bajo dado", hid: "directas", ovl: "solapamiento", dis: "disonancia", dirleap: "dirección", par3: "3as/6as", ends: "inicio/final" };
+        ctpTxt = " · TestContrapunctus: " + (bad.length ? bad.map(function(k){ return au[k] + "× " + AU[k]; }).join(", ") : "0 infracciones") +
+                 " [aflojó " + (song.stats.ctpL1 || 0) + " + sin reglas " + (song.stats.ctpL2 || 0) + " acordes; soprano liso " + song.ctp.stats.dimPlain + "]";
+      }
       var sub = document.getElementById("consolaSongSets");
       if(sub) sub.textContent = "(Partimenti · experimental · " + keyName + (song.mycad ? " · MyCadences " + song.stats.myCells + (song.stats.myCells === 1 ? " celda" : " celdas") : "") + (song.rofo && song.stats.rofoSteps ? " · RofO " + Math.round(100 * song.stats.rofoVar / song.stats.rofoSteps) + "% variantes" : (song.rofo ? " · RofO" : "")) + " · " + (tempo.name ? tempo.name + " " : "") + "♩=" + tempo.bpm + " · dim " + dimPct + "%" + (dim.rests ? " · silences" : "") + " · " + N + " acordes · " + dens + " por compás · " +
-        song.stats.cells.map(function(c){ return core.CELL_NAME[c]; }).join(" → ") + " · " + labels.join(" ") + ")";
+        song.stats.cells.map(function(c){ return core.CELL_NAME[c]; }).join(" → ") + " · " + labels.join(" ") + ctpTxt + ")";
       ["consolaPlayBtn", "consolaRegenPlayBtn"].forEach(function(id){
         var bt2 = document.getElementById(id); if(bt2) bt2.disabled = false;
       });
