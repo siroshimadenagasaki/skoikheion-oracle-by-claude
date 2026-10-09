@@ -14781,7 +14781,7 @@ function runAnalysis() {
       ih.title = "internal_movement: movimientos o disminuciones leves en las voces internas (tenor y alto). Con probabilidad p, la nota de un acorde ocupa la primera mitad y la segunda lleva una nota de paso (entre dos notas a distancia de 3ª) o una bordadura (si la nota se repite). No toca el bajo ni el soprano. Se descartan las figuras que producen 5as/8as paralelas, cruce de voces, salida de registro o roce de 2ª menor/7ª mayor; no se adorna el último acorde, los acordes de cuarta, la 7ª que debe bajar ni la sensible.";
       ib.appendChild(ih);
       var iw = mk("div", "display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;");
-      var imChk = label("internal_movement", "Movimientos leves en tenor y alto (notas de paso y bordaduras), sin paralelas. Valen desde la próxima canción (🔀 / G).", "opt", "internal_movement", false);
+      var imChk = label("internal_movement", "Movimientos leves en tenor y alto (notas de paso y bordaduras), sin paralelas. Valen desde la próxima canción (🔀 / G).", "opt", "internal_movement", true);
       imChk.firstChild.id = "partimentiInnerMove"; iw.appendChild(imChk);
       var il = mk("label", LBL); il.title = "Cuánto movimiento llevan tenor y alto (notas de 1 tiempo o más). Ahora rinde el DOBLE que antes (medido: ≈ ×2 figuras con el mismo valor del slider): sube la probabilidad y además el movimiento por grado conjunto también lleva figura (anticipación). 0 = ninguno; 100 = toda nota que admite una figura la lleva.";
       var ir = mk("input"); ir.type = "range"; ir.min = 0; ir.max = 100; ir.step = 5; ir.value = 30; ir.id = "partimentiInnerMovePct"; ir.style.cssText = "width:90px;";
