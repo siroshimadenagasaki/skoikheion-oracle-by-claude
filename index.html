@@ -14677,7 +14677,19 @@ function runAnalysis() {
     // Material: las 3 voces de arriba del acorde ya realizado [tenor, alto, soprano], sin duplicados y de grave a agudo. Solo cambian la octava y el ritmo,
     // así que ninguna nota sale del acorde (el set no se traiciona). Todo se mide en tiempos (negras) dentro de cada acorde y se corta donde termina el acorde.
     var TEXTURES = (function(){
-      var EPS = 1e-6, MIN_STEP = 0.25;
+      var EPS = 1e-6, MIN_STEP = 0.25, LO = 28, HI = 108;
+      // Material de cada acorde. Normal: las 3 voces de arriba [tenor, alto, soprano]. Con "Duplicar voces": el BAJO REAL entra a la textura una octava arriba
+      // (así Alberti/Murky/arpegios usan 4 voces y el partimento se refuerza), y las texturas "llenas" (full: bloque, repetido, rodado, vals) además duplican
+      // por octava la nota más grave (abajo) y la más aguda (arriba) si caben en el registro. Solo octavas: mismas clases de tono, el set no se traiciona.
+      function material(sl, dbl, full){
+        var p = pool(dbl ? [sl.bass + 12].concat(sl.notes) : sl.notes);
+        if(dbl && full){
+          var lo = p[0] - 12, hi = p[p.length - 1] + 12;
+          if(lo >= LO) p.unshift(lo);
+          if(hi <= HI) p.push(hi);
+        }
+        return p;
+      }
       function stepFor(dur, base, len){ return Math.max(MIN_STEP, Math.min(base, dur / len)); }   // que entre un ciclo completo en acordes cortos (sin bajar de una semicorchea)
       function single(arr){ return arr.map(function(n){ return [n]; }); }
       // seq: cada paso es un array de notas (acorde) o null (silencio). hold: la nota dura hasta el final del acorde (pedal). once: una sola pasada, sin repetir seq.
@@ -14697,28 +14709,32 @@ function runAnalysis() {
       }
       var LIST = [
         { key: "original", name: "Original (tenor + alto)", tip: "Lo de siempre: tenor y alto sostenidos todo el acorde (más las figuras de internal_movement, si están tildadas).", gen: null },
-        { key: "alberti", name: "Alberti", tip: "Alberti: grave–agudo–medio–agudo en corcheas (Mozart, Haydn). Usa las 3 voces de arriba del acorde.",
-          gen: function(p, dur){ var lo = p[0], hi = p[p.length - 1], mid = p.length > 2 ? p[1] : lo; return run(dur, stepFor(dur, 0.5, 4), single([lo, hi, mid, hi])); } },
+        { key: "alberti", name: "Alberti", ref: "Mozart", tip: "Alberti: grave–agudo–medio–agudo en corcheas (Mozart, Haydn). Usa las 3 voces de arriba del acorde.",
+          gen: function(p, dur){   // grave–agudo–medio–agudo; con 4+ voces (Duplicar voces) el "medio" recorre cada voz intermedia, un ciclo por voz
+            var lo = p[0], hi = p[p.length - 1], mids = p.length > 2 ? p.slice(1, -1) : [lo], seq = [];
+            mids.forEach(function(m){ seq.push(lo, hi, m, hi); });
+            return run(dur, stepFor(dur, 0.5, seq.length), single(seq));
+          } },
         { key: "murky", name: "Murky (octavas quebradas)", tip: "Murky: la nota más grave de las 3 voces alternando con su octava, en corcheas (Haydn, Beethoven).",
           gen: function(p, dur){ return run(dur, stepFor(dur, 0.5, 2), single([p[0], p[0] + 12])); } },
-        { key: "vals", name: "Vals (pah-pah)", tip: "Vals (oom-pah-pah): el acorde cae en los tiempos 2 y 3 de cada grupo de 3 negras; el 1 queda en silencio porque lo toca el bajo. En un acorde de 1 tiempo no entra ningún golpe y suena en bloque.",
+        { key: "vals", name: "Vals (pah-pah)", full: true, tip: "Vals (oom-pah-pah): el acorde cae en los tiempos 2 y 3 de cada grupo de 3 negras; el 1 queda en silencio porque lo toca el bajo. En un acorde de 1 tiempo no entra ningún golpe y suena en bloque.",
           gen: function(p, dur){
             var out = [], c, b, t;
             for(c = 0; c * 3 < dur - EPS; c++) for(b = 1; b <= 2; b++){ t = c * 3 + b; if(t < dur - EPS) out.push({ off: t, dur: Math.min(1, dur - t), notes: p }); }
             return out;
           } },
-        { key: "bloque", name: "Bloque (coral)", tip: "Bloque: las 3 voces de arriba juntas, sostenidas todo el acorde (Bach, Brahms).",
+        { key: "bloque", name: "Bloque (coral)", full: true, tip: "Bloque: las 3 voces de arriba juntas, sostenidas todo el acorde (Bach, Brahms).",
           gen: function(p, dur){ return [{ off: 0, dur: dur, notes: p }]; } },
-        { key: "repetido", name: "Acorde repetido", tip: "Acorde repetido: las 3 voces juntas en cada corchea (Beethoven).",
+        { key: "repetido", name: "Acorde repetido", full: true, tip: "Acorde repetido: las 3 voces juntas en cada corchea (Beethoven).",
           gen: function(p, dur){ return run(dur, 0.5, [p]); } },
-        { key: "arpegio", name: "Arpegio", tip: "Arpegio: sube y baja por las 3 voces en semicorcheas (Beethoven, Claro de luna).",
+        { key: "arpegio", name: "Arpegio", ref: "Beethoven", tip: "Arpegio: sube y baja por las 3 voces en semicorcheas (Beethoven, Claro de luna).",
           gen: function(p, dur){ return run(dur, 0.25, single(p.concat(p.slice(1, -1).reverse()))); } },
-        { key: "amplio", name: "Arpegio amplio (pedal)", tip: "Arpegio amplio con pedal: arranca una octava debajo del tenor, sube por las 3 voces y vuelve; cada nota se sostiene hasta el final del acorde, como con el pedal (Chopin, nocturnos).",
+        { key: "amplio", name: "Arpegio amplio", ref: "Chopin", tip: "Arpegio amplio con pedal: arranca una octava debajo del tenor, sube por las 3 voces y vuelve; cada nota se sostiene hasta el final del acorde, como con el pedal (Chopin, nocturnos).",
           gen: function(p, dur){
             var seq = [p[0] - 12].concat(p, p.slice(0, -1).reverse());
             return run(dur, Math.max(0.15, Math.min(1 / 3, dur / seq.length)), single(seq), true, true);
           } },
-        { key: "rodado", name: "Acorde rodado", tip: "Acorde rodado (arpegiato): las 3 voces entran casi juntas, de grave a agudo, unos 30 ms entre nota y nota, y se sostienen todo el acorde.",
+        { key: "rodado", name: "Acorde rodado", full: true, tip: "Acorde rodado (arpegiato): las 3 voces entran casi juntas, de grave a agudo, unos 30 ms entre nota y nota, y se sostienen todo el acorde.",
           gen: function(p, dur){
             var r = 0.03 * TEMPODENSITY.bpm() / 60;      // 30 ms por nota, pasados a tiempos con el tempo vigente
             return p.map(function(n, i){ var off = Math.min(i * r, dur / 2); return { off: off, dur: Math.max(0.05, dur - off), notes: [n] }; });
@@ -14726,10 +14742,10 @@ function runAnalysis() {
       ];
       function get(key){ for(var i = 0; i < LIST.length; i++) if(LIST[i].key === key && LIST[i].gen) return LIST[i]; return null; }   // null = Original
       // slots: [{abs, dur, bar, notes:[tenor, alto, soprano]}] → eventos {midi, startBeat, durBeats, bar} para la pista Harmony
-      function build(tex, slots){
+      function build(tex, slots, dbl){
         var out = [];
         slots.forEach(function(sl){
-          var p = pool(sl.notes), steps = tex.gen(p, sl.dur);
+          var p = material(sl, !!dbl, !!tex.full), steps = tex.gen(p, sl.dur);
           if(!steps.length) steps = get("bloque") ? get("bloque").gen(p, sl.dur) : [];                // acorde sin ninguna figura (p. ej. vals en 1 tiempo): suena en bloque
           steps.forEach(function(st){
             st.notes.forEach(function(m){ out.push({ midi: m, startBeat: sl.abs + st.off, durBeats: st.dur, bar: sl.bar }); });
@@ -14772,10 +14788,14 @@ function runAnalysis() {
       var txw = mk("div", "display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:2px 0 8px;");
       var txl = mk("label", null, "Textura armonía"); txl.className = "mix-preset-label"; txl.htmlFor = "partimentiTexture";
       var txs = mk("select"); txs.id = "partimentiTexture"; txs.className = "mix-preset-select";
-      TEXTURES.list.forEach(function(t){ var o = mk("option", null, t.name); o.value = t.key; o.title = t.tip; txs.appendChild(o); });
+      TEXTURES.list.forEach(function(t){ var o = mk("option", null, t.name + (t.ref ? " (" + t.ref + ")" : "")); o.value = t.key; o.title = t.tip; txs.appendChild(o); });
       var txTip = "Textura pianística de la Armonía (tenor + alto): Alberti, Murky, Vals, Bloque, Acorde repetido, Arpegio, Arpegio amplio con pedal y Acorde rodado. Solo cambia la pista Harmony: el bajo y el soprano no se tocan, y las notas siempre son las del acorde. Con una textura elegida no suenan las figuras de internal_movement (esas ya mueven tenor y alto). Vale desde la próxima canción (🔀 / G). Original = como siempre.";
       txl.title = txTip; txs.title = txTip;
-      txw.appendChild(txl); txw.appendChild(txs); b.appendChild(txw);
+      txw.appendChild(txl); txw.appendChild(txs);
+      // Duplicar voces: excepción para las texturas. El bajo real entra a la textura una octava arriba y las texturas llenas duplican por octava sus extremos. Solo octavas: nada sale del acorde.
+      var dk = label("Duplicar voces", "Solo con una textura elegida. Suma el bajo real a la textura (una octava arriba) para que Alberti, Murky y los arpegios usen 4 voces, y en Bloque, Acorde repetido, Acorde rodado y Vals duplica por octava la nota más grave (abajo) y la más aguda (arriba) para un sonido más lleno. Solo octavas: las notas siguen siendo las del acorde. Ojo: duplicar por octava hace octavas paralelas reales, aunque TestContrapunctus no las cuente (audita las 4 voces del acorde, no esta duplicación). Vale desde la próxima canción (🔀 / G).", "opt", "texdbl", true);
+      dk.firstChild.id = "partimentiTextureDbl"; txw.appendChild(dk);
+      b.appendChild(txw);
       b.appendChild(group("Celdas de bajo", "Regla de la octava, quintas descendentes e I–IV–V–I. Sin tildar nada en ningún grupo = todas las celdas.", "cell", rowsOf("base")));
       b.appendChild(group("Esquemas galantes", "Esquemas de Gjerdingen/Riepel con bajo y soprano fijos. Fonte, Monte, Indugio y la Converging Cadence no están: necesitan acordes cromáticos (dominantes secundarias, ♯4) que el motor no arma en estas celdas.", "cell", rowsOf("schema", SCHEMA_TIP)));
       b.appendChild(group("Cadencias", "Simple, compuesta y doble: valen para el medio de la canción y para el final.", "cell", rowsOf("cad", CAD_TIP)));
@@ -14944,7 +14964,7 @@ function runAnalysis() {
           chordEvents.push(evT);                                                                                         // tenor
           chordEvents.push(evA);                                                                                         // alto
           slotInfo.push({ abs: abs, dur: dur, t: evT, a: evA });
-          texSlots.push({ abs: abs, dur: dur, bar: bar, notes: [ch.t, ch.a, ch.s] });                                    // material de las texturas de armonía
+          texSlots.push({ abs: abs, dur: dur, bar: bar, notes: [ch.t, ch.a, ch.s], bass: ch.bass });                                  // material de las texturas de armonía
           var msx = idx < song.chords.length ? (song.ctp ? core.melodyCT(song.chords, idx, dur, song.key, orn, song.mode, dim, lastMel)      // TestContrapunctus: figuras que cumplen las reglas
                                                          : core.melody(song.chords, idx, dur, song.key, orn, song.mode, dim))
                                               : core.melody(song.chords, song.chords.length - 1, dur, song.key, orn, song.mode, dim);
@@ -14965,7 +14985,8 @@ function runAnalysis() {
 
       // internal_movement: figuras leves en tenor y alto (el bajo y el soprano ya están definitivos)
       var imEl = document.getElementById("partimentiInnerMove"), imPctEl = document.getElementById("partimentiInnerMovePct"), imDimEl = document.getElementById("partimentiInnerDimPct"), innerN = null, innerDimN = 0, innerDimPct = imDimEl ? parseInt(imDimEl.value, 10) : 25;
-      if(tex) chordEvents = TEXTURES.build(tex, texSlots);       // textura de armonía: reemplaza tenor + alto (internal_movement se saltea: ya movería esas mismas voces)
+      var texDbl = document.getElementById("partimentiTextureDbl"), texDblOn = !!(tex && texDbl && texDbl.checked);   // Duplicar voces: solo con textura elegida
+      if(tex) chordEvents = TEXTURES.build(tex, texSlots, texDblOn);      // textura de armonía: reemplaza tenor + alto (internal_movement se saltea: ya movería esas mismas voces)
       if(imEl && imEl.checked && !tex){
         var imRes = core.innerMovement(song, slotInfo, melodyEvents, (imPctEl ? parseInt(imPctEl.value, 10) : 30) / 100, innerDimPct / 100);
         Object.keys(imRes.moves).forEach(function(k){
@@ -15009,7 +15030,7 @@ function runAnalysis() {
                  " [aflojó " + (song.stats.ctpL1 || 0) + " + sin reglas " + (song.stats.ctpL2 || 0) + " acordes; soprano liso " + song.ctp.stats.dimPlain + "]";
       }
       var sub = document.getElementById("consolaSongSets");
-      if(sub) sub.textContent = "(Partimenti · experimental · " + keyName + (song.mycad ? " · MyCadences " + song.stats.myCells + (song.stats.myCells === 1 ? " celda" : " celdas") : "") + (song.rofo && song.stats.rofoSteps ? " · RofO " + Math.round(100 * song.stats.rofoVar / song.stats.rofoSteps) + "% variantes" : (song.rofo ? " · RofO" : "")) + " · " + (tempo.name ? tempo.name + " " : "") + "♩=" + tempo.bpm + " · dim " + dimPct + "%" + (tex ? " · textura " + tex.name : "") + (silPct !== 50 ? " · silences " + silPct + "%" : " · silences") + (innerN !== null ? " · internal_movement " + innerN + (innerN === 1 ? " figura" : " figuras") + " (" + innerDimN + " rápidas · dim interna " + innerDimPct + "%)" : "") + " · " + N + " acordes · " + dens + " por compás · " +
+      if(sub) sub.textContent = "(Partimenti · experimental · " + keyName + (song.mycad ? " · MyCadences " + song.stats.myCells + (song.stats.myCells === 1 ? " celda" : " celdas") : "") + (song.rofo && song.stats.rofoSteps ? " · RofO " + Math.round(100 * song.stats.rofoVar / song.stats.rofoSteps) + "% variantes" : (song.rofo ? " · RofO" : "")) + " · " + (tempo.name ? tempo.name + " " : "") + "♩=" + tempo.bpm + " · dim " + dimPct + "%" + (tex ? " · textura " + tex.name + (texDblOn ? " + voces duplicadas" : "") : "") + (silPct !== 50 ? " · silences " + silPct + "%" : " · silences") + (innerN !== null ? " · internal_movement " + innerN + (innerN === 1 ? " figura" : " figuras") + " (" + innerDimN + " rápidas · dim interna " + innerDimPct + "%)" : "") + " · " + N + " acordes · " + dens + " por compás · " +
         song.stats.cells.map(function(c){ return core.CELL_NAME[c]; }).join(" → ") + " · " + labels.join(" ") + ctpTxt + ")";
       ["consolaPlayBtn", "consolaRegenPlayBtn"].forEach(function(id){
         var bt2 = document.getElementById(id); if(bt2) bt2.disabled = false;
