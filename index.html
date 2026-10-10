@@ -13867,6 +13867,10 @@ function runAnalysis() {
     // [sección, compases, función ('T' = sobre la tónica, 'V' = sobre la dominante), modo ('maj' | 'min' | 'any'), largo en tiempos, eventos]. Cada evento = [inicio, duración, notas],
     // con las notas (de agudo a grave) en semitonos sobre la tónica de la fuente (do♯; las Voces internas Iº están en do). Retardos con pedal, dobles cuerdas, voz interna sobre V, 7 completo.
     var OCM = [["I mayor (pedal con retardos)","c1","T","maj",4,[[0.0,0.5,[5,2,-5,-12]],[0.5,0.5,[4]],[1.0,0.5,[2,-7,-12]],[1.5,0.5,[0]],[2.0,0.5,[-1,-5,-7,-12,-17]],[2.5,0.5,[0]],[3.0,0.5,[0,-5,-10,-12]],[3.5,0.5,[-8]]]],["I mayor (pedal con retardos)","c2","T","maj",4,[[0.0,0.5,[5,2,-5,-12]],[0.5,0.5,[4]],[1.0,0.25,[2,-5,-12]],[1.25,0.25,[0]],[1.5,0.25,[2,-7,-12]],[1.75,0.25,[0]],[2.0,0.5,[0,-5,-10,-12]],[2.5,0.5,[-8]]]],["I mayor (pedal con retardos)","c3","T","maj",4,[[0.0,1,[5,2,-4,-9,-12]],[1.0,1,[4,2,-5,-12]],[2.0,0.25,[2,-5,-7,-12]],[2.25,0.25,[0]],[2.5,0.25,[-1,-7,-12]],[2.75,0.25,[0]],[3.0,1,[0,-1,-8,-12]]]],["I mayor (pedal con retardos)","c4","T","maj",4,[[0.0,1,[5,2,-4,-12]],[1.0,1,[4,2,-5,-12]],[2.0,0.25,[2,-7,-12]],[2.25,0.25,[0]],[2.5,0.25,[-1,-7,-12]],[2.75,0.25,[0]],[3.0,1,[0,-1,-8,-12]]]],["Dobles cuerdas + pedal (mayor)","c5-6","T","maj",8,[[0.0,0.25,[7,5,-12]],[0.25,0.25,[7,4]],[0.5,0.25,[5,2]],[0.75,0.25,[5,0]],[1.0,0.25,[0,-1]],[1.25,0.25,[0,-3]],[1.5,0.25,[-3,-5]],[1.75,0.25,[-3,-7]],[2.0,0.25,[-5,-8]],[2.25,0.25,[-10]],[2.5,0.25,[-10,-12]],[2.75,0.25,[-13]],[3.0,0.25,[-12,-15]],[3.25,0.25,[-17]],[3.5,0.25,[-15,-19]],[3.75,0.25,[-20]],[4.0,0.25,[14,12]],[4.25,0.25,[14,11]],[4.5,0.25,[12,9]],[4.75,0.25,[12,7]],[5.0,0.25,[7,5]],[5.25,0.25,[7,4]],[5.5,0.25,[4,2]],[5.75,0.25,[4,0]],[6.0,0.25,[2,-1]],[6.25,0.25,[2,-3]],[6.5,0.25,[-3,-5]],[6.75,0.25,[-3,-7]],[7.0,0.25,[-5,-8]],[7.25,0.25,[-5,-10]],[7.5,0.25,[-8,-10]],[7.75,0.25,[-12]]]],["I menor (pedal con retardos)","c7","T","min",4,[[0.0,1,[5,2,-5,-12]],[1.0,1,[3,-5,-7,-12]],[2.0,1,[2,-4,-7,-12]],[3.0,1,[0,-9,-12]]]],["I menor (pedal con retardos)","c8","T","min",4,[[0.0,1,[5,2,-5,-12]],[1.0,1,[3,-5,-7,-12]],[2.0,1,[2,-4,-7,-12]],[3.0,1,[0,-5,-12]]]],["I menor (pedal con retardos)","c9","T","min",4,[[0.0,0.6667,[5,2,-5,-12]],[0.6667,0.6667,[3,-5,-7,-12]],[1.3333,0.6667,[2,-4,-7,-12]],[2.0,0.6667,[-1,-4,-7,-12]],[2.6667,0.6667,[-1,-10,-12]],[3.3333,0.6667,[0,-9,-12]]]],["I menor (pedal con retardos)","c10","T","min",4,[[0.0,0.5,[5,2,-5,-12]],[0.5,0.5,[3,-5,-7,-12]],[1.0,0.5,[2,-5,-7,-12]],[1.5,0.5,[-1,-4,-12]],[2.0,0.5,[-1,-5,-12]],[2.5,0.5,[0]],[3.0,1,[0,-5,-12]]]],["Dobles cuerdas (menor)","c11-12","T","min",8,[[0.0,0.25,[7,5,-12]],[0.25,0.25,[3]],[0.5,0.25,[5,2]],[0.75,0.25,[0]],[1.0,0.25,[0,-2]],[1.25,0.25,[-4]],[1.5,0.25,[-4,-5]],[1.75,0.25,[-7]],[2.0,0.25,[-5,-9]],[2.25,0.25,[-10]],[2.5,0.25,[-10,-12]],[2.75,0.25,[-14]],[3.0,0.25,[-12,-16]],[3.25,0.25,[-17]],[3.5,0.25,[-14,-17]],[3.75,0.25,[-19]],[4.0,0.25,[12,10]],[4.25,0.25,[8]],[4.5,0.25,[10,8]],[4.75,0.25,[7]],[5.0,0.25,[8,7]],[5.25,0.25,[5]],[5.5,0.25,[7,5]],[5.75,0.25,[3]],[6.0,0.25,[3,2]],[6.25,0.25,[0]],[6.5,0.25,[3,-2]],[6.75,0.25,[-4]],[7.0,0.25,[-4,-5]],[7.25,0.25,[-7]],[7.5,0.25,[-5,-9]],[7.75,0.25,[-10]]]],["Dobles cuerdas + pedal (melódica)","c13-14","T","min",8,[[0.0,0.3333,[7,5,-12]],[0.3333,0.3333,[3]],[0.6667,0.3333,[5,2]],[1.0,0.3333,[0]],[1.3333,0.3333,[-1,-9]],[1.6667,0.3333,[-3]],[2.0,0.3333,[-3,-5]],[2.3333,0.3333,[-7]],[2.6667,0.3333,[-5,-9]],[3.0,0.3333,[-10]],[3.3333,0.3333,[-10,-12]],[3.6667,0.3333,[-13]],[4.0,0.25,[14,12]],[4.25,0.25,[11]],[4.5,0.25,[12,9]],[4.75,0.25,[7]],[5.0,0.25,[7,5]],[5.25,0.25,[3]],[5.5,0.25,[3,2]],[5.75,0.25,[0]],[6.0,0.25,[2,-1]],[6.25,0.25,[-3]],[6.5,0.25,[-3,-5]],[6.75,0.25,[-7]],[7.0,0.25,[-5,-9]],[7.25,0.25,[-10]],[7.5,0.25,[-10,-13]],[7.75,0.25,[-14]]]],["Voz interna sobre V","c15","V","min",4,[[0.0,1,[7,2,-1,-17]],[1.0,1,[6,3,0,-17]],[2.0,1,[5,2,0,-17]],[3.0,1,[5,2,-1,-17]]]],["Voz interna sobre V","c16","V","min",4,[[0.0,1,[2,0,-5,-17]],[1.0,1,[3,0,-6,-17]],[2.0,1,[2,0,-7,-17]],[3.0,1,[-1,-5,-17]]]],["Voz interna sobre V","c17","V","min",4,[[0.0,0.5,[17,9,7,-5]],[0.5,0.5,[15,9,6,-5]],[1.0,0.5,[14,11,8,-5]],[1.5,0.5,[12,9,6,-5]],[2.0,0.5,[12,11,2,-5]],[2.5,0.5,[12,9,3,-5]],[3.0,1,[11,9,2,-5]]]],["Voz interna sobre V","c18","V","any",4,[[0.0,0.5,[7,2,0,-5]],[0.5,0.5,[6,2,0,-5]],[1.0,0.5,[5,2,0,-5]],[1.5,0.5,[5,0,-5]],[2.0,1,[5,-3,-5]],[3.0,1,[5,-1,-5]]]],["V7 completo","c19","V","min",4,[[0.0,1,[7,2,-1,-17]],[1.0,1,[6,3,0,-17]],[2.0,1,[5,2,0,-17]],[3.0,1,[5,2,-1,-17]]]],["V7 completo","c20","V","min",4,[[0.0,0.5,[4,-3,-5,-17]],[0.5,0.5,[-1]],[1.0,0.5,[0,-5,-17]],[1.5,0.5,[2]],[2.0,1,[3,0,-5,-17]],[3.0,0.5,[3,0,-6,-17]],[3.5,0.5,[2]]]],["V7 completo","c21","V","any",4,[[0.0,2,[2,0,-7,-17]],[2.0,0.5,[-1,-5,-17]],[2.5,0.5,[0]],[3.0,0.5,[-3,-10,-17]],[3.5,0.5,[-1]]]],["V7 completo","c22","T","maj",4,[[0.0,2,[-1,-5,-7,-12]],[2.0,2,[0,-8,-12]]]],["V7 completo","c23","V","any",4,[[0.0,1,[9,2,0,-5]],[1.0,1,[6,2,0,-5]],[2.0,1,[5,2,0,-5]],[3.0,1,[5,2,-1,-5]]]],["V7 completo","c24","V","min",4,[[0.0,1,[9,4,0,-5]],[1.0,1,[16,9,7,-5]],[2.0,1,[15,7,6,-5]],[3.0,1,[12,9,6,-5]]]],["V7 completo","c25","V","maj",4,[[0.0,1,[14,12,5,-5]],[1.0,1,[12,11,5,-5]],[2.0,1,[5,-5,-12]],[3.0,1,[4,2,-12]]]],["Menor completo","c26","T","min",4,[[0.0,0.6667,[5,2,-5,-12]],[0.6667,0.6667,[5,3,-5,-12]],[1.3333,0.6667,[3,-4,-5,-12]],[2.0,0.6667,[2,-1,-4,-12]],[2.6667,0.6667,[2,-5,-7,-12]],[3.3333,0.6667,[2,-4,-7,-12]]]],["Menor completo","c27","T","min",4,[[0.0,0.6667,[-1,-4,-7,-12]],[0.6667,0.6667,[-1,-5,-7,-12]],[1.3333,0.6667,[0,-5,-7,-12]],[2.0,0.3333,[0,-4,-12]],[2.3333,0.3333,[2]],[2.6667,0.6667,[-5,-10,-12]],[3.3333,0.6667,[-5,-9,-12]]]],["Menor completo","c28","T","min",4,[[0.0,0.6667,[5,2,-5,-12]],[0.6667,0.6667,[5,3,-5,-12]],[1.3333,0.6667,[3,-4,-5,-12]],[2.0,0.6667,[3,-5,-7,-12]],[2.6667,0.6667,[2,-5,-7,-12]],[3.3333,0.6667,[2,-4,-7,-12]]]],["Menor completo","c29","T","min",4,[[0.0,0.6667,[-1,-4,-7,-12]],[0.6667,0.6667,[-1,-5,-7,-12]],[1.3333,0.6667,[0,-5,-7,-12]],[2.0,0.6667,[-5,-10,-12]],[2.6667,1.3333,[-5,-9,-12]]]],["Voces internas Iº","c37-38","T","min",8,[[0.0,0.5,[11,0,-1,-6,-12]],[0.5,0.5,[9,0,-1,-12]],[1.0,0.5,[8,3,-3,-12]],[1.5,0.5,[6,3,0,-12]],[2.0,0.5,[5,3,-6,-12]],[2.5,0.5,[3,-3,-6,-12]]]],["Voces internas Iº","c39","V","any",4,[[0.0,0.5,[11,3,2,-5]],[0.5,0.5,[4]],[1.0,0.5,[6,-1,-5]],[1.5,0.5,[4]],[2.0,2,[11,2,1,-5]]]]];
+    // ---- Fouxbourdon (cadena de retardos): tu archivo My_fouxbourdon_v6 (cadena de retardos).gp. Es la ESCALA descendente armonizada en paralelo (en quinta, 6, 6/4, en tercera, en octava, 5-6…).
+    // Cada unidad = 8 pasos de la línea grave (bajada de un grado por paso). [sección, compás de origen, pasos]; paso = [largo en tiempos de la fuente, eventos de las voces SUPERIORES]; evento = [inicio (fracción del paso), duración (fracción), notas].
+    // Las notas son GRADOS de la escala relativos al bajo del paso 0 (0 = ese bajo, 1 = un grado más arriba…; índices de escala, no semitonos), así que valen en cualquier escala/modo: en mayor suenan como en el archivo y en menor se leen sobre la escala menor natural.
+    var FOX = [["En quinta","c1",[[1.0,[[0.0,0.5,[6]],[0.5,0.5,[5]]]],[1.0,[[0.0,0.5,[5]],[0.5,0.5,[4]]]],[1.0,[[0.0,0.5,[4]],[0.5,0.5,[3]]]],[1.0,[[0.0,0.5,[3]],[0.5,0.5,[2]]]],[1.0,[[0.0,0.5,[2]],[0.5,0.5,[1]]]],[1.0,[[0.0,0.5,[1]],[0.5,0.5,[0]]]],[1.0,[[0.0,0.5,[0]],[0.5,0.5,[-1]]]],[1.0,[[0.0,0.5,[-1]],[0.5,0.5,[-2]]]]]],["En quinta, 3 voces","c8",[[1.0,[[0.0,0.5,[6,2]],[0.5,0.5,[5]]]],[1.0,[[0.0,0.5,[5,1]],[0.5,0.5,[4]]]],[1.0,[[0.0,0.5,[4,0]],[0.5,0.5,[3]]]],[1.0,[[0.0,0.5,[3,-1]],[0.5,0.5,[2]]]],[1.0,[[0.0,0.5,[2,-2]],[0.5,0.5,[1]]]],[1.0,[[0.0,0.5,[1,-3]],[0.5,0.5,[0]]]],[1.0,[[0.0,0.5,[0,-4]],[0.5,0.5,[-1]]]],[1.0,[[0.0,0.5,[-1,-5]],[0.5,0.5,[-2]]]]]],["En quinta, abiertos","c15",[[1.0,[[0.0,0.5,[13,9]],[0.5,0.5,[12]]]],[1.0,[[0.0,0.5,[12,8]],[0.5,0.5,[11]]]],[1.0,[[0.0,0.5,[11,7]],[0.5,0.5,[10]]]],[1.0,[[0.0,0.5,[10,6]],[0.5,0.5,[9]]]],[1.0,[[0.0,0.5,[9,5]],[0.5,0.5,[8]]]],[1.0,[[0.0,0.5,[8,4]],[0.5,0.5,[7]]]],[1.0,[[0.0,0.5,[7,3]],[0.5,0.5,[6]]]],[1.0,[[0.0,0.5,[6,2]],[0.5,0.5,[5]]]]]],["6 (1ra inversión)","c19",[[1.0,[[0.0,0.5,[9]],[0.5,0.5,[8]]]],[1.0,[[0.0,0.5,[8]],[0.5,0.5,[7]]]],[1.0,[[0.0,0.5,[7]],[0.5,0.5,[6]]]],[1.0,[[0.0,0.5,[6]],[0.5,0.5,[5]]]],[1.0,[[0.0,0.5,[5]],[0.5,0.5,[4]]]],[1.0,[[0.0,0.5,[4]],[0.5,0.5,[3]]]],[1.0,[[0.0,0.5,[3]],[0.5,0.5,[2]]]],[1.0,[[0.0,0.5,[2]],[0.5,0.5,[1]]]]]],["6 (1ra inversión)","c25",[[1.0,[[0.0,0.5,[9,5]],[0.5,0.5,[8]]]],[1.0,[[0.0,0.5,[8,4]],[0.5,0.5,[7]]]],[1.0,[[0.0,0.5,[7,3]],[0.5,0.5,[6]]]],[1.0,[[0.0,0.5,[6,2]],[0.5,0.5,[5]]]],[1.0,[[0.0,0.5,[5,1]],[0.5,0.5,[4]]]],[1.0,[[0.0,0.5,[4,0]],[0.5,0.5,[3]]]],[1.0,[[0.0,0.5,[3,-1]],[0.5,0.5,[2]]]],[1.0,[[0.0,0.5,[2,-2]],[0.5,0.5,[1]]]]]],["6 (1ra inversión), 4 voces","c32",[[1.0,[[0.0,0.5,[9,5,3]],[0.5,0.5,[8]]]],[1.0,[[0.0,0.5,[8,4,2]],[0.5,0.5,[7]]]],[1.0,[[0.0,0.5,[7,3,1]],[0.5,0.5,[6]]]],[1.0,[[0.0,0.5,[6,2,0]],[0.5,0.5,[5]]]],[1.0,[[0.0,0.5,[5,1,-1]],[0.5,0.5,[4]]]],[1.0,[[0.0,0.5,[4,0,-2]],[0.5,0.5,[3]]]],[1.0,[[0.0,0.5,[3,-1,-4]],[0.5,0.5,[2]]]],[1.0,[[0.0,0.5,[2,-2,-4]],[0.5,0.5,[1]]]]]],["6 (1ra inversión), 4 voces","c32",[[1.0,[[0.0,0.5,[9,5,3]],[0.5,0.5,[8]]]],[1.0,[[0.0,0.5,[8,4,2]],[0.5,0.5,[7]]]],[1.0,[[0.0,0.5,[7,3,1]],[0.5,0.5,[6]]]],[1.0,[[0.0,0.5,[6,2,0]],[0.5,0.5,[5]]]],[1.0,[[0.0,0.5,[5,1,-2]],[0.5,0.5,[4]]]],[1.0,[[0.0,0.5,[4,0,-2]],[0.5,0.5,[3]]]],[1.0,[[0.0,0.5,[3,-1,-3]],[0.5,0.5,[2]]]],[1.0,[[0.0,0.5,[2,-2,-4]],[0.5,0.5,[1]]]]]],["6 (1ra inversión), 4 voces","c33",[[1.0,[[0.0,0.5,[9,5,3]],[0.5,0.5,[8]]]],[1.0,[[0.0,0.5,[8,4,2]],[0.5,0.5,[7]]]],[1.0,[[0.0,0.5,[7,3,0]],[0.5,0.5,[6]]]],[1.0,[[0.0,0.5,[6,2,0]],[0.5,0.5,[5]]]],[1.0,[[0.0,0.5,[5,1,-1]],[0.5,0.5,[4]]]],[1.0,[[0.0,0.5,[4,0,-2]],[0.5,0.5,[3]]]],[1.0,[[0.0,0.5,[3,-1,-3]],[0.5,0.5,[2]]]],[1.0,[[0.0,0.5,[2,-2,-4]],[0.5,0.5,[1]]]]]],["6 (1ra inversión), 4 voces","c35",[[1.0,[[0.0,0.5,[9,5,3]],[0.5,0.5,[8]]]],[1.0,[[0.0,0.5,[8,4,2]],[0.5,0.5,[7]]]],[1.0,[[0.0,0.5,[7,3,1]],[0.5,0.5,[6]]]],[1.0,[[0.0,0.5,[6,2,0]],[0.5,0.5,[5]]]],[1.0,[[0.0,0.5,[5,1,-1]],[0.5,0.5,[4]]]],[1.0,[[0.0,0.5,[4,0,-2]],[0.5,0.5,[3]]]],[1.0,[[0.0,0.5,[3,-1,-3]],[0.5,0.5,[2]]]],[1.0,[[0.0,0.5,[2,-2,-4]],[0.5,0.5,[1]]]]]],["6/4 (2da inversión)","c38",[[1.0,[[0.0,0.5,[11,5]],[0.5,0.5,[10]]]],[1.0,[[0.0,0.5,[10,4]],[0.5,0.5,[9]]]],[1.0,[[0.0,0.5,[9,3]],[0.5,0.5,[8]]]],[1.0,[[0.0,0.5,[8,2]],[0.5,0.5,[7]]]],[1.0,[[0.0,0.5,[7,1]],[0.5,0.5,[6]]]],[1.0,[[0.0,0.5,[6,0]],[0.5,0.5,[5]]]],[1.0,[[0.0,0.5,[5,-1]],[0.5,0.5,[4]]]],[1.0,[[0.0,0.5,[4,-2]],[0.5,0.5,[3]]]]]],["En tercera","c47",[[2.0,[[0.0,0.5,[9,6]],[0.5,0.5,[5]]]],[2.0,[[0.0,0.5,[8,5]],[0.5,0.5,[4]]]],[2.0,[[0.0,0.5,[7,4]],[0.5,0.5,[3]]]],[2.0,[[0.0,0.5,[6,3]],[0.5,0.5,[2]]]],[2.0,[[0.0,0.5,[5,2]],[0.5,0.5,[1]]]],[2.0,[[0.0,0.5,[4,1]],[0.5,0.5,[0]]]],[2.0,[[0.0,0.5,[3,0]],[0.5,0.5,[-1]]]],[2.0,[[0.0,0.5,[2,-1]],[0.5,0.5,[-2]]]]]],["En octava","c58",[[2.0,[[0.0,0.5,[5,4]],[0.5,0.5,[3]]]],[2.0,[[0.0,0.5,[4,3]],[0.5,0.5,[2]]]],[2.0,[[0.0,0.5,[3,2]],[0.5,0.5,[1]]]],[2.0,[[0.0,0.5,[2,1]],[0.5,0.5,[0]]]],[2.0,[[0.0,0.5,[1,0]],[0.5,0.5,[-1]]]],[2.0,[[0.0,0.5,[0,-1]],[0.5,0.5,[-2]]]],[2.0,[[0.0,0.5,[-1,-2]],[0.5,0.5,[-3]]]],[2.0,[[0.0,0.5,[-2,-3]],[0.5,0.5,[-4]]]]]],["En octava, 4 voces","c71",[[2.0,[[0.0,0.5,[7,6,2]],[0.5,0.5,[5]]]],[2.0,[[0.0,0.5,[6,5,1]],[0.5,0.5,[4]]]],[2.0,[[0.0,0.5,[5,4,0]],[0.5,0.5,[3]]]],[2.0,[[0.0,0.5,[4,3,-1]],[0.5,0.5,[2]]]],[2.0,[[0.0,0.5,[3,2,-2]],[0.5,0.5,[1]]]],[2.0,[[0.0,0.5,[2,1,-3]],[0.5,0.5,[0]]]],[2.0,[[0.0,0.5,[1,0,-4]],[0.5,0.5,[-1]]]],[2.0,[[0.0,0.5,[0,-1,-5]],[0.5,0.5,[-2]]]]]],["5-6 (Full monty)","c81",[[2.0,[[0.0,1.0,[9,5,4]]]],[2.0,[[0.0,1.0,[8,4,3]]]],[2.0,[[0.0,1.0,[7,3,2]]]],[2.0,[[0.0,1.0,[6,2,1]]]],[2.0,[[0.0,1.0,[5,1,0]]]],[2.0,[[0.0,1.0,[4,0,-1]]]],[2.0,[[0.0,1.0,[3,-1,-2]]]],[2.0,[[0.0,1.0,[2,-2,-3]]]]]],["6, 2 voces","c141",[[1.0,[[0.0,0.5,[4]],[0.5,0.5,[3]]]],[1.0,[[0.0,0.5,[3]],[0.5,0.5,[2]]]],[1.0,[[0.0,0.5,[2]],[0.5,0.5,[1]]]],[1.0,[[0.0,0.5,[1]],[0.5,0.5,[0]]]],[1.0,[[0.0,0.5,[0]],[0.5,0.5,[-1]]]],[1.0,[[0.0,0.5,[-1]],[0.5,0.5,[-2]]]],[1.0,[[0.0,0.5,[-2]],[0.5,0.5,[-3]]]],[1.0,[[0.0,0.5,[-3]],[0.5,0.5,[-4]]]]]]];
     function cycPool(maxLen, onI){
       return CYC.u.filter(function(u){ return u[5].length <= maxLen && (!onI || (u[5][0][1] === 0 && u[5][0][0] === 0)); });
     }
@@ -13875,6 +13879,20 @@ function runAnalysis() {
       return u[5].map(function(c){
         var e = exItem([c[1], c[2], c[3]], c[0], null, "", false);
         e.figText = "Ciclo"; e.rofo = 0; e.my = 1; e.cyc = 1; e.cell = "cyc"; e.cellTitle = title; e.myText = note;
+        return e;
+      });
+    }
+    // ---- Cadencias modulatorias: tu biblioteca de My_modulatory_cadences.gp (49 compases). Mismo formato que CYC, en semitonos sobre la tónica de cada unidad (la tónica en que EMPIEZA):
+    // [sección, compases, menor(0/1), rol('b'), 0, acordes[bajo, raíz, sufijo, notas]]. Las unidades modulan (secundarias dominantes, ciclo de cuartas, omnibus); solo se usan los acordes, el ritmo y el voicing del .gp se ignoran.
+    var MOD = {"secs":["Patrón V6 I V6/VI VI (mayor a relativo menor, por ciclo de cuartas)","Menor a relativo mayor","Patrón V7 I6 V7/VI VI6 (por ciclo de cuartas)","Patrón invertido V7/VI VI6 V7 I6 (por ciclo de cuartas)","I V7/V por ciclo de cuartas ascendente (mayor)","I6 V7/V por ciclo de cuartas (mayor)","I V7/V por ciclo de cuartas (menor)","I6 V7/V por ciclo de cuartas (menor)","V I descendiendo por grado","I I7 por el ciclo de cuartas","Progresión omnibus","Omnibus simplificada","Patrón omnibus V7 VIIm6/4 V2 (III7), 3 menores descendentes","Omnibus menor (Im V6 I7 IVm6 V#7 I64)","Omnibus menor (continuación)","Mi progresión cromática"],"u":[[0,"c1-3",0,"b",0,[[11,7,"7",[2,5,7,11]],[0,0,"",[0,4,7]],[8,4,"7",[2,4,8,11]],[9,9,"m",[0,4,9]],[4,0,"7",[0,4,7,10]],[5,5,"",[0,5,9]],[1,9,"7",[1,4,7,9]],[2,2,"m",[2,5,9]],[9,5,"7",[0,3,5,9]],[10,10,"",[2,5,10]],[6,2,"7",[0,2,6,9]],[7,7,"m",[2,7,10]]]],[1,"c4-5",1,"b",0,[[11,7,"7",[2,5,7,11]],[0,0,"m",[0,3,7]],[2,10,"",[2,5,10]],[3,3,"",[3,7,10]],[4,0,"7",[0,4,7,10]],[5,5,"m",[0,5,8]],[7,3,"7",[1,3,7,10]],[8,8,"",[0,3,8]]]],[2,"c7-8",0,"b",0,[[5,7,"7",[2,5,7,11]],[4,0,"",[0,4,7]],[2,4,"7",[2,4,8,11]],[0,9,"m",[0,4,9]],[10,0,"7",[0,4,7,10]],[9,5,"",[0,5,9]],[7,9,"7",[1,4,7,9]],[5,2,"m",[2,5,9]]]],[3,"c10-11",0,"b",0,[[2,4,"7",[2,4,8,11]],[0,9,"m",[0,4,9]],[5,7,"7",[2,5,7,11]],[4,0,"",[0,4,7]],[9,11,"7",[3,6,9,11]],[7,4,"m",[4,7,11]],[0,2,"7",[0,2,6,9]],[7,7,"",[2,7,11]]]],[4,"c13-16",0,"b",0,[[0,0,"",[0,4,7]],[0,2,"7",[0,2,6,9]],[7,7,"",[2,7,11]],[7,9,"7",[1,4,7,9]],[2,2,"",[2,6,9]],[2,4,"7",[2,4,8,11]],[9,9,"",[1,4,9]],[9,11,"7",[3,6,9,11]]]],[5,"c17-19",0,"b",0,[[4,0,"",[0,4,7]],[0,2,"7",[0,2,6,9]],[11,7,"",[2,7,11]],[7,9,"7",[1,4,7,9]],[6,2,"",[2,6,9]],[2,4,"7",[2,4,8,11]]]],[6,"c20-23",1,"b",0,[[0,0,"m",[0,3,7]],[0,2,"7",[0,2,6,9]],[7,7,"m",[2,7,10]],[7,9,"7",[1,4,7,9]],[2,2,"m",[2,5,9]],[2,4,"7",[2,4,8,11]],[9,9,"m",[0,4,9]],[9,11,"7",[3,6,9,11]]]],[7,"c24-27",1,"b",0,[[3,0,"m",[0,3,7]],[0,2,"7",[0,2,6,9]],[10,7,"m",[2,7,10]],[7,9,"7",[1,4,7,9]],[5,2,"m",[2,5,9]],[2,4,"7",[2,4,8,11]],[0,9,"m",[0,4,9]],[9,11,"7",[3,6,9,11]]]],[8,"c28-30",0,"b",0,[[0,0,"",[0,4,7]],[4,0,"",[0,4,7]],[4,6,"7",[1,4,6,10]],[11,11,"m",[2,6,11]],[2,11,"m",[2,6,11]],[2,4,"7",[2,4,8,11]],[9,9,"m",[0,4,9]],[0,9,"m",[0,4,9]],[0,2,"7",[0,2,6,9]]]],[8,"c28-32",0,"b",0,[[0,0,"",[0,4,7]],[4,0,"",[0,4,7]],[4,6,"7",[1,4,6,10]],[11,11,"m",[2,6,11]],[2,11,"m",[2,6,11]],[2,4,"7",[2,4,8,11]],[9,9,"m",[0,4,9]],[0,9,"m",[0,4,9]],[0,2,"7",[0,2,6,9]],[7,7,"",[2,7,11]],[11,7,"",[2,7,11]],[10,0,"7",[0,4,7,10]],[5,5,"",[0,5,9]],[9,5,"",[0,5,9]],[9,11,"7",[3,6,9,11]]]],[8,"c28-34",0,"b",0,[[0,0,"",[0,4,7]],[4,0,"",[0,4,7]],[4,6,"7",[1,4,6,10]],[11,11,"m",[2,6,11]],[2,11,"m",[2,6,11]],[2,4,"7",[2,4,8,11]],[9,9,"m",[0,4,9]],[0,9,"m",[0,4,9]],[0,2,"7",[0,2,6,9]],[7,7,"",[2,7,11]],[11,7,"",[2,7,11]],[10,0,"7",[0,4,7,10]],[5,5,"",[0,5,9]],[9,5,"",[0,5,9]],[9,11,"7",[3,6,9,11]],[4,4,"m(no5)",[4,7]],[7,4,"m",[4,7,11]],[7,9,"7",[1,4,7,9]],[2,2,"m",[2,5,9]],[5,2,"m",[2,5,9]],[5,7,"7",[2,5,7,11]]]],[9,"c35-36",0,"b",0,[[0,0,"",[0,4,7]],[10,0,"7",[0,4,7,10]],[0,5,"",[0,5,9]],[3,5,"7",[0,3,5,9]],[10,10,"",[2,5,10]],[8,10,"7",[2,5,8,10]],[3,3,"",[3,7,10]],[1,3,"7",[1,3,7,10]]]],[10,"c37-38",0,"b",0,[[7,7,"7",[2,5,7,11]],[6,11,"m",[2,6,11]],[5,7,"7",[2,5,7,11]],[3,8,"m",[3,8,11]],[2,4,"7",[2,4,8,11]],[1,1,"7",[1,5,8,11]],[0,5,"m",[0,5,8]],[11,1,"7",[1,5,8,11]],[10,10,"7",[2,5,8,10]],[9,2,"m",[2,5,9]],[8,10,"7(no5)",[2,8,10]],[7,7,"7",[2,5,7,11]]]],[11,"c39",0,"b",0,[[0,0,"",[0,4,7]],[11,7,"",[2,7,11]],[10,10,"7",[2,5,8,10]],[9,2,"m",[2,5,9]],[8,10,"7",[2,5,8,10]],[7,7,"5",[2,7]],[0,0,"",[0,4,7]]]],[12,"c40",0,"b",0,[[7,7,"7",[2,5,7,11]],[6,11,"m",[2,6,11]],[5,7,"7",[2,5,7,11]],[4,4,"7",[2,4,8,11]],[3,8,"m",[3,8,11]],[2,4,"7",[2,4,8,11]],[1,1,"7",[1,5,8,11]],[0,5,"m",[0,5,8]]]],[13,"c42",1,"b",0,[[0,0,"m",[0,3,7]],[11,7,"7",[2,5,7,11]],[10,0,"7",[0,4,7,10]],[9,5,"",[0,5,9]],[8,8,"7",[0,3,6,8]],[7,0,"m",[0,3,7]],[7,7,"",[2,7,11]]]],[14,"c44",1,"b",0,[[0,0,"m",[0,3,7]],[10,7,"m",[2,7,10]],[8,5,"m",[0,5,8]],[7,7,"",[2,7,11]]]],[14,"c45",1,"b",0,[[0,0,"m",[0,3,7]],[11,7,"7",[2,5,7,11]],[10,10,"7",[2,5,8,10]],[9,2,"m",[2,5,9]],[8,10,"7",[2,5,8,10]],[7,7,"7",[2,5,7,11]]]],[15,"c48-49",1,"b",0,[[0,0,"m",[0,3,7]],[11,7,"",[2,7,11]],[10,0,"7",[0,4,7,10]],[9,5,"",[0,5,9]],[8,8,"",[0,3,8]],[7,7,"sus4",[0,2,7]],[6,6,"dim7",[0,3,6,9]],[5,7,"7",[2,5,7,11]],[4,0,"",[0,4,7]],[3,0,"m",[0,3,7]],[2,11,"dim",[2,5,11]],[0,0,"m",[0,3,7]]]]]};
+    function modPool(maxLen, onI, minor){
+      return MOD.u.filter(function(u){ return (u[2] === 1) === !!minor && u[5].length <= maxLen && (!onI || (u[5][0][1] === 0 && u[5][0][0] === 0)); });
+    }
+    function modCell(u){
+      var title = "Modulatoria: " + MOD.secs[u[0]], note = MOD.secs[u[0]] + " (" + u[1] + ")";
+      return u[5].map(function(c){
+        var e = exItem([c[1], c[2], c[3]], c[0], null, "", false);
+        e.figText = "Modulatoria"; e.rofo = 0; e.my = 1; e.mod = 1; e.cell = "mod"; e.cellTitle = title; e.myText = note;
         return e;
       });
     }
@@ -13962,7 +13980,7 @@ function runAnalysis() {
     };
     var CELL_NAME = {}, CELL_LONG = {};
     Object.keys(CELLS).forEach(function(k){ CELL_NAME[k] = CELLS[k].name; CELL_LONG[k] = CELLS[k].long; });
-    CELL_NAME.my = "MyCadences"; CELL_LONG.my = "MyCadences (tu biblioteca)"; CELL_NAME.cyc = "Ciclo"; CELL_LONG.cyc = "Ciclos diatónicos (tu biblioteca)";   // "my" no está en CELLS: no se sortea como celda genérica
+    CELL_NAME.my = "MyCadences"; CELL_LONG.my = "MyCadences (tu biblioteca)"; CELL_NAME.cyc = "Ciclo"; CELL_LONG.cyc = "Ciclos diatónicos (tu biblioteca)"; CELL_NAME.mod = "Modulatoria"; CELL_LONG.mod = "Cadencias modulatorias (tu biblioteca)";   // "my" no está en CELLS: no se sortea como celda genérica
 
     // Movimientos de tempo (BPM aproximados; Wikipedia "Tempo", marcados como "very rough approximations"). El slider del motor va de 25 a 200.
     var TEMPOS = [
@@ -14433,6 +14451,8 @@ function runAnalysis() {
       var my = (opts.mycad && opts.mycad.on) ? { p: Math.max(0, Math.min(1, opts.mycad.p == null ? 0.5 : opts.mycad.p)) } : null;
       // Ciclos diatónicos (opts.cyc = { on, p (0–1) }): con probabilidad p, una celda del CUERPO es un ciclo de tu biblioteca (solo en mayor; la primera celda solo si empieza en I).
       var cyc = (opts.cyc && opts.cyc.on) ? { p: Math.max(0, Math.min(1, opts.cyc.p == null ? 0.5 : opts.cyc.p)) } : null;
+      // Cadencias modulatorias (opts.mod = { on, p (0–1) }): con probabilidad p, una celda del CUERPO es una unidad de tu biblioteca (mayor en canciones mayores, menor en menores; la primera celda solo si empieza en I).
+      var mdl0 = (opts.mod && opts.mod.on) ? { p: Math.max(0, Math.min(1, opts.mod.p == null ? 0.3 : opts.mod.p)) } : null;
       var isMin = (mode === "minor");
       if(CTP) CTP.minor = isMin;
       function myPick(role, maxLen, finalOnly){ var pl = myPool(role, isMin, maxLen, finalOnly); return pl.length ? pl[rnd(pl.length)] : null; }
@@ -14455,10 +14475,10 @@ function runAnalysis() {
         if(!rest.length) rest = Object.keys(CELLS).filter(function(t){ return CELLS[t].group === "base" && (!restrictCells || t === "up" || t === "down"); });
         return rest.length ? rest : allowed;
       }
-      var stats = { fbParallel: 0, fbLT: 0, fbCover: 0, fbSop: 0, cells: [], rofoSteps: 0, rofoVar: 0, myCells: 0, cycCells: 0 };
+      var stats = { fbParallel: 0, fbLT: 0, fbCover: 0, fbSop: 0, cells: [], rofoSteps: 0, rofoVar: 0, myCells: 0, cycCells: 0, modCells: 0 };
       var finalType, finalLen, finalMy, items, bodyN, lastType, guard, fin, lastIt, attempt = 0;
       do {                                                      // con MyCadences, si la unión se comió acordes y la canción queda más corta que N, se rearma (hasta 8 veces)
-        stats.cells = []; stats.myCells = 0; stats.cycCells = 0; attempt++;
+        stats.cells = []; stats.myCells = 0; stats.cycCells = 0; stats.modCells = 0; attempt++;
         var cmCur = mixed ? (Math.random() < 0.5 ? "minor" : "major") : mode, fcm = cmCur;     // mixta: modo de la celda actual y de la final
         if(mixed) applySetup(fcm);
         finalType = pickFinal(allowed, N); finalLen = CELLS[finalType].len; finalMy = null;
@@ -14475,6 +14495,10 @@ function runAnalysis() {
             var cp = cycPool(bodyN - items.length, items.length === 0);
             if(cp.length){ cell = cycCell(cp[rnd(cp.length)]); type = "cyc"; stats.cycCells++; }
           }
+          if(!cell && mdl0 && Math.random() < mdl0.p){
+            var mdp = modPool(bodyN - items.length, items.length === 0, isMin);
+            if(mdp.length){ cell = modCell(mdp[rnd(mdp.length)]); type = "mod"; stats.modCells++; }
+          }
           var cellArr = cell || makeCell(type, ctx);
           cellArr.forEach(function(x){ x.minor = isMin; x.minz = minz; });
           appendCell(items, cellArr, key, base);
@@ -14489,7 +14513,7 @@ function runAnalysis() {
         if(lastIt && lastIt.deg === 4 && fin[0].deg === 4 && (fin[0].fig === "7" || fin[0].fig === "5/3") && fin[0].fig === lastIt.fig) fin[0].fig = fin[0].fig === "7" ? "5/3" : "7";
         appendCell(items, fin, key, base);
         stats.cells.push(finalType);
-      } while((my || cyc) && items.length < N && attempt < 8);
+      } while((my || cyc || mdl0) && items.length < N && attempt < 8);
       if(items.length > N) items.splice(0, items.length - N);        // N muy chico: queda solo el final
       items.forEach(function(it){
         if(rofo && (it.cell === "up" || it.cell === "down")){ stats.rofoSteps++; if(it.rofo === 2) stats.rofoVar++; }
@@ -14521,7 +14545,7 @@ function runAnalysis() {
           var v = voiceChord(it, prev, { key: key }, i === items.length - 1, tmp, items[i + 1] || null, i + 1 === items.length - 1);
           var ch = { bass: it.bass, t: v.t, a: v.a, s: v.s, tones: it.tones, sev: it.sev, root: it.root, label: it.label, fig: it.fig, deg: it.deg,
                      cell: it.cell, cellStart: it.cellStart, step: it.step, rootPc: it.rootPc, sus: it.sus, hold: !!(it.hold && prev), minorSec: mixed ? !!it.minor : undefined };
-          ch.cat = (it.myText ? (it.cyc ? "Ciclos diatónicos · " : "MyCadences · ") + it.myText : CELL_LONG[it.cell]) + (it.step ? " · " + it.step : "") + " · " + (it.figText || it.fig);
+          ch.cat = (it.myText ? (it.mod ? "Cadencias modulatorias · " : (it.cyc ? "Ciclos diatónicos · " : "MyCadences · ")) + it.myText : CELL_LONG[it.cell]) + (it.step ? " · " + it.step : "") + " · " + (it.figText || it.fig);
           ch.cellTitle = it.cellTitle || null;
           if(CTP) ctpAnnotate(ch, prev);
           chords.push(ch); prev = ch;
@@ -14531,7 +14555,7 @@ function runAnalysis() {
         if(!fbn) break;
       }
       chords = bestChords;
-      return { key: key, base: base, chords: chords, stats: stats, cellName: CELL_NAME, finalType: finalType, mode: mixed ? (items.filter(function(x){ return x.minor; }).length * 2 > items.length ? "minor" : "major") : mode, mixed: mixed, rofo: !!rofo, mycad: !!my, cyc: !!cyc,
+      return { key: key, base: base, chords: chords, stats: stats, cellName: CELL_NAME, finalType: finalType, mode: mixed ? (items.filter(function(x){ return x.minor; }).length * 2 > items.length ? "minor" : "major") : mode, mixed: mixed, rofo: !!rofo, mycad: !!my, cyc: !!cyc, mod: !!mdl0,
                ctp: CTP, audit: CTP ? ctpAudit(chords, key, isMin, ctpRules) : null };
     }
 
@@ -14884,7 +14908,7 @@ function runAnalysis() {
 
     function ornFor(bpm){ return bpm < 66 ? 1.4 : (bpm < 108 ? 1 : (bpm < 156 ? 0.8 : 0.5)); }
 
-    return { compose: compose, melody: melody, mmFix: mmFix, diminish: diminish, innerMovement: innerMovement, DIM_FIGS: DIM_FIGS, analyze: analyze, FIG: FIG, RO_UP: RO_UP, RO_DOWN: RO_DOWN, MAJ: MAJ, ROFO: ROFO, MYCAD: MYCAD, CYC: CYC, OCM: OCM, MIN_UP: MIN_UP, MIN_DOWN: MIN_DOWN, hasParallel: hasParallel,
+    return { compose: compose, melody: melody, mmFix: mmFix, diminish: diminish, innerMovement: innerMovement, DIM_FIGS: DIM_FIGS, analyze: analyze, FIG: FIG, RO_UP: RO_UP, RO_DOWN: RO_DOWN, MAJ: MAJ, ROFO: ROFO, MYCAD: MYCAD, CYC: CYC, OCM: OCM, FOX: FOX, MOD: MOD, MIN_UP: MIN_UP, MIN_DOWN: MIN_DOWN, hasParallel: hasParallel,
              CELL_NAME: CELL_NAME, CELL_LONG: CELL_LONG, CELLS: CELLS, TEMPOS: TEMPOS, ornFor: ornFor, LOW: LOW, HIGH: HIGH, RT: RT, RA: RA, RS: RS,
              melodyCT: melodyCT, ctpAudit: ctpAudit, CTP_RULES: CTP_RULES, ctpLeapOK: ctpLeapOK, ctpDirOK: ctpDirOK };
   })();
@@ -15148,6 +15172,20 @@ function runAnalysis() {
       cr.addEventListener("input", function(){ cv.textContent = cr.value + "%"; });
       cl.appendChild(document.createTextNode("ciclos ")); cl.appendChild(cr); cl.appendChild(cv); cw.appendChild(cl);
       cb.appendChild(cw); b.appendChild(cb);
+      // Cadencias modulatorias: tu biblioteca de My_modulatory_cadences.gp. Tildado: con probabilidad p cada celda del cuerpo es una de tus unidades (mayores en canciones mayores, menores en menores).
+      var mdb = mk("div", "padding:2px 0 6px;");
+      var mdh = mk("div", "font-size:12px;font-weight:700;color:var(--ink-muted);margin-bottom:2px;", "Cadencias modulatorias");
+      mdh.title = "Cadencias modulatorias: tu biblioteca de My_modulatory_cadences.gp (" + core.MOD.u.length + " unidades: V6 I por ciclo de cuartas, menor ↔ relativo mayor, I–V7/V ascendente, V I descendiendo por grado, omnibus). Con probabilidad p, cada celda del cuerpo de la canción es una de ellas. Modulan: la celda siguiente vuelve a la tónica de la canción.";
+      mdb.appendChild(mdh);
+      var mdw = mk("div", "display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;");
+      var mdChk = label("Modulatorias", "Usa tus cadencias modulatorias como celdas (valen desde la próxima canción: 🔀 / G).", "opt", "mod", true);
+      mdChk.firstChild.id = "partimentiMod"; mdw.appendChild(mdChk);
+      var mdl = mk("label", LBL); mdl.title = "Proporción de celdas que son cadencias modulatorias tuyas en vez de la generada (0 = ninguna, 100 = siempre que haya una que entre).";
+      var mdr = mk("input"); mdr.type = "range"; mdr.min = 0; mdr.max = 100; mdr.step = 5; mdr.value = 30; mdr.id = "partimentiModPct"; mdr.style.cssText = "width:90px;";
+      var mdv = mk("span", "min-width:34px;text-align:right;", "30%");
+      mdr.addEventListener("input", function(){ mdv.textContent = mdr.value + "%"; });
+      mdl.appendChild(document.createTextNode("celdas ")); mdl.appendChild(mdr); mdl.appendChild(mdv); mdw.appendChild(mdl);
+      mdb.appendChild(mdw); b.appendChild(mdb);
       // Movimientos de un acorde: tu biblioteca de One_chord_movement_v4.gp. Tildado: con probabilidad p, un acorde de tónica o de dominante (en posición fundamental, de 2 tiempos o más) se desarrolla con uno de tus movimientos.
       var ob = mk("div", "padding:2px 0 6px;");
       var oh = mk("div", "font-size:12px;font-weight:700;color:var(--ink-muted);margin-bottom:2px;", "Movimientos de un acorde");
@@ -15162,6 +15200,20 @@ function runAnalysis() {
       orr.addEventListener("input", function(){ ov.textContent = orr.value + "%"; });
       ol.appendChild(document.createTextNode("acordes ")); ol.appendChild(orr); ol.appendChild(ov); ow.appendChild(ol);
       ob.appendChild(ow); b.appendChild(ob);
+      // Fouxbourdon: tu cadena de retardos (My_fouxbourdon_v6). Tildado: con probabilidad p, cada celda "Regla ↓" (la escala descendente del bajo) lleva las voces superiores de uno de tus patrones.
+      var fb = mk("div", "padding:2px 0 6px;");
+      var fh = mk("div", "font-size:12px;font-weight:700;color:var(--ink-muted);margin-bottom:2px;", "Fouxbourdon");
+      fh.title = "Fouxbourdon: tu archivo My_fouxbourdon_v6 (cadena de retardos), " + core.FOX.length + " patrones. Es la escala descendente armonizada en paralelo (en quinta, 6, 6/4, en tercera, en octava, 5-6). Con probabilidad p, una celda Regla de la octava descendente (8 acordes) deja el bajo como está y cambia soprano + tenor/alto por el patrón. Es modal: los patrones son grados de la escala, así que en menor se leen sobre la escala menor natural.";
+      fb.appendChild(fh);
+      var fw = mk("div", "display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;");
+      var fxChk = label("Fouxbourdon", "Reemplaza la escala descendente (Regla ↓) por tus cadenas de retardos (valen desde la próxima canción: 🔀 / G).", "opt", "fox", true);
+      fxChk.firstChild.id = "partimentiFox"; fw.appendChild(fxChk);
+      var fl = mk("label", LBL); fl.title = "Proporción de celdas Regla ↓ que se reemplazan por un patrón Fouxbourdon (0 = ninguna, 100 = todas).";
+      var fr = mk("input"); fr.type = "range"; fr.min = 0; fr.max = 100; fr.step = 5; fr.value = 50; fr.id = "partimentiFoxPct"; fr.style.cssText = "width:90px;";
+      var fv = mk("span", "min-width:34px;text-align:right;", "50%");
+      fr.addEventListener("input", function(){ fv.textContent = fr.value + "%"; });
+      fl.appendChild(document.createTextNode("celdas ")); fl.appendChild(fr); fl.appendChild(fv); fw.appendChild(fl);
+      fb.appendChild(fw); b.appendChild(fb);
       // Disminución de la melodía
       var db = mk("div", "padding:2px 0 6px;");
       var dh = mk("div", "font-size:12px;font-weight:700;color:var(--ink-muted);margin-bottom:2px;", "Disminución de la melodía");
@@ -15373,13 +15425,15 @@ function runAnalysis() {
       var mycad = (myEl && myEl.checked) ? { on: true, p: (myPctEl ? parseInt(myPctEl.value, 10) : 50) / 100 } : null;
       var cyEl = document.getElementById("partimentiCyc"), cyPctEl = document.getElementById("partimentiCycPct");
       var cyc = (cyEl && cyEl.checked) ? { on: true, p: (cyPctEl ? parseInt(cyPctEl.value, 10) : 30) / 100 } : null;
+      var mdEl = document.getElementById("partimentiMod"), mdPctEl = document.getElementById("partimentiModPct");
+      var modOpt = (mdEl && mdEl.checked) ? { on: true, p: (mdPctEl ? parseInt(mdPctEl.value, 10) : 30) / 100 } : null;
       var ctpEl = document.getElementById("partimentiCtp");
       var ctp = (ctpEl && ctpEl.checked) ? { on: true, rules: checkedKeys("ctp") } : null;     // TestContrapunctus (null = apagado: nada cambia)
       var schEl = document.getElementById("partimentiSchMix"), schPctEl = document.getElementById("partimentiSchMixPct");
       var cadEl = document.getElementById("partimentiCadMix"), cadPctEl = document.getElementById("partimentiCadMixPct");
       var groups = { sch: (schEl && schEl.checked) ? (schPctEl ? parseInt(schPctEl.value, 10) : 50) / 100 : null,
                      cad: (cadEl && cadEl.checked) ? (cadPctEl ? parseInt(cadPctEl.value, 10) : 50) / 100 : null };   // null = slider apagado
-      var cOpts = { cells: checkedKeys("cell"), rofo: rofo, modes: checkedKeys("rmode"), mixed: !!(document.getElementById("partimentiMixed") && document.getElementById("partimentiMixed").checked), minorized: !!(document.getElementById("partimentiMinorized") && document.getElementById("partimentiMinorized").checked), mycad: mycad, cyc: cyc, groups: groups, spell: spellPitchClass, ctp: ctp }, song, spLay = null;
+      var cOpts = { cells: checkedKeys("cell"), rofo: rofo, modes: checkedKeys("rmode"), mixed: !!(document.getElementById("partimentiMixed") && document.getElementById("partimentiMixed").checked), minorized: !!(document.getElementById("partimentiMinorized") && document.getElementById("partimentiMinorized").checked), mycad: mycad, cyc: cyc, mod: modOpt, groups: groups, spell: spellPitchClass, ctp: ctp }, song, spLay = null;
       if(space){
         // Space: primero se arma la canción (cantidad de acordes ~1.3–2.2 por compás) y después se reparte en compases siguiendo las celdas:
         // cada celda ocupa compases enteros, el último compás de cada celda es final de frase (acorde largo) y dentro de la celda el patrón es parejo.
@@ -15522,6 +15576,57 @@ function runAnalysis() {
         });
         melodyEvents.sort(function(a, b2){ return a.startBeat - b2.startBeat; });
       }
+      // Fouxbourdon (casilla #partimentiFox): con probabilidad p, una celda "Regla ↓" completa (8 acordes con el bajo bajando un grado por paso) cambia sus voces superiores
+      // (soprano + tenor/alto, hasta 3 notas) por un patrón de tu archivo. El bajo queda. Los patrones son grados de la escala relativos al bajo del paso 0: se leen
+      // sobre la escala de la canción (mayor o menor natural) a partir del bajo real; cada paso se estira al largo de su acorde. Solo se aplica si el bajo de la celda baja de verdad un grado por paso.
+      var fxEl = document.getElementById("partimentiFox"), fxPctEl = document.getElementById("partimentiFoxPct"), foxN = null;
+      if(fxEl && fxEl.checked && !tex){
+        var fxP = (fxPctEl ? parseInt(fxPctEl.value, 10) : 50) / 100, kF = song.key % 12, SCF = song.mode === "minor" ? [0, 2, 3, 5, 7, 8, 10] : [0, 2, 4, 5, 7, 9, 11];
+        var fxIdx = function(m){ var o = Math.floor((m - kF) / 12), r = (m - kF) - 12 * o, d = SCF.indexOf(r); return d < 0 ? null : 7 * o + d; };
+        var fxPitch = function(n){ var o = Math.floor(n / 7); return kF + 12 * o + SCF[n - 7 * o]; };
+        foxN = 0;
+        var ri = 0;
+        while(ri < slotRefs.length){
+          if(slotRefs[ri].ch.cell !== "down"){ ri++; continue; }
+          var run = [slotRefs[ri]], rj = ri + 1;
+          while(rj < slotRefs.length && slotRefs[rj].ch.cell === "down" && !slotRefs[rj].ch.cellStart){ run.push(slotRefs[rj]); rj++; }
+          ri = rj;
+          if(run.length !== 8 || Math.random() >= fxP) continue;
+          var okRun = true, n0 = fxIdx(run[0].ch.bass);
+          if(n0 === null) continue;
+          run.forEach(function(sr, i){ if(sr.ch.hold || sr.dur < 0.5 || (texPlan && texPlan[sr.bar]) || fxIdx(sr.ch.bass) !== n0 - i) okRun = false; });
+          if(!okRun) continue;
+          var fu = core.FOX[Math.floor(Math.random() * core.FOX.length)], bestK = 0, bestPen = 1e9, kk, avgS = 0;
+          run.forEach(function(sr){ avgS += sr.ch.s / 8; });
+          for(kk = 0; kk <= 2; kk++){                                           // octava de las voces superiores: la que deja el soprano más cerca del de la celda
+            var pen = kk * 0.01, tp = 0, tn = 0;
+            fu[2].forEach(function(st, i){ st[1].forEach(function(e){
+              var top = -1;
+              e[2].forEach(function(r){ var m = fxPitch(n0 + r) + 12 * kk; if(m > top) top = m; if(m <= run[i].ch.bass + 2 || m > 100) pen += 1; });
+              tp += top; tn++;
+            }); });
+            pen += Math.abs(tp / tn - avgS) / 12;
+            if(pen < bestPen){ bestPen = pen; bestK = kk; }
+          }
+          if(bestPen >= 1) continue;
+          var t0 = run[0].abs, t1 = run[7].abs + run[7].dur, nMel = [], nHar = [];
+          fu[2].forEach(function(st, i){
+            var sr = run[i];
+            st[1].forEach(function(e){
+              var ns = e[2].map(function(r){ return fxPitch(n0 + r) + 12 * bestK; }).sort(function(a, b2){ return b2 - a; });
+              var s0 = sr.abs + e[0] * sr.dur, du = Math.min(e[1] * sr.dur, sr.abs + sr.dur - s0);
+              if(du <= 0) return;
+              nMel.push({ midi: ns[0], startBeat: s0, durBeats: du, bar: sr.bar, fig: "fox" });
+              ns.slice(1, 4).forEach(function(m){ nHar.push({ midi: m, startBeat: s0, durBeats: du, bar: sr.bar }); });
+            });
+          });
+          chordEvents = chordEvents.filter(function(x){ return !(x.startBeat >= t0 - 1e-6 && x.startBeat < t1 - 1e-6); }).concat(nHar);
+          melodyEvents = melodyEvents.filter(function(x){ return !(x.startBeat >= t0 - 1e-6 && x.startBeat < t1 - 1e-6); }).concat(nMel);
+          run.forEach(function(sr){ var slc = slotChords[sr.bar] && slotChords[sr.bar][sr.k]; if(slc) slc.ccCat = (slc.ccCat || "") + " · Fouxbourdon: " + fu[0] + " (" + fu[1] + ")"; });
+          foxN++;
+        }
+        melodyEvents.sort(function(a, b2){ return a.startBeat - b2.startBeat; });
+      }
       state.rootChord = progression[0].slice();
       state.progression = progression;
       state.roles = roles;
@@ -15553,7 +15658,7 @@ function runAnalysis() {
                  " [aflojó " + (song.stats.ctpL1 || 0) + " + sin reglas " + (song.stats.ctpL2 || 0) + " acordes; soprano liso " + song.ctp.stats.dimPlain + "]";
       }
       var sub = document.getElementById("consolaSongSets");
-      if(sub) sub.textContent = "(Partimenti · experimental · " + keyName + (space ? " · Space" : "") + (ocmN !== null ? " · Movimientos " + ocmN : "") + (song.cyc && song.mode !== "minor" ? " · Ciclos " + song.stats.cycCells + (song.stats.cycCells === 1 ? " ciclo" : " ciclos") : "") + (song.mycad ? " · MyCadences " + song.stats.myCells + (song.stats.myCells === 1 ? " celda" : " celdas") : "") + (song.rofo && song.stats.rofoSteps ? " · RofO " + Math.round(100 * song.stats.rofoVar / song.stats.rofoSteps) + "% variantes" : (song.rofo ? " · RofO" : "")) + " · " + (tempo.name ? tempo.name + " " : "") + "♩=" + tempo.bpm + " · dim " + dimPct + "%" + (tex ? " · textura " + tex.name + (texDblOn ? " + voces duplicadas" : "") : "") + (silPct !== 50 ? " · silences " + silPct + "%" : " · silences") + (innerN !== null ? " · internal_movement " + innerN + (innerN === 1 ? " figura" : " figuras") + " (" + innerDimN + " rápidas · dim interna " + innerDimPct + "%)" : "") + " · " + N + " acordes · " + dens + " por compás · " +
+      if(sub) sub.textContent = "(Partimenti · experimental · " + keyName + (space ? " · Space" : "") + (ocmN !== null ? " · Movimientos " + ocmN : "") + (foxN !== null ? " · Fouxbourdon " + foxN : "") + (song.mod && song.stats.modCells ? " · Modulatorias " + song.stats.modCells : "") + (song.cyc && song.mode !== "minor" ? " · Ciclos " + song.stats.cycCells + (song.stats.cycCells === 1 ? " ciclo" : " ciclos") : "") + (song.mycad ? " · MyCadences " + song.stats.myCells + (song.stats.myCells === 1 ? " celda" : " celdas") : "") + (song.rofo && song.stats.rofoSteps ? " · RofO " + Math.round(100 * song.stats.rofoVar / song.stats.rofoSteps) + "% variantes" : (song.rofo ? " · RofO" : "")) + " · " + (tempo.name ? tempo.name + " " : "") + "♩=" + tempo.bpm + " · dim " + dimPct + "%" + (tex ? " · textura " + tex.name + (texDblOn ? " + voces duplicadas" : "") : "") + (silPct !== 50 ? " · silences " + silPct + "%" : " · silences") + (innerN !== null ? " · internal_movement " + innerN + (innerN === 1 ? " figura" : " figuras") + " (" + innerDimN + " rápidas · dim interna " + innerDimPct + "%)" : "") + " · " + N + " acordes · " + dens + " por compás · " +
         song.stats.cells.map(function(c){ return core.CELL_NAME[c]; }).join(" → ") + " · " + labels.join(" ") + ctpTxt + ")";
       ["consolaPlayBtn", "consolaRegenPlayBtn"].forEach(function(id){
         var bt2 = document.getElementById(id); if(bt2) bt2.disabled = false;
@@ -15586,9 +15691,15 @@ function runAnalysis() {
       var cy = document.getElementById("partimentiCyc"), cyOn = Math.random() < 0.5;
       if(cy) cy.checked = cyOn;
       if(cyOn) setRange("partimentiCycPct", pick(10, 70));
+      var md = document.getElementById("partimentiMod"), mdOn = Math.random() < 0.5;
+      if(md) md.checked = mdOn;
+      if(mdOn) setRange("partimentiModPct", pick(10, 70));
       var oc = document.getElementById("partimentiOcm"), ocOn = Math.random() < 0.5;
       if(oc) oc.checked = ocOn;
       if(ocOn) setRange("partimentiOcmPct", pick(10, 70));
+      var fxc = document.getElementById("partimentiFox"), fxOn = Math.random() < 0.5;
+      if(fxc) fxc.checked = fxOn;
+      if(fxOn) setRange("partimentiFoxPct", pick(20, 100));
       var keys = Object.keys(core.CELLS).filter(function(k){ return core.CELLS[k].group === "schema"; });
       var chosen = keys.filter(function(){ return Math.random() < 0.5; });
       if(!chosen.length) chosen = [keys[Math.floor(Math.random() * keys.length)]];
@@ -15598,7 +15709,7 @@ function runAnalysis() {
         var allBox = boxes[0].parentNode.parentNode.querySelector("input:not([data-g])");
         if(allBox) allBox.checked = boxes.every(function(c){ return c.checked; });
       }
-      return { dim: document.getElementById("partimentiDimPct").value, silences: document.getElementById("partimentiRestsPct").value, innerMove: document.getElementById("partimentiInnerMovePct").value, innerDim: document.getElementById("partimentiInnerDimPct").value, mycad: myOn ? document.getElementById("partimentiMyCadPct").value : null, cyc: cyOn ? document.getElementById("partimentiCycPct").value : null, ocm: ocOn ? document.getElementById("partimentiOcmPct").value : null, schemas: chosen };
+      return { dim: document.getElementById("partimentiDimPct").value, silences: document.getElementById("partimentiRestsPct").value, innerMove: document.getElementById("partimentiInnerMovePct").value, innerDim: document.getElementById("partimentiInnerDimPct").value, mycad: myOn ? document.getElementById("partimentiMyCadPct").value : null, cyc: cyOn ? document.getElementById("partimentiCycPct").value : null, mod: mdOn ? document.getElementById("partimentiModPct").value : null, ocm: ocOn ? document.getElementById("partimentiOcmPct").value : null, fox: fxOn ? document.getElementById("partimentiFoxPct").value : null, schemas: chosen };
     };
     // Al entrar (no en cada 🔀): Clavecín en Armonía/Bajo/Melodía y Batería a 0% (set "partimenti" de PRESET_SETS); después se pueden cambiar a mano.
     api.start = function(){
