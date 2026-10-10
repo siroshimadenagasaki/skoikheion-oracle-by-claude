@@ -18157,7 +18157,7 @@ function runAnalysis() {
     // en el hilo de audio. Ahora hay pocos nodos vivos a la vez.
     // Pestaña en segundo plano: el navegador frena setInterval a ~1 s, así
     // que ahí la ventana se agranda para no dejar huecos.
-    var TICK_MS = 50, AHEAD_FG = 0.8, AHEAD_BG = 1.6;
+    var TICK_MS = 50, AHEAD_FG = 0.8, AHEAD_BG = 6; // BG: iOS con pantalla bloqueada frena los timers; 6 s de colchón
     var LOOP_BEATS = TOTAL_BEATS; // fijo durante la reproducción (salvo RadioMode: cambia al enganchar una vuelta nueva), igual que loopDur
     var loopAnchor = ctx.currentTime + 0.1;
     var schedLoopStart = loopAnchor;  // inicio (en el reloj de audio) de la vuelta en curso
@@ -20519,6 +20519,79 @@ function runAnalysis() {
   img.onerror = function(){ root.classList.add("wallpaper-ready"); }; // sin imagen: queda el fondo de siempre
   img.src = url;
   setTimeout(function(){ root.classList.add("wallpaper-ready"); }, 3000); // conexión lenta: se muestra el fondo de siempre y la imagen entra cuando llega
+})();
+</script>
+<script>
+/* ============================================================
+   AUDIO EN SEGUNDO PLANO (iPhone, pantalla bloqueada)
+   iOS suspende Web Audio al bloquear salvo que la página sea una
+   "sesión de medios" activa. Se logra con: (1) audioSession
+   "playback", (2) un <audio> silencioso en loop mientras suena,
+   (3) Media Session (controles/pantalla de bloqueo), (4) reanudar
+   el contexto al volver a primer plano.
+   ============================================================ */
+(function(){
+  try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch(e){}
+
+  // WAV silencioso de 1 s (8 kHz, 8-bit mono) generado en runtime.
+  var keep = null;
+  function makeKeep(){
+    var n = 8000, buf = new ArrayBuffer(44 + n), v = new DataView(buf);
+    function s(o, t){ for (var i = 0; i < t.length; i++) v.setUint8(o + i, t.charCodeAt(i)); }
+    s(0,"RIFF"); v.setUint32(4, 36 + n, true); s(8,"WAVE"); s(12,"fmt ");
+    v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,1,true);
+    v.setUint32(24,8000,true); v.setUint32(28,8000,true); v.setUint16(32,1,true); v.setUint16(34,8,true);
+    s(36,"data"); v.setUint32(40,n,true);
+    for (var i = 0; i < n; i++) v.setUint8(44 + i, 128);
+    var a = new Audio(URL.createObjectURL(new Blob([buf], {type:"audio/wav"})));
+    a.loop = true; a.setAttribute("playsinline", ""); a.volume = 0.01;
+    return a;
+  }
+  function keepOn(){
+    try { if (!keep) keep = makeKeep(); if (keep.paused) keep.play().catch(function(){}); } catch(e){}
+    try {
+      if ("mediaSession" in navigator) {
+        navigator.mediaSession.metadata = new MediaMetadata({ title: "Stoikheion Composer", artist: "Stoikheion" });
+        navigator.mediaSession.playbackState = "playing";
+      }
+    } catch(e){}
+  }
+  function keepOff(){
+    try { if (keep && !keep.paused) keep.pause(); } catch(e){}
+    try { if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "none"; } catch(e){}
+  }
+  function isPlaying(){ var b = document.getElementById("consolaPlayBtn"); return !!(b && b.disabled); }
+
+  // Con gesto del usuario (iOS lo exige para arrancar el <audio>).
+  ["consolaPlayBtn","consolaRegenPlayBtn"].forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) el.addEventListener("click", keepOn, true);
+  });
+  // Sincroniza con el estado real (fin de loop, Stop, RadioMode, etc.).
+  setInterval(function(){ if (isPlaying()) keepOn(); else keepOff(); }, 1500);
+
+  // Controles de la pantalla de bloqueo.
+  try {
+    if ("mediaSession" in navigator) {
+      navigator.mediaSession.setActionHandler("pause", function(){
+        var b = document.getElementById("consolaStopBtn"); if (b && !b.disabled) b.click();
+      });
+      navigator.mediaSession.setActionHandler("stop", function(){
+        var b = document.getElementById("consolaStopBtn"); if (b && !b.disabled) b.click();
+      });
+      navigator.mediaSession.setActionHandler("play", function(){
+        var b = document.getElementById("consolaPlayBtn"); if (b && !b.disabled) b.click();
+      });
+    }
+  } catch(e){}
+
+  // Al volver a primer plano / tras interrupciones: reanudar el contexto.
+  document.addEventListener("visibilitychange", function(){
+    if (!document.hidden && isPlaying()) {
+      try { if (typeof audioCtx !== "undefined" && audioCtx && audioCtx.state !== "running") audioCtx.resume(); } catch(e){}
+      keepOn();
+    }
+  });
 })();
 </script>
 </body>
