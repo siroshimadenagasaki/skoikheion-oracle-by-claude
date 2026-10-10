@@ -112,7 +112,7 @@
     background-size:cover;background-position:center;background-repeat:no-repeat;
     border:1px solid var(--line);
     border-radius:18px;
-    padding:46px 20px 22px; /* +18px: lugar para el 2º botón de radio (RadioClassicalMode) */
+    padding:66px 20px 22px; /* lugar para los 3 botones de radio (RADIO!, RadioCreaturaMode, RadioClassicalMode) */
     position:relative;
   }
   .clock-wrap{
@@ -179,9 +179,10 @@
     display:flex;justify-content:center;gap:6px;margin-bottom:18px;
   }
   /* RadioMode: botón chico en la esquina superior derecha de la tarjeta Clock/Piano */
-  .radio-mode-wrap.radio-top{position:absolute;top:5px;right:10px;z-index:2;white-space:nowrap;}
+  .radio-mode-wrap.radio-top{position:absolute;top:25px;right:10px;z-index:2;white-space:nowrap;}
   .radio-mode-wrap.radio-top .chip{font-size:9px;padding:2px 8px;line-height:1.3;}
-  .radio-mode-wrap.radio-top2{top:25px;}
+  .radio-mode-wrap.radio-top2{top:45px;}
+  .radio-mode-wrap.radio-top0{top:5px;}
   .toggle-btn{
     font-family:'JetBrains Mono',monospace;
     font-size:11px;letter-spacing:.06em;text-transform:uppercase;
@@ -1204,6 +1205,10 @@
   <div class="stage">
     <div class="clock-col">
     <div class="clock-card">
+      <span class="radio-mode-wrap radio-top radio-top0" title="RADIO! (botón ON/OFF): mix random. Al pasar a ON arranca una canción de un tipo al azar y en cada vuelta nueva sortea de nuevo entre CreaturaBella, CreaturaRandom, CommonChords y Partimenti, sin cortar el audio. Se corta con Detener o con OFF. Usa el modo en vivo (no Prerender).">
+        <input type="checkbox" id="consolaRadioMixChk" hidden>
+        <button type="button" class="chip" id="consolaRadioMixBtn" aria-pressed="false">&#128251; RADIO!: OFF</button>
+      </span>
       <span class="radio-mode-wrap radio-top" title="RadioCreaturaMode (botón ON/OFF): al pasar a ON arranca solo (CreaturaRandom o CreaturaBella al azar); con ON, después de 🪄 CreaturaRandom o 🪄 CreaturaBella, cuando termina la vuelta engancha otra vuelta nueva, alternando al azar Random/Bella (sets y sliders nuevos) y barajando los presets de Armonía y Melodía en cada canción nueva, sin cortar el audio. Se corta con Detener o con OFF. Usa el modo en vivo (no Prerender).">
         <input type="checkbox" id="consolaRadioChk" hidden>
         <button type="button" class="chip" id="consolaRadioBtn" aria-pressed="false">&#128251; RadioCreaturaMode: OFF</button>
@@ -7730,10 +7735,12 @@ function runAnalysis() {
     // compases — se llama una vez por generación (regenerateConsola),
     // así que cada Reproducir/Regenerar puede sortear una mezcla
     // distinta cuando "Mix time signatures" está tildado.
-    function recompute(){
+    function recompute(override){
       barBeatsArr = []; barStartArr = []; barCompoundArr = []; barLabelArr = [];
       var sigs;
-      if (mixEnabled()){
+      if (override){
+        sigs = [override];
+      } else if (mixEnabled()){
         var custom = inputSig();
         var pool = MIX_POOL.filter(function(s){ return s !== custom.label; });
         for(var i=pool.length-1;i>0;i--){ var j=randomInt(0,i); var t=pool[i]; pool[i]=pool[j]; pool[j]=t; }
@@ -7761,6 +7768,7 @@ function runAnalysis() {
     }
     return {
       recompute: recompute,
+      parse: parseSig,
       beats: function(bar){ return barBeatsArr[bar] != null ? barBeatsArr[bar] : BEATS_PER_BAR; },
       start: function(bar){
         if (bar >= NUM_BARS) return total;
@@ -14401,6 +14409,23 @@ function runAnalysis() {
 
     // Soprano con diminuciones: nota de paso entre terceras, bordadura sobre notas repetidas. Solo notas de la escala de la tonalidad.
     // orn escala la probabilidad (tempos lentos → más adornos, rápidos → menos). Sin adornos sobre acordes de cuarta (la 4ª/6ª es un retardo).
+    // MelodicMinor (casilla general de Partimenti): en tonalidades menores la escala armónica deja el 2° aumentado entre 6° y 7°. Con la menor MELÓDICA, subiendo
+    // por grado hacia la tónica van el 6° y el 7° naturales (5 6♮ 7♮ 8) y bajando el 7° y el 6° bajados (8 7♭ 6♭ 5). Solo toca notas de PASO (no del acorde, no la
+    // primera del acorde, no adornos) y solo en una parte de los acordes (probabilidad p por acorde), así que convive con la armónica. prevMidi / nextMidi: notas vecinas.
+    function mmFix(notes, ch, prevMidi, nextMidi, key, p){
+      var tones = (ch && ch.tones) || [], seq = [], i;
+      if(Math.random() >= p) return notes;
+      notes.forEach(function(n){ if(!n.rest) seq.push(n); });
+      for(i = 1; i < seq.length; i++){
+        var n = seq[i];
+        if(ORN_FIGS[n.fig] || tones.indexOf(mod(n.midi, 12)) >= 0) continue;
+        var prev = seq[i - 1].midi, next = i + 1 < seq.length ? seq[i + 1].midi : nextMidi, rel = mod(n.midi - key, 12);
+        if(next == null) continue;
+        if(rel === 8 && prev < n.midi && mod(next - key, 12) === 11 && next > n.midi) n.midi += 1;                     // 5 ♭6 7 → 5 6♮ 7 (sube)
+        else if(rel === 11 && prev - n.midi === 1 && mod(prev - key, 12) === 0 && next < n.midi) n.midi -= 1;           // 8 7♮ 6 → 8 7♭ 6 (baja)
+      }
+      return notes;
+    }
     function scaleHas(p, key, mode){ return (mode === "minor" ? HMIN : MAJ).indexOf(mod(p - key, 12)) >= 0; }
     function melody(chords, i, dur, key, orn, mode, dim){
       if(dim) return diminish(chords, i, dur, key, orn, mode, dim);      // disminución (slider + figuras + silencios); sin dim: adornos simples de siempre
@@ -14727,7 +14752,7 @@ function runAnalysis() {
 
     function ornFor(bpm){ return bpm < 66 ? 1.4 : (bpm < 108 ? 1 : (bpm < 156 ? 0.8 : 0.5)); }
 
-    return { compose: compose, melody: melody, diminish: diminish, innerMovement: innerMovement, DIM_FIGS: DIM_FIGS, analyze: analyze, FIG: FIG, RO_UP: RO_UP, RO_DOWN: RO_DOWN, MAJ: MAJ, ROFO: ROFO, MYCAD: MYCAD, MIN_UP: MIN_UP, MIN_DOWN: MIN_DOWN, hasParallel: hasParallel,
+    return { compose: compose, melody: melody, mmFix: mmFix, diminish: diminish, innerMovement: innerMovement, DIM_FIGS: DIM_FIGS, analyze: analyze, FIG: FIG, RO_UP: RO_UP, RO_DOWN: RO_DOWN, MAJ: MAJ, ROFO: ROFO, MYCAD: MYCAD, MIN_UP: MIN_UP, MIN_DOWN: MIN_DOWN, hasParallel: hasParallel,
              CELL_NAME: CELL_NAME, CELL_LONG: CELL_LONG, CELLS: CELLS, TEMPOS: TEMPOS, ornFor: ornFor, LOW: LOW, HIGH: HIGH, RT: RT, RA: RA, RS: RS,
              melodyCT: melodyCT, ctpAudit: ctpAudit, CTP_RULES: CTP_RULES, ctpLeapOK: ctpLeapOK, ctpDirOK: ctpDirOK };
   })();
@@ -14899,7 +14924,15 @@ function runAnalysis() {
       b.appendChild(hint);
       var spw = mk("div", "padding:2px 0 6px;");
       var spk = label("Space", "Space (general, solo Partimenti): más espacio y variedad rítmica en acordes y bajo. Las secciones son las celdas reales de la canción (esquemas galantes y cadencias): cada celda ocupa compases enteros y su carácter sale de cuántos acordes lleva por compás: LARGOS (uno por compás), MEDIOS (dos) o CORTOS (tres o cuatro). Dentro de una celda el reparto es parejo (no al azar compás por compás) y el último compás de cada celda es final de frase: el menor número de acordes posible, con el último largo. Además el bajo y la armonía (tenor/alto) rompen el ritmo parejo con un mismo giro por celda (reataques, notas con puntillo, entradas sincopadas, notas cortas con silencio), más en las secciones largas; los finales de frase y el último compás quedan limpios. Vale desde la próxima canción (🔀 / G).", "opt", "space", false);
-      spk.firstChild.id = "partimentiSpace"; spk.style.fontWeight = "700"; spw.appendChild(spk); b.appendChild(spw);
+      spk.firstChild.id = "partimentiSpace"; spk.style.fontWeight = "700"; spw.appendChild(spk);
+      var mmk = label("MelodicMinor", "MelodicMinor (general, solo Partimenti): en tonalidades menores agrega la escala menor MELÓDICA donde corresponde: subiendo por grado hacia la tónica el 6° y el 7° naturales (5 6 7 8) y bajando el 7° y el 6° bajados (8 b7 b6 5), en las notas de paso de la melodía (soprano y Melody n2). Solo en una parte de los acordes (no todo el tiempo), así convive con la menor armónica. Las notas del acorde no se tocan. En tonalidades mayores no cambia nada. Vale desde la próxima canción (🔀 / G).", "opt", "melodicMinor", true);
+      mmk.firstChild.id = "partimentiMelodicMinor"; mmk.style.fontWeight = "700"; spw.appendChild(mmk);
+      var tsw = mk("div", "display:flex;align-items:center;gap:6px;padding:4px 0 2px;font-weight:700;");
+      tsw.appendChild(mk("span", null, "Time signature"));
+      var tsn = mk("input"); tsn.id = "partimentiTSNum"; tsn.type = "text"; tsn.value = "4"; tsn.maxLength = 2; tsn.title = "Numerador (1-32)"; tsn.style.cssText = "width:40px;text-align:center;";
+      var tsd = mk("input"); tsd.id = "partimentiTSDen"; tsd.type = "text"; tsd.value = "4"; tsd.maxLength = 2; tsd.title = "Denominador (1, 2, 4, 8 o 16)"; tsd.style.cssText = "width:40px;text-align:center;";
+      tsw.appendChild(tsn); tsw.appendChild(mk("span", null, "/")); tsw.appendChild(tsd);
+      spw.appendChild(tsw); b.appendChild(spw);
       // Textura de la armonía: select con el mismo estilo que los de presets de soundfont. Solo toca la pista Harmony (tenor + alto); vale desde la próxima canción.
       var txw = mk("div", "display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:2px 0 8px;");
       var txl = mk("label", null, "Textura armonía"); txl.className = "mix-preset-label"; txl.htmlFor = "partimentiTexture";
@@ -15152,7 +15185,8 @@ function runAnalysis() {
 
     function build(){
       NUM_BARS = desiredNumBars();
-      RHYTHM.recompute();
+      var tsN = document.getElementById("partimentiTSNum"), tsD = document.getElementById("partimentiTSDen");
+      RHYTHM.recompute(tsN && tsD ? RHYTHM.parse(tsN.value + "/" + tsD.value) : null);   // compás propio de Partimenti (inválido → 4/4)
       TOTAL_BEATS = RHYTHM.total();
       var tempo = setTempo();     // antes de TEMPODENSITY.apply: ese módulo mira el tempo vigente al generar
       // Ritmo armónico de la canción (sorteo por canción): 1, 2 o 4 acordes por compás (acotado por los pulsos de cada compás).
@@ -15208,6 +15242,7 @@ function runAnalysis() {
       // (otro ritmo, otras figuras y silencios, sorteo propio) pero apoyada en el ALTO armonizado (una octava arriba si queda por debajo del soprano), así que
       // no duplica al soprano y sus notas de apoyo son siempre notas del acorde. Sin TestContrapunctus (esa auditoría es solo del soprano).
       var m2Chk = document.getElementById("consolaMelody2Chk"), melody2Events = [];
+      var mmEl = document.getElementById("partimentiMelodicMinor"), mmOn = !!(mmEl && mmEl.checked) && song.mode === "minor";   // MelodicMinor: solo en tonalidades menores
       var alt = (m2Chk && m2Chk.checked) ? song.chords.map(function(c){ var o = {}, k; for(k in c) o[k] = c[k]; o.s = (c.a + 12 < c.s) ? c.a + 12 : c.a; o.sus = null; return o; }) : null;
       var texEl = document.getElementById("partimentiTexture"), texVal = texEl ? texEl.value : "random", texRandom = texVal === "random";
       var tex = texRandom ? null : TEXTURES.get(texVal);   // null = Original (en Random cada bloque decide: ver texPlan)
@@ -15227,13 +15262,16 @@ function runAnalysis() {
           var msx = idx < song.chords.length ? (song.ctp ? core.melodyCT(song.chords, idx, dur, song.key, orn, song.mode, dim, lastMel)      // TestContrapunctus: figuras que cumplen las reglas
                                                          : core.melody(song.chords, idx, dur, song.key, orn, song.mode, dim))
                                               : core.melody(song.chords, song.chords.length - 1, dur, song.key, orn, song.mode, dim);
+          if(mmOn && !song.ctp) core.mmFix(msx, ch, lastMel, idx + 1 < song.chords.length ? song.chords[idx + 1].s : null, song.key, 0.6);   // MelodicMinor
           msx.forEach(function(m){      // soprano con diminuciones
             if(m.rest) return;                                                                                                  // pausa: sin evento
             melodyEvents.push({ midi: m.midi, startBeat: abs + m.off, durBeats: m.dur, bar: bar, fig: m.fig });
             lastMel = m.midi;
           });
           if(alt){                                                                                                              // Melody n2
-            core.melody(alt, Math.min(idx, alt.length - 1), dur, song.key, orn, song.mode, dim).forEach(function(m){
+            var m2n = core.melody(alt, Math.min(idx, alt.length - 1), dur, song.key, orn, song.mode, dim);
+            if(mmOn) core.mmFix(m2n, alt[Math.min(idx, alt.length - 1)], null, idx + 1 < alt.length ? alt[idx + 1].s : null, song.key, 0.6);
+            m2n.forEach(function(m){
               if(m.rest) return;
               melody2Events.push({ midi: m.midi, startBeat: abs + m.off, durBeats: m.dur, bar: bar, fig: m.fig });
             });
@@ -15346,6 +15384,8 @@ function runAnalysis() {
       var entering = !api.active;
       api.active = true;
       if(entering && typeof window.__applyPresetSet === "function") window.__applyPresetSet("partimenti");
+      var m2 = document.getElementById("melody2PresetSelect");   // Melody n2 en Partimenti: siempre clavecín (también en cada canción nueva / vuelta de radio)
+      if(m2 && m2.value !== "harpsichord"){ m2.value = "harpsichord"; m2.dispatchEvent(new Event("change", { bubbles: true })); }
       regenerateConsola();
     };
     api.off = function(){ api.active = false; };
@@ -18273,6 +18313,8 @@ function runAnalysis() {
     var shown = false;
     var kbMain = null, kbBebop = null;   // teclados fijos (se mueven junto con el scroll)
     function measure(){
+      ph = document.getElementById("consolaPlayhead");               // el roll se redibuja al enganchar una canción nueva (radio): el playhead es un elemento nuevo
+      phBebop = document.getElementById("consolaBebopPlayhead");
       kbMain = host ? host.querySelector(".consola-kb-fixed") : null;
       kbBebop = hostBebop ? hostBebop.querySelector(".consola-kb-fixed") : null;
       // el roll de batería se puede volver a dibujar mientras suena
@@ -18288,7 +18330,7 @@ function runAnalysis() {
     function step(ts){
       if(!playing) return;
       if(clk && clk.pend && ctx.currentTime >= clk.pend.anchor){
-        loopAnchor = clk.pend.anchor; loopDur = clk.pend.dur; clk.pend = null; // RadioMode: arrancó la vuelta nueva
+        loopAnchor = clk.pend.anchor; loopDur = clk.pend.dur; if(clk.pend.spb) spb = clk.pend.spb; clk.pend = null; // RadioMode: arrancó la vuelta nueva (con su tempo)
       }
       var elapsed = ctx.currentTime - loopAnchor;
       if(elapsed >= 0){
@@ -18351,7 +18393,8 @@ function runAnalysis() {
     var c = document.getElementById("consolaPrerenderChk");
     var r = document.getElementById("consolaRadioChk");
     var rc = document.getElementById("consolaRadioClassicalChk");
-    if((r && r.checked) || (rc && rc.checked)) return false; // RadioMode / RadioClassicalMode usan el scheduler en vivo (engancha vueltas sin cortes)
+    var rm = document.getElementById("consolaRadioMixChk");
+    if((r && r.checked) || (rc && rc.checked) || (rm && rm.checked)) return false; // RadioMode / RadioClassicalMode usan el scheduler en vivo (engancha vueltas sin cortes)
     return !!(c && c.checked) && !!(window.OfflineAudioContext || window.webkitOfflineAudioContext);
   }
   function prStatus(msg){
@@ -18606,9 +18649,11 @@ function runAnalysis() {
           // ~0.8 s antes de que termine la actual y la programa pegada, en el mismo reloj de audio.
           try{ window.__radioNext(rk); }catch(err){ console.error("RadioMode:", err); }
           schedLoopStart += loopDur;
+          var bpmNew = parseInt(tempoEl.value, 10);          // la canción nueva puede traer su propio tempo (RadioClassicalMode: movimiento de Partimenti)
+          if(bpmNew > 0) spb = 60/bpmNew;
           loopDur = TOTAL_BEATS*spb;
           LOOP_BEATS = TOTAL_BEATS;
-          clk.pend = { anchor: schedLoopStart, dur: loopDur };
+          clk.pend = { anchor: schedLoopStart, dur: loopDur, spb: spb };
         } else {
           if(!loopChk.checked){ ending = true; endAfterCurrentLoop(); return; }
           schedLoopStart += loopDur;
@@ -19783,7 +19828,7 @@ function runAnalysis() {
       // único preset: banco 0 / programa 0, leído del phdr).
       jazzfusion: { harmony: "epiano", chordDouble: "mute", melody: sfKeyForFile("BasoonFlute.sf2", 0, 0), melodyDouble: "mute", bass: "synthBass", swingDrums: true },
       // Partimenti: Clavecín en Armonía, Bajo y Melodía y Batería a 0% (se aplica al entrar al modo 🎹 Partimenti; después se puede cambiar a mano).
-      partimenti: { harmony: "harpsichord", bass: "harpsichord", melody: "harpsichord", gains: { drum: 0 } }
+      partimenti: { harmony: "harpsichord", bass: "harpsichord", melody: "harpsichord", melody2: "harpsichord", gains: { drum: 0 } }
     };
     function applyPresetSet(setKey){
       var set = PRESET_SETS[setKey];
@@ -20740,6 +20785,22 @@ function runAnalysis() {
           if(window.__partimenti){ window.__partimenti.randomize(); window.__partimenti.start(); }
           return;
         }
+        if(kind === "mix"){
+          // RADIO!: cada vuelta nueva sortea entre CreaturaRandom, CreaturaBella, CommonChords y Partimenti.
+          var pick = ["random", "bella", "common", "partimenti"][Math.floor(Math.random() * 4)];
+          window.__radioMixLast = pick;
+          if(pick === "partimenti"){ window.__partimenti.randomize(); window.__partimenti.start(); return; }
+          if(window.__partimenti) window.__partimenti.off();
+          if(pick === "common"){ randomizeSlider("consolaTempo", 30, 120); window.__commonChords.start(); return; }
+          if(window.__commonChords) window.__commonChords.off();
+          randomizeAndFill(pick === "bella");
+          randomizeVoices(true);
+          randomizeExtras();
+          randomizeSlider("consolaTempo", 30, 120);   // la vuelta anterior pudo ser Partimenti (tempo propio)
+          setChecked("consolaMixTimeSigChk", true);
+          if(typeof window.consolaRegenerate === "function") window.consolaRegenerate();
+          return;
+        }
         // RadioMode alterna: cada vuelta nueva sortea Random o Bella (50/50).
         randomizeAndFill(Math.random() < 0.5);
         randomizeVoices(true); // RadioMode: cada canción nueva baraja los presets de Armonía y Melodía (el tempo no se toca)
@@ -20892,6 +20953,44 @@ function runAnalysis() {
       classicalSet(true);
       runPartimenti(true);
     });
+    // 📻 RADIO!: mix random de CreaturaBella, CreaturaRandom, CommonChords y Partimenti. Excluyente con los otros dos radios.
+    var rmChk = document.getElementById("consolaRadioMixChk"), rmBtn = document.getElementById("consolaRadioMixBtn");
+    function mixPaint(){
+      if(!rmBtn || !rmChk) return;
+      rmBtn.textContent = "\uD83D\uDCFB RADIO!: " + (rmChk.checked ? "ON" : "OFF");
+      rmBtn.setAttribute("aria-pressed", rmChk.checked ? "true" : "false");
+      rmBtn.classList.toggle("primary", rmChk.checked);
+    }
+    function mixSet(on){
+      if(!rmChk) return;
+      rmChk.checked = !!on;
+      if(!on && window.__radioKind === "mix") window.__radioKind = null;
+      mixPaint();
+    }
+    window.__radioMixOff = function(){ mixSet(false); };
+    async function runMix(){
+      var pick = ["random", "bella", "common", "partimenti"][Math.floor(Math.random() * 4)];
+      window.__radioMixLast = pick;
+      if(pick === "random") await runCreatura(false);
+      else if(pick === "bella") await runCreatura(true);
+      else if(pick === "common") await runCommonChords();
+      else await runPartimenti(false);
+      if(rmChk){ rmChk.checked = true; mixPaint(); window.__radioKind = "mix"; }   // los Detener internos lo habían apagado
+    }
+    window.__runRadioMix = runMix;
+    var stopBtnRM = document.getElementById("consolaStopBtn");
+    if(stopBtnRM) stopBtnRM.addEventListener("click", function(){ mixSet(false); });
+    if(rmBtn && rmChk) rmBtn.addEventListener("click", function(){
+      if(rmChk.checked){ mixSet(false); return; }
+      if(radioChkEl && radioChkEl.checked){ radioChkEl.checked = false; radioPaint(); }
+      classicalSet(false);
+      mixSet(true);
+      runMix();
+    });
+    document.addEventListener("click", function(e){
+      var t = e.target;
+      if(!window.__radioBusy && t && t.closest && t.closest("#commonChordsBtn,#creaturaBtn,#creaturaBellaBtn,#creaturaIntervalicBtn,#partimentiBtn,#composeBtn,#clearBtn,#multiSetsRandomFillBtn,#multiSetsComposeBtn,#multiSetsMemBtn2,#consolaRadioBtn,#consolaRadioClassicalBtn")) mixSet(false);
+    }, true);
     // Cualquier otro modo automático (Creaturas, Compose, Clear, CommonChords, RadioCreaturaMode) saca de RadioClassicalMode.
     document.addEventListener("click", function(e){
       var t = e.target;
