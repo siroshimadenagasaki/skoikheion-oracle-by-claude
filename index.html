@@ -5251,6 +5251,59 @@ let sf2PercFont = null;    // Percussion.sf2 (parseado)
 let sf2PresetIdx = -1;
 const sf2BufferCache = new Map();
 
+// ---- Log de diagnóstico en pantalla (botón "🐞 log", abajo a la izquierda) ----
+// Para ver en el iPhone (app de inicio) qué .sf2 se traba y con qué error.
+// Se guarda en localStorage: si iOS mata/recarga la página por memoria, al
+// reabrir se ve el final de la sesión anterior. No cambia nada del audio.
+const SFDBG_KEY = "sfDbgLog";
+const sfDbgPrev = (function () { try { return JSON.parse(localStorage.getItem(SFDBG_KEY) || "[]"); } catch (e) { return []; } })();
+const sfDbgLines = [];
+let sfDbgPre = null;
+function sfLog(msg) {
+  const t = (performance.now() / 1000).toFixed(1);
+  sfDbgLines.push(t + "s " + msg);
+  if (sfDbgLines.length > 300) sfDbgLines.shift();
+  try { localStorage.setItem(SFDBG_KEY, JSON.stringify(sfDbgLines.slice(-80))); } catch (e) { /* sin storage */ }
+  if (sfDbgPre) sfDbgRender();
+}
+function sfDbgRender() {
+  sfDbgPre.textContent = (sfDbgPrev.length ? "== SESIÓN ANTERIOR (últimas líneas) ==\n" + sfDbgPrev.join("\n") + "\n\n" : "") +
+    "== SESIÓN ACTUAL ==\n" + sfDbgLines.join("\n");
+  sfDbgPre.scrollTop = sfDbgPre.scrollHeight;
+}
+function sfFmtMB(n) { return (n / 1048576).toFixed(1) + "MB"; }
+(function sfDbgInit() {
+  function build() {
+    const btn = document.createElement("button");
+    btn.type = "button"; btn.textContent = "🐞 log";
+    btn.style.cssText = "position:fixed;left:8px;bottom:8px;z-index:100000;font:11px monospace;padding:6px 10px;border-radius:100px;border:1px solid #8a6f2e;background:#1e1b2c;color:#d4a537;";
+    const box = document.createElement("div");
+    box.style.cssText = "display:none;position:fixed;left:0;right:0;bottom:0;height:55vh;z-index:100001;background:#0d0c14;border-top:1px solid #d4a537;";
+    const bar = document.createElement("div");
+    bar.style.cssText = "display:flex;gap:8px;padding:6px 8px;";
+    const mk = (label, fn) => { const b = document.createElement("button"); b.type = "button"; b.textContent = label; b.style.cssText = "font:11px monospace;padding:5px 10px;border-radius:8px;border:1px solid #3a3450;background:#1e1b2c;color:#efe8d8;"; b.onclick = fn; bar.appendChild(b); };
+    sfDbgPre = document.createElement("pre");
+    sfDbgPre.style.cssText = "margin:0;padding:6px 8px;height:calc(55vh - 40px);overflow:auto;font:10px/1.35 monospace;color:#efe8d8;white-space:pre-wrap;word-break:break-all;";
+    mk("Cerrar", () => { box.style.display = "none"; });
+    mk("Copiar", () => { try { navigator.clipboard.writeText(sfDbgPre.textContent); } catch (e) { /* manual */ } });
+    mk("Borrar previa", () => { sfDbgPrev.length = 0; try { localStorage.removeItem(SFDBG_KEY); } catch (e) {} sfDbgRender(); });
+    box.appendChild(bar); box.appendChild(sfDbgPre);
+    btn.onclick = () => { box.style.display = box.style.display === "none" ? "block" : "none"; sfDbgRender(); };
+    document.body.appendChild(btn); document.body.appendChild(box);
+    sfDbgRender();
+  }
+  if (document.body) build(); else document.addEventListener("DOMContentLoaded", build);
+  window.addEventListener("error", (e) => sfLog("JS ERROR: " + e.message + " @" + (e.lineno || "?")));
+  window.addEventListener("unhandledrejection", (e) => sfLog("PROMESA RECHAZADA: " + (e.reason && e.reason.message || e.reason)));
+  window.addEventListener("pagehide", () => sfLog("pagehide"));
+  document.addEventListener("visibilitychange", () => sfLog("visibility=" + document.visibilityState));
+  sfLog("inicio · standalone=" + (navigator.standalone === true) + " · displayMode=" + (window.matchMedia && matchMedia("(display-mode: standalone)").matches ? "standalone" : "browser") +
+    " · deviceMemory=" + (navigator.deviceMemory || "n/d") + " · indexedDB=" + ("indexedDB" in window) + " · " + location.href);
+  if (navigator.storage && navigator.storage.estimate) {
+    navigator.storage.estimate().then((s) => sfLog("storage usado=" + sfFmtMB(s.usage || 0) + " cuota=" + sfFmtMB(s.quota || 0))).catch((e) => sfLog("storage.estimate falló: " + e));
+  } else sfLog("storage.estimate no disponible");
+})();
+
 // ---- Carga local (abriendo el .html directo con doble clic, sin server)
 // ---------------------------------------------------------------------
 // Bajo file:// el navegador bloquea fetch() a archivos locales por CORS
@@ -5360,13 +5413,16 @@ async function sf2CachePut(url, arrayBuffer) {
 async function sf2GetArrayBuffer(url, onProgress) {
   if (!SF2_IS_LOCAL_FILE) {
     let cached = null;
-    try { cached = await sf2CacheGet(url); } catch (e) { /* sin caché disponible — sigue por red */ }
+    const nm = sf2BasenameOfUrl(url);
+    try { cached = await sf2CacheGet(url); } catch (e) { sfLog("[" + nm + "] IDB get falló: " + (e && e.message || e)); }
     if (cached) {
+      sfLog("[" + nm + "] desde IDB " + sfFmtMB(cached.byteLength || 0));
       if (onProgress) onProgress(1);
       return cached;
     }
+    sfLog("[" + nm + "] no está en IDB, bajando");
     const buf = await sf2FetchWithProgress(url, onProgress);
-    sf2CachePut(url, buf).catch(() => { /* si falla el guardado, la próxima visita vuelve a bajar — no rompe nada ahora */ });
+    sf2CachePut(url, buf).then(() => sfLog("[" + nm + "] IDB put OK")).catch((e) => sfLog("[" + nm + "] IDB put FALLÓ: " + (e && e.message || e)));
     return buf;
   }
   if (!sf2LocalFileMap) await sf2EnsureLocalFolder();
@@ -5378,20 +5434,25 @@ async function sf2GetArrayBuffer(url, onProgress) {
 }
 
 async function sf2FetchWithProgress(url, onProgress) {
+  const nm = sf2BasenameOfUrl(url);
+  sfLog("[" + nm + "] fetch inicio");
   const resp = await fetch(url);
+  sfLog("[" + nm + "] respuesta HTTP " + resp.status + " · content-length=" + (resp.headers.get("Content-Length") || "n/d") + " · body=" + !!resp.body);
   if (!resp.ok) throw new Error("HTTP " + resp.status + " when requesting " + url);
   const total = parseInt(resp.headers.get("Content-Length") || "0", 10);
-  if (!resp.body || !total) return await resp.arrayBuffer();
+  if (!resp.body || !total) { sfLog("[" + nm + "] sin streaming, arrayBuffer()"); const ab = await resp.arrayBuffer(); sfLog("[" + nm + "] arrayBuffer OK " + sfFmtMB(ab.byteLength)); return ab; }
   const reader = resp.body.getReader();
   const chunks = [];
-  let received = 0;
+  let received = 0, nextLog = 5 * 1048576;
   for (;;) {
     const { done, value } = await reader.read();
     if (done) break;
     chunks.push(value);
     received += value.length;
+    if (received >= nextLog) { sfLog("[" + nm + "] " + sfFmtMB(received) + " / " + sfFmtMB(total)); nextLog += 5 * 1048576; }
     if (onProgress) onProgress(received / total);
   }
+  sfLog("[" + nm + "] descarga completa " + sfFmtMB(received) + ", armando buffer");
   const out = new Uint8Array(received);
   let offset = 0;
   for (const c of chunks) { out.set(c, offset); offset += c.length; }
@@ -5911,7 +5972,10 @@ function sfLoadFontOnce(url) {
     sfNotifyCatalogChange(false); // el aviso del selector pasa a "cargando"
     sfLoadPromiseByUrl[url] = (async () => {
       try {
-        const font = sf2ParseFont(await sf2GetArrayBuffer(url));
+        const abuf = await sf2GetArrayBuffer(url);
+        sfLog("[" + sf2BasenameOfUrl(url) + "] parseando " + sfFmtMB(abuf.byteLength));
+        const font = sf2ParseFont(abuf);
+        sfLog("[" + sf2BasenameOfUrl(url) + "] LISTO");
         sfFontByUrl[url] = font;
         sfStateByUrl[url] = "ready";
         sfNotifyCatalogChange(true);
@@ -5919,6 +5983,7 @@ function sfLoadFontOnce(url) {
         return font;
       } catch (err) {
         console.error("Could not load the SoundFont " + url + ":", err);
+        sfLog("[" + sf2BasenameOfUrl(url) + "] ERROR: " + (err && err.message || err));
         sfFontByUrl[url] = null;
         sfStateByUrl[url] = "error";
         delete sfLoadPromiseByUrl[url]; // permite reintentar al volver a tildar HIFI
