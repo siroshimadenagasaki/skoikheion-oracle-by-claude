@@ -14848,7 +14848,7 @@ function runAnalysis() {
       var hint = mk("div", "font-size:11px;color:var(--ink-muted);padding:2px 0 4px;", "Sin tildar nada = todo. Los cambios valen desde la próxima canción (🔀 / G). La cadencia final sale de las cadencias tildadas (si no hay ninguna, de las tres).");
       b.appendChild(hint);
       var spw = mk("div", "padding:2px 0 6px;");
-      var spk = label("Space", "Space (general, solo Partimenti): más espacio y variedad rítmica en acordes y bajo. La canción se divide en secciones de 2 a 4 compases; cada sección sortea su carácter: acordes LARGOS (uno por compás), MEDIOS (de 2 tiempos) o CORTOS (de 1 tiempo), con duraciones mezcladas dentro del compás (2+2, 3+1, 1+1+2...). Además el bajo y la armonía (tenor/alto) rompen el ritmo parejo: reataques, notas con puntillo, entradas sincopadas y notas cortas con silencio, más en las secciones largas. El último compás es un acorde largo. Vale desde la próxima canción (🔀 / G).", "opt", "space", false);
+      var spk = label("Space", "Space (general, solo Partimenti): más espacio y variedad rítmica en acordes y bajo. Las secciones son las celdas reales de la canción (esquemas galantes y cadencias): cada celda ocupa compases enteros y su carácter sale de cuántos acordes lleva por compás: LARGOS (uno por compás), MEDIOS (dos) o CORTOS (tres o cuatro). Dentro de una celda el reparto es parejo (no al azar compás por compás) y el último compás de cada celda es final de frase: el menor número de acordes posible, con el último largo. Además el bajo y la armonía (tenor/alto) rompen el ritmo parejo con un mismo giro por celda (reataques, notas con puntillo, entradas sincopadas, notas cortas con silencio), más en las secciones largas; los finales de frase y el último compás quedan limpios. Vale desde la próxima canción (🔀 / G).", "opt", "space", false);
       spk.firstChild.id = "partimentiSpace"; spk.style.fontWeight = "700"; spw.appendChild(spk); b.appendChild(spw);
       // Textura de la armonía: select con el mismo estilo que los de presets de soundfont. Solo toca la pista Harmony (tenor + alto); vale desde la próxima canción.
       var txw = mk("div", "display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:2px 0 8px;");
@@ -14996,28 +14996,61 @@ function runAnalysis() {
       return { name: mv.name, bpm: bpm };
     }
 
-    // ---- Space (casilla general, solo Partimenti): más espacio y variedad rítmica en acordes y bajo, por secciones de 2-4 compases ----
-    // Cada sección sortea su carácter: "long" (acordes largos), "mid" (medios) o "busy" (cortos). Nunca hay un acorde de menos de 1 tiempo.
+    // ---- Space (casilla general, solo Partimenti): más espacio y variedad rítmica en acordes y bajo, por celdas reales ----
+    // Cada celda tiene su carácter (según acordes por compás): "long" (acordes largos), "mid" (medios) o "busy" (cortos). Nunca hay un acorde de menos de 1 tiempo.
     var SP_P = { long: 0.7, mid: 0.45, busy: 0.3 };      // probabilidad de que una nota del bajo / de la armonía lleve una variante rítmica, según la sección
-    function spPickKind(prev){
-      var r = Math.random(), k = r < 0.4 ? "long" : (r < 0.7 ? "mid" : "busy");
-      if(k === prev) k = prev === "long" ? "busy" : (prev === "mid" ? "long" : "mid");
-      return k;
-    }
-    function spPattern(kind, bt){        // duraciones (en tiempos) de los acordes de un compás de bt tiempos
-      if(bt < 2) return [bt];
-      var out = [], rem = bt;
-      while(rem > 0.0001){
-        var sizes = kind === "long" ? [rem, rem, rem, Math.max(1, rem - 1)] : (kind === "mid" ? [2, 2, 2, 3, 1] : [1, 1, 1, 2]);
-        var d = sizes[Math.floor(Math.random() * sizes.length)];
-        if(d > rem) d = rem;
-        if(rem - d > 0.0001 && rem - d < 1) d = rem;
-        out.push(d); rem -= d;
-      }
+    // Secciones = celdas reales de la canción (esquemas galantes y cadencias): cada celda ocupa compases enteros y el último compás de cada celda
+    // es el final de frase (el menor número de acordes posible, el último acorde largo). Dentro de una celda el patrón es parejo, no al azar.
+    var SP_END = [], SP_SEC = [];            // por compás: ¿es el último de su celda?, y número de celda
+    function spCap(bt){ return bt < 2 ? 1 : Math.min(4, Math.floor(bt)); }     // máximo de acordes en un compás (nunca menos de 1 tiempo cada uno)
+    function spSplit(bt, c){                 // c acordes en un compás de bt tiempos: parejos; con tiempos enteros, lo que sobra va al último
+      var out = [], i, base;
+      if(c <= 1) return [bt];
+      base = Math.floor(bt / c);
+      if(base >= 1 && Math.abs(bt - Math.round(bt)) < 1e-9){ for(i = 0; i < c - 1; i++) out.push(base); out.push(bt - base * (c - 1)); }
+      else for(i = 0; i < c; i++) out.push(bt / c);
       return out;
     }
+    function spCounts(m, caps){              // reparte m acordes en los compases de una celda (1..cap cada uno); el último compás lleva los menos posibles
+      var b = caps.length, i, last, rest, capSum, cnt, g;
+      if(b === 1) return m <= caps[0] ? [m] : null;
+      for(capSum = 0, i = 0; i < b - 1; i++) capSum += caps[i];
+      for(last = 1; last <= caps[b - 1]; last++){
+        rest = m - last;
+        if(rest < b - 1 || rest > capSum) continue;
+        for(cnt = [], i = 0; i < b - 1; i++) cnt.push(1);
+        rest -= b - 1;
+        for(g = 0; rest > 0 && g < 1000; g++) for(i = 0; i < b - 1 && rest > 0; i++) if(cnt[i] < caps[i]){ cnt[i]++; rest--; }     // parejo, los primeros compases primero
+        cnt.push(last); return cnt;
+      }
+      return null;
+    }
+    // chords: la canción ya armada. Devuelve {durPlan, kind, end, sec} o null si no se puede repartir. flat = toda la canción como una sola sección.
+    function spLayout(chords, nBars, cpb, flat){
+      var starts = [], segs, bars, lo, tot, g = 0, j, i, bar = 0, durPlan = [], kind = [], end = [], sec = [];
+      chords.forEach(function(ch, k){ if(k === 0 || (!flat && ch.cellStart)) starts.push(k); });
+      segs = starts.map(function(st, q){ return (q + 1 < starts.length ? starts[q + 1] : chords.length) - st; });
+      lo = segs.map(function(m){ return m >= 2 ? 2 : 1; });                                  // 2 compases como mínimo: así el último compás de la celda puede ser un solo acorde largo
+      if(lo.reduce(function(a, b){ return a + b; }, 0) > nBars) lo = segs.map(function(){ return 1; });
+      bars = segs.map(function(m, q){ return Math.max(lo[q], Math.min(m, Math.round(m / cpb))); });
+      tot = bars.reduce(function(a, b){ return a + b; }, 0);
+      while(tot !== nBars && g++ < 4000){
+        j = Math.floor(Math.random() * segs.length);
+        if(tot < nBars && bars[j] < segs[j]){ bars[j]++; tot++; }
+        else if(tot > nBars && bars[j] > lo[j]){ bars[j]--; tot--; }
+      }
+      if(tot !== nBars) return null;
+      for(j = 0; j < segs.length; j++){
+        var caps = [], cnt, avg, kd;
+        for(i = 0; i < bars[j]; i++) caps.push(spCap(RHYTHM.beats(bar + i)));
+        cnt = spCounts(segs[j], caps); if(!cnt) return null;
+        avg = segs[j] / bars[j]; kd = avg <= 1.25 ? "long" : (avg <= 2 ? "mid" : "busy");
+        for(i = 0; i < bars[j]; i++, bar++){ durPlan[bar] = spSplit(RHYTHM.beats(bar), cnt[i]); kind[bar] = kd; end[bar] = (i === bars[j] - 1); sec[bar] = j; }
+      }
+      return { durPlan: durPlan, kind: kind, end: end, sec: sec };
+    }
     function spCopy(e, sb, db){ var o = {}, k; for(k in e) o[k] = e[k]; o.startBeat = sb; o.durBeats = db; return o; }
-    function spPieces(role, d, kind){    // [[desplazamiento, duración], ...] dentro de la nota; lo que no se cubre queda en silencio
+    function spPieces(role, d, kind, idx){    // [[desplazamiento, duración], ...] dentro de la nota; lo que no se cubre queda en silencio
       var c = [], i;
       function add(n, pcs){ for(i = 0; i < n; i++) c.push(pcs); }
       if(role === "bass"){
@@ -15033,16 +15066,16 @@ function runAnalysis() {
         if(d >= 3) add(1, [[1, d - 1]]);
         add(kind === "busy" ? 2 : 1, [[0, d / 2]]);                                         // nota corta y silencio
       }
-      return c[Math.floor(Math.random() * c.length)];
+      return c[idx % c.length];            // idx fijo por sección y pista: el mismo giro en toda la sección (no al azar nota por nota)
     }
     function spVary(events, barKind, role){
-      var minD = role === "bass" ? 1 : 1.5, plan = {}, out = [];
+      var minD = role === "bass" ? 1 : 1.5, dec = {}, out = [];
       events.forEach(function(e){
         var kd = barKind[e.bar];
-        if(!kd || e.bar >= NUM_BARS - 1 || e.durBeats < minD){ out.push(e); return; }
-        var key = e.startBeat + "|" + e.durBeats;                     // tenor y alto (mismo inicio y duración) comparten la decisión
-        if(!(key in plan)) plan[key] = Math.random() < SP_P[kd] ? spPieces(role, e.durBeats, kd) : null;
-        var pcs = plan[key];
+        if(!kd || e.bar >= NUM_BARS - 1 || SP_END[e.bar] || e.durBeats < minD){ out.push(e); return; }     // el final de frase queda limpio
+        var sk = SP_SEC[e.bar];
+        if(!(sk in dec)) dec[sk] = { on: Math.random() < SP_P[kd], idx: Math.floor(Math.random() * 8) };       // una decisión por celda y pista
+        var pcs = dec[sk].on ? spPieces(role, e.durBeats, kd, dec[sk].idx) : null;
         if(!pcs){ out.push(e); return; }
         pcs.forEach(function(pc){ out.push(spCopy(e, e.startBeat + pc[0], pc[1])); });
       });
@@ -15074,18 +15107,10 @@ function runAnalysis() {
       var tempo = setTempo();     // antes de TEMPODENSITY.apply: ese módulo mira el tempo vigente al generar
       // Ritmo armónico de la canción (sorteo por canción): 1, 2 o 4 acordes por compás (acotado por los pulsos de cada compás).
       var r0 = Math.random(), dens = r0 < 0.2 ? 1 : (r0 < 0.7 ? 2 : 4);
-      var spEl = document.getElementById("partimentiSpace"), space = !!(spEl && spEl.checked);   // Space: secciones con acordes largos / medios / cortos + ritmo en bajo y armonía
+      var spEl = document.getElementById("partimentiSpace"), space = !!(spEl && spEl.checked);   // Space: secciones = celdas reales (largos / medios / cortos) + ritmo en bajo y armonía
       var durPlan = [], barKind = [], N = 0, b0;
-      if(space){
-        var sb0 = 0, prevK = null;
-        while(sb0 < NUM_BARS){
-          var kd = spPickKind(prevK), slen = 2 + Math.floor(Math.random() * 3);
-          for(var sq = 0; sq < slen && sb0 < NUM_BARS; sq++, sb0++){ barKind[sb0] = kd; durPlan[sb0] = spPattern(kd, RHYTHM.beats(sb0)); }
-          prevK = kd;
-        }
-        barKind[NUM_BARS - 1] = "long"; durPlan[NUM_BARS - 1] = [RHYTHM.beats(NUM_BARS - 1)];       // el último compás: un solo acorde largo
-        for(b0 = 0; b0 < NUM_BARS; b0++) N += durPlan[b0].length;
-      } else {
+      function plainPlan(){                 // sin Space: 1, 2 o 4 acordes iguales por compás
+        durPlan = []; barKind = []; N = 0;
         for(b0 = 0; b0 < NUM_BARS; b0++){
           var bt = RHYTHM.beats(b0), n0 = dens, pl = [], q0;
           if(bt < 2) n0 = 1; else if(bt < 4 && n0 === 4) n0 = 2;
@@ -15093,6 +15118,7 @@ function runAnalysis() {
           durPlan.push(pl); N += n0;
         }
       }
+      if(!space) plainPlan();               // con Space el reparto se hace después de armar la canción (sigue las celdas reales)
       var rofoEl = document.getElementById("partimentiRofO"), pctEl = document.getElementById("partimentiRofOPct");
       var rofo = (rofoEl && rofoEl.checked) ? { on: true, p: (pctEl ? parseInt(pctEl.value, 10) : 50) / 100, modes: checkedKeys("rmode") } : null;
       var myEl = document.getElementById("partimentiMyCad"), myPctEl = document.getElementById("partimentiMyCadPct");
@@ -15103,7 +15129,23 @@ function runAnalysis() {
       var cadEl = document.getElementById("partimentiCadMix"), cadPctEl = document.getElementById("partimentiCadMixPct");
       var groups = { sch: (schEl && schEl.checked) ? (schPctEl ? parseInt(schPctEl.value, 10) : 50) / 100 : null,
                      cad: (cadEl && cadEl.checked) ? (cadPctEl ? parseInt(cadPctEl.value, 10) : 50) / 100 : null };   // null = slider apagado
-      var song = core.compose(N, { cells: checkedKeys("cell"), rofo: rofo, mycad: mycad, groups: groups, spell: spellPitchClass, ctp: ctp });
+      var cOpts = { cells: checkedKeys("cell"), rofo: rofo, mycad: mycad, groups: groups, spell: spellPitchClass, ctp: ctp }, song, spLay = null;
+      if(space){
+        // Space: primero se arma la canción (cantidad de acordes ~1.3–2.2 por compás) y después se reparte en compases siguiendo las celdas:
+        // cada celda ocupa compases enteros, el último compás de cada celda es final de frase (acorde largo) y dentro de la celda el patrón es parejo.
+        var capTot = 0, tr, cpbS;
+        for(b0 = 0; b0 < NUM_BARS; b0++) capTot += spCap(RHYTHM.beats(b0));
+        for(tr = 0; tr < 8 && !spLay; tr++){
+          cpbS = 1.3 + Math.random() * 0.9;
+          N = Math.max(NUM_BARS, Math.min(capTot, Math.round(NUM_BARS * cpbS)));
+          song = core.compose(N, cOpts);
+          spLay = spLayout(song.chords, NUM_BARS, cpbS, false);
+        }
+        if(!spLay) spLay = spLayout(song.chords, NUM_BARS, 2, true);     // último recurso: toda la canción como una sola sección
+        if(spLay){ durPlan = spLay.durPlan; barKind = spLay.kind; SP_END = spLay.end; SP_SEC = spLay.sec; }
+        else { space = false; plainPlan(); song = core.compose(N, cOpts); }
+        api.lastSpace = spLay ? { durPlan: spLay.durPlan, end: spLay.end, kind: spLay.kind, cellStarts: song.chords.map(function(c, k){ return k === 0 || !!c.cellStart; }) } : null;   // (para pruebas)
+      } else song = core.compose(N, cOpts);
       var orn = core.ornFor(tempo.bpm);
       var dimEl = document.getElementById("partimentiDimPct"), dimPct = dimEl ? parseInt(dimEl.value, 10) : 25;
       var silEl = document.getElementById("partimentiRestsPct"), silPct = silEl ? parseInt(silEl.value, 10) : 50;
