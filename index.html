@@ -1094,6 +1094,8 @@
   .shortcuts-roll-btn:hover{transform:scale(1.1);box-shadow:0 0 0 3px #ff2d95,0 6px 24px rgba(255,45,149,.9);}
   body.roll-front #consolaRollsLayer{z-index:90;opacity:1;background:var(--bg);pointer-events:auto;}
   body.roll-front #rollVScroll{z-index:95;}
+  /* Piano roll en primer plano: clic en un compás = reproducir desde ahí */
+  body.roll-front #consolaRollsLayer .consola-roll-wrap svg{cursor:pointer;}
   /* "+ sounds": Real sound (SoundFont) y loadExtra contraídos por defecto */
   .sounds-group{display:flex;flex-direction:column;align-items:center;gap:8px;}
   .sounds-group .collapsible-content.collapsed{display:none;}
@@ -15433,6 +15435,14 @@ function runAnalysis() {
     return label;
   }
 
+  // Teclado vertical fijo: el grupo <g class="consola-kb-fixed"> (franja de fondo + teclas + nombres de nota) se desplaza con el scroll horizontal
+  // del contenedor para quedar siempre a la izquierda de la pantalla, mientras el roll avanza con el playhead.
+  function attachKbSticky(host, kbG){
+    if(host._kbSync) host.removeEventListener("scroll", host._kbSync);
+    host._kbSync = function(){ kbG.setAttribute("transform", "translate(" + host.scrollLeft + ",0)"); };
+    host.addEventListener("scroll", host._kbSync, {passive:true});
+    host._kbSync();
+  }
   function renderRoll(){
     var host = document.getElementById("consolaRollHost");
     if(!host) return;
@@ -15474,6 +15484,8 @@ function runAnalysis() {
 
     var BLACK_PCS = {1:true, 3:true, 6:true, 8:true, 10:true};
     var KB_X0 = 4, KB_WHITE_W = 28, KB_BLACK_W = 18;
+    var kbG = svgEl("g", {class:"consola-kb-fixed"});   // teclado fijo (se dibuja al final, encima de todo)
+    kbG.appendChild(svgEl("rect", {x:0, y:0, width:MARGIN_L, height:height, fill:"var(--bg)", "fill-opacity":0.92}));
     uniq.forEach(function(m,i){
       var y = MARGIN_T + i*ROW_H;
       var pc = mod12(m);
@@ -15488,7 +15500,7 @@ function runAnalysis() {
       // fila (barra clara, ancho completo) o negra (barra oscura, más
       // corta) — fila a fila alineado con la grilla, como en un editor
       // piano roll.
-      svg.appendChild(svgEl("rect", {
+      kbG.appendChild(svgEl("rect", {
         x:KB_X0, y:y+1, width:isBlack?KB_BLACK_W:KB_WHITE_W, height:ROW_H-2, rx:2,
         fill:isBlack?"#0d0c14":"#efe8d8", stroke:"var(--line)", "stroke-width":1
       }));
@@ -15496,7 +15508,7 @@ function runAnalysis() {
       var t = svgEl("text", {x:MARGIN_L-8, y:y+ROW_H-6, "text-anchor":"end", class:"consola-row-label"});
       t.textContent = noteName(m);
       if(isC) t.setAttribute("font-weight", "700");
-      svg.appendChild(t);
+      kbG.appendChild(t);
     });
 
     var barStartsSet = {};
@@ -15550,8 +15562,10 @@ function runAnalysis() {
 
     var playhead = svgEl("line", {id:"consolaPlayhead", x1:MARGIN_L, x2:MARGIN_L, y1:MARGIN_T, y2:height-MARGIN_B, stroke:"var(--gold)", "stroke-width":2, visibility:"hidden"});
     svg.appendChild(playhead);
+    svg.appendChild(kbG);
 
     host.appendChild(svg);
+    attachKbSticky(host, kbG);
 
     var wrap = document.createElement("div");
     wrap.className = "consola-legend";
@@ -15616,13 +15630,15 @@ function runAnalysis() {
 
     var BLACK_PCS_BEBOP = {1:true, 3:true, 6:true, 8:true, 10:true};
     var KB_X0_BEBOP = 4, KB_WHITE_W_BEBOP = 28, KB_BLACK_W_BEBOP = 18;
+    var kbG = svgEl("g", {class:"consola-kb-fixed"});
+    kbG.appendChild(svgEl("rect", {x:0, y:0, width:MARGIN_L, height:height, fill:"var(--bg)", "fill-opacity":0.92}));
     uniq.forEach(function(m,i){
       var y = MARGIN_T + i*ROW_H;
       var pc = mod12(m);
       var isBlack = !!BLACK_PCS_BEBOP[pc];
       var isC = pc === 0;
       svg.appendChild(svgEl("rect", {x:MARGIN_L, y:y, width:Math.max(0,width-MARGIN_L-8), height:ROW_H, fill: isBlack ? "rgba(0,0,0,.18)" : "transparent"}));
-      svg.appendChild(svgEl("rect", {
+      kbG.appendChild(svgEl("rect", {
         x:KB_X0_BEBOP, y:y+1, width:isBlack?KB_BLACK_W_BEBOP:KB_WHITE_W_BEBOP, height:ROW_H-2, rx:2,
         fill:isBlack?"#0d0c14":"#efe8d8", stroke:"var(--line)", "stroke-width":1
       }));
@@ -15630,7 +15646,7 @@ function runAnalysis() {
       var t = svgEl("text", {x:MARGIN_L-8, y:y+ROW_H-6, "text-anchor":"end", class:"consola-row-label"});
       t.textContent = noteName(m);
       if(isC) t.setAttribute("font-weight", "700");
-      svg.appendChild(t);
+      kbG.appendChild(t);
     });
 
     var barStartsSetBebop = {};
@@ -15654,8 +15670,10 @@ function runAnalysis() {
 
     var playhead = svgEl("line", {id:"consolaBebopPlayhead", x1:MARGIN_L, x2:MARGIN_L, y1:MARGIN_T, y2:height-MARGIN_B, stroke:"var(--gold)", "stroke-width":2, visibility:"hidden"});
     svg.appendChild(playhead);
+    svg.appendChild(kbG);
 
     host.appendChild(svg);
+    attachKbSticky(host, kbG);
   }
 
   // ---------- piano roll CHICO de la batería (expansible, oculto por defecto) ----------
@@ -18193,7 +18211,10 @@ function runAnalysis() {
     var lastS = -1, lastSD = -1, lastSB = -1, lastSV = -1;
     var hostVel = null, maxSV = 0;
     var shown = false;
+    var kbMain = null, kbBebop = null;   // teclados fijos (se mueven junto con el scroll)
     function measure(){
+      kbMain = host ? host.querySelector(".consola-kb-fixed") : null;
+      kbBebop = hostBebop ? hostBebop.querySelector(".consola-kb-fixed") : null;
       // el roll de batería se puede volver a dibujar mientras suena
       phDrum = document.getElementById("consolaDrumPlayhead");
       hostDrum = document.getElementById("drumRollHost");
@@ -18228,7 +18249,7 @@ function runAnalysis() {
         // Auto-scroll horizontal: sigue al playhead para que siempre
         // quede a la vista; al reiniciar el loop el scroll salta con él.
         var target = Math.round(Math.min(maxS, Math.max(0, x - AUTOSCROLL_MARGIN)));
-        if(host && target !== lastS){ host.scrollLeft = target; lastS = target; }
+        if(host && target !== lastS){ host.scrollLeft = target; lastS = target; if(kbMain) kbMain.setAttribute("transform", "translate(" + target + ",0)"); }
         if(hostDrum && !hostDrum.hidden){
           var tD = Math.round(Math.min(maxSD, Math.max(0, x - AUTOSCROLL_MARGIN)));
           if(tD !== lastSD){ hostDrum.scrollLeft = tD; lastSD = tD; }
@@ -18241,7 +18262,7 @@ function runAnalysis() {
         }
         if(hostBebop && !hostBebop.hidden){
           var tB = Math.round(Math.min(maxSB, Math.max(0, x - AUTOSCROLL_MARGIN)));
-          if(tB !== lastSB){ hostBebop.scrollLeft = tB; lastSB = tB; }
+          if(tB !== lastSB){ hostBebop.scrollLeft = tB; lastSB = tB; if(kbBebop) kbBebop.setAttribute("transform", "translate(" + tB + ",0)"); }
         }
       }
       rafId = requestAnimationFrame(step);
@@ -18448,8 +18469,9 @@ function runAnalysis() {
     return startPlaybackLive();
   }
 
-  function startPlaybackLive(){
+  function startPlaybackLive(startBeat){
     if(state.chordEvents.length === 0) return;
+    var off = (typeof startBeat === "number" && startBeat > 0 && startBeat < TOTAL_BEATS) ? startBeat : 0;   // clic en un compás del piano roll en primer plano
     var ctx = getAudioCtx();
     if(!ctx) return;
     var dest = ensureMasterGain(ctx);
@@ -18466,7 +18488,7 @@ function runAnalysis() {
     document.getElementById("consolaStopBtn").disabled = false;
     tempoEl.disabled = true;
     var rollHost = document.getElementById("consolaRollHost");
-    if(rollHost) rollHost.scrollLeft = 0;
+    if(rollHost && !off) rollHost.scrollLeft = 0;
 
     // Scheduler por ventanas (patrón "lookahead" de Web Audio): cada TICK_MS
     // se programan SOLO las notas que empiezan en los próximos `ahead`
@@ -18478,9 +18500,9 @@ function runAnalysis() {
     // que ahí la ventana se agranda para no dejar huecos.
     var TICK_MS = 50, AHEAD_FG = 0.8, AHEAD_BG = 6; // BG: iOS con pantalla bloqueada frena los timers; 6 s de colchón
     var LOOP_BEATS = TOTAL_BEATS; // fijo durante la reproducción (salvo RadioMode: cambia al enganchar una vuelta nueva), igual que loopDur
-    var loopAnchor = ctx.currentTime + 0.1;
+    var loopAnchor = ctx.currentTime + 0.1 - off*spb;   // con off > 0 la grilla de la vuelta queda corrida hacia atrás: suena desde el compás elegido
     var schedLoopStart = loopAnchor;  // inicio (en el reloj de audio) de la vuelta en curso
-    var schedBeat = 0;                // próximo beat sin programar dentro de esa vuelta
+    var schedBeat = off;              // próximo beat sin programar dentro de esa vuelta
     var snap = liveSnap();            // foto de la vuelta en curso (notas/presets)
     var loopChk = document.getElementById("consolaLoopChk");
     var ending = false;
@@ -18541,6 +18563,26 @@ function runAnalysis() {
     tickPlayhead(ctx, loopAnchor, spb, loopDur, clk);
   }
   window.consolaStartPlayback = startPlayback;
+  // Piano roll en primer plano (botón +): un clic en un compás reproduce desde ahí. Con el roll de fondo no hace nada.
+  (function(){
+    var layer = document.getElementById("consolaRollsLayer");
+    if(!layer) return;
+    layer.addEventListener("click", function(e){
+      if(!document.body.classList.contains("roll-front")) return;
+      var svg = e.target && e.target.closest ? e.target.closest("svg") : null;
+      if(!svg || !layer.contains(svg) || !svg.closest(".consola-roll-wrap")) return;
+      var vb = svg.viewBox && svg.viewBox.baseVal, r = svg.getBoundingClientRect();
+      if(!vb || !r.width || state.chordEvents.length === 0) return;
+      var x = (e.clientX - r.left) * (vb.width / r.width);
+      if(x < MARGIN_L) return;                                   // clic en el teclado: nada
+      var beat = (x - MARGIN_L) / PPB, bar = -1, b;
+      if(beat < 0 || beat >= TOTAL_BEATS) return;
+      for(b = 0; b < NUM_BARS; b++){ if(beat >= RHYTHM.start(b) && (b === NUM_BARS - 1 || beat < RHYTHM.start(b + 1))){ bar = b; break; } }
+      if(bar < 0) return;
+      if(playing) stopPlayback();
+      startPlaybackLive(RHYTHM.start(bar));
+    });
+  })();
   window.consolaRegenerate = regenerateConsola; // RadioMode: arma la vuelta siguiente sin reproducir
   window.consolaStopPlayback = stopPlayback; // declaración hoisted más abajo — accesible acá igual
 
