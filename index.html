@@ -183,6 +183,57 @@
   .radio-mode-wrap.radio-top .chip{font-size:9px;padding:2px 8px;line-height:1.3;}
   .radio-mode-wrap.radio-top2{top:45px;}
   .radio-mode-wrap.radio-top0{top:5px;}
+  /* ===== 📻 RADIO!: reproductor vintage a pantalla completa ===== */
+  #radioVintage{position:fixed;inset:0;z-index:99999;display:none;align-items:center;justify-content:center;
+    padding:max(10px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left));
+    background:radial-gradient(ellipse at 50% 28%,#3d2515 0%,#160c06 68%,#070302 100%);-webkit-tap-highlight-color:transparent;}
+  #radioVintage.open{display:flex;}
+  #radioVintage .rv-cab{position:relative;width:100%;height:100%;max-width:1000px;box-sizing:border-box;display:flex;flex-direction:column;gap:clamp(8px,2vh,18px);
+    padding:clamp(12px,2.6vh,26px);border-radius:26px;
+    background:repeating-linear-gradient(92deg,rgba(0,0,0,.11) 0 2px,rgba(255,255,255,.028) 2px 5px,rgba(0,0,0,.06) 5px 9px),linear-gradient(180deg,#7c4b27 0%,#5b3419 45%,#3e210f 100%);
+    box-shadow:inset 0 0 0 3px #c9a45c,inset 0 0 0 7px #3a2210,inset 0 0 70px rgba(0,0,0,.65),0 24px 70px rgba(0,0,0,.85);}
+  #radioVintage .rv-brand{flex:0 0 auto;text-align:center;font:700 clamp(11px,2.2vw,15px)/1 Georgia,"Times New Roman",serif;letter-spacing:.34em;color:#e7c677;text-shadow:0 1px 0 #2a1608,0 0 10px rgba(255,190,90,.35);padding:2px 44px 0;}
+  #radioVintage .rv-close{position:absolute;top:10px;right:12px;width:36px;height:36px;border-radius:50%;border:0;cursor:pointer;font:700 15px/1 Georgia,serif;color:#2a1608;
+    background:radial-gradient(circle at 35% 30%,#fff2c4,#d2a948 60%,#8a621c);box-shadow:0 3px 0 #4a3010,0 5px 10px rgba(0,0,0,.6);touch-action:manipulation;}
+  #radioVintage .rv-close:active{transform:translateY(2px);box-shadow:0 1px 0 #4a3010;}
+  #radioVintage .rv-dial{flex:0 0 auto;border-radius:16px;padding:clamp(8px,1.6vh,14px) clamp(10px,2vw,18px);background:linear-gradient(180deg,#2b1a08,#150c04);box-shadow:inset 0 0 0 2px #b08a45,inset 0 0 24px #000;}
+  #radioVintage .rv-glass{position:relative;border-radius:10px;padding:clamp(8px,1.6vh,14px) clamp(10px,2vw,16px) clamp(8px,1.4vh,12px);
+    background:linear-gradient(180deg,#ffd98a 0%,#eaa63d 55%,#b86f17 100%);box-shadow:inset 0 0 26px rgba(80,30,0,.7),0 0 26px rgba(255,170,60,.32);}
+  #radioVintage .rv-glass:after{content:"";position:absolute;inset:0;border-radius:10px;pointer-events:none;background:linear-gradient(165deg,rgba(255,255,255,.28) 0%,rgba(255,255,255,0) 38%);}
+  #radioVintage .rv-kind{font:700 clamp(9px,1.9vw,12px)/1 Georgia,serif;letter-spacing:.26em;text-transform:uppercase;color:#6a3708;}
+  #radioVintage .rv-title{margin-top:6px;font:italic 700 clamp(18px,4.6vw,36px)/1.15 Georgia,"Times New Roman",serif;color:#2b1200;text-shadow:0 1px 0 rgba(255,232,170,.65);
+    display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;min-height:1.15em;}
+  #radioVintage .rv-sets{margin-top:4px;font:600 clamp(10px,2vw,13px)/1.25 "Courier New",monospace;color:#4a2406;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:1.25em;}
+  #radioVintage .rv-scale{position:relative;margin-top:10px;height:30px;display:flex;justify-content:space-between;align-items:flex-end;padding:0 4px;
+    font:600 clamp(9px,1.8vw,11px)/1 Georgia,serif;color:#3a1c06;background:repeating-linear-gradient(90deg,rgba(58,28,6,.75) 0 1px,transparent 1px 12px) bottom/100% 10px no-repeat;}
+  #radioVintage .rv-needle{position:absolute;top:-6px;bottom:-4px;left:18%;width:3px;border-radius:2px;background:#b0120a;box-shadow:0 0 8px rgba(255,60,30,.9);}
+  #radioVintage.rv-on .rv-needle{animation:rvDrift 14s ease-in-out infinite alternate;}
+  #radioVintage .rv-needle.rv-sweep{animation:rvSweep .9s cubic-bezier(.5,0,.2,1);}
+  @keyframes rvDrift{from{left:16%}to{left:26%}}
+  @keyframes rvSweep{0%{left:6%}50%{left:93%}100%{left:30%}}
+  #radioVintage .rv-grille{position:relative;flex:1 1 auto;min-height:60px;border-radius:14px;overflow:hidden;
+    background:radial-gradient(circle at 50% 55%,rgba(255,200,120,.10),transparent 62%),repeating-linear-gradient(0deg,#2b1c11 0 3px,#4d3624 3px 6px);
+    box-shadow:inset 0 0 0 3px #c9a45c,inset 0 0 44px #000;}
+  #radioVintage .rv-lamp{position:absolute;top:10px;left:14px;display:flex;align-items:center;gap:8px;font:700 11px/1 Georgia,serif;letter-spacing:.22em;color:#a98a58;}
+  #radioVintage .rv-lamp em{width:12px;height:12px;border-radius:50%;background:#3a1a10;box-shadow:inset 0 0 3px #000;}
+  #radioVintage.rv-on .rv-lamp{color:#ffcf7a;}
+  #radioVintage.rv-on .rv-lamp em{background:#ff4a2a;box-shadow:0 0 12px #ff4a2a,0 0 26px rgba(255,74,42,.6);}
+  #radioVintage .rv-eq{position:absolute;left:8%;right:8%;bottom:12%;height:48%;display:flex;align-items:flex-end;gap:2%;}
+  #radioVintage .rv-eq i{flex:1;height:8%;border-radius:2px 2px 0 0;background:linear-gradient(180deg,#ffd27a,#c0731a);opacity:.85;}
+  #radioVintage.rv-on .rv-eq i{animation:rvEq 700ms ease-in-out infinite alternate;}
+  @keyframes rvEq{from{height:8%}to{height:100%}}
+  #radioVintage .rv-keys{flex:0 0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(6px,1.6vw,14px);padding-bottom:6px;}
+  #radioVintage .rv-key{appearance:none;-webkit-appearance:none;border:0;cursor:pointer;border-radius:10px 10px 14px 14px;min-height:clamp(60px,12vh,96px);padding:6px 4px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;touch-action:manipulation;
+    font:700 clamp(11px,2.5vw,16px)/1 Georgia,serif;letter-spacing:.08em;text-transform:uppercase;color:#2a1608;
+    background:linear-gradient(180deg,#fff4d6 0%,#ead6a3 60%,#cdb178 100%);
+    box-shadow:0 6px 0 #6b4a1e,0 10px 18px rgba(0,0,0,.6),inset 0 2px 0 rgba(255,255,255,.7);transition:transform .06s,box-shadow .06s;}
+  #radioVintage .rv-key:active{transform:translateY(5px);box-shadow:0 1px 0 #6b4a1e,0 3px 6px rgba(0,0,0,.6),inset 0 2px 0 rgba(255,255,255,.5);}
+  #radioVintage .rv-key .rv-ic{font-size:clamp(22px,6vw,34px);line-height:1;}
+  #radioVintage .rv-key.rv-lit{background:linear-gradient(180deg,#ffeaa8,#f2b84b);box-shadow:0 6px 0 #6b4a1e,0 0 22px rgba(255,180,60,.6),inset 0 2px 0 rgba(255,255,255,.7);}
+  #radioVintage.rv-busy .rv-key{opacity:.7;}
+  @media (max-height:520px){#radioVintage .rv-brand{display:none}#radioVintage .rv-grille{min-height:34px}#radioVintage .rv-key{min-height:52px}}
+
   .toggle-btn{
     font-family:'JetBrains Mono',monospace;
     font-size:11px;letter-spacing:.06em;text-transform:uppercase;
@@ -1208,6 +1259,7 @@
       <span class="radio-mode-wrap radio-top radio-top0" title="RADIO! (botón ON/OFF): mix random. Al pasar a ON arranca una canción de un tipo al azar y en cada vuelta nueva sortea de nuevo entre CreaturaBella, CreaturaRandom, CommonChords y Partimenti, sin cortar el audio. Se corta con Detener o con OFF. Usa el modo en vivo (no Prerender).">
         <input type="checkbox" id="consolaRadioMixChk" hidden>
         <button type="button" class="chip" id="consolaRadioMixBtn" aria-pressed="false">&#128251; RADIO!: OFF</button>
+        <button type="button" class="chip" id="radioVintageOpenBtn" title="Abrir el reproductor de radio vintage (Previous / Play / Stop / Next)">&#9654;&#65038; Player</button>
       </span>
       <span class="radio-mode-wrap radio-top" title="RadioCreaturaMode (botón ON/OFF): al pasar a ON arranca solo (CreaturaRandom o CreaturaBella al azar); con ON, después de 🪄 CreaturaRandom o 🪄 CreaturaBella, cuando termina la vuelta engancha otra vuelta nueva, alternando al azar Random/Bella (sets y sliders nuevos) y barajando los presets de Armonía y Melodía en cada canción nueva, sin cortar el audio. Se corta con Detener o con OFF. Usa el modo en vivo (no Prerender).">
         <input type="checkbox" id="consolaRadioChk" hidden>
@@ -7844,7 +7896,18 @@ function runAnalysis() {
       isDefault4_4: function(bar){
         return Math.abs((barBeatsArr[bar]!=null?barBeatsArr[bar]:4) - 4) < 1e-9 && !barCompoundArr[bar];
       },
-      total: function(){ return total; }
+      total: function(){ return total; },
+      // RADIO! (Previous): guarda / repone el reparto de compases de una canción
+      save: function(){
+        var st = document.getElementById("consolaTimeSigStatus");
+        return { bb: barBeatsArr.slice(), bs: barStartArr.slice(), bc: barCompoundArr.slice(), bl: barLabelArr.slice(), total: total, status: st ? st.textContent : "" };
+      },
+      load: function(o){
+        if(!o) return;
+        barBeatsArr = o.bb.slice(); barStartArr = o.bs.slice(); barCompoundArr = o.bc.slice(); barLabelArr = o.bl.slice(); total = o.total;
+        var st = document.getElementById("consolaTimeSigStatus");
+        if(st) st.textContent = o.status || "";
+      }
     };
   })();
 
@@ -13144,7 +13207,12 @@ function runAnalysis() {
       },
       clear: function(){ last = ""; show(""); showSets(""); },
       sets: function(multi){ showSets(setsText(multi)); },
-      current: function(){ return last; }
+      current: function(){ return last; },
+      // RADIO! (Previous): repone título y subtítulo de una canción guardada
+      set: function(t, setsTxt){
+        last = t || ""; show(last);
+        var el = document.getElementById("consolaSongSets"); if(el) el.textContent = setsTxt || "";
+      }
     };
   })();
   function regenerateConsola(){
@@ -16320,7 +16388,9 @@ function runAnalysis() {
       applyPitched(state);
       applyDrums(drumEvents);
     }
-    return { amount:amount, newPlan:newPlan, applyPitched:applyPitched, applyDrums:applyDrums, reapply:reapply, rev:function(){ return rev; } };
+    return { amount:amount, newPlan:newPlan, applyPitched:applyPitched, applyDrums:applyDrums, reapply:reapply, rev:function(){ return rev; },
+      getPlan:function(){ return plan ? { plan: plan, bars: planBars } : null; },
+      setPlan:function(o){ if(o){ plan = o.plan; planBars = o.bars; } } };
   })();
 
   /* Panel "Velocity por track" (contraído por defecto, cero costo mientras
@@ -18940,6 +19010,7 @@ function runAnalysis() {
     var schedLoopStart = loopAnchor;  // inicio (en el reloj de audio) de la vuelta en curso
     var schedBeat = off;              // próximo beat sin programar dentro de esa vuelta
     var snap = liveSnap();            // foto de la vuelta en curso (notas/presets)
+    try{ if(window.__radioHist) window.__radioHist.note(); }catch(errH){} // RADIO!: historial (Previous)
     var loopChk = document.getElementById("consolaLoopChk");
     var ending = false;
     function endAfterCurrentLoop(){
@@ -18993,6 +19064,7 @@ function runAnalysis() {
         }
         schedBeat = 0;
         snap = liveSnap(); // cambios de notas/presets entran en la vuelta nueva
+        try{ if(window.__radioHist) window.__radioHist.note(); }catch(errH){} // RADIO!: la vuelta nueva entra al historial
       }
     }
     pump();
@@ -19022,6 +19094,70 @@ function runAnalysis() {
     });
   })();
   window.consolaRegenerate = regenerateConsola; // RadioMode: arma la vuelta siguiente sin reproducir
+  // 📻 RADIO! — historial de canciones para el reproductor vintage (Previous / Next).
+  // Cada canción nueva (la primera y cada vuelta que engancha el RadioMode) se guarda como foto:
+  // eventos de todas las pistas (los arrays se reemplazan, nunca se mutan), presets, tempo, compases,
+  // plan de dinámica y título. restore(i) repone todo y deja el motor listo para reproducir esa canción.
+  window.__radioHist = (function(){
+    var list = [], pos = -1, MAX = 20, H = { on: false };
+    function cap(){
+      var tempoEl = document.getElementById("consolaTempo"), setsEl = document.getElementById("consolaSongSets");
+      return {
+        snap: liveSnap(),
+        slot: state.slotChords, prog: state.progression, roles: state.roles, root: state.rootChord,
+        tempo: tempoEl ? tempoEl.value : null,
+        numBars: NUM_BARS, total: TOTAL_BEATS,
+        rhythm: RHYTHM.save(), dyn: DYNAMICS.getPlan(),
+        title: SONGTITLE.current(), sets: setsEl ? setsEl.textContent : "",
+        kind: window.__radioMixLast || ""
+      };
+    }
+    function same(a, b){
+      return !!(a && b && a.snap.chord === b.snap.chord && a.snap.bass === b.snap.bass && a.snap.melody === b.snap.melody && a.title === b.title);
+    }
+    H.note = function(){
+      if(!H.on || !state.chordEvents.length) return;
+      var e = cap();
+      if(pos >= 0 && same(list[pos], e)) return;
+      list.length = pos + 1;            // si venías de un Previous, lo que seguía se descarta
+      list.push(e);
+      if(list.length > MAX) list.shift();
+      pos = list.length - 1;
+    };
+    H.restore = function(i){
+      var e = list[i];
+      if(!e) return false;
+      var s = e.snap;
+      state.chordEvents = s.chord; state.bassEvents = s.bass; state.melodyEvents = s.melody;
+      state.comping2Events = s.comping2; state.bebopEvents = s.bebop; state.melody2Events = s.melody2;
+      state.slotChords = e.slot; state.progression = e.prog; state.roles = e.roles; state.rootChord = e.root;
+      drumEvents = s.drum;
+      NUM_BARS = e.numBars; RHYTHM.load(e.rhythm); TOTAL_BEATS = e.total; DYNAMICS.setPlan(e.dyn);
+      Object.keys(s.presets).forEach(function(k){ mixPresets[k] = s.presets[k]; });
+      [["harmonyPresetSelect","harmony"],["chordDoublePresetSelect","chordDouble"],["melodyPresetSelect","melody"],["melodyDoublePresetSelect","melodyDouble"],
+       ["bebopPresetSelect","bebop"],["melody2PresetSelect","melody2"],["comping2PresetSelect","comping2"],["bassPresetSelect","bass"],
+       ["bassDoublePresetSelect","bassDouble"],["drumPresetSelect","drum"]].forEach(function(pr){
+        var el = document.getElementById(pr[0]), v = mixPresets[pr[1]];
+        if(el && v != null && Array.prototype.some.call(el.options, function(o){ return o.value === v; })) el.value = v;
+      });
+      var alt = document.getElementById("consolaAltMelodyChk"); if(alt) alt.checked = (s.mdInterval === -7);
+      var t = document.getElementById("consolaTempo");
+      if(t && e.tempo != null){ t.value = e.tempo; t.dispatchEvent(new Event("input", { bubbles: true })); }
+      SONGTITLE.set(e.title, e.sets);
+      window.__radioMixLast = e.kind;
+      var pb = document.getElementById("consolaPlayBtn"); if(pb) pb.disabled = false;
+      renderRoll(); renderBebopRoll();
+      pos = i;
+      return true;
+    };
+    H.reset = function(){ list = []; pos = -1; };
+    // Al arrancar RADIO! con CreaturaRandom/Bella el motor arma primero un Compose que se corta enseguida: deja solo la canción que quedó sonando.
+    H.keepCurrent = function(){ if(pos >= 0){ list = [list[pos]]; pos = 0; } };
+    H.pos = function(){ return pos; };
+    H.len = function(){ return list.length; };
+    H.canForward = function(){ return pos >= 0 && pos < list.length - 1; };
+    return H;
+  })();
   window.consolaStopPlayback = stopPlayback; // declaración hoisted más abajo — accesible acá igual
 
   /* ================================================================
@@ -21298,6 +21434,7 @@ function runAnalysis() {
       if(!rmChk) return;
       rmChk.checked = !!on;
       if(!on && window.__radioKind === "mix") window.__radioKind = null;
+      if(!on && !rvBusy && window.__radioHist) window.__radioHist.on = false; // los Detener internos de la radio (rvBusy) no cortan el historial
       mixPaint();
     }
     window.__radioMixOff = function(){ mixSet(false); };
@@ -21313,12 +21450,141 @@ function runAnalysis() {
     window.__runRadioMix = runMix;
     var stopBtnRM = document.getElementById("consolaStopBtn");
     if(stopBtnRM) stopBtnRM.addEventListener("click", function(){ mixSet(false); });
+    // 📻 Reproductor vintage (RADIO!): Previous / Play / Stop / Next. Los mismos controles los usa Media Session (auricular / CarPlay).
+    var rvBusy = false, rvEl = null, rvTimer = null;
+    var RV_KINDS = { random: "CreaturaRandom", bella: "CreaturaBella", common: "CommonChords", partimenti: "Partimenti" };
+    var RP = window.__radioPlayer = { resumable: false };
+    RP.isOn = function(){ return !!(rmChk && rmChk.checked); };
+    function rpFlags(){ // la radio sigue enganchando vueltas (los Detener internos la habían apagado)
+      if(rmChk){ rmChk.checked = true; mixPaint(); }
+      window.__radioKind = "mix";
+      if(window.__radioHist) window.__radioHist.on = true;
+    }
+    // Arranca la radio desde cero (como apretar RADIO! apagado): historial nuevo y primera canción al azar.
+    RP.start = async function(){
+      if(rvBusy) return;
+      rvBusy = true;
+      RP.resumable = false;
+      try {
+        if(radioChkEl && radioChkEl.checked){ radioChkEl.checked = false; radioPaint(); }
+        classicalSet(false);
+        if(window.__radioHist){ window.__radioHist.reset(); window.__radioHist.on = true; }
+        mixSet(true);
+        await runMix();
+        if(window.__radioHist) window.__radioHist.keepCurrent();
+      } finally { rvBusy = false; rvSync(); }
+    };
+    RP.stop = function(){
+      RP.resumable = true;
+      if(window.__radioHist) window.__radioHist.on = false;
+      mixSet(false);
+      clickIfEnabled("consolaStopBtn");
+      rvSync();
+    };
+    // Canción nueva al instante: corta lo que suena, arma la siguiente (mismo sorteo que cada vuelta del RADIO!) y la reproduce.
+    function rpSkipNew(){
+      rvBusy = true;
+      try {
+        if(typeof window.consolaStopPlayback === "function") window.consolaStopPlayback();
+        window.__radioNext("mix");
+        clickIfEnabled("consolaPlayBtn");
+        rpFlags();
+      } finally { rvBusy = false; rvSync(); }
+    }
+    // Repone la canción i del historial y la reproduce.
+    function rpPlayHist(i){
+      var H = window.__radioHist;
+      if(!H) return;
+      rvBusy = true;
+      try {
+        if(typeof window.consolaStopPlayback === "function") window.consolaStopPlayback();
+        if(H.restore(i)){
+          if(typeof window.consolaStartPlayback === "function") window.consolaStartPlayback();
+          rpFlags();
+        }
+      } finally { rvBusy = false; rvSync(); }
+    }
+    RP.next = function(){
+      if(rvBusy) return;
+      if(!RP.isOn()){ RP.start(); return; }
+      var H = window.__radioHist;
+      if(H && H.canForward()) rpPlayHist(H.pos() + 1); else rpSkipNew();
+    };
+    RP.prev = function(){
+      if(rvBusy) return;
+      var H = window.__radioHist;
+      if(!RP.isOn() || !H || H.len() === 0){ RP.start(); return; }
+      rpPlayHist(Math.max(0, H.pos() - 1));   // en la primera canción: la reinicia
+    };
+    function rvBuild(){
+      if(rvEl) return rvEl;
+      rvEl = document.createElement("div");
+      rvEl.id = "radioVintage";
+      rvEl.setAttribute("role", "dialog");
+      rvEl.setAttribute("aria-label", "Radio");
+      var ticks = ["55", "60", "70", "80", "100", "120", "160"].map(function(n){ return "<span>" + n + "</span>"; }).join("");
+      var bars = "";
+      for(var i = 0; i < 18; i++) bars += '<i style="animation-delay:' + (-(i * 137 % 900)) + 'ms;animation-duration:' + (620 + (i * 83 % 520)) + 'ms"></i>';
+      function key(act, icon, label){ return '<button type="button" class="rv-key" data-act="' + act + '"><span class="rv-ic">' + icon + '</span>' + label + '</button>'; }
+      rvEl.innerHTML =
+        '<div class="rv-cab">' +
+          '<button type="button" class="rv-close" id="rvClose" aria-label="Cerrar">&#10005;</button>' +
+          '<div class="rv-brand">STOIKHEION &middot; RADIO !</div>' +
+          '<div class="rv-dial"><div class="rv-glass">' +
+            '<div class="rv-kind" id="rvKind">&mdash;</div>' +
+            '<div class="rv-title" id="rvTitle">&nbsp;</div>' +
+            '<div class="rv-sets" id="rvSets"></div>' +
+            '<div class="rv-scale">' + ticks + '<b class="rv-needle" id="rvNeedle"></b></div>' +
+          '</div></div>' +
+          '<div class="rv-grille"><div class="rv-lamp"><em></em>ON AIR</div><div class="rv-eq">' + bars + '</div></div>' +
+          '<div class="rv-keys">' +
+            key("prev", "&#9198;&#65038;", "Previous") + key("play", "&#9654;&#65038;", "Play") +
+            key("stop", "&#9632;&#65038;", "Stop") + key("next", "&#9197;&#65038;", "Next") +
+          '</div>' +
+        '</div>';
+      document.body.appendChild(rvEl);
+      rvEl.addEventListener("click", function(e){
+        var t = e.target;
+        if(t.closest && t.closest("#rvClose")){ rvClose(); return; }
+        var b = t.closest ? t.closest("[data-act]") : null;
+        if(!b) return;
+        var act = b.getAttribute("data-act");
+        if(act === "next" || act === "prev"){
+          var nd = document.getElementById("rvNeedle");
+          if(nd){ nd.classList.remove("rv-sweep"); void nd.offsetWidth; nd.classList.add("rv-sweep"); }
+        }
+        if(act === "play"){ if(!RP.isOn()) RP.start(); }
+        else if(act === "stop") RP.stop();
+        else if(act === "next") RP.next();
+        else if(act === "prev") RP.prev();
+        rvSync();
+      });
+      return rvEl;
+    }
+    function rvSync(){
+      if(!rvEl) return;
+      var on = RP.isOn(), pb = document.getElementById("consolaPlayBtn");
+      var playing = !!(pb && pb.disabled);
+      rvEl.classList.toggle("rv-on", on && playing);
+      rvEl.classList.toggle("rv-busy", rvBusy);
+      var tEl = document.getElementById("consolaSongTitle"), sEl = document.getElementById("consolaSongSets");
+      var tt = tEl ? tEl.textContent.trim() : "";
+      document.getElementById("rvTitle").textContent = tt || (on ? "sintonizando…" : "—");
+      document.getElementById("rvSets").textContent = sEl ? sEl.textContent.trim() : "";
+      document.getElementById("rvKind").textContent = on ? (RV_KINDS[window.__radioMixLast] || "RADIO !") : "RADIO OFF";
+      var pk = rvEl.querySelector('[data-act="play"]');
+      if(pk) pk.classList.toggle("rv-lit", on);
+    }
+    function rvOpen(){ rvBuild(); rvEl.classList.add("open"); rvSync(); if(!rvTimer) rvTimer = setInterval(rvSync, 400); }
+    function rvClose(){ if(rvEl) rvEl.classList.remove("open"); if(rvTimer){ clearInterval(rvTimer); rvTimer = null; } }
+    RP.open = rvOpen;
+    document.addEventListener("keydown", function(e){ if(e.key === "Escape" && rvEl && rvEl.classList.contains("open")) rvClose(); });
+    var rvOpenBtn = document.getElementById("radioVintageOpenBtn");
+    if(rvOpenBtn) rvOpenBtn.addEventListener("click", rvOpen);
     if(rmBtn && rmChk) rmBtn.addEventListener("click", function(){
-      if(rmChk.checked){ mixSet(false); return; }
-      if(radioChkEl && radioChkEl.checked){ radioChkEl.checked = false; radioPaint(); }
-      classicalSet(false);
-      mixSet(true);
-      runMix();
+      if(rmChk.checked){ RP.stop(); RP.resumable = false; return; }
+      rvOpen();       // al pasar a ON se abre la radio vintage
+      RP.start();
     });
     document.addEventListener("click", function(e){
       var t = e.target;
@@ -21428,7 +21694,7 @@ function runAnalysis() {
   try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch(e){}
 
   // WAV silencioso de 1 s (8 kHz, 8-bit mono) generado en runtime.
-  var keep = null;
+  var keep = null, lastMeta = "";
   function makeKeep(){
     var n = 8000, buf = new ArrayBuffer(44 + n), v = new DataView(buf);
     function s(o, t){ for (var i = 0; i < t.length; i++) v.setUint8(o + i, t.charCodeAt(i)); }
@@ -21445,7 +21711,8 @@ function runAnalysis() {
     try { if (!keep) keep = makeKeep(); if (keep.paused) keep.play().catch(function(){}); } catch(e){}
     try {
       if ("mediaSession" in navigator) {
-        navigator.mediaSession.metadata = new MediaMetadata({ title: "Stoikheion Composer", artist: "Stoikheion" });
+        var tEl = document.getElementById("consolaSongTitle"), tt = (tEl && tEl.textContent.trim()) || "Stoikheion Composer";
+        if(tt !== lastMeta){ lastMeta = tt; navigator.mediaSession.metadata = new MediaMetadata({ title: tt, artist: "Stoikheion", album: "RADIO !" }); }
         navigator.mediaSession.playbackState = "playing";
       }
     } catch(e){}
@@ -21467,15 +21734,20 @@ function runAnalysis() {
   // Controles de la pantalla de bloqueo.
   try {
     if ("mediaSession" in navigator) {
-      navigator.mediaSession.setActionHandler("pause", function(){
+      var rp = function(){ return window.__radioPlayer || null; };
+      var stopFn = function(){
+        var r = rp(); if (r && r.isOn()) { r.stop(); return; }
         var b = document.getElementById("consolaStopBtn"); if (b && !b.disabled) b.click();
-      });
-      navigator.mediaSession.setActionHandler("stop", function(){
-        var b = document.getElementById("consolaStopBtn"); if (b && !b.disabled) b.click();
-      });
+      };
+      navigator.mediaSession.setActionHandler("pause", stopFn);
+      navigator.mediaSession.setActionHandler("stop", stopFn);
       navigator.mediaSession.setActionHandler("play", function(){
+        var r = rp(); if (r && r.resumable) { r.start(); return; }
         var b = document.getElementById("consolaPlayBtn"); if (b && !b.disabled) b.click();
       });
+      // Next / Previous (botones del auricular, pantalla de bloqueo y CarPlay): mueven la radio.
+      try { navigator.mediaSession.setActionHandler("nexttrack", function(){ var r = rp(); if (r) r.next(); }); } catch(e){}
+      try { navigator.mediaSession.setActionHandler("previoustrack", function(){ var r = rp(); if (r) r.prev(); }); } catch(e){}
     }
   } catch(e){}
 
