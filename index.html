@@ -15113,12 +15113,15 @@ function runAnalysis() {
 
     api.build = build;
     // Botón 🎹 Partimenti: sortea los controles antes de generar (se ven en pantalla y se pueden retocar a mano):
-    // disminución 0–70 %, MyCadences sí/no (si sí, "tuyas" 20–100 %) y un subconjunto al azar de Esquemas galantes (al menos uno).
+    // disminución de la melodía, silences y, de internal_movement, cantidad y disminución (cada slider por separado, 0–100 %), MyCadences sí/no (si sí, "tuyas" 20–100 %) y un subconjunto al azar de Esquemas galantes (al menos uno).
     api.randomize = function(){
       var b = body(); if(!b) return;
       function pick(lo, hi){ return lo + 5 * Math.floor(Math.random() * ((hi - lo) / 5 + 1)); }
       function setRange(id, v){ var e = document.getElementById(id); if(!e) return; e.value = v; e.dispatchEvent(new Event("input", { bubbles: true })); }
-      setRange("partimentiDimPct", pick(0, 70));
+      setRange("partimentiDimPct", pick(0, 100));            // disminución de la melodía
+      setRange("partimentiRestsPct", pick(0, 100));          // silences
+      setRange("partimentiInnerMovePct", pick(0, 100));      // internal_movement: cantidad
+      setRange("partimentiInnerDimPct", pick(0, 100));       // internal_movement: disminución (voces internas)
       var my = document.getElementById("partimentiMyCad"), myOn = Math.random() < 0.5;
       if(my) my.checked = myOn;
       if(myOn) setRange("partimentiMyCadPct", pick(20, 100));
@@ -15131,7 +15134,7 @@ function runAnalysis() {
         var allBox = boxes[0].parentNode.parentNode.querySelector("input:not([data-g])");
         if(allBox) allBox.checked = boxes.every(function(c){ return c.checked; });
       }
-      return { dim: document.getElementById("partimentiDimPct").value, mycad: myOn ? document.getElementById("partimentiMyCadPct").value : null, schemas: chosen };
+      return { dim: document.getElementById("partimentiDimPct").value, silences: document.getElementById("partimentiRestsPct").value, innerMove: document.getElementById("partimentiInnerMovePct").value, innerDim: document.getElementById("partimentiInnerDimPct").value, mycad: myOn ? document.getElementById("partimentiMyCadPct").value : null, schemas: chosen };
     };
     // Al entrar (no en cada 🔀): Clavecín en Armonía/Bajo/Melodía y Batería a 0% (set "partimenti" de PRESET_SETS); después se pueden cambiar a mano.
     api.start = function(){
