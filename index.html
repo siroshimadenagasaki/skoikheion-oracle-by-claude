@@ -13881,6 +13881,20 @@ function runAnalysis() {
         return e;
       });
     }
+    // ---- Cadencias modulatorias: tu biblioteca de My_modulatory_cadences.gp (49 compases). Mismo formato que CYC, en semitonos sobre la tónica de cada unidad (la tónica en que EMPIEZA):
+    // [sección, compases, menor(0/1), rol('b'), 0, acordes[bajo, raíz, sufijo, notas]]. Las unidades modulan (secundarias dominantes, ciclo de cuartas, omnibus); solo se usan los acordes, el ritmo y el voicing del .gp se ignoran.
+    var MOD = {"secs":["Patrón V6 I V6/VI VI (mayor a relativo menor, por ciclo de cuartas)","Menor a relativo mayor","Patrón V7 I6 V7/VI VI6 (por ciclo de cuartas)","Patrón invertido V7/VI VI6 V7 I6 (por ciclo de cuartas)","I V7/V por ciclo de cuartas ascendente (mayor)","I6 V7/V por ciclo de cuartas (mayor)","I V7/V por ciclo de cuartas (menor)","I6 V7/V por ciclo de cuartas (menor)","V I descendiendo por grado","I I7 por el ciclo de cuartas","Progresión omnibus","Omnibus simplificada","Patrón omnibus V7 VIIm6/4 V2 (III7), 3 menores descendentes","Omnibus menor (Im V6 I7 IVm6 V#7 I64)","Omnibus menor (continuación)","Mi progresión cromática"],"u":[[0,"c1-3",0,"b",0,[[11,7,"7",[2,5,7,11]],[0,0,"",[0,4,7]],[8,4,"7",[2,4,8,11]],[9,9,"m",[0,4,9]],[4,0,"7",[0,4,7,10]],[5,5,"",[0,5,9]],[1,9,"7",[1,4,7,9]],[2,2,"m",[2,5,9]],[9,5,"7",[0,3,5,9]],[10,10,"",[2,5,10]],[6,2,"7",[0,2,6,9]],[7,7,"m",[2,7,10]]]],[1,"c4-5",1,"b",0,[[11,7,"7",[2,5,7,11]],[0,0,"m",[0,3,7]],[2,10,"",[2,5,10]],[3,3,"",[3,7,10]],[4,0,"7",[0,4,7,10]],[5,5,"m",[0,5,8]],[7,3,"7",[1,3,7,10]],[8,8,"",[0,3,8]]]],[2,"c7-8",0,"b",0,[[5,7,"7",[2,5,7,11]],[4,0,"",[0,4,7]],[2,4,"7",[2,4,8,11]],[0,9,"m",[0,4,9]],[10,0,"7",[0,4,7,10]],[9,5,"",[0,5,9]],[7,9,"7",[1,4,7,9]],[5,2,"m",[2,5,9]]]],[3,"c10-11",0,"b",0,[[2,4,"7",[2,4,8,11]],[0,9,"m",[0,4,9]],[5,7,"7",[2,5,7,11]],[4,0,"",[0,4,7]],[9,11,"7",[3,6,9,11]],[7,4,"m",[4,7,11]],[0,2,"7",[0,2,6,9]],[7,7,"",[2,7,11]]]],[4,"c13-16",0,"b",0,[[0,0,"",[0,4,7]],[0,2,"7",[0,2,6,9]],[7,7,"",[2,7,11]],[7,9,"7",[1,4,7,9]],[2,2,"",[2,6,9]],[2,4,"7",[2,4,8,11]],[9,9,"",[1,4,9]],[9,11,"7",[3,6,9,11]]]],[5,"c17-19",0,"b",0,[[4,0,"",[0,4,7]],[0,2,"7",[0,2,6,9]],[11,7,"",[2,7,11]],[7,9,"7",[1,4,7,9]],[6,2,"",[2,6,9]],[2,4,"7",[2,4,8,11]]]],[6,"c20-23",1,"b",0,[[0,0,"m",[0,3,7]],[0,2,"7",[0,2,6,9]],[7,7,"m",[2,7,10]],[7,9,"7",[1,4,7,9]],[2,2,"m",[2,5,9]],[2,4,"7",[2,4,8,11]],[9,9,"m",[0,4,9]],[9,11,"7",[3,6,9,11]]]],[7,"c24-27",1,"b",0,[[3,0,"m",[0,3,7]],[0,2,"7",[0,2,6,9]],[10,7,"m",[2,7,10]],[7,9,"7",[1,4,7,9]],[5,2,"m",[2,5,9]],[2,4,"7",[2,4,8,11]],[0,9,"m",[0,4,9]],[9,11,"7",[3,6,9,11]]]],[8,"c28-30",0,"b",0,[[0,0,"",[0,4,7]],[4,0,"",[0,4,7]],[4,6,"7",[1,4,6,10]],[11,11,"m",[2,6,11]],[2,11,"m",[2,6,11]],[2,4,"7",[2,4,8,11]],[9,9,"m",[0,4,9]],[0,9,"m",[0,4,9]],[0,2,"7",[0,2,6,9]]]],[8,"c28-32",0,"b",0,[[0,0,"",[0,4,7]],[4,0,"",[0,4,7]],[4,6,"7",[1,4,6,10]],[11,11,"m",[2,6,11]],[2,11,"m",[2,6,11]],[2,4,"7",[2,4,8,11]],[9,9,"m",[0,4,9]],[0,9,"m",[0,4,9]],[0,2,"7",[0,2,6,9]],[7,7,"",[2,7,11]],[11,7,"",[2,7,11]],[10,0,"7",[0,4,7,10]],[5,5,"",[0,5,9]],[9,5,"",[0,5,9]],[9,11,"7",[3,6,9,11]]]],[8,"c28-34",0,"b",0,[[0,0,"",[0,4,7]],[4,0,"",[0,4,7]],[4,6,"7",[1,4,6,10]],[11,11,"m",[2,6,11]],[2,11,"m",[2,6,11]],[2,4,"7",[2,4,8,11]],[9,9,"m",[0,4,9]],[0,9,"m",[0,4,9]],[0,2,"7",[0,2,6,9]],[7,7,"",[2,7,11]],[11,7,"",[2,7,11]],[10,0,"7",[0,4,7,10]],[5,5,"",[0,5,9]],[9,5,"",[0,5,9]],[9,11,"7",[3,6,9,11]],[4,4,"m(no5)",[4,7]],[7,4,"m",[4,7,11]],[7,9,"7",[1,4,7,9]],[2,2,"m",[2,5,9]],[5,2,"m",[2,5,9]],[5,7,"7",[2,5,7,11]]]],[9,"c35-36",0,"b",0,[[0,0,"",[0,4,7]],[10,0,"7",[0,4,7,10]],[0,5,"",[0,5,9]],[3,5,"7",[0,3,5,9]],[10,10,"",[2,5,10]],[8,10,"7",[2,5,8,10]],[3,3,"",[3,7,10]],[1,3,"7",[1,3,7,10]]]],[10,"c37-38",0,"b",0,[[7,7,"7",[2,5,7,11]],[6,11,"m",[2,6,11]],[5,7,"7",[2,5,7,11]],[3,8,"m",[3,8,11]],[2,4,"7",[2,4,8,11]],[1,1,"7",[1,5,8,11]],[0,5,"m",[0,5,8]],[11,1,"7",[1,5,8,11]],[10,10,"7",[2,5,8,10]],[9,2,"m",[2,5,9]],[8,10,"7(no5)",[2,8,10]],[7,7,"7",[2,5,7,11]]]],[11,"c39",0,"b",0,[[0,0,"",[0,4,7]],[11,7,"",[2,7,11]],[10,10,"7",[2,5,8,10]],[9,2,"m",[2,5,9]],[8,10,"7",[2,5,8,10]],[7,7,"5",[2,7]],[0,0,"",[0,4,7]]]],[12,"c40",0,"b",0,[[7,7,"7",[2,5,7,11]],[6,11,"m",[2,6,11]],[5,7,"7",[2,5,7,11]],[4,4,"7",[2,4,8,11]],[3,8,"m",[3,8,11]],[2,4,"7",[2,4,8,11]],[1,1,"7",[1,5,8,11]],[0,5,"m",[0,5,8]]]],[13,"c42",1,"b",0,[[0,0,"m",[0,3,7]],[11,7,"7",[2,5,7,11]],[10,0,"7",[0,4,7,10]],[9,5,"",[0,5,9]],[8,8,"7",[0,3,6,8]],[7,0,"m",[0,3,7]],[7,7,"",[2,7,11]]]],[14,"c44",1,"b",0,[[0,0,"m",[0,3,7]],[10,7,"m",[2,7,10]],[8,5,"m",[0,5,8]],[7,7,"",[2,7,11]]]],[14,"c45",1,"b",0,[[0,0,"m",[0,3,7]],[11,7,"7",[2,5,7,11]],[10,10,"7",[2,5,8,10]],[9,2,"m",[2,5,9]],[8,10,"7",[2,5,8,10]],[7,7,"7",[2,5,7,11]]]],[15,"c48-49",1,"b",0,[[0,0,"m",[0,3,7]],[11,7,"",[2,7,11]],[10,0,"7",[0,4,7,10]],[9,5,"",[0,5,9]],[8,8,"",[0,3,8]],[7,7,"sus4",[0,2,7]],[6,6,"dim7",[0,3,6,9]],[5,7,"7",[2,5,7,11]],[4,0,"",[0,4,7]],[3,0,"m",[0,3,7]],[2,11,"dim",[2,5,11]],[0,0,"m",[0,3,7]]]]]};
+    function modPool(maxLen, onI, minor){
+      return MOD.u.filter(function(u){ return (u[2] === 1) === !!minor && u[5].length <= maxLen && (!onI || (u[5][0][1] === 0 && u[5][0][0] === 0)); });
+    }
+    function modCell(u){
+      var title = "Modulatoria: " + MOD.secs[u[0]], note = MOD.secs[u[0]] + " (" + u[1] + ")";
+      return u[5].map(function(c){
+        var e = exItem([c[1], c[2], c[3]], c[0], null, "", false);
+        e.figText = "Modulatoria"; e.rofo = 0; e.my = 1; e.mod = 1; e.cell = "mod"; e.cellTitle = title; e.myText = note;
+        return e;
+      });
+    }
     function myPool(role, minor, maxLen, finalOnly){
       return MYCAD.u.filter(function(u){ return u[3] === role && (u[2] === 1) === !!minor && u[5].length <= maxLen && (!finalOnly || u[4]); });
     }
@@ -13965,7 +13979,7 @@ function runAnalysis() {
     };
     var CELL_NAME = {}, CELL_LONG = {};
     Object.keys(CELLS).forEach(function(k){ CELL_NAME[k] = CELLS[k].name; CELL_LONG[k] = CELLS[k].long; });
-    CELL_NAME.my = "MyCadences"; CELL_LONG.my = "MyCadences (tu biblioteca)"; CELL_NAME.cyc = "Ciclo"; CELL_LONG.cyc = "Ciclos diatónicos (tu biblioteca)";   // "my" no está en CELLS: no se sortea como celda genérica
+    CELL_NAME.my = "MyCadences"; CELL_LONG.my = "MyCadences (tu biblioteca)"; CELL_NAME.cyc = "Ciclo"; CELL_LONG.cyc = "Ciclos diatónicos (tu biblioteca)"; CELL_NAME.mod = "Modulatoria"; CELL_LONG.mod = "Cadencias modulatorias (tu biblioteca)";   // "my" no está en CELLS: no se sortea como celda genérica
 
     // Movimientos de tempo (BPM aproximados; Wikipedia "Tempo", marcados como "very rough approximations"). El slider del motor va de 25 a 200.
     var TEMPOS = [
@@ -14407,6 +14421,8 @@ function runAnalysis() {
       var my = (opts.mycad && opts.mycad.on) ? { p: Math.max(0, Math.min(1, opts.mycad.p == null ? 0.5 : opts.mycad.p)) } : null;
       // Ciclos diatónicos (opts.cyc = { on, p (0–1) }): con probabilidad p, una celda del CUERPO es un ciclo de tu biblioteca (solo en mayor; la primera celda solo si empieza en I).
       var cyc = (opts.cyc && opts.cyc.on) ? { p: Math.max(0, Math.min(1, opts.cyc.p == null ? 0.5 : opts.cyc.p)) } : null;
+      // Cadencias modulatorias (opts.mod = { on, p (0–1) }): con probabilidad p, una celda del CUERPO es una unidad de tu biblioteca (mayor en canciones mayores, menor en menores; la primera celda solo si empieza en I).
+      var mdl0 = (opts.mod && opts.mod.on) ? { p: Math.max(0, Math.min(1, opts.mod.p == null ? 0.3 : opts.mod.p)) } : null;
       var isMin = (mode === "minor");
       if(CTP) CTP.minor = isMin;
       function myPick(role, maxLen, finalOnly){ var pl = myPool(role, isMin, maxLen, finalOnly); return pl.length ? pl[rnd(pl.length)] : null; }
@@ -14429,10 +14445,10 @@ function runAnalysis() {
         if(!rest.length) rest = Object.keys(CELLS).filter(function(t){ return CELLS[t].group === "base" && (!rofo || t === "up" || t === "down"); });
         return rest.length ? rest : allowed;
       }
-      var stats = { fbParallel: 0, fbLT: 0, fbCover: 0, fbSop: 0, cells: [], rofoSteps: 0, rofoVar: 0, myCells: 0, cycCells: 0 };
+      var stats = { fbParallel: 0, fbLT: 0, fbCover: 0, fbSop: 0, cells: [], rofoSteps: 0, rofoVar: 0, myCells: 0, cycCells: 0, modCells: 0 };
       var finalType, finalLen, finalMy, items, bodyN, lastType, guard, fin, lastIt, attempt = 0;
       do {                                                      // con MyCadences, si la unión se comió acordes y la canción queda más corta que N, se rearma (hasta 8 veces)
-        stats.cells = []; stats.myCells = 0; stats.cycCells = 0; attempt++;
+        stats.cells = []; stats.myCells = 0; stats.cycCells = 0; stats.modCells = 0; attempt++;
         finalType = pickFinal(allowed, N); finalLen = CELLS[finalType].len; finalMy = null;
         if(my && Math.random() < my.p){ finalMy = myPick("c", N, true); if(finalMy){ finalType = "my"; finalLen = finalMy[5].length; } }
         items = []; bodyN = Math.max(0, N - finalLen); lastType = null; guard = 0;
@@ -14446,6 +14462,10 @@ function runAnalysis() {
             var cp = cycPool(bodyN - items.length, items.length === 0);
             if(cp.length){ cell = cycCell(cp[rnd(cp.length)]); type = "cyc"; stats.cycCells++; }
           }
+          if(!cell && mdl0 && Math.random() < mdl0.p){
+            var mdp = modPool(bodyN - items.length, items.length === 0, isMin);
+            if(mdp.length){ cell = modCell(mdp[rnd(mdp.length)]); type = "mod"; stats.modCells++; }
+          }
           appendCell(items, cell || makeCell(type, ctx), key, base);
           stats.cells.push(type); lastType = type;
         }
@@ -14456,7 +14476,7 @@ function runAnalysis() {
         if(lastIt && lastIt.deg === 4 && fin[0].deg === 4 && (fin[0].fig === "7" || fin[0].fig === "5/3") && fin[0].fig === lastIt.fig) fin[0].fig = fin[0].fig === "7" ? "5/3" : "7";
         appendCell(items, fin, key, base);
         stats.cells.push(finalType);
-      } while((my || cyc) && items.length < N && attempt < 8);
+      } while((my || cyc || mdl0) && items.length < N && attempt < 8);
       if(items.length > N) items.splice(0, items.length - N);        // N muy chico: queda solo el final
       items.forEach(function(it){
         if(rofo && (it.cell === "up" || it.cell === "down")){ stats.rofoSteps++; if(it.rofo === 2) stats.rofoVar++; }
@@ -14486,7 +14506,7 @@ function runAnalysis() {
           var v = voiceChord(it, prev, { key: key }, i === items.length - 1, tmp, items[i + 1] || null, i + 1 === items.length - 1);
           var ch = { bass: it.bass, t: v.t, a: v.a, s: v.s, tones: it.tones, sev: it.sev, root: it.root, label: it.label, fig: it.fig, deg: it.deg,
                      cell: it.cell, cellStart: it.cellStart, step: it.step, rootPc: it.rootPc, sus: it.sus, hold: !!(it.hold && prev) };
-          ch.cat = (it.myText ? (it.cyc ? "Ciclos diatónicos · " : "MyCadences · ") + it.myText : CELL_LONG[it.cell]) + (it.step ? " · " + it.step : "") + " · " + (it.figText || it.fig);
+          ch.cat = (it.myText ? (it.mod ? "Cadencias modulatorias · " : (it.cyc ? "Ciclos diatónicos · " : "MyCadences · ")) + it.myText : CELL_LONG[it.cell]) + (it.step ? " · " + it.step : "") + " · " + (it.figText || it.fig);
           ch.cellTitle = it.cellTitle || null;
           if(CTP) ctpAnnotate(ch, prev);
           chords.push(ch); prev = ch;
@@ -14496,7 +14516,7 @@ function runAnalysis() {
         if(!fbn) break;
       }
       chords = bestChords;
-      return { key: key, base: base, chords: chords, stats: stats, cellName: CELL_NAME, finalType: finalType, mode: mode, rofo: !!rofo, mycad: !!my, cyc: !!cyc,
+      return { key: key, base: base, chords: chords, stats: stats, cellName: CELL_NAME, finalType: finalType, mode: mode, rofo: !!rofo, mycad: !!my, cyc: !!cyc, mod: !!mdl0,
                ctp: CTP, audit: CTP ? ctpAudit(chords, key, isMin, ctpRules) : null };
     }
 
@@ -14845,7 +14865,7 @@ function runAnalysis() {
 
     function ornFor(bpm){ return bpm < 66 ? 1.4 : (bpm < 108 ? 1 : (bpm < 156 ? 0.8 : 0.5)); }
 
-    return { compose: compose, melody: melody, mmFix: mmFix, diminish: diminish, innerMovement: innerMovement, DIM_FIGS: DIM_FIGS, analyze: analyze, FIG: FIG, RO_UP: RO_UP, RO_DOWN: RO_DOWN, MAJ: MAJ, ROFO: ROFO, MYCAD: MYCAD, CYC: CYC, OCM: OCM, FOX: FOX, MIN_UP: MIN_UP, MIN_DOWN: MIN_DOWN, hasParallel: hasParallel,
+    return { compose: compose, melody: melody, mmFix: mmFix, diminish: diminish, innerMovement: innerMovement, DIM_FIGS: DIM_FIGS, analyze: analyze, FIG: FIG, RO_UP: RO_UP, RO_DOWN: RO_DOWN, MAJ: MAJ, ROFO: ROFO, MYCAD: MYCAD, CYC: CYC, OCM: OCM, FOX: FOX, MOD: MOD, MIN_UP: MIN_UP, MIN_DOWN: MIN_DOWN, hasParallel: hasParallel,
              CELL_NAME: CELL_NAME, CELL_LONG: CELL_LONG, CELLS: CELLS, TEMPOS: TEMPOS, ornFor: ornFor, LOW: LOW, HIGH: HIGH, RT: RT, RA: RA, RS: RS,
              melodyCT: melodyCT, ctpAudit: ctpAudit, CTP_RULES: CTP_RULES, ctpLeapOK: ctpLeapOK, ctpDirOK: ctpDirOK };
   })();
@@ -15105,6 +15125,20 @@ function runAnalysis() {
       cr.addEventListener("input", function(){ cv.textContent = cr.value + "%"; });
       cl.appendChild(document.createTextNode("ciclos ")); cl.appendChild(cr); cl.appendChild(cv); cw.appendChild(cl);
       cb.appendChild(cw); b.appendChild(cb);
+      // Cadencias modulatorias: tu biblioteca de My_modulatory_cadences.gp. Tildado: con probabilidad p cada celda del cuerpo es una de tus unidades (mayores en canciones mayores, menores en menores).
+      var mdb = mk("div", "padding:2px 0 6px;");
+      var mdh = mk("div", "font-size:12px;font-weight:700;color:var(--ink-muted);margin-bottom:2px;", "Cadencias modulatorias");
+      mdh.title = "Cadencias modulatorias: tu biblioteca de My_modulatory_cadences.gp (" + core.MOD.u.length + " unidades: V6 I por ciclo de cuartas, menor ↔ relativo mayor, I–V7/V ascendente, V I descendiendo por grado, omnibus). Con probabilidad p, cada celda del cuerpo de la canción es una de ellas. Modulan: la celda siguiente vuelve a la tónica de la canción.";
+      mdb.appendChild(mdh);
+      var mdw = mk("div", "display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;");
+      var mdChk = label("Modulatorias", "Usa tus cadencias modulatorias como celdas (valen desde la próxima canción: 🔀 / G).", "opt", "mod", true);
+      mdChk.firstChild.id = "partimentiMod"; mdw.appendChild(mdChk);
+      var mdl = mk("label", LBL); mdl.title = "Proporción de celdas que son cadencias modulatorias tuyas en vez de la generada (0 = ninguna, 100 = siempre que haya una que entre).";
+      var mdr = mk("input"); mdr.type = "range"; mdr.min = 0; mdr.max = 100; mdr.step = 5; mdr.value = 30; mdr.id = "partimentiModPct"; mdr.style.cssText = "width:90px;";
+      var mdv = mk("span", "min-width:34px;text-align:right;", "30%");
+      mdr.addEventListener("input", function(){ mdv.textContent = mdr.value + "%"; });
+      mdl.appendChild(document.createTextNode("celdas ")); mdl.appendChild(mdr); mdl.appendChild(mdv); mdw.appendChild(mdl);
+      mdb.appendChild(mdw); b.appendChild(mdb);
       // Movimientos de un acorde: tu biblioteca de One_chord_movement_v4.gp. Tildado: con probabilidad p, un acorde de tónica o de dominante (en posición fundamental, de 2 tiempos o más) se desarrolla con uno de tus movimientos.
       var ob = mk("div", "padding:2px 0 6px;");
       var oh = mk("div", "font-size:12px;font-weight:700;color:var(--ink-muted);margin-bottom:2px;", "Movimientos de un acorde");
@@ -15344,13 +15378,15 @@ function runAnalysis() {
       var mycad = (myEl && myEl.checked) ? { on: true, p: (myPctEl ? parseInt(myPctEl.value, 10) : 50) / 100 } : null;
       var cyEl = document.getElementById("partimentiCyc"), cyPctEl = document.getElementById("partimentiCycPct");
       var cyc = (cyEl && cyEl.checked) ? { on: true, p: (cyPctEl ? parseInt(cyPctEl.value, 10) : 30) / 100 } : null;
+      var mdEl = document.getElementById("partimentiMod"), mdPctEl = document.getElementById("partimentiModPct");
+      var modOpt = (mdEl && mdEl.checked) ? { on: true, p: (mdPctEl ? parseInt(mdPctEl.value, 10) : 30) / 100 } : null;
       var ctpEl = document.getElementById("partimentiCtp");
       var ctp = (ctpEl && ctpEl.checked) ? { on: true, rules: checkedKeys("ctp") } : null;     // TestContrapunctus (null = apagado: nada cambia)
       var schEl = document.getElementById("partimentiSchMix"), schPctEl = document.getElementById("partimentiSchMixPct");
       var cadEl = document.getElementById("partimentiCadMix"), cadPctEl = document.getElementById("partimentiCadMixPct");
       var groups = { sch: (schEl && schEl.checked) ? (schPctEl ? parseInt(schPctEl.value, 10) : 50) / 100 : null,
                      cad: (cadEl && cadEl.checked) ? (cadPctEl ? parseInt(cadPctEl.value, 10) : 50) / 100 : null };   // null = slider apagado
-      var cOpts = { cells: checkedKeys("cell"), rofo: rofo, mycad: mycad, cyc: cyc, groups: groups, spell: spellPitchClass, ctp: ctp }, song, spLay = null;
+      var cOpts = { cells: checkedKeys("cell"), rofo: rofo, mycad: mycad, cyc: cyc, mod: modOpt, groups: groups, spell: spellPitchClass, ctp: ctp }, song, spLay = null;
       if(space){
         // Space: primero se arma la canción (cantidad de acordes ~1.3–2.2 por compás) y después se reparte en compases siguiendo las celdas:
         // cada celda ocupa compases enteros, el último compás de cada celda es final de frase (acorde largo) y dentro de la celda el patrón es parejo.
@@ -15575,7 +15611,7 @@ function runAnalysis() {
                  " [aflojó " + (song.stats.ctpL1 || 0) + " + sin reglas " + (song.stats.ctpL2 || 0) + " acordes; soprano liso " + song.ctp.stats.dimPlain + "]";
       }
       var sub = document.getElementById("consolaSongSets");
-      if(sub) sub.textContent = "(Partimenti · experimental · " + keyName + (space ? " · Space" : "") + (ocmN !== null ? " · Movimientos " + ocmN : "") + (foxN !== null ? " · Fouxbourdon " + foxN : "") + (song.cyc && song.mode !== "minor" ? " · Ciclos " + song.stats.cycCells + (song.stats.cycCells === 1 ? " ciclo" : " ciclos") : "") + (song.mycad ? " · MyCadences " + song.stats.myCells + (song.stats.myCells === 1 ? " celda" : " celdas") : "") + (song.rofo && song.stats.rofoSteps ? " · RofO " + Math.round(100 * song.stats.rofoVar / song.stats.rofoSteps) + "% variantes" : (song.rofo ? " · RofO" : "")) + " · " + (tempo.name ? tempo.name + " " : "") + "♩=" + tempo.bpm + " · dim " + dimPct + "%" + (tex ? " · textura " + tex.name + (texDblOn ? " + voces duplicadas" : "") : "") + (silPct !== 50 ? " · silences " + silPct + "%" : " · silences") + (innerN !== null ? " · internal_movement " + innerN + (innerN === 1 ? " figura" : " figuras") + " (" + innerDimN + " rápidas · dim interna " + innerDimPct + "%)" : "") + " · " + N + " acordes · " + dens + " por compás · " +
+      if(sub) sub.textContent = "(Partimenti · experimental · " + keyName + (space ? " · Space" : "") + (ocmN !== null ? " · Movimientos " + ocmN : "") + (foxN !== null ? " · Fouxbourdon " + foxN : "") + (song.mod && song.stats.modCells ? " · Modulatorias " + song.stats.modCells : "") + (song.cyc && song.mode !== "minor" ? " · Ciclos " + song.stats.cycCells + (song.stats.cycCells === 1 ? " ciclo" : " ciclos") : "") + (song.mycad ? " · MyCadences " + song.stats.myCells + (song.stats.myCells === 1 ? " celda" : " celdas") : "") + (song.rofo && song.stats.rofoSteps ? " · RofO " + Math.round(100 * song.stats.rofoVar / song.stats.rofoSteps) + "% variantes" : (song.rofo ? " · RofO" : "")) + " · " + (tempo.name ? tempo.name + " " : "") + "♩=" + tempo.bpm + " · dim " + dimPct + "%" + (tex ? " · textura " + tex.name + (texDblOn ? " + voces duplicadas" : "") : "") + (silPct !== 50 ? " · silences " + silPct + "%" : " · silences") + (innerN !== null ? " · internal_movement " + innerN + (innerN === 1 ? " figura" : " figuras") + " (" + innerDimN + " rápidas · dim interna " + innerDimPct + "%)" : "") + " · " + N + " acordes · " + dens + " por compás · " +
         song.stats.cells.map(function(c){ return core.CELL_NAME[c]; }).join(" → ") + " · " + labels.join(" ") + ctpTxt + ")";
       ["consolaPlayBtn", "consolaRegenPlayBtn"].forEach(function(id){
         var bt2 = document.getElementById(id); if(bt2) bt2.disabled = false;
@@ -15601,6 +15637,9 @@ function runAnalysis() {
       var cy = document.getElementById("partimentiCyc"), cyOn = Math.random() < 0.5;
       if(cy) cy.checked = cyOn;
       if(cyOn) setRange("partimentiCycPct", pick(10, 70));
+      var md = document.getElementById("partimentiMod"), mdOn = Math.random() < 0.5;
+      if(md) md.checked = mdOn;
+      if(mdOn) setRange("partimentiModPct", pick(10, 70));
       var oc = document.getElementById("partimentiOcm"), ocOn = Math.random() < 0.5;
       if(oc) oc.checked = ocOn;
       if(ocOn) setRange("partimentiOcmPct", pick(10, 70));
@@ -15616,7 +15655,7 @@ function runAnalysis() {
         var allBox = boxes[0].parentNode.parentNode.querySelector("input:not([data-g])");
         if(allBox) allBox.checked = boxes.every(function(c){ return c.checked; });
       }
-      return { dim: document.getElementById("partimentiDimPct").value, silences: document.getElementById("partimentiRestsPct").value, innerMove: document.getElementById("partimentiInnerMovePct").value, innerDim: document.getElementById("partimentiInnerDimPct").value, mycad: myOn ? document.getElementById("partimentiMyCadPct").value : null, cyc: cyOn ? document.getElementById("partimentiCycPct").value : null, ocm: ocOn ? document.getElementById("partimentiOcmPct").value : null, fox: fxOn ? document.getElementById("partimentiFoxPct").value : null, schemas: chosen };
+      return { dim: document.getElementById("partimentiDimPct").value, silences: document.getElementById("partimentiRestsPct").value, innerMove: document.getElementById("partimentiInnerMovePct").value, innerDim: document.getElementById("partimentiInnerDimPct").value, mycad: myOn ? document.getElementById("partimentiMyCadPct").value : null, cyc: cyOn ? document.getElementById("partimentiCycPct").value : null, mod: mdOn ? document.getElementById("partimentiModPct").value : null, ocm: ocOn ? document.getElementById("partimentiOcmPct").value : null, fox: fxOn ? document.getElementById("partimentiFoxPct").value : null, schemas: chosen };
     };
     // Al entrar (no en cada 🔀): Clavecín en Armonía/Bajo/Melodía y Batería a 0% (set "partimenti" de PRESET_SETS); después se pueden cambiar a mano.
     api.start = function(){
