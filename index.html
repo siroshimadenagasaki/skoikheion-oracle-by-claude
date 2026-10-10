@@ -1230,7 +1230,7 @@
         <div style="display:flex;flex-direction:column;align-items:stretch;gap:6px;">
           <button class="chip primary" id="creaturaBtn" type="button" title="Corre sola la secuencia: sortea Chromatism (2–40%), Chords (20–60%), Triplets (0–100%), Melodic/Harmonic/RythmSpace (0–100%) y Rapid runs (0–30%), Simplicity (0–50%), Melody n2 (on/off al azar) y una combinación totalmente al azar de Cycles (intervalos + Chromatism; prende Cycles) → Random Fill (5 o 2 sets al azar; 2–3/2–4/2–5 notas, modo Mezcla) → Compose → tilda Mix time signatures → Detener → espera 2s → 🔀 Regenerar. Una sola pasada por click.">🪄 CreaturaRandom</button>
           <button class="chip primary" id="creaturaBellaBtn" type="button" title="Igual que CreaturaRandom (mismos sliders, incluidos Simplicity 0–50%, Melody n2 on/off y Cycles al azar; Compose, Mix time signatures, Detener, espera 2s y Regenerar), pero los 5 o 2 sets salen SOLO del índice del libro (jerarquías de sets) y con más probabilidad cuanto mayor es su jerarquía: dentro de cada cardinalidad (3 hasta el máximo del slider, el índice no tiene sets de 2 notas) el set 1 del índice es el más probable y el último el menos probable. Cada set sale transportado a una tónica al azar.">🪄 CreaturaBella</button>
-          <div style="display:flex;align-items:center;gap:8px;"><button class="chip primary" id="commonChordsBtn" type="button" style="flex:1;" title="CommonChords: en vez de sets, compone una canción con acordes de la base de acordes (tríadas, sextas, séptimas, add, extendidos, alterados), en cualquier tónica y siempre en inversión: el bajo toca la tónica, la tercera, la quinta o la séptima. Cantidad de acordes al azar (1, 2 o 4 por compás; se pueden repetir o no). La melodía toca solo notas del modo del acorde en curso (Cmaj7 sin #11 = Jónico o Lidio). 🔀 / tecla G sortean otra canción CommonChords.">🎼 CommonChords</button><div style="display:flex;flex-direction:column;gap:3px;"><label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="ModeTestHarmony: la armonía del ModeTest — un solo acorde cada 2 compases, con todas las notas atacando juntas (simultáneo) y sonando los 2 compases completos. La melodía queda normal. Con ModeTestMelody también tildado = ModeTest completo."><input type="checkbox" id="commonChordsModeTestH"> ModeTestHarmony</label><label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="ModeTestMelody: la melodía del ModeTest — toca únicamente la escala (el modo) de cada acorde, de la tónica hacia arriba o abajo, 1–3 octavas. La armonía queda normal (1, 2 o 4 acordes por compás). Con ModeTestHarmony también tildado = ModeTest completo."><input type="checkbox" id="commonChordsModeTestM"> ModeTestMelody</label><label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="narrowregister: el registro de un acorde al siguiente no se aleja más de una octava (la nota más grave y la más aguda de cada acorde quedan a no más de 12 semitonos de las del acorde anterior)."> <input type="checkbox" id="commonChordsNarrow"> narrowregister</label></div></div><details style="margin-top:4px;"><summary style="font-size:12px;color:var(--ink-muted);cursor:pointer;" title="Categoría Fusionada: limita los acordes que se sortean a las familias tildadas. Sin tildar ninguna = todas.">🧬 Familias de acordes</summary><div id="commonChordsFamilies" style="display:flex;flex-wrap:wrap;gap:4px 10px;padding:4px 0;"><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;font-weight:700;" title="All: tilda o destilda todas las familias."><input type="checkbox" id="commonChordsFamiliesAll"> All</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Maj7"> Maj7</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="m7"> m7</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="7"> 7</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="7Alt"> 7Alt</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Sus 2b"> Sus 2b</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Semidisminuido"> Semidisminuido</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Disminuida"> Disminuida</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Aumentada"> Aumentada</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Díada"> Díada</label></div></details><details style="margin-top:4px;"><summary style="font-size:12px;color:var(--ink-muted);cursor:pointer;" title="Escalas: con una o más tildadas, la melodía de cada acorde toca solo modos de esas escalas (solo se sortean acordes que tengan algún modo en esas escalas; si la combinación con las familias no deja ninguno, usa cualquier modo y se marca con * en el subtítulo). Sin tildar = todas (menos las 4 de Barry Harris, que solo entran si se tildan y cuyas corridas de escala siempre bajan).">🎼 Escalas de la melodía</summary><div id="commonChordsScales" style="display:flex;flex-wrap:wrap;gap:4px 10px;padding:4px 0;"><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;font-weight:700;" title="All: tilda o destilda todas las escalas."><input type="checkbox" id="commonChordsScalesAll"> All</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Diatónica"> Diatónica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Menor melódica"> Menor melódica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Menor armónica"> Menor armónica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Mayor armónica"> Mayor armónica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Enigmática"> Enigmática</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Aumentada"> Aumentada</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Octatónica"> Octatónica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-35"> Pent. 5-35 (tradicional)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-34"> Pent. 5-34 (Prometeo)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-29B"> Pent. 5-29B (Kumoi I)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-29"> Pent. 5-29 (Kumoi II)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-30"> Pent. 5-30 (Enigmática)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-30B"> Pent. 5-30B (Enigmática II)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="Barry Harris: sexta mayor + disminuido (C D E F G Ab A B). Solo entra si la tildás; la corrida de escala (ModeTestMelody / Semis) siempre baja."><input type="checkbox" value="Harris Major 6th dim"> Harris Major 6th dim (8-26)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="Barry Harris: sexta menor + disminuido (C D Eb F G Ab A B). Solo entra si la tildás; la corrida de escala siempre baja."><input type="checkbox" value="Harris Minor 6th dim"> Harris Minor 6th dim (8-27)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="Barry Harris: séptima dominante + disminuido (C D E F G Ab Bb B). Solo entra si la tildás; la corrida de escala siempre baja."><input type="checkbox" value="Harris Dominant dim"> Harris Dominant dim (8-27B)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="Barry Harris: séptima dominante b5 + disminuido (C D E F Gb Ab Bb B). Solo entra si la tildás; la corrida de escala siempre baja."><input type="checkbox" value="Harris Dominant b5 dim"> Harris Dominant b5 dim (8-25)</label></div><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;padding-bottom:4px;" title="Semis: la melodía toca la escala del modo de cada acorde, de la tónica hacia arriba, al doble de velocidad que ModeTest (cada nota dura la mitad y la escala se repite desde la tónica hasta llenar el acorde). Funciona con o sin ModeTestMelody."><input type="checkbox" id="commonChordsSemis"> Semis (escalas al doble de velocidad)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;padding-bottom:4px;" title="MelodicPatternsV2: la melodía recorre las notas del modo del acorde con patrones del tester (1 a 8 pasos diatónicos, 2 a 4 movimientos, hacia arriba o abajo; ej. 2↑ 1↓ = C E D). Cada patrón se usa una sola vez y le sigue otro nuevo. No aplica con ModeTestMelody ni Semis (corridas de escala)."><input type="checkbox" id="commonChordsPatV2"> MelodicPatternsV2 (patrones del tester)</label></details>
+          <div style="display:flex;align-items:center;gap:8px;"><button class="chip primary" id="commonChordsBtn" type="button" style="flex:1;" title="CommonChords: en vez de sets, compone una canción con acordes de la base de acordes (tríadas, sextas, séptimas, add, extendidos, alterados), en cualquier tónica y siempre en inversión: el bajo toca la tónica, la tercera, la quinta o la séptima. Cantidad de acordes al azar (1, 2 o 4 por compás; se pueden repetir o no). La melodía toca solo notas del modo del acorde en curso (Cmaj7 sin #11 = Jónico o Lidio). 🔀 / tecla G sortean otra canción CommonChords.">🎼 CommonChords</button></div><details style="margin-top:4px;"><summary style="font-size:12px;color:var(--ink-muted);cursor:pointer;" title="Test (CommonChords): ModeTestHarmony, ModeTestMelody y narrowregister.">🧪 Test</summary><div style="display:flex;flex-wrap:wrap;gap:4px 10px;padding:4px 0;"><label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="ModeTestHarmony: la armonía del ModeTest — un solo acorde cada 2 compases, con todas las notas atacando juntas (simultáneo) y sonando los 2 compases completos. La melodía queda normal. Con ModeTestMelody también tildado = ModeTest completo."><input type="checkbox" id="commonChordsModeTestH"> ModeTestHarmony</label><label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="ModeTestMelody: la melodía del ModeTest — toca únicamente la escala (el modo) de cada acorde, de la tónica hacia arriba o abajo, 1–3 octavas. La armonía queda normal (1, 2 o 4 acordes por compás). Con ModeTestHarmony también tildado = ModeTest completo."><input type="checkbox" id="commonChordsModeTestM"> ModeTestMelody</label><label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="narrowregister: el registro de un acorde al siguiente no se aleja más de una octava (la nota más grave y la más aguda de cada acorde quedan a no más de 12 semitonos de las del acorde anterior)."> <input type="checkbox" id="commonChordsNarrow"> narrowregister</label></div></details><details style="margin-top:4px;"><summary style="font-size:12px;color:var(--ink-muted);cursor:pointer;" title="Categoría: limita los acordes que se sortean a las familias tildadas. Sin tildar ninguna = todas.">🧬 Familias de acordes</summary><div id="commonChordsFamilies" style="display:flex;flex-wrap:wrap;gap:4px 10px;padding:4px 0;"><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;font-weight:700;" title="All: tilda o destilda todas las familias."><input type="checkbox" id="commonChordsFamiliesAll"> All</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Maj7"> Maj7</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="m7"> m7</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="7"> 7</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="7Alt"> 7Alt</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Sus 2b"> Sus 2b</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Semidisminuido"> Semidisminuido</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Disminuida"> Disminuida</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Aumentada"> Aumentada</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Díada"> Díada</label></div></details><details style="margin-top:4px;"><summary style="font-size:12px;color:var(--ink-muted);cursor:pointer;" title="Escalas: con una o más tildadas, la melodía de cada acorde toca solo modos de esas escalas (solo se sortean acordes que tengan algún modo en esas escalas; si la combinación con las familias no deja ninguno, usa cualquier modo y se marca con * en el subtítulo). Sin tildar = todas (menos las 4 de Barry Harris, que solo entran si se tildan y cuyas corridas de escala siempre bajan).">🎼 Escalas de la melodía</summary><div id="commonChordsScales" style="display:flex;flex-wrap:wrap;gap:4px 10px;padding:4px 0;"><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;font-weight:700;" title="All: tilda o destilda todas las escalas."><input type="checkbox" id="commonChordsScalesAll"> All</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Diatónica"> Diatónica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Menor melódica"> Menor melódica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Menor armónica"> Menor armónica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Mayor armónica"> Mayor armónica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Enigmática"> Enigmática</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Aumentada"> Aumentada</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Octatónica"> Octatónica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-35"> Pent. 5-35 (tradicional)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-34"> Pent. 5-34 (Prometeo)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-29B"> Pent. 5-29B (Kumoi I)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-29"> Pent. 5-29 (Kumoi II)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-30"> Pent. 5-30 (Enigmática)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-30B"> Pent. 5-30B (Enigmática II)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="Barry Harris: sexta mayor + disminuido (C D E F G Ab A B). Solo entra si la tildás; la corrida de escala (ModeTestMelody / Semis) siempre baja."><input type="checkbox" value="Harris Major 6th dim"> Harris Major 6th dim (8-26)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="Barry Harris: sexta menor + disminuido (C D Eb F G Ab A B). Solo entra si la tildás; la corrida de escala siempre baja."><input type="checkbox" value="Harris Minor 6th dim"> Harris Minor 6th dim (8-27)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="Barry Harris: séptima dominante + disminuido (C D E F G Ab Bb B). Solo entra si la tildás; la corrida de escala siempre baja."><input type="checkbox" value="Harris Dominant dim"> Harris Dominant dim (8-27B)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="Barry Harris: séptima dominante b5 + disminuido (C D E F Gb Ab Bb B). Solo entra si la tildás; la corrida de escala siempre baja."><input type="checkbox" value="Harris Dominant b5 dim"> Harris Dominant b5 dim (8-25)</label></div><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;padding-bottom:4px;" title="Semis: la melodía toca la escala del modo de cada acorde, de la tónica hacia arriba, al doble de velocidad que ModeTest (cada nota dura la mitad y la escala se repite desde la tónica hasta llenar el acorde). Funciona con o sin ModeTestMelody."><input type="checkbox" id="commonChordsSemis"> Semis (escalas al doble de velocidad)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;padding-bottom:4px;" title="MelodicPatternsV2: la melodía recorre las notas del modo del acorde con patrones del tester (1 a 8 pasos diatónicos, 2 a 4 movimientos, hacia arriba o abajo; ej. 2↑ 1↓ = C E D). Cada patrón se usa una sola vez y le sigue otro nuevo. No aplica con ModeTestMelody ni Semis (corridas de escala)."><input type="checkbox" id="commonChordsPatV2"> MelodicPatternsV2 (patrones del tester)</label></details>
           <button class="chip primary" id="partimentiBtn" type="button" title="Partimenti (experimental): el motor inventa un bajo (Regla de la octava ascendente/descendente, quintas descendentes, I–IV–V–I, esquemas galantes y cadencias simple/compuesta/doble) en una tonalidad mayor al azar y lo completa a 4 voces con conducción de voces (sin quintas ni octavas paralelas, la 7ª baja, la sensible sube): bajo en Bass, tenor y alto en Harmony, soprano con diminuciones en Melody. Al entrar pone Clavecín en los tres y Batería a 0%. Cada canción sortea un movimiento de tempo (Grave…Prestissimo). En el piano roll: cifra romana e inversión (V4/3, V6/4, I6...). Las opciones están en el desplegable de abajo. 🔀 / tecla G sortean otra canción.">🎹 Partimenti</button>
           <details id="partimentiOpts" style="margin-top:2px;"><summary style="font-size:12px;color:var(--ink-muted);cursor:pointer;" title="Partimenti: elegí qué celdas de bajo, esquemas galantes (Romanesca, Prinner, Meyer, Do-Re-Mi, Sol-Fa-Mi, Aprile, Jupiter, Pastorella, Fenaroli, Ponte, Passo Indietro, Quiescenza), cadencias (simple, compuesta, doble) y movimientos de tempo (Grave…Prestissimo) puede sortear. Sin tildar nada = todo.">🎹 Partimenti: esquemas, cadencias, tempo</summary><div id="partimentiOptsBody" style="padding:4px 0;"></div></details>
           <button class="chip primary" id="creaturaIntervalicBtn" type="button" title="Igual que CreaturaRandom (mismos sliders, Compose, Mix time signatures, Detener, espera 2s y Regenerar, con 5 o 2 sets), pero antes sortea una combinación de clases de intervalo (1, 2 o 3 de ic1..ic6) y los sets salen SOLO de los que tienen todas esas clases en su vector de intervalos, con más probabilidad cuanto mayor parte del vector ocupan esas clases.">🪄 CreaturaIntervalic</button>
@@ -14508,19 +14508,19 @@ function runAnalysis() {
       return out;
     }
     // Silencios (slider 0–100 %, s = nivel 0..1): 0 = sin pausas; 50 % = como la casilla "Silences" de siempre (con probabilidad DIM_REST_P = 0,3 el acorde lleva UNA pausa);
-    // de 50 % a 100 % (X 0→1) hay MUCHO más espacio: la probabilidad sube de 0,3 a 0,9, las pausas son más largas (hasta 3/4 de la nota), las figuras pierden varias notas
-    // y algunos acordes quedan enteros en silencio (hasta 35 % de los que llevan pausa). De 0 a 50 % solo baja la probabilidad (0 → 0,3).
+    // de 50 % a 100 % (X 0→1) hay MUCHO más espacio: la probabilidad sube de 0,3 a 1 (al 100 % TODOS los acordes llevan pausa), las pausas son más largas (hasta 85 % de la nota), las figuras pierden casi todas las notas
+    // y hasta 65 % de los acordes quedan enteros en silencio. De 0 a 50 % solo baja la probabilidad (0 → 0,3).
     // Una sola nota: se acorta y queda pausa al final; con figura: una de las notas que no es la primera (la del soprano armonizado) pasa a pausa.
     // Nunca en el acorde final ni en acordes de cuarta.
     function addRest(out, dur, s, first){
       if(s == null) s = 0.5;
       if(!(s > 0)) return out;
       var X = Math.max(0, (s - 0.5) * 2);
-      var pr = s <= 0.5 ? DIM_REST_P * (s / 0.5) : DIM_REST_P + (0.9 - DIM_REST_P) * X;
+      var pr = s <= 0.5 ? DIM_REST_P * (s / 0.5) : DIM_REST_P + (1 - DIM_REST_P) * X;
       if(Math.random() >= pr) return out;
-      if(X > 0 && !first && Math.random() < 0.35 * X) return [{ midi: null, off: 0, dur: dur, fig: null, rest: true }];       // acorde entero en silencio
+      if(X > 0 && !first && Math.random() < 0.65 * X) return [{ midi: null, off: 0, dur: dur, fig: null, rest: true }];       // acorde entero en silencio
       if(out.length === 1){
-        var fr = Math.random() < X ? (Math.random() < 0.5 ? 0.5 : 0.75) : (dur >= 1 ? (Math.random() < 0.5 ? 0.25 : 0.5) : 0.5);   // fracción de la nota que pasa a pausa
+        var fr = Math.random() < X ? (Math.random() < 0.5 ? 0.6 : 0.85) : (dur >= 1 ? (Math.random() < 0.5 ? 0.25 : 0.5) : 0.5);   // fracción de la nota que pasa a pausa
         var rl = dur * fr;
         out[0] = { midi: out[0].midi, off: 0, dur: dur - rl, fig: out[0].fig };
         out.push({ midi: null, off: dur - rl, dur: rl, fig: null, rest: true });
@@ -14528,7 +14528,7 @@ function runAnalysis() {
       }
       var jx = Math.random() < 0.5 ? out.length - 1 : 1 + Math.floor(Math.random() * (out.length - 1));
       out[jx] = { midi: null, off: out[jx].off, dur: out[jx].dur, fig: null, rest: true };
-      if(X > 0) for(var kx = 1; kx < out.length; kx++) if(kx !== jx && Math.random() < 0.5 * X) out[kx] = { midi: null, off: out[kx].off, dur: out[kx].dur, fig: null, rest: true };
+      if(X > 0) for(var kx = 1; kx < out.length; kx++) if(kx !== jx && Math.random() < 0.85 * X) out[kx] = { midi: null, off: out[kx].off, dur: out[kx].dur, fig: null, rest: true };
       return out;
     }
     function diminish(chords, i, dur, key, orn, mode, dim){
@@ -14766,13 +14766,13 @@ function runAnalysis() {
         var c = mk("input"); c.type = "checkbox"; c.setAttribute("data-g", g); c.setAttribute("data-k", k); if(checked) c.checked = true;
         l.appendChild(c); l.appendChild(document.createTextNode(" " + text)); return l;
       }
-      function group(title, tip, g, rows){
+      function group(title, tip, g, rows, on){
         var box = mk("div", "padding:2px 0 6px;");
         var h = mk("div", "font-size:12px;font-weight:700;color:var(--ink-muted);margin-bottom:2px;", title); h.title = tip; box.appendChild(h);
         var wrap = mk("div", "display:flex;flex-wrap:wrap;gap:4px 10px;");
         var all = mk("label", LBL + "font-weight:700;"); all.title = "All: tilda o destilda todo el grupo.";
-        var ac = mk("input"); ac.type = "checkbox"; all.appendChild(ac); all.appendChild(document.createTextNode(" All")); wrap.appendChild(all);
-        rows.forEach(function(r){ wrap.appendChild(label(r.text, r.tip, g, r.k, false)); });
+        var ac = mk("input"); ac.type = "checkbox"; if(on) ac.checked = true; all.appendChild(ac); all.appendChild(document.createTextNode(" All")); wrap.appendChild(all);
+        rows.forEach(function(r){ wrap.appendChild(label(r.text, r.tip, g, r.k, !!on)); });
         ac.addEventListener("change", function(){
           Array.prototype.forEach.call(wrap.querySelectorAll('input[data-g="' + g + '"]'), function(c){ c.checked = ac.checked; });
         });
@@ -14784,6 +14784,9 @@ function runAnalysis() {
       }
       var hint = mk("div", "font-size:11px;color:var(--ink-muted);padding:2px 0 4px;", "Sin tildar nada = todo. Los cambios valen desde la próxima canción (🔀 / G). La cadencia final sale de las cadencias tildadas (si no hay ninguna, de las tres).");
       b.appendChild(hint);
+      var spw = mk("div", "padding:2px 0 6px;");
+      var spk = label("Space", "Space (general, solo Partimenti): más espacio y variedad rítmica en acordes y bajo. La canción se divide en secciones de 2 a 4 compases; cada sección sortea su carácter: acordes LARGOS (uno por compás), MEDIOS (de 2 tiempos) o CORTOS (de 1 tiempo), con duraciones mezcladas dentro del compás (2+2, 3+1, 1+1+2...). Además el bajo y la armonía (tenor/alto) rompen el ritmo parejo: reataques, notas con puntillo, entradas sincopadas y notas cortas con silencio, más en las secciones largas. El último compás es un acorde largo. Vale desde la próxima canción (🔀 / G).", "opt", "space", false);
+      spk.firstChild.id = "partimentiSpace"; spk.style.fontWeight = "700"; spw.appendChild(spk); b.appendChild(spw);
       // Textura de la armonía: select con el mismo estilo que los de presets de soundfont. Solo toca la pista Harmony (tenor + alto); vale desde la próxima canción.
       var txw = mk("div", "display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:2px 0 8px;");
       var txl = mk("label", null, "Textura armonía"); txl.className = "mix-preset-label"; txl.htmlFor = "partimentiTexture";
@@ -14857,7 +14860,7 @@ function runAnalysis() {
       var dv = mk("span", "min-width:34px;text-align:right;", "25%");
       dr.addEventListener("input", function(){ dv.textContent = dr.value + "%"; });
       dl.appendChild(document.createTextNode("disminución ")); dl.appendChild(dr); dl.appendChild(dv); db.appendChild(dl);
-      var sl2 = mk("label", LBL); sl2.title = "Silencios en la melodía (solo el soprano): 0 = ninguno; 50 = como la casilla de antes (algunos acordes llevan una pausa al final de la nota o dentro de la figura); 100 = MUCHO más espacio: casi todos los acordes llevan pausas, más largas, con varias notas de la figura silenciadas y algunos acordes enteros en silencio. Nunca en el acorde final ni en los de cuarta.";
+      var sl2 = mk("label", LBL); sl2.title = "Silencios en la melodía (solo el soprano): 0 = ninguno; 50 = como la casilla de antes (algunos acordes llevan una pausa al final de la nota o dentro de la figura); 100 = la melodía casi desaparece: todos los acordes llevan pausas largas, casi todas las notas de la figura quedan silenciadas y unos 2 de cada 3 acordes quedan enteros en silencio. Nunca en el acorde final ni en los de cuarta.";
       var sr = mk("input"); sr.type = "range"; sr.min = 0; sr.max = 100; sr.step = 5; sr.value = 50; sr.id = "partimentiRestsPct"; sr.style.cssText = "width:110px;";
       var sv = mk("span", "min-width:34px;text-align:right;", "50%");
       sr.addEventListener("input", function(){ sv.textContent = sr.value + "%"; });
@@ -14869,7 +14872,7 @@ function runAnalysis() {
                       anticipation: "Anticipaciones: la última subdivisión adelanta la nota del acorde siguiente.",
                       scale: "Escalas: carreras por grados conjuntos de 3 a 7 notas.",
                       thirds: "Terceras rotas: salta una tercera, vuelve por grado y salta de nuevo (do-mi-re-fa)." };
-      db.appendChild(group("", "", "dim", Object.keys(core.DIM_FIGS).map(function(k){ return { k: k, text: core.DIM_FIGS[k], tip: DIM_TIP[k] }; })));
+      db.appendChild(group("Ornamentación", "Figuras con las que la melodía (soprano) puede adornarse. Todas tildadas por defecto; destildá las que no quieras (sin ninguna tildada = todas).", "dim", Object.keys(core.DIM_FIGS).map(function(k){ return { k: k, text: core.DIM_FIGS[k], tip: DIM_TIP[k] }; }), true));
       b.appendChild(db);
       // Movimiento interno: movimientos leves (notas de paso / bordaduras) solo en tenor y alto; el bajo y el soprano no cambian.
       var ib = mk("div", "padding:2px 0 6px;");
@@ -14921,6 +14924,59 @@ function runAnalysis() {
       return { name: mv.name, bpm: bpm };
     }
 
+    // ---- Space (casilla general, solo Partimenti): más espacio y variedad rítmica en acordes y bajo, por secciones de 2-4 compases ----
+    // Cada sección sortea su carácter: "long" (acordes largos), "mid" (medios) o "busy" (cortos). Nunca hay un acorde de menos de 1 tiempo.
+    var SP_P = { long: 0.7, mid: 0.45, busy: 0.3 };      // probabilidad de que una nota del bajo / de la armonía lleve una variante rítmica, según la sección
+    function spPickKind(prev){
+      var r = Math.random(), k = r < 0.4 ? "long" : (r < 0.7 ? "mid" : "busy");
+      if(k === prev) k = prev === "long" ? "busy" : (prev === "mid" ? "long" : "mid");
+      return k;
+    }
+    function spPattern(kind, bt){        // duraciones (en tiempos) de los acordes de un compás de bt tiempos
+      if(bt < 2) return [bt];
+      var out = [], rem = bt;
+      while(rem > 0.0001){
+        var sizes = kind === "long" ? [rem, rem, rem, Math.max(1, rem - 1)] : (kind === "mid" ? [2, 2, 2, 3, 1] : [1, 1, 1, 2]);
+        var d = sizes[Math.floor(Math.random() * sizes.length)];
+        if(d > rem) d = rem;
+        if(rem - d > 0.0001 && rem - d < 1) d = rem;
+        out.push(d); rem -= d;
+      }
+      return out;
+    }
+    function spCopy(e, sb, db){ var o = {}, k; for(k in e) o[k] = e[k]; o.startBeat = sb; o.durBeats = db; return o; }
+    function spPieces(role, d, kind){    // [[desplazamiento, duración], ...] dentro de la nota; lo que no se cubre queda en silencio
+      var c = [], i;
+      function add(n, pcs){ for(i = 0; i < n; i++) c.push(pcs); }
+      if(role === "bass"){
+        add(kind === "busy" ? 1 : 2, [[0, d / 2], [d / 2, d / 2]]);                         // reataque a la mitad
+        if(d >= 2) add(2, [[0, d * 0.75], [d * 0.75, d * 0.25]]);                           // puntillo + nota corta
+        if(d >= 2 && kind !== "busy") add(1, [[0.5, d - 0.5]]);                             // entrada sincopada
+        if(d >= 3) add(1, [[0, d / 2], [d / 2, d / 4], [d * 0.75, d / 4]]);                 // media + dos cuartos
+        add(kind === "long" ? 1 : 2, [[0, d / 2]]);                                         // nota corta y silencio
+      } else {
+        if(d >= 2) add(kind === "long" ? 2 : 1, [[0, d / 2], [d / 2, d / 2]]);              // reataque a la mitad
+        if(d >= 2) add(1, [[0, d * 0.75], [d * 0.75, d * 0.25]]);                           // puntillo + nota corta
+        add(2, [[0.5, d - 0.5]]);                                                           // entrada retrasada
+        if(d >= 3) add(1, [[1, d - 1]]);
+        add(kind === "busy" ? 2 : 1, [[0, d / 2]]);                                         // nota corta y silencio
+      }
+      return c[Math.floor(Math.random() * c.length)];
+    }
+    function spVary(events, barKind, role){
+      var minD = role === "bass" ? 1 : 1.5, plan = {}, out = [];
+      events.forEach(function(e){
+        var kd = barKind[e.bar];
+        if(!kd || e.bar >= NUM_BARS - 1 || e.durBeats < minD){ out.push(e); return; }
+        var key = e.startBeat + "|" + e.durBeats;                     // tenor y alto (mismo inicio y duración) comparten la decisión
+        if(!(key in plan)) plan[key] = Math.random() < SP_P[kd] ? spPieces(role, e.durBeats, kd) : null;
+        var pcs = plan[key];
+        if(!pcs){ out.push(e); return; }
+        pcs.forEach(function(pc){ out.push(spCopy(e, e.startBeat + pc[0], pc[1])); });
+      });
+      return out;
+    }
+
     function build(){
       NUM_BARS = desiredNumBars();
       RHYTHM.recompute();
@@ -14928,11 +14984,24 @@ function runAnalysis() {
       var tempo = setTempo();     // antes de TEMPODENSITY.apply: ese módulo mira el tempo vigente al generar
       // Ritmo armónico de la canción (sorteo por canción): 1, 2 o 4 acordes por compás (acotado por los pulsos de cada compás).
       var r0 = Math.random(), dens = r0 < 0.2 ? 1 : (r0 < 0.7 ? 2 : 4);
-      var per = [], N = 0, b0;
-      for(b0 = 0; b0 < NUM_BARS; b0++){
-        var bt = RHYTHM.beats(b0), n0 = dens;
-        if(bt < 2) n0 = 1; else if(bt < 4 && n0 === 4) n0 = 2;
-        per.push(n0); N += n0;
+      var spEl = document.getElementById("partimentiSpace"), space = !!(spEl && spEl.checked);   // Space: secciones con acordes largos / medios / cortos + ritmo en bajo y armonía
+      var durPlan = [], barKind = [], N = 0, b0;
+      if(space){
+        var sb0 = 0, prevK = null;
+        while(sb0 < NUM_BARS){
+          var kd = spPickKind(prevK), slen = 2 + Math.floor(Math.random() * 3);
+          for(var sq = 0; sq < slen && sb0 < NUM_BARS; sq++, sb0++){ barKind[sb0] = kd; durPlan[sb0] = spPattern(kd, RHYTHM.beats(sb0)); }
+          prevK = kd;
+        }
+        barKind[NUM_BARS - 1] = "long"; durPlan[NUM_BARS - 1] = [RHYTHM.beats(NUM_BARS - 1)];       // el último compás: un solo acorde largo
+        for(b0 = 0; b0 < NUM_BARS; b0++) N += durPlan[b0].length;
+      } else {
+        for(b0 = 0; b0 < NUM_BARS; b0++){
+          var bt = RHYTHM.beats(b0), n0 = dens, pl = [], q0;
+          if(bt < 2) n0 = 1; else if(bt < 4 && n0 === 4) n0 = 2;
+          for(q0 = 0; q0 < n0; q0++) pl.push(bt / n0);
+          durPlan.push(pl); N += n0;
+        }
       }
       var rofoEl = document.getElementById("partimentiRofO"), pctEl = document.getElementById("partimentiRofOPct");
       var rofo = (rofoEl && rofoEl.checked) ? { on: true, p: (pctEl ? parseInt(pctEl.value, 10) : 50) / 100, modes: checkedKeys("rmode") } : null;
@@ -14955,9 +15024,10 @@ function runAnalysis() {
       var ci = 0, lastMel = null, slotInfo = [], texSlots = [];
       var texEl = document.getElementById("partimentiTexture"), tex = TEXTURES.get(texEl ? texEl.value : "original");   // null = Original
       for(var bar = 0; bar < NUM_BARS; bar++){
-        var beats = RHYTHM.beats(bar), barStart = RHYTHM.start(bar), nSl = per[bar], dur = beats / nSl, slots = [];
+        var beats = RHYTHM.beats(bar), barStart = RHYTHM.start(bar), durs = durPlan[bar], nSl = durs.length, dur = 0, off = 0, slots = [];
         for(var si = 0; si < nSl; si++){
-          var idx = ci++, ch = song.chords[Math.min(idx, song.chords.length - 1)], abs = barStart + si * dur;
+          dur = durs[si];
+          var idx = ci++, ch = song.chords[Math.min(idx, song.chords.length - 1)], abs = barStart + off;
           if(ch.hold && lastBass) lastBass.durBeats += dur;                                                              // el bajo sigue (cadencias compuesta y doble, Prinner)
           else { lastBass = { midi: ch.bass, startBeat: abs, durBeats: dur, bar: bar }; bassEvents.push(lastBass); }     // bajo (el partimento)
           var evT = { midi: ch.t, startBeat: abs, durBeats: dur, bar: bar }, evA = { midi: ch.a, startBeat: abs, durBeats: dur, bar: bar };
@@ -14974,9 +15044,10 @@ function runAnalysis() {
             lastMel = m.midi;
           });
           var voiced = [ch.bass, ch.t, ch.a, ch.s];
-          slots.push({ chord: voiced, startBeat: si * dur, durBeats: dur, setNotes: voiced, ccLabel: ch.label, ccCat: ch.cat,
+          slots.push({ chord: voiced, startBeat: off, durBeats: dur, setNotes: voiced, ccLabel: ch.label, ccCat: ch.cat,
                        ccScale: ch.cellStart ? ((idx === 0 ? keyName + " · " : "") + (ch.cellTitle || core.CELL_NAME[ch.cell])) : null });
           labels.push(ch.label);
+          off += dur;
         }
         progression.push(slots[0].chord.slice());
         slotChords.push(slots);
@@ -15001,6 +15072,7 @@ function runAnalysis() {
         innerN = imRes.n; innerDimN = imRes.nDim;
       }
 
+      if(space){ bassEvents = spVary(bassEvents, barKind, "bass"); if(!tex) chordEvents = spVary(chordEvents, barKind, "chord"); }   // Space: variedad rítmica (con textura elegida, la textura manda en la armonía)
       state.rootChord = progression[0].slice();
       state.progression = progression;
       state.roles = roles;
@@ -15030,7 +15102,7 @@ function runAnalysis() {
                  " [aflojó " + (song.stats.ctpL1 || 0) + " + sin reglas " + (song.stats.ctpL2 || 0) + " acordes; soprano liso " + song.ctp.stats.dimPlain + "]";
       }
       var sub = document.getElementById("consolaSongSets");
-      if(sub) sub.textContent = "(Partimenti · experimental · " + keyName + (song.mycad ? " · MyCadences " + song.stats.myCells + (song.stats.myCells === 1 ? " celda" : " celdas") : "") + (song.rofo && song.stats.rofoSteps ? " · RofO " + Math.round(100 * song.stats.rofoVar / song.stats.rofoSteps) + "% variantes" : (song.rofo ? " · RofO" : "")) + " · " + (tempo.name ? tempo.name + " " : "") + "♩=" + tempo.bpm + " · dim " + dimPct + "%" + (tex ? " · textura " + tex.name + (texDblOn ? " + voces duplicadas" : "") : "") + (silPct !== 50 ? " · silences " + silPct + "%" : " · silences") + (innerN !== null ? " · internal_movement " + innerN + (innerN === 1 ? " figura" : " figuras") + " (" + innerDimN + " rápidas · dim interna " + innerDimPct + "%)" : "") + " · " + N + " acordes · " + dens + " por compás · " +
+      if(sub) sub.textContent = "(Partimenti · experimental · " + keyName + (space ? " · Space" : "") + (song.mycad ? " · MyCadences " + song.stats.myCells + (song.stats.myCells === 1 ? " celda" : " celdas") : "") + (song.rofo && song.stats.rofoSteps ? " · RofO " + Math.round(100 * song.stats.rofoVar / song.stats.rofoSteps) + "% variantes" : (song.rofo ? " · RofO" : "")) + " · " + (tempo.name ? tempo.name + " " : "") + "♩=" + tempo.bpm + " · dim " + dimPct + "%" + (tex ? " · textura " + tex.name + (texDblOn ? " + voces duplicadas" : "") : "") + (silPct !== 50 ? " · silences " + silPct + "%" : " · silences") + (innerN !== null ? " · internal_movement " + innerN + (innerN === 1 ? " figura" : " figuras") + " (" + innerDimN + " rápidas · dim interna " + innerDimPct + "%)" : "") + " · " + N + " acordes · " + dens + " por compás · " +
         song.stats.cells.map(function(c){ return core.CELL_NAME[c]; }).join(" → ") + " · " + labels.join(" ") + ctpTxt + ")";
       ["consolaPlayBtn", "consolaRegenPlayBtn"].forEach(function(id){
         var bt2 = document.getElementById(id); if(bt2) bt2.disabled = false;
