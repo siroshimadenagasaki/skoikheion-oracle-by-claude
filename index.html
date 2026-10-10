@@ -12351,6 +12351,7 @@ function runAnalysis() {
 
   // ---------- estado / regeneración ----------
   var state = { rootChord: [], progression: [], roles: [], chordEvents: [], slotChords: [], bassEvents: [], melodyEvents: [], comping2Events: [], bebopEvents: [], melody2Events: [] };
+  window.__consolaState = state;   // (para pruebas)
   // Silencios de Melody n2: alterna tramos tocando (2 a 5 compases) con silencios
   // de 1, 2 o 4 compases al azar; arranca tocando. Devuelve {bar:true} de los compases mudos.
   function melody2RestBars(numBars){
@@ -12619,6 +12620,50 @@ function runAnalysis() {
       return out.sort(function(a, b){ return a.startBeat - b.startBeat || a.midi - b.midi; });
     }
     return { apply: apply, bpm: bpm };
+  })();
+  /* ================================================================
+     SPEEDLIMIT — límite de velocidad de las líneas melódicas según el tempo vigente al generar. A tempo alto las figuras rápidas
+     (corcheas/semicorcheas, tresillos, adornos, Rapid runs, trinos) pueden superar lo tocable y suenan como una ráfaga. Cada pista
+     monofónica tiene una separación mínima entre ataques: Melody, Melody n2 y bebopMelody 0.09 s (~11 notas por segundo), Bass y
+     moreComping 0.12 s. Notas que arrancan a menos de 0.03 s entre sí (dobles, octavas) cuentan como un solo ataque. El ataque que
+     llega demasiado pronto se descarta y la nota anterior se alarga para cubrir el hueco (sin pasar del próximo ataque que queda).
+     A tempo bajo no cambia nada. Solo quita ataques: nunca agrega ni cambia notas. La Armonía ya la limita TEMPODENSITY.
+     ================================================================ */
+  var SPEEDLIMIT = (function(){
+    var CLUSTER_SEC = 0.03, EPS = 1e-9;
+    var GAPS = { melodyEvents: 0.09, melody2Events: 0.09, bebopEvents: 0.09, bassEvents: 0.12, comping2Events: 0.12 };   // segundos entre ataques
+    function limit(events, gapSec){
+      if(!events || events.length < 2) return events;
+      var spb = 60 / TEMPODENSITY.bpm();
+      var evs = events.slice().sort(function(a, b){ return a.startBeat - b.startBeat || a.midi - b.midi; });
+      var onsets = [], cur = null;
+      evs.forEach(function(e){
+        if(cur && (e.startBeat - cur.t) * spb <= CLUSTER_SEC + EPS) cur.evs.push(e);
+        else { cur = { t: e.startBeat, evs: [e], dropped: [] }; onsets.push(cur); }
+      });
+      var kept = [], last = null;
+      onsets.forEach(function(o){
+        if(last && (o.t - last.t) * spb + EPS < gapSec){ last.dropped.push(o); return; }
+        kept.push(o); last = o;
+      });
+      if(kept.length === onsets.length) return events;
+      var out = [];
+      kept.forEach(function(k, i){
+        var nextT = i + 1 < kept.length ? kept[i + 1].t : Infinity;
+        if(k.dropped.length){
+          var maxEnd = 0;
+          k.dropped.forEach(function(d){ d.evs.forEach(function(e){ maxEnd = Math.max(maxEnd, e.startBeat + e.durBeats); }); });
+          var target = Math.min(maxEnd, nextT);
+          k.evs.forEach(function(e){ if(target > e.startBeat + e.durBeats + EPS) e.durBeats = target - e.startBeat; });
+        }
+        k.evs.forEach(function(e){ out.push(e); });
+      });
+      return out.sort(function(a, b){ return a.startBeat - b.startBeat || a.midi - b.midi; });
+    }
+    function apply(st){
+      Object.keys(GAPS).forEach(function(k){ if(st[k] && st[k].length) st[k] = limit(st[k], GAPS[k]); });
+    }
+    return { apply: apply, limit: limit, GAPS: GAPS };
   })();
   /* ================================================================
      DRUMBLOCKMELODY — slider #consolaRhythmBwmSlider (Rhythm, 0-100%, default 0). Mismo concepto que BlockwithMelody de Harmony,
@@ -13169,6 +13214,7 @@ function runAnalysis() {
     BLOCKWITHMELODY.apply(); // BlockwithMelody (Harmony): la armonía toca en bloque la rítmica de la melodía en los tramos elegidos
     BASSBLOCKMELODY.apply(true); // BlockwithMelody (Bass): el bajo toca la rítmica de la melodía en los tramos elegidos
     state.chordEvents = TEMPODENSITY.apply(state.chordEvents); // Armonía según el tempo: no más ataques de los tocables
+    SPEEDLIMIT.apply(state); // límite de velocidad de Melody / Bass / Melody n2 / bebop / moreComping según el tempo
     state.chordEvents = WIDERANGE.apply(state.chordEvents); // wide.range (Harmony): acordes largos duplicados en varias octavas, capas escalonadas
     state.chordEvents = staggerBigChordAttacks(state.chordEvents); // Armonía: 6+ notas nunca atacan simultáneas
     applyMelody2Follows(); // melody_2follows: Melody n2 copia la melodía principal en ~50% de los compases
@@ -13210,6 +13256,7 @@ function runAnalysis() {
     BLOCKWITHMELODY.apply(); // BlockwithMelody (Harmony)
     BASSBLOCKMELODY.apply(false); // BlockwithMelody (Bass)
     state.chordEvents = TEMPODENSITY.apply(state.chordEvents); // Armonía según el tempo: no más ataques de los tocables
+    SPEEDLIMIT.apply(state); // límite de velocidad de Melody / Bass / Melody n2 / bebop / moreComping según el tempo
     state.chordEvents = WIDERANGE.apply(state.chordEvents); // wide.range (Harmony): acordes largos duplicados en varias octavas, capas escalonadas
     state.chordEvents = staggerBigChordAttacks(state.chordEvents); // Armonía: 6+ notas nunca atacan simultáneas
     DYNAMICS.applyPitched(state); // Dynamics (0% = no-op)
@@ -13654,6 +13701,7 @@ function runAnalysis() {
       state.melodyEvents = melodyEvents;
       state.comping2Events = []; state.bebopEvents = []; state.melody2Events = [];
       state.chordEvents = TEMPODENSITY.apply(state.chordEvents);
+      SPEEDLIMIT.apply(state); // límite de velocidad de Melody / Bass / Melody n2 / bebop / moreComping según el tempo
       state.chordEvents = WIDERANGE.apply(state.chordEvents);
       if(!testH) state.chordEvents = staggerBigChordAttacks(state.chordEvents); // ModeTestHarmony: simultáneo también con más de 5 notas
       DYNAMICS.applyPitched(state);
@@ -15226,6 +15274,7 @@ function runAnalysis() {
       state.comping2Events = []; state.bebopEvents = []; state.melody2Events = [];
       api.lastChordEvents = chordEvents;   // (para pruebas)
       state.chordEvents = TEMPODENSITY.apply(state.chordEvents);
+      SPEEDLIMIT.apply(state); // límite de velocidad de Melody / Bass / Melody n2 / bebop / moreComping según el tempo
       state.chordEvents = WIDERANGE.apply(state.chordEvents);
       DYNAMICS.applyPitched(state);
       RHYTHMSPACE.reset(0);          // batería compartida, sin tramos de respiro ni tresillos (igual que CommonChords)
