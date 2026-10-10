@@ -15966,6 +15966,7 @@ function runAnalysis() {
   // roles: qué carpetas de "Soundfonts v2/" alimentan cada selector (ver sfRoleFor).
   //   drum    -> Extra v2/Drums/            (Batería)
   //   lead    -> Extra v2/LEAD/             (Melodía, Melody N2, Bebop, Doblar melodía)
+  //   (Melodía, Doblar melodía, Melody N2 y Bebop también muestran "harmony": Keys/ + Synth/ + Brass & Strings/ — 2026-10-10)
   //   bass    -> Extra v2/BASS/             (Bajo, Doblar bajo)
   //   harmony -> Extra v2/Keys/ + Synth/ + Brass & Strings/ (Armonía y sus dobles)
   //   loose   -> archivos sueltos en Extra v2/ (melódicos y armónicos)
@@ -15974,10 +15975,10 @@ function runAnalysis() {
   var SF_MELODIC_SELECTS = [
     { id:"harmonyPresetSelect",      mix:"harmony",      roles:["harmony","loose"], special:[] },
     { id:"chordDoublePresetSelect",  mix:"chordDouble",  roles:["harmony","loose"], special:[{ value:"mute", label:"Mute (off)" }] },
-    { id:"melodyPresetSelect",       mix:"melody",       roles:["lead","loose"],    special:[] },
-    { id:"melodyDoublePresetSelect", mix:"melodyDouble", roles:["lead","loose"],    special:[{ value:"mute", label:"Mute (off)" }] },
-    { id:"bebopPresetSelect",        mix:"bebop",        roles:["lead","loose"],    special:[] },
-    { id:"melody2PresetSelect",      mix:"melody2",      roles:["lead","loose"],    special:[] },
+    { id:"melodyPresetSelect",       mix:"melody",       roles:["lead","harmony","loose"],    special:[] },
+    { id:"melodyDoublePresetSelect", mix:"melodyDouble", roles:["lead","harmony","loose"],    special:[{ value:"mute", label:"Mute (off)" }] },
+    { id:"bebopPresetSelect",        mix:"bebop",        roles:["lead","harmony","loose"],    special:[] },
+    { id:"melody2PresetSelect",      mix:"melody2",      roles:["lead","harmony","loose"],    special:[] },
     { id:"comping2PresetSelect",     mix:"comping2",     roles:["harmony","loose"], special:[] },
     { id:"bassPresetSelect",         mix:"bass",         roles:["bass"],            special:[{ value:"synthBass", label:"Original bass (synthesized)" }] },
     { id:"bassDoublePresetSelect",   mix:"bassDouble",   roles:["bass"],            special:[{ value:"mute", label:"Empty (off)" }] },
