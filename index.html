@@ -13794,6 +13794,20 @@ function runAnalysis() {
     // [sección, compases, menor(0/1), rol, ¿cierra con bajo en la tónica? (0/1), acordes]; rol: c = cadencia (termina en I), o = apertura, b = cuerpo (secuencias, marchas, 6ª aumentada…).
     // Cada acorde = [bajo, raíz, sufijo del nombre, notas] en semitonos sobre la tónica. Los retardos que resuelven en notas sueltas (Gsus4 → B) se leen como el acorde de V.
     var MYCAD = {"secs":["Cadencia simple (I-V-I) Mayor","Inversiones horizontal","Inversiones vertical","Cadencia simple (I-V-I) Menor","Cadencia compuesta (I-Vsus-V-I)","Cadencia compuesta menor","Cadencia IV Vsus V V7 I (compuesta)","Cadencia I6 Vsus V V7 I (compuesta)","Cadencia doble ( I - V Vsus6 - Vsus- V- I)","Cadencia doble menor","Functional diminished VIIdim (V) I","I dim (V/V) V","Fenaroli dissonances I IV6 Vsus V I","Cadenze lunghe (Based on Pasquini) I6 IV Vsus V I","Cadenze lunghe (Based on Pasquini) Im6 IVm Vsus V Im","From relative minor to major","Major opening (Pedals) I IIm/I VII°/I I","Variaciones sobre opening mayor","Minor opening","Variaciones sobre opening menor","Haendel opening (Aria HWV7) I IIm Vsus V V7 Isus I","Variaciones sobre opening de Haendel","2 down 1 up diatonic cycle","1 up 2 down","5 down 4 up (cycle of fourths)","5 down 4 up ( holding strong beat bass)","4 DOWN 1 UP con suspenciones","IV V I","Cadencia Plagal","Marches harmoniques","Acorde 6ta aumentada","V/I I Vb° V//V V","Im/V V","Keith Jarrett like Cadence"],"u":[[0,"c1",0,"c",1,[[0,0,"",[0,4,7]],[7,7,"",[2,7,11]],[0,0,"",[0,4,7]]]],[0,"c2",0,"c",1,[[0,0,"",[0,4,7]],[7,7,"",[2,7,11]],[0,0,"5",[0,7]]]],[0,"c4",0,"c",1,[[0,0,"(no5)",[0,4]],[7,7,"",[2,7,11]],[0,0,"(no5)",[0,4]]]],[1,"c6",0,"b",0,[[7,0,"",[0,4,7]],[11,7,"7",[2,5,7,11]],[0,0,"",[0,4,7]],[2,11,"dim",[2,5,11]]]],[1,"c7",0,"b",0,[[4,0,"",[0,4,7]],[5,7,"",[2,5,7,11]],[7,0,"",[0,4,7]],[7,7,"",[2,7,11]]]],[1,"c8",0,"c",1,[[4,0,"",[0,4,7]],[2,7,"7",[2,5,7,11]],[0,0,"",[0,4,7]]]],[2,"c9",0,"b",0,[[7,0,"",[0,4,7]],[7,7,"",[2,7,11]],[0,0,"(no5)",[0,4]],[11,7,"",[2,7,11]]]],[2,"c10",0,"b",0,[[0,0,"",[0,4,7]],[2,7,"7",[2,5,7,11]],[4,0,"",[0,4,7]],[5,7,"",[2,5,7,11]]]],[2,"c11",0,"b",0,[[7,0,"",[0,4,7]],[11,7,"7",[2,5,7,11]],[0,0,"",[0,4,7]],[2,7,"",[2,7,11]]]],[2,"c12",0,"c",1,[[4,0,"",[0,4,7]],[7,7,"",[2,7,11]],[0,0,"",[0,4,7]]]],[3,"c13",1,"c",1,[[0,0,"m",[0,3,7]],[7,7,"",[2,7,11]],[0,0,"m(no5)",[0,3]]]],[3,"c14",1,"c",1,[[0,0,"m",[0,3,7]],[7,7,"7",[2,5,7,11]],[0,0,"5",[0,7]]]],[3,"c15",1,"c",1,[[0,0,"m",[0,3,7]],[7,7,"",[2,7,11]],[0,0,"m",[0,3,7]]]],[1,"c17",1,"b",0,[[7,0,"m",[0,3,7]],[11,7,"7",[2,5,7,11]],[0,0,"m",[0,3,7]],[2,11,"dim",[2,5,11]]]],[1,"c18",1,"b",0,[[3,0,"m",[0,3,7]],[5,7,"",[2,5,7,11]],[7,0,"m",[0,3,7]],[7,7,"",[2,7,11]]]],[1,"c19",1,"c",1,[[3,0,"m",[0,3,7]],[2,7,"7",[2,5,7,11]],[0,0,"m",[0,3,7]]]],[2,"c20",1,"c",0,[[7,7,"",[2,7,11]],[0,0,"m",[0,3,7]],[2,7,"7",[2,5,7,11]],[3,0,"m",[0,3,7]]]],[2,"c21",1,"c",1,[[5,7,"",[2,5,7,11]],[7,0,"m",[0,3,7]],[11,7,"7",[2,5,7,11]],[0,0,"m",[0,3,7]]]],[2,"c22",1,"c",1,[[2,7,"7",[2,5,7,11]],[3,0,"m",[0,3,7]],[7,7,"",[2,7,11]],[0,0,"m(no5)",[0,3]]]],[4,"c23",0,"c",1,[[0,0,"",[0,4,7]],[7,7,"sus4",[0,2,7]],[7,7,"",[2,7,11]],[0,0,"",[0,4,7]]]],[4,"c24",0,"c",1,[[0,0,"(no5)",[0,4]],[7,7,"add11(no5)",[0,7]],[7,7,"",[2,7,11]],[0,0,"(no5)",[0,4]]]],[4,"c25",0,"c",1,[[0,0,"",[0,4,7]],[7,0,"",[0,4,7]],[7,7,"",[2,7,11]],[0,0,"",[0,4,7]]]],[4,"c26",0,"c",1,[[0,0,"",[0,4,7]],[7,7,"add11(no5)",[0,7]],[7,7,"",[2,7,11]],[0,0,"",[0,4,7]]]],[4,"c28",0,"c",1,[[0,0,"",[0,4,7]],[7,2,"m7",[0,2,5,7]],[7,7,"",[2,7,11]],[0,0,"",[0,4,7]]]],[5,"c30",1,"c",1,[[0,0,"m",[0,3,7]],[7,7,"sus4",[0,2,7]],[7,7,"",[2,7,11]],[0,0,"m(no5)",[0,3]]]],[5,"c32",1,"c",1,[[0,0,"m",[0,3,7]],[7,7,"add11(no5)",[0,7]],[7,7,"",[2,7,11]],[0,0,"5",[0,7]]]],[5,"c33",1,"c",1,[[0,0,"m",[0,3,7]],[7,7,"add11(no5)",[0,7]],[7,7,"",[2,7,11]],[0,0,"m(no5)",[0,3]]]],[5,"c34",1,"c",1,[[0,0,"m",[0,3,7]],[7,2,"m7",[0,2,5,7]],[7,7,"",[2,7,11]],[0,0,"m",[0,3,7]]]],[5,"c35",1,"c",1,[[0,0,"m",[0,3,7]],[7,0,"m",[0,3,7]],[7,7,"",[2,7,11]],[0,0,"m",[0,3,7]]]],[6,"c37",0,"c",1,[[5,5,"",[0,5,9]],[7,7,"sus4",[0,2,7]],[7,7,"",[2,7,11]],[7,7,"7",[2,5,7,11]],[0,0,"",[0,4,7]]]],[6,"c38",0,"c",1,[[5,5,"(no5)",[5,9]],[7,7,"sus4",[0,2,7]],[7,7,"",[2,7,11]],[7,7,"7",[2,5,7,11]],[0,0,"",[0,4,7]]]],[6,"c39",1,"c",1,[[5,5,"m",[0,5,8]],[7,7,"sus4",[0,2,7]],[7,7,"",[2,7,11]],[7,7,"7",[2,5,7,11]],[0,0,"m(no5)",[0,3]]]],[6,"c40",1,"c",1,[[5,5,"m(no5)",[5,8]],[7,7,"sus4",[0,2,7]],[7,7,"",[2,7,11]],[7,7,"7",[2,5,7,11]],[0,0,"m",[0,3,7]]]],[7,"c41",0,"c",1,[[4,0,"",[0,4,7]],[7,7,"sus4",[0,2,7]],[7,7,"",[2,7,11]],[7,7,"7",[2,5,7,11]],[0,0,"",[0,4,7]]]],[7,"c43",1,"c",1,[[3,0,"m",[0,3,7]],[7,7,"sus4",[0,2,7]],[7,7,"",[2,7,11]],[7,7,"7",[2,5,7,11]],[0,0,"m",[0,3,7]]]],[8,"c45",0,"c",1,[[0,0,"",[0,4,7]],[7,7,"",[2,7,11]],[7,0,"",[0,4,7]],[7,7,"sus4",[0,2,7]],[7,7,"",[2,7,11]],[0,0,"",[0,4,7]]]],[8,"c48",0,"c",1,[[0,0,"",[0,4,7]],[7,7,"",[2,7,11]],[7,0,"",[0,4,7]],[7,7,"7sus4",[0,5,7]],[7,7,"7",[5,7,11]],[0,0,"",[0,4,7]]]],[9,"c49",1,"c",1,[[0,0,"m(no5)",[0,3]],[7,7,"",[2,7,11]],[7,0,"m",[0,3,7]],[7,7,"sus4",[0,2,7]],[7,7,"",[2,7,11]],[0,0,"m(no5)",[0,3]]]],[9,"c50",1,"c",1,[[0,0,"m",[0,3,7]],[7,7,"",[2,7,11]],[7,0,"m",[0,3,7]],[7,7,"sus4",[0,2,7]],[7,7,"",[2,7,11]],[0,0,"m",[0,3,7]]]],[9,"c52",1,"c",1,[[0,0,"m",[0,3,7]],[7,7,"",[2,7,11]],[7,0,"m",[0,3,7]],[7,7,"7sus4",[0,5,7]],[7,7,"7",[5,7,11]],[0,0,"m",[0,3,7]]]],[10,"c53",0,"c",1,[[0,11,"dim",[0,2,5,11]],[0,0,"",[0,4,7]]]],[10,"c55",1,"c",1,[[0,11,"dim",[0,2,5,11]],[0,0,"m",[0,3,7]]]],[11,"c57",0,"b",0,[[0,0,"dim",[0,3,6]],[7,7,"",[2,7,11]]]],[12,"c58",0,"c",1,[[0,0,"",[0,4,7]],[9,5,"",[0,5,9]],[7,2,"m7",[0,2,5,7]],[7,7,"",[2,7,11]],[0,0,"",[0,4,7]]]],[12,"c60",0,"c",1,[[0,0,"",[0,4,7]],[9,5,"",[0,5,9]],[7,7,"sus4",[0,2,7]],[7,7,"",[2,7,11]],[0,0,"",[0,4,7]]]],[12,"c61",1,"c",1,[[0,0,"m",[0,3,7]],[8,8,"6",[0,3,5,8]],[7,2,"m7",[0,2,5,7]],[7,7,"",[2,7,11]],[0,0,"m(no5)",[0,3]]]],[12,"c62",1,"c",1,[[0,0,"m",[0,3,7]],[8,5,"m",[0,5,8]],[7,7,"sus4",[0,2,7]],[7,7,"",[2,7,11]],[0,0,"m",[0,3,7]]]],[13,"c63-64",0,"c",1,[[4,0,"",[0,4,7]],[5,5,"6",[0,2,5,9]],[7,7,"sus4",[0,2,7]],[7,7,"",[2,7,11]],[0,0,"",[0,4,7]]]],[13,"c65-66",0,"c",1,[[4,0,"",[0,4,7]],[5,5,"6",[0,2,5,9]],[7,2,"m7",[0,2,5,7]],[7,7,"7",[2,5,7,11]],[0,0,"",[0,4,7]]]],[14,"c67-68",1,"c",1,[[3,0,"m",[0,3,7]],[5,5,"m6",[0,2,5,8]],[7,7,"sus4",[0,2,7]],[7,7,"",[2,7,11]],[0,0,"m(no5)",[0,3]]]],[14,"c69-70",1,"c",1,[[3,0,"m",[0,3,7]],[5,5,"m6",[0,2,5,8]],[7,2,"m7",[0,2,5,7]],[7,7,"7",[2,5,7,11]],[0,0,"m",[0,3,7]]]],[15,"c71-72",0,"c",1,[[9,9,"m",[0,4,9]],[5,5,"6",[0,2,5,9]],[7,7,"sus4",[0,2,7]],[7,7,"",[2,7,11]],[0,0,"",[0,4,7]]]],[15,"c73-74",0,"c",1,[[9,9,"m",[0,4,9]],[5,5,"6",[0,2,5,9]],[7,7,"sus4",[0,2,7]],[7,7,"",[2,7,11]],[0,0,"5",[0,7]]]],[16,"c75",0,"o",0,[[0,0,"",[0,4,7]],[0,5,"6",[0,2,5,9]],[11,7,"7",[2,5,7,11]],[0,0,"",[0,4,7]]]],[17,"c77",0,"o",0,[[4,4,"m7(#5)",[0,2,4,7]],[4,0,"",[0,4,7]]]],[17,"c78",0,"o",0,[[0,5,"6",[0,2,5,9]],[11,7,"7",[2,5,7,11]]]],[17,"c79",0,"o",0,[[9,9,"m7",[0,4,7,9]],[5,2,"m",[2,5,9]],[7,2,"madd11(no5)",[2,5,7]]]],[17,"c80",0,"o",0,[[0,0,"sus4add9",[0,2,5,7]],[0,0,"(no5)",[0,4]]]],[17,"c81",0,"o",0,[[0,0,"7M",[0,4,11]],[0,4,"m7",[0,2,4,7]],[0,5,"7M",[0,5,9]]]],[17,"c82",0,"o",0,[[11,7,"7",[2,5,7,11]],[0,7,"7sus4",[0,2,5,7]],[0,0,"",[0,4,7]]]],[17,"c83",0,"o",0,[[0,0,"add11",[0,4,7]],[0,2,"m7",[0,2,5]],[0,5,"add9",[0,5,7,9]],[0,4,"7",[0,2,4,8]]]],[17,"c84",0,"o",0,[[0,11,"dim",[0,2,5,11]],[0,2,"Ø",[0,2,5,8]],[0,7,"7sus4",[0,2,5,7]],[0,0,"",[0,2,4,7]]]],[17,"c85",0,"o",0,[[0,0,"6",[0,4,7,9]],[0,0,"7M",[0,4,11]],[0,5,"7M",[0,4,5,9]],[0,2,"m7",[0,2,5]]]],[17,"c86",0,"o",0,[[0,11,"dim",[0,2,5,11]],[0,0,"aug",[0,4,8]],[0,0,"sus4",[0,5,7]],[0,0,"",[0,4,7]]]],[18,"c87",1,"o",0,[[0,0,"m",[0,3,7]],[0,2,"Ø",[0,2,5,8]],[11,7,"7",[2,5,7,11]],[0,0,"m",[0,3,7]]]],[18,"c88",1,"o",0,[[0,0,"m",[0,3,7]],[0,5,"m",[0,5,8]],[0,11,"dim",[0,2,5,11]],[0,0,"m",[0,3,7]]]],[19,"c91",1,"o",0,[[0,0,"sus2",[0,2,7]],[0,0,"madd11",[0,3,5,7]]]],[19,"c92",1,"o",0,[[0,2,"Ø",[0,2,5,8]],[0,11,"dim",[0,2,5,11]],[11,7,"7",[2,5,7,11]]]],[19,"c93",1,"o",0,[[0,0,"sus4add9",[0,2,5,7]],[0,0,"m",[0,3,7]]]],[19,"c94",1,"o",0,[[0,0,"sus4add9",[0,2,5,7]],[0,0,"m",[0,3,7]],[0,8,"6",[0,3,5,8]],[0,2,"Ø",[0,2,5,8]]]],[19,"c95",1,"o",0,[[11,11,"dim7",[2,5,8,11]],[11,7,"7",[2,5,7,11]],[0,7,"7sus4",[0,2,5,7]],[0,0,"m",[0,3,7]]]],[19,"c96",1,"o",0,[[0,0,"sus2",[0,2,7]],[0,0,"m(no5)",[0,3]],[0,8,"6",[0,3,8]],[0,5,"m",[0,5,8]]]],[19,"c97",1,"o",0,[[0,11,"dim",[0,2,5,11]],[0,7,"7sus4",[0,2,5,7]],[0,0,"madd11",[0,3,5,7]]]],[19,"c98",1,"o",0,[[0,0,"m",[0,3,7]],[0,8,"6",[0,3,5,8]],[0,5,"m",[0,5,8]],[0,8,"(b5)",[0,2,8]],[0,7,"",[0,5,7,11]],[0,11,"dim",[0,2,5,11]],[0,0,"m",[0,3,7]]]],[20,"c99-101",0,"o",0,[[0,0,"",[0,4,7]],[2,2,"m7",[0,2,5]],[7,2,"m7",[0,2,5,7]],[7,7,"(no5)",[5,7,11]],[7,7,"7",[2,5,7,11]],[0,0,"sus4",[0,5,7]],[0,0,"",[0,4,7]]]],[20,"c102-104",0,"o",0,[[0,0,"",[0,4,7]],[2,2,"m7",[0,2,5,9]],[7,7,"sus4",[0,2,7]],[0,0,"sus4",[0,5,7]],[0,0,"",[0,4,7]]]],[21,"c105-108",0,"o",0,[[0,0,"add11",[0,4,5,7]],[0,0,"add9",[0,2,7]],[2,2,"madd11",[2,5,7,9]],[2,2,"m",[2,5]],[7,2,"m7",[0,2,5,7]],[7,7,"",[2,7,11]],[0,0,"sus4",[0,5,7]],[0,0,"add9",[0,2,4,7]]]],[21,"c109-112",0,"o",0,[[0,0,"7M",[0,4,11]],[0,0,"",[0,4,7]],[2,9,"7sus4",[2,4,7,9]],[2,2,"m",[2,5,9]],[7,7,"sus4",[0,2,7]],[7,2,"m7",[0,2,5,7]],[0,0,"sus4",[0,5,7]],[0,0,"",[0,4,7]]]],[22,"c113-123",0,"b",0,[[0,0,"",[0,4,7]],[9,9,"m",[0,4,9]],[11,7,"",[2,7,11]],[7,7,"",[2,7,11]],[9,9,"m",[0,4,9]],[5,5,"",[0,5,9]],[7,7,"",[2,7,11]],[4,4,"m",[4,7,11]],[5,5,"",[0,5,9]],[2,2,"m",[2,5,9]],[4,4,"m",[4,7,11]],[0,0,"",[0,4,7]],[2,2,"m",[2,5,9]],[11,11,"m(no5)",[2,11]],[0,0,"",[0,4,7]],[9,9,"m7",[0,4,7,9]],[11,7,"7",[2,5,7,11]],[7,7,"5",[2,7]],[9,9,"m",[0,4,9]],[5,5,"6",[0,2,5,9]],[7,7,"sus4",[0,2,7]],[7,7,"",[2,7,11]],[4,0,"",[0,4,7]]]],[23,"c124-127",0,"b",0,[[11,7,"7",[2,5,7,11]],[0,0,"",[0,4,7]],[9,5,"7M9",[4,5,7,9]],[11,7,"",[2,7,11]],[7,4,"m",[4,7,11]],[9,9,"m",[0,4,9]],[5,2,"m",[2,5,9]],[7,7,"",[2,7,11]],[4,0,"",[0,4,7]],[5,5,"(no5)",[5,9]],[2,11,"dim",[2,5,11]],[4,4,"m",[4,7,11]],[0,9,"m",[0,4,9]],[2,2,"m",[2,5,9]],[11,7,"7",[2,5,7,11]],[0,0,"",[0,4,7]]]],[24,"c128-131",0,"b",0,[[9,9,"m",[0,4,9]],[2,5,"",[0,2,5,9]],[7,7,"7",[5,7,11]],[0,0,"",[0,4,7]],[5,5,"7M",[0,4,5,9]],[11,11,"Ø",[2,5,9,11]],[4,4,"m7",[2,4,7]],[4,4,"7",[2,4,8,11]],[9,9,"m",[0,4,9]]]],[25,"c132-135",0,"b",0,[[9,9,"m",[0,4,9]],[9,5,"",[0,5,9]],[7,7,"7",[5,7,11]],[7,0,"",[0,4,7]],[5,5,"7M",[0,4,5,9]],[5,2,"m",[2,5,9]],[4,4,"m7",[2,4,7]],[4,4,"7",[2,4,8,11]],[4,9,"m",[0,4,9]]]],[25,"c136-141",0,"b",0,[[0,0,"",[0,4,7]],[5,5,"7M",[0,4,5,9]],[11,7,"add9",[2,7,9,11]],[4,7,"",[2,4,7,11]],[9,9,"m",[0,4,9]],[2,5,"",[0,2,5,9]],[7,7,"7",[5,7,11]],[0,0,"7M",[0,4,7,11]],[5,5,"",[0,5,9]],[11,11,"Ø",[2,5,9,11]],[4,4,"7",[2,4,8,11]],[9,9,"m",[0,4,9]]]],[26,"c142-144",0,"b",0,[[0,0,"",[0,4,7]],[7,7,"sus4",[0,2,7]],[9,0,"7M",[0,4,9,11]],[4,4,"sus4",[4,9,11]],[5,7,"7sus2",[5,7,9]],[0,0,"sus4",[0,5,7]],[2,2,"sus4",[2,7,9]],[9,9,"sus4",[2,4,9]],[11,7,"sus4",[0,2,7,11]],[5,7,"",[2,5,7,11]],[0,5,"",[0,5,9]]]],[27,"c145",0,"c",1,[[5,2,"dim",[2,5,8]],[7,0,"5",[0,7]],[0,0,"5",[0,7]]]],[27,"c147",0,"c",1,[[5,2,"m",[2,5,9]],[7,0,"",[0,4,7]],[0,0,"(no5)",[0,4]]]],[27,"c148",0,"c",1,[[5,2,"m",[2,5,9]],[7,0,"5",[0,7]],[0,0,"",[0,4,7]]]],[28,"c149",0,"b",0,[[5,5,"",[0,5,9]],[7,0,"",[0,4,7]],[7,7,"",[2,7,11]],[9,0,"7M",[0,4,9,11]]]],[28,"c150",0,"b",0,[[5,5,"",[0,5,9]],[7,0,"",[0,4,7]],[7,7,"",[2,7,11]],[9,9,"m",[0,4,9]]]],[28,"c151",0,"b",0,[[5,2,"m",[2,5,9]],[7,0,"",[0,4,7]],[7,7,"",[2,7,11]],[9,0,"7M",[0,4,9,11]]]],[28,"c152",0,"b",0,[[5,2,"m",[2,5,9]],[7,0,"",[0,4,7]],[7,7,"",[2,7,11]],[9,9,"m",[0,4,9]]]],[29,"c153",0,"b",0,[[4,0,"",[0,4,7]],[2,7,"",[2,7,11]],[0,0,"",[0,4,7]],[2,7,"",[2,7,11]]]],[29,"c155",0,"b",0,[[4,0,"",[0,4,7]],[2,11,"dim",[2,5,11]],[0,0,"",[0,4,7]],[2,11,"dim",[2,5,11]]]],[29,"c156",1,"b",0,[[3,0,"m",[0,3,7]],[2,7,"",[2,7,11]],[0,0,"m",[0,3,7]],[2,7,"",[2,7,11]]]],[29,"c157",1,"b",0,[[3,0,"m",[0,3,7]],[2,11,"dim",[2,5,11]],[0,0,"m(no5)",[0,3]],[2,11,"dim",[2,5,11]]]],[29,"c158",1,"b",0,[[3,0,"m",[0,3,7]],[2,11,"dim",[2,5,11]],[0,0,"m",[0,3,7]],[2,11,"dim",[2,5,11]]]],[30,"c159",0,"b",0,[[7,6,"dim",[0,6,7,9]],[7,7,"(no5)",[7,11]]]],[30,"c160",0,"b",0,[[7,6,"dim",[0,6,7,9]],[7,7,"",[2,7,11]]]],[30,"c161",0,"b",0,[[8,8,"7",[0,6,8]],[7,7,"7Msus4",[0,6,7]],[7,7,"(no5)",[7,11]]]],[31,"c165-166",0,"b",0,[[0,0,"7Msus2",[0,2,11]],[0,0,"m(no5)",[0,3]],[6,6,"dim7",[0,3,6,9]],[6,2,"7",[0,2,6,9]],[7,7,"sus4",[0,2,7]],[7,7,"",[2,7,11]]]],[32,"c169",1,"b",0,[[7,0,"m",[0,3,7]],[7,7,"sus4",[0,2,7]],[7,7,"",[2,7,11]]]],[32,"c170",1,"b",0,[[7,0,"m",[0,3,7]],[7,5,"7sus2",[0,3,5,7]],[7,7,"7",[5,7,11]]]],[33,"c171",0,"b",0,[[9,4,"7sus4",[2,4,9,11]],[9,9,"m",[0,4,9]],[7,2,"7sus4",[0,2,7,9]],[7,7,"add9",[2,7,9,11]],[7,7,"",[2,7,11]]]],[33,"c172",1,"b",0,[[8,8,"sus2",[2,3,8,10]],[8,8,"",[0,3,8]],[6,2,"7",[0,2,6,9]],[7,7,"sus4add9",[0,2,7,9]],[7,7,"",[2,7,11]]]]]};
+    // ---- Ciclos diatónicos: tu biblioteca de My_Diatonic_cycles_v1.gp (84 compases, "Ciclos diatonicos"). Mismo formato que MYCAD, todo en MAYOR y ya transportado a tónica 0:
+    // [sección, compases, menor(0), rol('b'), 0, acordes[bajo, raíz, sufijo, notas]]. Solo se usan los acordes (el ritmo y el voicing del .gp se ignoran).
+    var CYC = {"secs":["5 down 4 up (5th down 4th up - ciclo de cuartas)","2 down 1 up (3rd down 2nd up)","1 up 2 down (2nd up 3rd down)","5 down 4 up (ciclo de cuartas con el bajo en tiempo fuerte)","4 down 1 up (4th down 2nd up)"],"u":[[0,"c1-4",0,"b",0,[[9,9,"m",[0,4,9]],[2,2,"m7",[0,2,5,9]],[7,7,"7(no5)",[5,7,11]],[0,0,"",[0,4,7]],[5,5,"maj7",[0,4,5,9]],[11,11,"m7b5",[2,5,9,11]],[4,4,"m7(no5)",[2,4,7]],[9,9,"m",[0,4,9]]]],[0,"c5-8",0,"b",0,[[9,9,"m+9",[0,4,9,11]],[2,2,"m6",[2,5,9,11]],[7,0,"",[0,4,7]],[7,7,"7(no5)",[5,7,11]],[0,7,"7sus4",[0,2,5,7]],[0,0,"",[0,4,7]],[5,5,"maj7",[0,4,5,9]],[11,4,"sus4+b9",[4,5,9,11]],[5,2,"m6",[2,5,9,11]],[4,4,"m7(no5)",[2,4,7]],[9,9,"m",[0,4,9]]]],[0,"c9-12",0,"b",0,[[0,0,"",[0,4,7]],[5,5,"",[0,5,9]],[11,11,"m7b5",[2,5,9,11]],[4,4,"m7(no5)",[2,4,7]],[9,9,"m",[0,4,9]],[2,2,"m",[2,5,9]],[7,7,"",[2,7,11]],[0,0,"",[0,4,7]]]],[0,"c13-18",0,"b",0,[[0,0,"",[0,4,7]],[5,0,"+11",[0,4,5,7]],[5,11,"m7b5",[2,5,9,11]],[4,4,"m7(no5)",[2,4,7]],[9,9,"m+11",[0,2,4,9]],[2,2,"m",[2,5,9]],[7,0,"sus4",[0,5,7]],[0,5,"",[0,5,9]],[0,0,"",[0,4,7]]]],[1,"c19-22",0,"b",0,[[0,0,"",[0,4,7]],[9,9,"m",[0,4,9]],[11,11,"dim",[2,5,11]],[7,7,"",[2,7,11]],[9,9,"m",[0,4,9]],[5,5,"",[0,5,9]],[7,7,"",[2,7,11]],[4,4,"m",[4,7,11]]]],[1,"c23-26",0,"b",0,[[5,5,"",[0,5,9]],[2,2,"m",[2,5,9]],[4,4,"m",[4,7,11]],[0,0,"",[0,4,7]],[2,2,"m",[2,5,9]],[11,11,"dim",[2,5,11]],[0,0,"",[0,4,7]],[9,9,"m7",[0,4,7,9]]]],[1,"c27-29",0,"b",0,[[11,7,"7",[2,5,7,11]],[7,7,"",[2,7,11]],[9,9,"m",[0,4,9]],[5,5,"6",[0,2,5,9]],[7,7,"sus4",[0,2,7]],[4,4,"m",[4,7,11]]]],[2,"c30-33",0,"b",0,[[0,0,"",[0,4,7]],[2,7,"7",[2,5,7,11]],[11,7,"7",[2,5,7,11]],[0,0,"",[0,4,7]],[9,9,"m7+b13",[0,5,7,9]],[11,7,"",[2,7,11]],[7,4,"m",[4,7,11]],[9,9,"m",[0,4,9]]]],[2,"c34-38",0,"b",0,[[5,2,"m",[2,5,9]],[7,7,"",[2,7,11]],[4,0,"",[0,4,7]],[5,5,"",[0,5,9]],[7,7,"7",[2,5,7,11]],[4,0,"",[0,4,7]],[0,9,"m",[0,4,9]],[2,2,"m",[2,5,9]],[11,7,"7",[2,5,7,11]],[0,0,"",[0,4,7]]]],[3,"c40-43",0,"b",0,[[9,9,"m",[0,4,9]],[9,5,"",[0,5,9]],[7,7,"7(no5)",[5,7,11]],[7,0,"",[0,4,7]],[5,5,"maj7",[0,4,5,9]],[5,2,"m",[2,5,9]],[4,4,"m7(no5)",[2,4,7]],[4,9,"m",[0,4,9]]]],[3,"c44-49",0,"b",0,[[0,0,"",[0,4,7]],[0,9,"m",[0,4,9]],[11,11,"m7(no5)+b13",[2,7,9,11]],[11,7,"",[2,7,11]],[9,9,"m",[0,4,9]],[9,5,"",[0,5,9]],[7,7,"7(no5)",[5,7,11]],[7,4,"m",[4,7,11]],[5,5,"",[0,5,9]],[5,5,"(no5)+#11",[5,9,11]],[4,4,"7",[2,4,8,11]],[4,9,"m",[0,4,9]]]],[4,"c50-56",0,"b",0,[[0,0,"",[0,4,7]],[7,7,"",[2,7,11]],[9,9,"m+9",[0,4,9,11]],[4,4,"m",[4,7,11]],[5,2,"m",[2,5,9]],[0,0,"",[0,4,7]],[2,2,"m",[2,5,9]],[9,9,"m",[0,4,9]],[11,7,"",[2,7,11]],[5,2,"m",[2,5,9]],[7,7,"",[2,7,11]],[0,0,"",[0,4,7]]]]]};
+    function cycPool(maxLen, onI){
+      return CYC.u.filter(function(u){ return u[5].length <= maxLen && (!onI || (u[5][0][1] === 0 && u[5][0][0] === 0)); });
+    }
+    function cycCell(u){
+      var title = "Ciclo: " + CYC.secs[u[0]], note = CYC.secs[u[0]] + " (" + u[1] + ")";
+      return u[5].map(function(c){
+        var e = exItem([c[1], c[2], c[3]], c[0], null, "", false);
+        e.figText = "Ciclo"; e.rofo = 0; e.my = 1; e.cyc = 1; e.cell = "cyc"; e.cellTitle = title; e.myText = note;
+        return e;
+      });
+    }
     function myPool(role, minor, maxLen, finalOnly){
       return MYCAD.u.filter(function(u){ return u[3] === role && (u[2] === 1) === !!minor && u[5].length <= maxLen && (!finalOnly || u[4]); });
     }
@@ -13878,7 +13892,7 @@ function runAnalysis() {
     };
     var CELL_NAME = {}, CELL_LONG = {};
     Object.keys(CELLS).forEach(function(k){ CELL_NAME[k] = CELLS[k].name; CELL_LONG[k] = CELLS[k].long; });
-    CELL_NAME.my = "MyCadences"; CELL_LONG.my = "MyCadences (tu biblioteca)";   // "my" no está en CELLS: no se sortea como celda genérica
+    CELL_NAME.my = "MyCadences"; CELL_LONG.my = "MyCadences (tu biblioteca)"; CELL_NAME.cyc = "Ciclo"; CELL_LONG.cyc = "Ciclos diatónicos (tu biblioteca)";   // "my" no está en CELLS: no se sortea como celda genérica
 
     // Movimientos de tempo (BPM aproximados; Wikipedia "Tempo", marcados como "very rough approximations"). El slider del motor va de 25 a 200.
     var TEMPOS = [
@@ -14318,6 +14332,8 @@ function runAnalysis() {
       // MyCadences (opts.mycad = { on, p (0–1) }): con probabilidad p, una celda es de tu biblioteca: la cadencia final y las del medio salen de tus cadencias,
       // la primera celda de tus aperturas y el resto de tus secuencias/marchas. Mayor o menor según la canción (menor: solo con RofO Menor).
       var my = (opts.mycad && opts.mycad.on) ? { p: Math.max(0, Math.min(1, opts.mycad.p == null ? 0.5 : opts.mycad.p)) } : null;
+      // Ciclos diatónicos (opts.cyc = { on, p (0–1) }): con probabilidad p, una celda del CUERPO es un ciclo de tu biblioteca (solo en mayor; la primera celda solo si empieza en I).
+      var cyc = (opts.cyc && opts.cyc.on) ? { p: Math.max(0, Math.min(1, opts.cyc.p == null ? 0.5 : opts.cyc.p)) } : null;
       var isMin = (mode === "minor");
       if(CTP) CTP.minor = isMin;
       function myPick(role, maxLen, finalOnly){ var pl = myPool(role, isMin, maxLen, finalOnly); return pl.length ? pl[rnd(pl.length)] : null; }
@@ -14340,10 +14356,10 @@ function runAnalysis() {
         if(!rest.length) rest = Object.keys(CELLS).filter(function(t){ return CELLS[t].group === "base" && (!rofo || t === "up" || t === "down"); });
         return rest.length ? rest : allowed;
       }
-      var stats = { fbParallel: 0, fbLT: 0, fbCover: 0, fbSop: 0, cells: [], rofoSteps: 0, rofoVar: 0, myCells: 0 };
+      var stats = { fbParallel: 0, fbLT: 0, fbCover: 0, fbSop: 0, cells: [], rofoSteps: 0, rofoVar: 0, myCells: 0, cycCells: 0 };
       var finalType, finalLen, finalMy, items, bodyN, lastType, guard, fin, lastIt, attempt = 0;
       do {                                                      // con MyCadences, si la unión se comió acordes y la canción queda más corta que N, se rearma (hasta 8 veces)
-        stats.cells = []; stats.myCells = 0; attempt++;
+        stats.cells = []; stats.myCells = 0; stats.cycCells = 0; attempt++;
         finalType = pickFinal(allowed, N); finalLen = CELLS[finalType].len; finalMy = null;
         if(my && Math.random() < my.p){ finalMy = myPick("c", N, true); if(finalMy){ finalType = "my"; finalLen = finalMy[5].length; } }
         items = []; bodyN = Math.max(0, N - finalLen); lastType = null; guard = 0;
@@ -14352,6 +14368,10 @@ function runAnalysis() {
           if(my && Math.random() < my.p){
             var mu = myPick(items.length === 0 ? "o" : (CELLS[type].cad ? "c" : "b"), bodyN - items.length, false);
             if(mu){ cell = myCell(mu); type = "my"; stats.myCells++; }
+          }
+          if(!cell && cyc && !isMin && Math.random() < cyc.p){
+            var cp = cycPool(bodyN - items.length, items.length === 0);
+            if(cp.length){ cell = cycCell(cp[rnd(cp.length)]); type = "cyc"; stats.cycCells++; }
           }
           appendCell(items, cell || makeCell(type, ctx), key, base);
           stats.cells.push(type); lastType = type;
@@ -14363,7 +14383,7 @@ function runAnalysis() {
         if(lastIt && lastIt.deg === 4 && fin[0].deg === 4 && (fin[0].fig === "7" || fin[0].fig === "5/3") && fin[0].fig === lastIt.fig) fin[0].fig = fin[0].fig === "7" ? "5/3" : "7";
         appendCell(items, fin, key, base);
         stats.cells.push(finalType);
-      } while(my && items.length < N && attempt < 8);
+      } while((my || cyc) && items.length < N && attempt < 8);
       if(items.length > N) items.splice(0, items.length - N);        // N muy chico: queda solo el final
       items.forEach(function(it){
         if(rofo && (it.cell === "up" || it.cell === "down")){ stats.rofoSteps++; if(it.rofo === 2) stats.rofoVar++; }
@@ -14393,7 +14413,7 @@ function runAnalysis() {
           var v = voiceChord(it, prev, { key: key }, i === items.length - 1, tmp, items[i + 1] || null, i + 1 === items.length - 1);
           var ch = { bass: it.bass, t: v.t, a: v.a, s: v.s, tones: it.tones, sev: it.sev, root: it.root, label: it.label, fig: it.fig, deg: it.deg,
                      cell: it.cell, cellStart: it.cellStart, step: it.step, rootPc: it.rootPc, sus: it.sus, hold: !!(it.hold && prev) };
-          ch.cat = (it.myText ? "MyCadences · " + it.myText : CELL_LONG[it.cell]) + (it.step ? " · " + it.step : "") + " · " + (it.figText || it.fig);
+          ch.cat = (it.myText ? (it.cyc ? "Ciclos diatónicos · " : "MyCadences · ") + it.myText : CELL_LONG[it.cell]) + (it.step ? " · " + it.step : "") + " · " + (it.figText || it.fig);
           ch.cellTitle = it.cellTitle || null;
           if(CTP) ctpAnnotate(ch, prev);
           chords.push(ch); prev = ch;
@@ -14403,7 +14423,7 @@ function runAnalysis() {
         if(!fbn) break;
       }
       chords = bestChords;
-      return { key: key, base: base, chords: chords, stats: stats, cellName: CELL_NAME, finalType: finalType, mode: mode, rofo: !!rofo, mycad: !!my,
+      return { key: key, base: base, chords: chords, stats: stats, cellName: CELL_NAME, finalType: finalType, mode: mode, rofo: !!rofo, mycad: !!my, cyc: !!cyc,
                ctp: CTP, audit: CTP ? ctpAudit(chords, key, isMin, ctpRules) : null };
     }
 
@@ -14752,7 +14772,7 @@ function runAnalysis() {
 
     function ornFor(bpm){ return bpm < 66 ? 1.4 : (bpm < 108 ? 1 : (bpm < 156 ? 0.8 : 0.5)); }
 
-    return { compose: compose, melody: melody, mmFix: mmFix, diminish: diminish, innerMovement: innerMovement, DIM_FIGS: DIM_FIGS, analyze: analyze, FIG: FIG, RO_UP: RO_UP, RO_DOWN: RO_DOWN, MAJ: MAJ, ROFO: ROFO, MYCAD: MYCAD, MIN_UP: MIN_UP, MIN_DOWN: MIN_DOWN, hasParallel: hasParallel,
+    return { compose: compose, melody: melody, mmFix: mmFix, diminish: diminish, innerMovement: innerMovement, DIM_FIGS: DIM_FIGS, analyze: analyze, FIG: FIG, RO_UP: RO_UP, RO_DOWN: RO_DOWN, MAJ: MAJ, ROFO: ROFO, MYCAD: MYCAD, CYC: CYC, MIN_UP: MIN_UP, MIN_DOWN: MIN_DOWN, hasParallel: hasParallel,
              CELL_NAME: CELL_NAME, CELL_LONG: CELL_LONG, CELLS: CELLS, TEMPOS: TEMPOS, ornFor: ornFor, LOW: LOW, HIGH: HIGH, RT: RT, RA: RA, RS: RS,
              melodyCT: melodyCT, ctpAudit: ctpAudit, CTP_RULES: CTP_RULES, ctpLeapOK: ctpLeapOK, ctpDirOK: ctpDirOK };
   })();
@@ -14998,6 +15018,20 @@ function runAnalysis() {
       mr.addEventListener("input", function(){ mv.textContent = mr.value + "%"; });
       ml.appendChild(document.createTextNode("tuyas ")); ml.appendChild(mr); ml.appendChild(mv); mw.appendChild(ml);
       mb.appendChild(mw); b.appendChild(mb);
+      // Ciclos diatónicos: tu biblioteca de My_Diatonic_cycles_v1.gp. Tildado: con probabilidad p cada celda del cuerpo es un ciclo tuyo (solo canciones en mayor).
+      var cb = mk("div", "padding:2px 0 6px;");
+      var ch0 = mk("div", "font-size:12px;font-weight:700;color:var(--ink-muted);margin-bottom:2px;", "Ciclos diatónicos");
+      ch0.title = "Ciclos diatónicos: tu biblioteca de My_Diatonic_cycles_v1.gp (" + core.CYC.u.length + " ciclos: 5 abajo 4 arriba, 2 abajo 1 arriba, 1 arriba 2 abajo, 4 abajo 1 arriba). Con probabilidad p, cada celda del cuerpo de la canción es uno de tus ciclos. Solo en mayor (el menor del archivo está marcado 'Make minor' y no está hecho).";
+      cb.appendChild(ch0);
+      var cw = mk("div", "display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;");
+      var cyChk = label("Ciclos", "Usa tus ciclos diatónicos como celdas (valen desde la próxima canción: 🔀 / G). Solo en mayor.", "opt", "cyc", true);
+      cyChk.firstChild.id = "partimentiCyc"; cw.appendChild(cyChk);
+      var cl = mk("label", LBL); cl.title = "Proporción de celdas que son ciclos tuyos en vez de la generada (0 = ninguna, 100 = siempre que haya un ciclo que entre).";
+      var cr = mk("input"); cr.type = "range"; cr.min = 0; cr.max = 100; cr.step = 5; cr.value = 30; cr.id = "partimentiCycPct"; cr.style.cssText = "width:90px;";
+      var cv = mk("span", "min-width:34px;text-align:right;", "30%");
+      cr.addEventListener("input", function(){ cv.textContent = cr.value + "%"; });
+      cl.appendChild(document.createTextNode("ciclos ")); cl.appendChild(cr); cl.appendChild(cv); cw.appendChild(cl);
+      cb.appendChild(cw); b.appendChild(cb);
       // Disminución de la melodía
       var db = mk("div", "padding:2px 0 6px;");
       var dh = mk("div", "font-size:12px;font-weight:700;color:var(--ink-muted);margin-bottom:2px;", "Disminución de la melodía");
@@ -15207,13 +15241,15 @@ function runAnalysis() {
       var rofo = (rofoEl && rofoEl.checked) ? { on: true, p: (pctEl ? parseInt(pctEl.value, 10) : 50) / 100, modes: checkedKeys("rmode") } : null;
       var myEl = document.getElementById("partimentiMyCad"), myPctEl = document.getElementById("partimentiMyCadPct");
       var mycad = (myEl && myEl.checked) ? { on: true, p: (myPctEl ? parseInt(myPctEl.value, 10) : 50) / 100 } : null;
+      var cyEl = document.getElementById("partimentiCyc"), cyPctEl = document.getElementById("partimentiCycPct");
+      var cyc = (cyEl && cyEl.checked) ? { on: true, p: (cyPctEl ? parseInt(cyPctEl.value, 10) : 30) / 100 } : null;
       var ctpEl = document.getElementById("partimentiCtp");
       var ctp = (ctpEl && ctpEl.checked) ? { on: true, rules: checkedKeys("ctp") } : null;     // TestContrapunctus (null = apagado: nada cambia)
       var schEl = document.getElementById("partimentiSchMix"), schPctEl = document.getElementById("partimentiSchMixPct");
       var cadEl = document.getElementById("partimentiCadMix"), cadPctEl = document.getElementById("partimentiCadMixPct");
       var groups = { sch: (schEl && schEl.checked) ? (schPctEl ? parseInt(schPctEl.value, 10) : 50) / 100 : null,
                      cad: (cadEl && cadEl.checked) ? (cadPctEl ? parseInt(cadPctEl.value, 10) : 50) / 100 : null };   // null = slider apagado
-      var cOpts = { cells: checkedKeys("cell"), rofo: rofo, mycad: mycad, groups: groups, spell: spellPitchClass, ctp: ctp }, song, spLay = null;
+      var cOpts = { cells: checkedKeys("cell"), rofo: rofo, mycad: mycad, cyc: cyc, groups: groups, spell: spellPitchClass, ctp: ctp }, song, spLay = null;
       if(space){
         // Space: primero se arma la canción (cantidad de acordes ~1.3–2.2 por compás) y después se reparte en compases siguiendo las celdas:
         // cada celda ocupa compases enteros, el último compás de cada celda es final de frase (acorde largo) y dentro de la celda el patrón es parejo.
@@ -15344,7 +15380,7 @@ function runAnalysis() {
                  " [aflojó " + (song.stats.ctpL1 || 0) + " + sin reglas " + (song.stats.ctpL2 || 0) + " acordes; soprano liso " + song.ctp.stats.dimPlain + "]";
       }
       var sub = document.getElementById("consolaSongSets");
-      if(sub) sub.textContent = "(Partimenti · experimental · " + keyName + (space ? " · Space" : "") + (song.mycad ? " · MyCadences " + song.stats.myCells + (song.stats.myCells === 1 ? " celda" : " celdas") : "") + (song.rofo && song.stats.rofoSteps ? " · RofO " + Math.round(100 * song.stats.rofoVar / song.stats.rofoSteps) + "% variantes" : (song.rofo ? " · RofO" : "")) + " · " + (tempo.name ? tempo.name + " " : "") + "♩=" + tempo.bpm + " · dim " + dimPct + "%" + (tex ? " · textura " + tex.name + (texDblOn ? " + voces duplicadas" : "") : "") + (silPct !== 50 ? " · silences " + silPct + "%" : " · silences") + (innerN !== null ? " · internal_movement " + innerN + (innerN === 1 ? " figura" : " figuras") + " (" + innerDimN + " rápidas · dim interna " + innerDimPct + "%)" : "") + " · " + N + " acordes · " + dens + " por compás · " +
+      if(sub) sub.textContent = "(Partimenti · experimental · " + keyName + (space ? " · Space" : "") + (song.cyc && song.mode !== "minor" ? " · Ciclos " + song.stats.cycCells + (song.stats.cycCells === 1 ? " ciclo" : " ciclos") : "") + (song.mycad ? " · MyCadences " + song.stats.myCells + (song.stats.myCells === 1 ? " celda" : " celdas") : "") + (song.rofo && song.stats.rofoSteps ? " · RofO " + Math.round(100 * song.stats.rofoVar / song.stats.rofoSteps) + "% variantes" : (song.rofo ? " · RofO" : "")) + " · " + (tempo.name ? tempo.name + " " : "") + "♩=" + tempo.bpm + " · dim " + dimPct + "%" + (tex ? " · textura " + tex.name + (texDblOn ? " + voces duplicadas" : "") : "") + (silPct !== 50 ? " · silences " + silPct + "%" : " · silences") + (innerN !== null ? " · internal_movement " + innerN + (innerN === 1 ? " figura" : " figuras") + " (" + innerDimN + " rápidas · dim interna " + innerDimPct + "%)" : "") + " · " + N + " acordes · " + dens + " por compás · " +
         song.stats.cells.map(function(c){ return core.CELL_NAME[c]; }).join(" → ") + " · " + labels.join(" ") + ctpTxt + ")";
       ["consolaPlayBtn", "consolaRegenPlayBtn"].forEach(function(id){
         var bt2 = document.getElementById(id); if(bt2) bt2.disabled = false;
@@ -15367,6 +15403,9 @@ function runAnalysis() {
       var my = document.getElementById("partimentiMyCad"), myOn = Math.random() < 0.5;
       if(my) my.checked = myOn;
       if(myOn) setRange("partimentiMyCadPct", pick(20, 100));
+      var cy = document.getElementById("partimentiCyc"), cyOn = Math.random() < 0.5;
+      if(cy) cy.checked = cyOn;
+      if(cyOn) setRange("partimentiCycPct", pick(10, 70));
       var keys = Object.keys(core.CELLS).filter(function(k){ return core.CELLS[k].group === "schema"; });
       var chosen = keys.filter(function(){ return Math.random() < 0.5; });
       if(!chosen.length) chosen = [keys[Math.floor(Math.random() * keys.length)]];
@@ -15376,7 +15415,7 @@ function runAnalysis() {
         var allBox = boxes[0].parentNode.parentNode.querySelector("input:not([data-g])");
         if(allBox) allBox.checked = boxes.every(function(c){ return c.checked; });
       }
-      return { dim: document.getElementById("partimentiDimPct").value, silences: document.getElementById("partimentiRestsPct").value, innerMove: document.getElementById("partimentiInnerMovePct").value, innerDim: document.getElementById("partimentiInnerDimPct").value, mycad: myOn ? document.getElementById("partimentiMyCadPct").value : null, schemas: chosen };
+      return { dim: document.getElementById("partimentiDimPct").value, silences: document.getElementById("partimentiRestsPct").value, innerMove: document.getElementById("partimentiInnerMovePct").value, innerDim: document.getElementById("partimentiInnerDimPct").value, mycad: myOn ? document.getElementById("partimentiMyCadPct").value : null, cyc: cyOn ? document.getElementById("partimentiCycPct").value : null, schemas: chosen };
     };
     // Al entrar (no en cada 🔀): Clavecín en Armonía/Bajo/Melodía y Batería a 0% (set "partimenti" de PRESET_SETS); después se pueden cambiar a mano.
     api.start = function(){
