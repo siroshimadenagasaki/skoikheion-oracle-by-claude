@@ -15204,6 +15204,11 @@ function runAnalysis() {
       var chordEvents = [], bassEvents = [], melodyEvents = [];
       var progression = [], roles = [], slotChords = [], labels = [], lastBass = null;
       var ci = 0, lastMel = null, slotInfo = [], texSlots = [];
+      // Melody n2 (casilla #consolaMelody2Chk): segunda melodía independiente sobre la misma armonía. Se arma con las mismas reglas de disminución que el soprano
+      // (otro ritmo, otras figuras y silencios, sorteo propio) pero apoyada en el ALTO armonizado (una octava arriba si queda por debajo del soprano), así que
+      // no duplica al soprano y sus notas de apoyo son siempre notas del acorde. Sin TestContrapunctus (esa auditoría es solo del soprano).
+      var m2Chk = document.getElementById("consolaMelody2Chk"), melody2Events = [];
+      var alt = (m2Chk && m2Chk.checked) ? song.chords.map(function(c){ var o = {}, k; for(k in c) o[k] = c[k]; o.s = (c.a + 12 < c.s) ? c.a + 12 : c.a; o.sus = null; return o; }) : null;
       var texEl = document.getElementById("partimentiTexture"), texVal = texEl ? texEl.value : "random", texRandom = texVal === "random";
       var tex = texRandom ? null : TEXTURES.get(texVal);   // null = Original (en Random cada bloque decide: ver texPlan)
       var texPlan = texRandom ? TEXTURES.plan(NUM_BARS, tempo.bpm) : null;
@@ -15227,6 +15232,12 @@ function runAnalysis() {
             melodyEvents.push({ midi: m.midi, startBeat: abs + m.off, durBeats: m.dur, bar: bar, fig: m.fig });
             lastMel = m.midi;
           });
+          if(alt){                                                                                                              // Melody n2
+            core.melody(alt, Math.min(idx, alt.length - 1), dur, song.key, orn, song.mode, dim).forEach(function(m){
+              if(m.rest) return;
+              melody2Events.push({ midi: m.midi, startBeat: abs + m.off, durBeats: m.dur, bar: bar, fig: m.fig });
+            });
+          }
           var voiced = [ch.bass, ch.t, ch.a, ch.s];
           slots.push({ chord: voiced, startBeat: off, durBeats: dur, setNotes: voiced, ccLabel: ch.label, ccCat: ch.cat,
                        ccScale: ch.cellStart ? ((idx === 0 ? keyName + " · " : "") + (ch.cellTitle || core.CELL_NAME[ch.cell])) : null });
@@ -15271,7 +15282,7 @@ function runAnalysis() {
       state.chordEvents = chordEvents;
       state.bassEvents = bassEvents;
       state.melodyEvents = melodyEvents;
-      state.comping2Events = []; state.bebopEvents = []; state.melody2Events = [];
+      state.comping2Events = []; state.bebopEvents = []; state.melody2Events = melody2Events;
       api.lastChordEvents = chordEvents;   // (para pruebas)
       state.chordEvents = TEMPODENSITY.apply(state.chordEvents);
       SPEEDLIMIT.apply(state); // límite de velocidad de Melody / Bass / Melody n2 / bebop / moreComping según el tempo
