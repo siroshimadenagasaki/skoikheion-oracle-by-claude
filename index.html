@@ -14792,7 +14792,31 @@ function runAnalysis() {
         });
         return out;
       }
-      return { list: LIST, get: get, build: build };
+      // Random: la canción se parte en bloques de 4, 6 u 8 compases (al azar). Cada bloque: 50% Original (null) y 50% una textura elegida por tempo/carácter:
+      // lento (≤66 BPM) → Arpegio amplio, Acorde rodado, Bloque; medio (67–108) → Alberti, Murky, Arpegio; rápido (>108) → Acorde repetido, Vals, Alberti.
+      // Nunca repite la textura del bloque textural anterior (si hay otra en el grupo). Devuelve un array por compás con la textura (objeto) o null = Original.
+      var BY_TEMPO = { slow: ["amplio", "rodado", "bloque"], mid: ["alberti", "murky", "arpegio"], fast: ["repetido", "vals", "alberti"] };
+      var randomTip = "Random: bloques de 4, 6 u 8 compases; cada bloque sortea su textura (50% Original, 50% otra). La otra se elige por tempo: lento (≤66 BPM) Arpegio amplio / Acorde rodado / Bloque; medio (67–108) Alberti / Murky / Arpegio; rápido (>108) Acorde repetido / Vals / Alberti. No repite la del bloque anterior.";
+      function plan(nBars, bpm){
+        var out = [], bar = 0, prev = null, grp = BY_TEMPO[bpm <= 66 ? "slow" : (bpm <= 108 ? "mid" : "fast")];
+        while(bar < nBars){
+          var len = [4, 6, 8][Math.floor(Math.random() * 3)], tx = null;
+          if(Math.random() >= 0.5){
+            var pool = grp.filter(function(k){ return k !== prev; }); if(!pool.length) pool = grp;
+            var key = pool[Math.floor(Math.random() * pool.length)]; tx = get(key); prev = tx ? key : prev;
+          }
+          for(var i = 0; i < len && bar < nBars; i++, bar++) out.push(tx);
+        }
+        return out;
+      }
+      // Construye solo los compases con textura (plan[bar] != null), una llamada por textura distinta.
+      function buildPlan(planArr, slots, dbl){
+        var out = [], seen = [];
+        planArr.forEach(function(t){ if(t && seen.indexOf(t) < 0) seen.push(t); });
+        seen.forEach(function(t){ out = out.concat(build(t, slots.filter(function(sl){ return planArr[sl.bar] === t; }), dbl)); });
+        return out;
+      }
+      return { list: LIST, get: get, build: build, plan: plan, buildPlan: buildPlan, randomTip: randomTip };
     })();
 
     function buildUI(){
@@ -14830,8 +14854,10 @@ function runAnalysis() {
       var txw = mk("div", "display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:2px 0 8px;");
       var txl = mk("label", null, "Textura armonía"); txl.className = "mix-preset-label"; txl.htmlFor = "partimentiTexture";
       var txs = mk("select"); txs.id = "partimentiTexture"; txs.className = "mix-preset-select";
+      var oRnd = mk("option", null, "Random (50% Original)"); oRnd.value = "random"; oRnd.title = TEXTURES.randomTip; txs.appendChild(oRnd);   // por defecto
       TEXTURES.list.forEach(function(t){ var o = mk("option", null, t.name + (t.ref ? " (" + t.ref + ")" : "")); o.value = t.key; o.title = t.tip; txs.appendChild(o); });
-      var txTip = "Textura pianística de la Armonía (tenor + alto): Alberti, Murky, Vals, Bloque, Acorde repetido, Arpegio, Arpegio amplio con pedal y Acorde rodado. Solo cambia la pista Harmony: el bajo y el soprano no se tocan, y las notas siempre son las del acorde. Con una textura elegida no suenan las figuras de internal_movement (esas ya mueven tenor y alto). Vale desde la próxima canción (🔀 / G). Original = como siempre.";
+      txs.value = "random";
+      var txTip = "Textura pianística de la Armonía (tenor + alto): Alberti, Murky, Vals, Bloque, Acorde repetido, Arpegio, Arpegio amplio con pedal y Acorde rodado. Solo cambia la pista Harmony: el bajo y el soprano no se tocan, y las notas siempre son las del acorde. Con una textura elegida no suenan las figuras de internal_movement (esas ya mueven tenor y alto). Vale desde la próxima canción (🔀 / G). Original = como siempre. Random (por defecto): la canción se parte en bloques de 4, 6 u 8 compases y cada bloque sortea su textura: 50% Original y 50% otra, elegida según el tempo (ver el tooltip de la opción).";
       txl.title = txTip; txs.title = txTip;
       txw.appendChild(txl); txw.appendChild(txs);
       // Duplicar voces: excepción para las texturas. El bajo real entra a la textura una octava arriba y las texturas llenas duplican por octava sus extremos. Solo octavas: nada sale del acorde.
@@ -14848,7 +14874,7 @@ function runAnalysis() {
       xb.appendChild(xh);
       function mixRow(text, tip, chkId, pctId){
         var row = mk("div", "display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;");
-        var ck = label(text, tip, "opt", chkId, false); ck.firstChild.id = "partimenti" + chkId; row.appendChild(ck);
+        var ck = label(text, tip, "opt", chkId, true); ck.firstChild.id = "partimenti" + chkId; row.appendChild(ck);   // Schemata y Cadencias tildadas por defecto (pedido 2026-10-10)
         var sl = mk("label", LBL); sl.title = tip;
         var rg = mk("input"); rg.type = "range"; rg.min = 0; rg.max = 100; rg.step = 5; rg.value = 50; rg.id = "partimenti" + pctId; rg.style.cssText = "width:90px;";
         var vv = mk("span", "min-width:34px;text-align:right;", "50%");
@@ -15086,7 +15112,9 @@ function runAnalysis() {
       var chordEvents = [], bassEvents = [], melodyEvents = [];
       var progression = [], roles = [], slotChords = [], labels = [], lastBass = null;
       var ci = 0, lastMel = null, slotInfo = [], texSlots = [];
-      var texEl = document.getElementById("partimentiTexture"), tex = TEXTURES.get(texEl ? texEl.value : "original");   // null = Original
+      var texEl = document.getElementById("partimentiTexture"), texVal = texEl ? texEl.value : "random", texRandom = texVal === "random";
+      var tex = texRandom ? null : TEXTURES.get(texVal);   // null = Original (en Random cada bloque decide: ver texPlan)
+      var texPlan = texRandom ? TEXTURES.plan(NUM_BARS, tempo.bpm) : null;
       for(var bar = 0; bar < NUM_BARS; bar++){
         var beats = RHYTHM.beats(bar), barStart = RHYTHM.start(bar), durs = durPlan[bar], nSl = durs.length, dur = 0, off = 0, slots = [];
         for(var si = 0; si < nSl; si++){
@@ -15139,6 +15167,11 @@ function runAnalysis() {
       var stEl = document.getElementById("partimentiStaccato");
       if(stEl && stEl.checked) melodyEvents = applyStaccato(melodyEvents);       // Staccato: solo en pasajes rápidos (después de internal_movement, que mira el soprano completo)
       if(space){ bassEvents = spVary(bassEvents, barKind, "bass"); if(!tex) chordEvents = spVary(chordEvents, barKind, "chord"); }   // Space: variedad rítmica (con textura elegida, la textura manda en la armonía)
+      api.lastTexPlan = texPlan ? texPlan.map(function(t){ return t ? t.key : null; }) : null;   // (para pruebas) textura por compás en Random
+      if(texPlan){                                                       // Random: los compases con textura reemplazan tenor + alto; el resto queda Original (con internal_movement y Space)
+        var dblR = document.getElementById("partimentiTextureDbl");
+        chordEvents = chordEvents.filter(function(ev){ return !texPlan[ev.bar]; }).concat(TEXTURES.buildPlan(texPlan, texSlots, !!(dblR && dblR.checked)));
+      }
       state.rootChord = progression[0].slice();
       state.progression = progression;
       state.roles = roles;
@@ -15147,6 +15180,7 @@ function runAnalysis() {
       state.bassEvents = bassEvents;
       state.melodyEvents = melodyEvents;
       state.comping2Events = []; state.bebopEvents = []; state.melody2Events = [];
+      api.lastChordEvents = chordEvents;   // (para pruebas)
       state.chordEvents = TEMPODENSITY.apply(state.chordEvents);
       state.chordEvents = WIDERANGE.apply(state.chordEvents);
       DYNAMICS.applyPitched(state);
