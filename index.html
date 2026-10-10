@@ -112,7 +112,7 @@
     background-size:cover;background-position:center;background-repeat:no-repeat;
     border:1px solid var(--line);
     border-radius:18px;
-    padding:28px 20px 22px;
+    padding:46px 20px 22px; /* +18px: lugar para el 2º botón de radio (RadioClassicalMode) */
     position:relative;
   }
   .clock-wrap{
@@ -181,6 +181,7 @@
   /* RadioMode: botón chico en la esquina superior derecha de la tarjeta Clock/Piano */
   .radio-mode-wrap.radio-top{position:absolute;top:5px;right:10px;z-index:2;white-space:nowrap;}
   .radio-mode-wrap.radio-top .chip{font-size:9px;padding:2px 8px;line-height:1.3;}
+  .radio-mode-wrap.radio-top2{top:25px;}
   .toggle-btn{
     font-family:'JetBrains Mono',monospace;
     font-size:11px;letter-spacing:.06em;text-transform:uppercase;
@@ -1201,9 +1202,13 @@
   <div class="stage">
     <div class="clock-col">
     <div class="clock-card">
-      <span class="radio-mode-wrap radio-top" title="RadioMode (botón ON/OFF): al pasar a ON arranca solo (CreaturaRandom o CreaturaBella al azar); con ON, después de 🪄 CreaturaRandom o 🪄 CreaturaBella, cuando termina la vuelta engancha otra vuelta nueva, alternando al azar Random/Bella (sets y sliders nuevos) y barajando los presets de Armonía y Melodía en cada canción nueva, sin cortar el audio. Se corta con Detener o con OFF. Usa el modo en vivo (no Prerender).">
+      <span class="radio-mode-wrap radio-top" title="RadioCreaturaMode (botón ON/OFF): al pasar a ON arranca solo (CreaturaRandom o CreaturaBella al azar); con ON, después de 🪄 CreaturaRandom o 🪄 CreaturaBella, cuando termina la vuelta engancha otra vuelta nueva, alternando al azar Random/Bella (sets y sliders nuevos) y barajando los presets de Armonía y Melodía en cada canción nueva, sin cortar el audio. Se corta con Detener o con OFF. Usa el modo en vivo (no Prerender).">
         <input type="checkbox" id="consolaRadioChk" hidden>
-        <button type="button" class="chip" id="consolaRadioBtn" aria-pressed="false">&#128251; RadioMode: OFF</button>
+        <button type="button" class="chip" id="consolaRadioBtn" aria-pressed="false">&#128251; RadioCreaturaMode: OFF</button>
+      </span>
+      <span class="radio-mode-wrap radio-top radio-top2" title="RadioClassicalMode (botón ON/OFF): igual que RadioCreaturaMode pero restringido a 🎹 Partimenti. Al pasar a ON arranca una canción Partimenti; cuando termina la vuelta engancha otra Partimenti nueva (controles de Partimenti sorteados de nuevo), sin cortar el audio. Se corta con Detener o con OFF. Usa el modo en vivo (no Prerender).">
+        <input type="checkbox" id="consolaRadioClassicalChk" hidden>
+        <button type="button" class="chip" id="consolaRadioClassicalBtn" aria-pressed="false">&#128251; RadioClassicalMode: OFF</button>
       </span>
       <div class="input-toggle">
         <button class="toggle-btn active" id="tabClock" type="button">Clock</button>
@@ -18188,7 +18193,8 @@ function runAnalysis() {
   function prOn(){
     var c = document.getElementById("consolaPrerenderChk");
     var r = document.getElementById("consolaRadioChk");
-    if(r && r.checked) return false; // RadioMode usa el scheduler en vivo (engancha vueltas sin cortes)
+    var rc = document.getElementById("consolaRadioClassicalChk");
+    if((r && r.checked) || (rc && rc.checked)) return false; // RadioMode / RadioClassicalMode usan el scheduler en vivo (engancha vueltas sin cortes)
     return !!(c && c.checked) && !!(window.OfflineAudioContext || window.webkitOfflineAudioContext);
   }
   function prStatus(msg){
@@ -20551,6 +20557,11 @@ function runAnalysis() {
       window.__radioBusy = true;
       try{
         if(typeof window.__rollToFront === "function") window.__rollToFront(); // modo automático: piano roll al primer plano
+        if(kind === "classical"){
+          // RadioClassicalMode: la vuelta nueva es siempre una canción 🎹 Partimenti (controles sorteados de nuevo; presets/tempo como los deje Partimenti).
+          if(window.__partimenti){ window.__partimenti.randomize(); window.__partimenti.start(); }
+          return;
+        }
         // RadioMode alterna: cada vuelta nueva sortea Random o Bella (50/50).
         randomizeAndFill(Math.random() < 0.5);
         randomizeVoices(true); // RadioMode: cada canción nueva baraja los presets de Armonía y Melodía (el tempo no se toca)
@@ -20628,7 +20639,7 @@ function runAnalysis() {
     var radioBtnEl = document.getElementById("consolaRadioBtn");
     function radioPaint(){
       if(!radioBtnEl || !radioChkEl) return;
-      radioBtnEl.textContent = "\uD83D\uDCFB RadioMode: " + (radioChkEl.checked ? "ON" : "OFF");
+      radioBtnEl.textContent = "\uD83D\uDCFB RadioCreaturaMode: " + (radioChkEl.checked ? "ON" : "OFF");
       radioBtnEl.setAttribute("aria-pressed", radioChkEl.checked ? "true" : "false");
       radioBtnEl.classList.toggle("primary", radioChkEl.checked);
     }
@@ -20658,7 +20669,7 @@ function runAnalysis() {
     if(btnCC) btnCC.addEventListener("click", runCommonChords);
     // 🎹 Partimenti (ver módulo PARTIMENTI): detiene lo que suene, inventa el bajo, lo realiza a 4 voces y lo reproduce.
     var btnPT = document.getElementById("partimentiBtn");
-    async function runPartimenti(){
+    async function runPartimenti(radio){
       if(running) return;
       running = true;
       try {
@@ -20669,9 +20680,45 @@ function runAnalysis() {
         window.__partimenti.randomize();                 // sortea disminución, MyCadences y esquemas galantes
         window.__partimenti.start();
         clickIfEnabled("consolaPlayBtn");
+        if(radio === true){                                // RadioClassicalMode: al terminar la vuelta engancha otra Partimenti
+          if(rcChk){ rcChk.checked = true; classicalPaint(); } // (el Detener de arriba lo había apagado)
+          window.__radioKind = "classical";
+        }
       } finally { running = false; }
     }
-    if(btnPT) btnPT.addEventListener("click", runPartimenti);
+    if(btnPT) btnPT.addEventListener("click", function(){
+      classicalSet(false);                              // 🎹 Partimenti a mano apaga RadioClassicalMode
+      runPartimenti(false);
+    });
+    // 📻 RadioClassicalMode: como RadioCreaturaMode pero solo Partimenti. Excluyente con RadioCreaturaMode.
+    var rcChk = document.getElementById("consolaRadioClassicalChk"), rcBtn = document.getElementById("consolaRadioClassicalBtn");
+    function classicalPaint(){
+      if(!rcBtn || !rcChk) return;
+      rcBtn.textContent = "\uD83D\uDCFB RadioClassicalMode: " + (rcChk.checked ? "ON" : "OFF");
+      rcBtn.setAttribute("aria-pressed", rcChk.checked ? "true" : "false");
+      rcBtn.classList.toggle("primary", rcChk.checked);
+    }
+    function classicalSet(on){
+      if(!rcChk) return;
+      rcChk.checked = !!on;
+      if(!on && window.__radioKind === "classical") window.__radioKind = null;
+      classicalPaint();
+    }
+    window.__radioClassicalOff = function(){ classicalSet(false); };
+    var stopBtnRC = document.getElementById("consolaStopBtn");
+    if(stopBtnRC) stopBtnRC.addEventListener("click", function(){ classicalSet(false); }); // Detener = OFF (igual que corta el engancho de vueltas)
+    if(rcBtn && rcChk) rcBtn.addEventListener("click", function(){
+      if(rcChk.checked){ classicalSet(false); return; }
+      // ON: apaga RadioCreaturaMode (sin disparar su "change" más que para limpiar __radioKind) y arranca Partimenti en modo radio.
+      if(radioChkEl && radioChkEl.checked){ radioChkEl.checked = false; radioPaint(); }
+      classicalSet(true);
+      runPartimenti(true);
+    });
+    // Cualquier otro modo automático (Creaturas, Compose, Clear, CommonChords, RadioCreaturaMode) saca de RadioClassicalMode.
+    document.addEventListener("click", function(e){
+      var t = e.target;
+      if(t && t.closest && t.closest("#commonChordsBtn,#creaturaBtn,#creaturaBellaBtn,#creaturaIntervalicBtn,#composeBtn,#clearBtn,#multiSetsRandomFillBtn,#multiSetsComposeBtn,#multiSetsMemBtn2,#consolaRadioBtn")) classicalSet(false);
+    }, true);
     btn.addEventListener("click", function(){ runCreatura(false); });
     if(btnBella) btnBella.addEventListener("click", function(){ runCreatura(true); });
     if(btnInterv) btnInterv.addEventListener("click", function(){ runCreatura("intervalic"); });
