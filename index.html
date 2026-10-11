@@ -238,6 +238,23 @@
   #radioVintage .rv-lamp{z-index:2;}
   #radioVintage .rv-art{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);height:calc(100% - 20px);max-width:calc(100% - 20px);aspect-ratio:1/1;border-radius:6px;image-rendering:pixelated;box-shadow:0 0 0 2px #c9a45c,0 0 0 5px #2a1608,0 8px 22px rgba(0,0,0,.7);}
   @media (max-height:520px){#radioVintage .rv-brand{display:none}#radioVintage .rv-grille{min-height:34px}#radioVintage .rv-key{min-height:52px}}
+  /* ===== 📝 Log de la canción (panel plegable del Player: qué sorteó el random en cada canción; comprimido por defecto) ===== */
+  #radioVintage #rvLogBox{position:absolute;top:10px;left:10px;z-index:7;max-width:calc(100% - 20px);}
+  #radioVintage #rvLogBtn{appearance:none;-webkit-appearance:none;cursor:pointer;border:1px solid #b08a45;border-radius:999px;padding:6px 14px;background:rgba(18,13,8,.88);color:#f3e6c4;font:700 12px/1 Georgia,"Times New Roman",serif;letter-spacing:.06em;box-shadow:0 2px 8px rgba(0,0,0,.35);}
+  #radioVintage #rvLogBtn[aria-expanded="true"]{background:#b08a45;color:#1a1208;}
+  #radioVintage #rvLogPanel{margin-top:6px;width:min(560px,calc(100vw - 20px));max-height:min(62vh,560px);overflow:auto;-webkit-overflow-scrolling:touch;box-sizing:border-box;padding:8px 10px;border:1px solid #b08a45;border-radius:10px;background:rgba(18,13,8,.95);color:#f3e6c4;font:12px/1.4 "Courier New",monospace;box-shadow:0 8px 24px rgba(0,0,0,.45);text-align:left;}
+  #radioVintage #rvLogPanel[hidden]{display:none;}
+  #radioVintage .rvl-h{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;font:700 11px/1.2 Georgia,serif;letter-spacing:.12em;text-transform:uppercase;color:#d9b563;}
+  #radioVintage .rvl-h button{appearance:none;-webkit-appearance:none;cursor:pointer;border:1px solid #b08a45;border-radius:6px;padding:3px 9px;background:transparent;color:#f3e6c4;font:600 11px/1 Georgia,serif;}
+  #radioVintage .rvl-e{padding:7px 0 7px 8px;margin-top:6px;border-left:3px solid #4a3a1c;border-top:1px dashed rgba(176,138,69,.35);}
+  #radioVintage .rvl-e.cur{border-left-color:#ffb43c;background:rgba(255,180,60,.07);}
+  #radioVintage .rvl-t{font:700 13px/1.3 Georgia,serif;color:#fff1cf;overflow-wrap:anywhere;}
+  #radioVintage .rvl-t em{font-style:normal;color:#ffb43c;font-size:11px;margin-left:6px;}
+  #radioVintage .rvl-s{color:#a98a58;overflow-wrap:anywhere;margin:2px 0 4px;}
+  #radioVintage .rvl-r{display:flex;gap:8px;justify-content:space-between;}
+  #radioVintage .rvl-r span{color:#c9b184;flex:0 1 46%;overflow-wrap:anywhere;}
+  #radioVintage .rvl-r i{font-style:normal;color:#f3e6c4;flex:1 1 54%;text-align:right;overflow-wrap:anywhere;}
+  #radioVintage .rvl-sub{margin:5px 0 2px;color:#d9b563;font:700 10px/1 Georgia,serif;letter-spacing:.14em;text-transform:uppercase;}
   /* ===== 📻 Player: skins (se sortea una al abrir: 50% "portada", 50% una de las otras 7) ===== */
   #radioVintage{overflow:hidden;}
   #radioVintage .sk{--ac:#ff5a1f;--acfg:#fff;--acs:rgba(255,90,31,.28);--fg:#1a1a1a;--mut:#8a877e;position:relative;flex:none;width:760px;height:500px;box-sizing:border-box;transform-origin:50% 50%;
@@ -19610,6 +19627,7 @@ function runAnalysis() {
     var loopAnchor = ctx.currentTime + 0.1 - snap.tw.f(off)*spb;   // con off > 0 la grilla de la vuelta queda corrida hacia atrás: suena desde el compás elegido
     var schedLoopStart = loopAnchor;  // inicio (en el reloj de audio) de la vuelta en curso
     var schedBeat = off;              // próximo beat sin programar dentro de esa vuelta
+    try{ if(window.__songLog) window.__songLog.stamp(); }catch(errL){}   // 📝 Log de la canción
     try{ if(window.__radioHist) window.__radioHist.note(); }catch(errH){} // RADIO!: historial (Previous)
     var loopChk = document.getElementById("consolaLoopChk");
     var ending = false;
@@ -19667,6 +19685,7 @@ function runAnalysis() {
         schedBeat = 0;
         EXPR.reroll(); snap = liveSnap(); // cambios de notas/presets/tempo&expression entran en la vuelta nueva
         clk.twq = { anchor: schedLoopStart, tw: snap.tw };
+        try{ if(window.__songLog) window.__songLog.stamp(); }catch(errL){}   // 📝 Log de la canción nueva
         try{ if(window.__radioHist) window.__radioHist.note(); }catch(errH){} // RADIO!: la vuelta nueva entra al historial
       }
     }
@@ -19698,6 +19717,87 @@ function runAnalysis() {
     });
   })();
   window.consolaRegenerate = regenerateConsola; // RadioMode: arma la vuelta siguiente sin reproducir
+  // 📝 SongLog — "blog" de cada canción: qué se sorteó (compases, reverb, presets, sliders, 5% especiales...) para rastrear qué perjudica la sonoridad.
+  // begin() abre la entrada al empezar a armar una canción; add() anota cada sorteo; stamp() (al empezar a sonar) le pone título y el estado
+  // final (compases, tempo, reverb, presets). Últimas 20. Se muestra en el panel "📝 Log" del Player vintage (comprimido por defecto).
+  window.__songLog = (function(){
+    var L = { list: [], cur: null, frozen: false, ver: 0 }, MAX = 20, seq = 0, WINDOW_MS = 10000;
+    var PRESETS = [["harmonyPresetSelect","harmony","Armonía"],["chordDoublePresetSelect","chordDouble","Armonía doble"],["melodyPresetSelect","melody","Melodía"],
+      ["melodyDoublePresetSelect","melodyDouble","Melodía doble"],["bebopPresetSelect","bebop","Bebop"],["melody2PresetSelect","melody2","Melodía n2"],
+      ["melody3PresetSelect","melody3","Melodía n3"],["comping2PresetSelect","comping2","Comping 2"],["bassPresetSelect","bass","Bajo"],
+      ["bassDoublePresetSelect","bassDouble","Bajo doble"],["drumPresetSelect","drum","Batería"]];
+    function txt(id){ var e = document.getElementById(id); return e ? e.textContent.trim() : ""; }
+    function val(id){ var e = document.getElementById(id); return e ? e.value : null; }
+    function chk(id){ var e = document.getElementById(id); return !!(e && e.checked); }
+    function snapState(){
+      var st = [];
+      st.push(["Compases", String(NUM_BARS)]);
+      var tp = val("consolaTempo"); if(tp != null) st.push(["Tempo", tp + " BPM"]);
+      var rv = val("consolaReverbAmount"); if(rv != null) st.push(["Reverb general", rv + "%"]);
+      var ms = val("consolaMelSilSlider"); if(ms != null) st.push(["Melody silences", ms + "%"]);
+      st.push(["Melody n2 / n3", (chk("consolaMelody2Chk") ? "n2 sí" : "n2 no") + " · " + (chk("consolaMelody3Chk") ? "n3 sí" : "n3 no")]);
+      var mc = document.getElementById("consolaMoreCompingBtn"); if(mc) st.push(["moreComping", mc.classList.contains("primary") ? "sí" : "no"]);
+      if(chk("mix8bitsChk")) st.push(["8bits", "tildado"]);
+      var dv = val("mixDrumVol"); if(dv != null) st.push(["Volumen Drums", dv + "%"]);
+      PRESETS.forEach(function(p){
+        var k = mixPresets[p[1]];
+        if(k == null) return;
+        var el = document.getElementById(p[0]), name = String(k);
+        if(el && el.value === k && el.selectedIndex >= 0 && el.options[el.selectedIndex]) name = el.options[el.selectedIndex].text;
+        st.push(["Preset " + p[2], name]);
+      });
+      return st;
+    }
+    function fill(e){
+      e.title = txt("consolaSongTitle");
+      e.sets = txt("consolaSongSets");
+      e.state = snapState();
+      e.stamped = true;
+    }
+    L.begin = function(kind){
+      L.frozen = false;
+      var e = { id: ++seq, kind: kind || "", events: [], state: [], title: "", sets: "", stamped: false, until: Date.now() + WINDOW_MS };
+      L.cur = e; L.list.push(e);
+      if(L.list.length > MAX) L.list.shift();
+      L.ver++;
+      return e;
+    };
+    L.add = function(label, value){
+      var e = L.cur;
+      if(!e || e.stamped || L.frozen) return;
+      e.events.push([String(label), String(value)]);
+      L.ver++;
+    };
+    L.stamp = function(){
+      if(L.frozen) return;
+      var e = L.cur, t = txt("consolaSongTitle");
+      if(e && (!e.stamped || Date.now() < e.until)) fill(e);       // la canción que se estaba armando (Compose + Regenerar de Creatura incluidos)
+      else if(e && e.title === t) return;                           // el mismo Play otra vez: no se pisa
+      else fill(L.begin("Manual (sin sorteo)"));                    // Compose / Regenerar / Play a mano
+      L.ver++;
+    };
+    L.select = function(id){                                        // Previous / Next del historial: vuelve a esa entrada y la congela
+      L.frozen = true; L.cur = null;
+      for(var i = 0; i < L.list.length; i++) if(L.list[i].id === id){ L.cur = L.list[i]; break; }
+      L.ver++;
+    };
+    L.curId = function(){ return L.cur ? L.cur.id : 0; };
+    L.entryText = function(e){
+      var n = ["#" + e.id + " · " + (e.kind || "—") + " · " + (e.title || "(sin título)")];
+      if(e.sets) n.push("   " + e.sets);
+      e.state.forEach(function(r){ n.push("   " + r[0] + ": " + r[1]); });
+      if(e.events.length){ n.push("   -- sorteos --"); e.events.forEach(function(r){ n.push("   " + r[0] + ": " + r[1]); }); }
+      return n.join("\n");
+    };
+    // Entradas ya sonando: la canción en curso primero, después las anteriores (la más nueva arriba).
+    L.view = function(){
+      var done = L.list.filter(function(e){ return e.stamped; }).reverse();
+      var cur = (L.cur && L.cur.stamped) ? L.cur : done[0];
+      return { cur: cur, items: cur ? [cur].concat(done.filter(function(e){ return e !== cur; })) : [] };
+    };
+    L.text = function(){ return L.view().items.map(L.entryText).join("\n\n"); };
+    return L;
+  })();
   // 📻 RADIO! — historial de canciones para el reproductor vintage (Previous / Next).
   // Cada canción nueva (la primera y cada vuelta que engancha el RadioMode) se guarda como foto:
   // eventos de todas las pistas (los arrays se reemplazan, nunca se mutan), presets, tempo, compases,
@@ -19713,7 +19813,8 @@ function runAnalysis() {
         numBars: NUM_BARS, total: TOTAL_BEATS,
         rhythm: RHYTHM.save(), dyn: DYNAMICS.getPlan(),
         title: SONGTITLE.current(), sets: setsEl ? setsEl.textContent : "",
-        kind: window.__radioMixLast || ""
+        kind: window.__radioMixLast || "",
+        logId: window.__songLog ? window.__songLog.curId() : 0
       };
     }
     function same(a, b){
@@ -19749,6 +19850,7 @@ function runAnalysis() {
       if(t && e.tempo != null){ t.value = e.tempo; t.dispatchEvent(new Event("input", { bubbles: true })); }
       SONGTITLE.set(e.title, e.sets);
       window.__radioMixLast = e.kind;
+      try{ if(window.__songLog) window.__songLog.select(e.logId); }catch(errL){}
       var pb = document.getElementById("consolaPlayBtn"); if(pb) pb.disabled = false;
       renderRoll(); renderBebopRoll();
       pos = i;
@@ -21012,6 +21114,7 @@ function runAnalysis() {
       var st8 = { saved: {}, drumVol: null }, stDr = { saved: {}, drumVol: null };
       var auto8 = false;   // el checkbox lo tildó el random (no el usuario): se destilda en el próximo sorteo
       function rnd(n){ return Math.floor(Math.random() * n); }
+      function SL(l, v){ try{ if(window.__songLog) window.__songLog.add(l, v); }catch(_e){} }   // 📝 Log de la canción
       function extraFiles(){ return (typeof sfExtraFiles !== "undefined" && sfExtraFiles) ? sfExtraFiles : []; }
       function setPreset(mixKey, key, label){
         var el = document.getElementById(SEL_ID[mixKey]);
@@ -21083,8 +21186,9 @@ function runAnalysis() {
       // ---- Drums 5% (ETHNIC / ORCHESTRA) ----
       function applyDrumSpecial(){
         var all = extraFiles().filter(function(e){ return /\/Drums\//i.test(e.path) && /ETHNIC|ORCHESTRA/i.test(e.path); });
-        if(!all.length) return;
+        if(!all.length){ SL("Drums especial (5%)", "salió, pero no hay kits ETHNIC/ORCHESTRA cargados"); return; }
         var e = all[rnd(all.length)], key = keyOf(e), v = rnd(3);
+        SL("Drums especial (5%)", ["(a) Drums con ", "(b) Armonía y Melodía con ", "(c) Drums, Armonía y Melodía con "][v] + e.label + (v === 1 ? " · Drums mudo" : ""));
         if(v !== 1) remember(stDr, "drum", key, e.label);                                   // (a) y (c): Drums con ese kit
         if(v !== 0){ remember(stDr, "harmony", key, e.label); remember(stDr, "melody", key, e.label); }   // (b) y (c): Armonía y Melodía con ese preset
         if(v === 1){                                                                          // (b): sin el patrón de Drums
@@ -21095,9 +21199,10 @@ function runAnalysis() {
       // ---- largo del segmento ----
       function rollBars(){
         var num = document.getElementById("consolaBarsNum");
-        if(num && parseInt(num.value, 10) >= 1) return;   // el campo manual manda (desiredNumBars)
+        if(num && parseInt(num.value, 10) >= 1){ SL("Largo (RANDOM CHOOSE)", "campo manual: " + parseInt(num.value, 10) + " compases"); return; }   // el campo manual manda (desiredNumBars)
         var r = Math.random();
         var pick = r < 0.33 ? "consola24BarsChk" : (r < 0.66 ? "consola12BarsChk" : "consolaRandBarsChk");
+        SL("Largo (RANDOM CHOOSE)", pick === "consola24BarsChk" ? "24 bars (33%)" : (pick === "consola12BarsChk" ? "12 bars (33%)" : "Random 4–48 (34%)"));
         ["consola24BarsChk", "consola12BarsChk", "consolaRandBarsChk"].forEach(function(id){
           var c = document.getElementById(id);
           if(c) c.checked = (id === pick);   // sin evento "change": la generación que sigue ya lee el largo
@@ -21105,11 +21210,12 @@ function runAnalysis() {
       }
       // ---- Melody n2 / n3 ----
       function rollMelodies(){
-        var r = Math.random(), n2, n3;
-        if(r < 0.40){ n2 = true; n3 = false; }
-        else if(r < 0.65){ n2 = true; n3 = true; }
-        else if(r < 0.75){ n2 = false; n3 = true; }
-        else { n2 = Math.random() < 0.5; n3 = Math.random() < 0.5; }
+        var r = Math.random(), n2, n3, how;
+        if(r < 0.40){ n2 = true; n3 = false; how = "solo n2 (40%)"; }
+        else if(r < 0.65){ n2 = true; n3 = true; how = "n2 + n3 (25%)"; }
+        else if(r < 0.75){ n2 = false; n3 = true; how = "solo n3 (10%)"; }
+        else { n2 = Math.random() < 0.5; n3 = Math.random() < 0.5; how = "al azar (25%)"; }
+        SL("Melodías (RANDOM CHOOSE)", "n2 " + (n2 ? "sí" : "no") + " · n3 " + (n3 ? "sí" : "no") + " — " + how);
         var c2 = document.getElementById("consolaMelody2Chk"), c3 = document.getElementById("consolaMelody3Chk");
         if(c2) c2.checked = n2;
         if(c3) c3.checked = n3;
@@ -21133,15 +21239,20 @@ function runAnalysis() {
         post: function(kind){
           if(chk8 && !chk8.checked){
             var r = Math.random();
-            if(r < 0.05){ if(apply8bits()){ chk8.checked = true; auto8 = true; } }
+            if(r < 0.05){
+              if(apply8bits()){ chk8.checked = true; auto8 = true; SL("8bits (5%)", "sí: todos los instrumentos con presets de la carpeta 8bits"); }
+              else SL("8bits (5%)", "salió, pero la carpeta 8bits todavía no estaba cargada");
+            }
             else if(r < 0.10) applyDrumSpecial();
+            else SL("8bits / Drums especial", "no (90%)");
           } else if(chk8 && chk8.checked){
             apply8bits();   // 8bits tildado (a mano o por el random): cada sorteo vuelve a asignar solo presets de esa carpeta
+            SL("8bits", "tildado: presets reasignados de la carpeta 8bits");
           }
           if(hasSpaceAndSilence(kind)){
             var rv = document.getElementById("consolaReverbAmount");
-            if(rv){ rv.value = 60 + rnd(41); rv.dispatchEvent(new Event("input", { bubbles: true })); }
-          }
+            if(rv){ rv.value = 60 + rnd(41); rv.dispatchEvent(new Event("input", { bubbles: true })); SL("Reverb (RANDOM CHOOSE 60–100%)", rv.value + "% — la song tiene espacio o silencios"); }
+          } else SL("Reverb (RANDOM CHOOSE 60–100%)", "no se sortea (poco espacio y poco silencio)");
         }
       };
     })();
@@ -21887,6 +21998,12 @@ function runAnalysis() {
     var btnInterv = document.getElementById("creaturaIntervalicBtn");
     if(!btn) return;
     var running = false;
+    function SL(l, v){ try{ if(window.__songLog) window.__songLog.add(l, v); }catch(_e){} }   // 📝 Log de la canción
+    function SLbegin(k){ try{ if(window.__songLog) window.__songLog.begin(k); }catch(_e){} }
+    function SLpartimenti(pr){
+      if(!pr) return;
+      SL("Partimenti sorteo", Object.keys(pr).map(function(k){ return k + "=" + (pr[k] === null ? "off" : pr[k]); }).join(" · "));
+    }
 
     function wait(ms){
       return new Promise(function(res){ setTimeout(res, ms); });
@@ -21910,7 +22027,10 @@ function runAnalysis() {
     function randomizeSlider(id, lo, hi){
       var sl = document.getElementById(id);
       if(!sl) return;
-      sl.value = lo + Math.floor(Math.random() * (hi - lo + 1));
+      var want = lo + Math.floor(Math.random() * (hi - lo + 1));
+      sl.value = want;
+      var lb = document.querySelector('label[for="' + id + '"]');
+      SL((lb ? lb.textContent.trim() : id) + " [" + lo + "–" + hi + "]", sl.value + (String(sl.value) !== String(want) ? " (salió " + want + ", el slider lo recortó)" : ""));
       sl.dispatchEvent(new Event("input", { bubbles: true }));
     }
 
@@ -21937,7 +22057,7 @@ function runAnalysis() {
       randomizeSlider("consolaReverbAmount", 40, 70);
       randomizeSlider("consolaMelSilSlider", 0, 10);
       var mc = document.getElementById("consolaMoreCompingBtn");
-      if(mc) mc.classList.toggle("primary", Math.random() < 0.5);
+      if(mc){ var mcOn = Math.random() < 0.5; mc.classList.toggle("primary", mcOn); SL("moreComping", mcOn ? "sí" : "no"); }
     }
     function randomizeVoicesAndTempo(){
       randomizeSlider("consolaTempo", 30, 120);
@@ -21958,8 +22078,10 @@ function runAnalysis() {
         var avail = list.filter(function(v){
           return v === null || Array.prototype.some.call(el.options, function(o){ return o.value === v; });
         });
-        var v = avail[Math.floor(Math.random() * avail.length)];
-        if(v !== null) setSelectIfPresent(id, v);
+        var v = avail[Math.floor(Math.random() * avail.length)], lbl = (id === "harmonyPresetSelect") ? "Preset Armonía (sorteo)" : "Preset Melodía (sorteo)";
+        if(v !== null){
+          if(setSelectIfPresent(id, v)){ var oo = el.options[el.selectedIndex]; SL(lbl, oo ? oo.text : v); }
+        } else SL(lbl, "se deja el actual");
       }
       pick("harmonyPresetSelect", harm);
       pick("melodyPresetSelect", mel);
@@ -21993,6 +22115,7 @@ function runAnalysis() {
       }
       // "input" actualiza cada etiqueta de % y el total "X% · Chromatism Y%" (sin regenerar).
       sliders.forEach(function(s){ s.dispatchEvent(new Event("input", { bubbles: true })); });
+      SL("Cycles al azar", "total " + total + "% · " + (sliders.filter(function(s){ return Number(s.value) > 0; }).map(function(s){ return s.getAttribute("data-semitones") + "st " + s.value + "%"; }).join(", ") || "ninguno"));
       // Para que la combinación tenga efecto, Cycles tiene que estar prendido.
       setChecked("consolaCyclesChk", true);
     }
@@ -22036,6 +22159,7 @@ function runAnalysis() {
         setChecked("multiSetsModeMixed", true);
         // Cantidad de sets al azar: 5 o 2 (multi set).
         var nSets = Math.random() < 0.5 ? 5 : 2;
+        SL("Sets al azar", nSets + " sets · máx " + maxN + " notas");
         // bella: false = CreaturaRandom, true = CreaturaBella, "intervalic" = CreaturaIntervalic.
         var fillFn = bella === "intervalic" ? window.__multiSetsIntervalicFillCount
           : (bella ? window.__multiSetsBellaFillCount : window.__multiSetsRandomFillCount);
@@ -22051,14 +22175,15 @@ function runAnalysis() {
         if(typeof window.__rollToFront === "function") window.__rollToFront(); // modo automático: piano roll al primer plano
         if(kind === "classical"){
           // RadioClassicalMode: la vuelta nueva es siempre una canción 🎹 Partimenti (controles sorteados de nuevo; presets/tempo como los deje Partimenti).
-          if(window.__partimenti){ window.__partimenti.randomize(); rcPre("partimenti"); window.__partimenti.start(); rcPost("partimenti"); }
+          if(window.__partimenti){ SLbegin("Partimenti (RadioClassical)"); SLpartimenti(window.__partimenti.randomize()); rcPre("partimenti"); window.__partimenti.start(); rcPost("partimenti"); }
           return;
         }
         if(kind === "mix"){
           // RADIO!: cada vuelta nueva sortea entre CreaturaRandom, CreaturaBella, CommonChords y Partimenti.
           var pick = ["random", "bella", "common", "partimenti"][Math.floor(Math.random() * 4)];
           window.__radioMixLast = pick;
-          if(pick === "partimenti"){ window.__partimenti.randomize(); rcPre("partimenti"); window.__partimenti.start(); rcPost("partimenti"); return; }
+          SLbegin({ random: "CreaturaRandom", bella: "CreaturaBella", common: "ChordS", partimenti: "Partimenti" }[pick]);
+          if(pick === "partimenti"){ SLpartimenti(window.__partimenti.randomize()); rcPre("partimenti"); window.__partimenti.start(); rcPost("partimenti"); return; }
           if(window.__partimenti) window.__partimenti.off();
           if(pick === "common"){ randomizeSlider("consolaTempo", 30, 120); rcPre("common"); window.__commonChords.start(); rcPost("common"); return; }
           if(window.__commonChords) window.__commonChords.off();
@@ -22073,7 +22198,9 @@ function runAnalysis() {
           return;
         }
         // RadioMode alterna: cada vuelta nueva sortea Random o Bella (50/50).
-        randomizeAndFill(Math.random() < 0.5);
+        var blRM = Math.random() < 0.5;
+        SLbegin(blRM ? "CreaturaBella" : "CreaturaRandom");
+        randomizeAndFill(blRM);
         rcPre("creatura");
         randomizeVoices(true); // RadioMode: cada canción nueva baraja los presets de Armonía y Melodía (el tempo no se toca)
         randomizeExtras(); // RadioMode: Reverb general 40–70%, Melody silences 0–10%, moreComping on/off en cada canción nueva
@@ -22091,6 +22218,7 @@ function runAnalysis() {
       if(btnInterv) btnInterv.disabled = true;
       if(typeof window.__rollToFront === "function") window.__rollToFront(); // modo automático: piano roll al primer plano
       try {
+        SLbegin(bella === "intervalic" ? "CreaturaIntervalic" : (bella ? "CreaturaBella" : "CreaturaRandom"));
         randomizeAndFill(bella);
         rcPre("creatura");
         randomizeVoicesAndTempo();
@@ -22171,6 +22299,7 @@ function runAnalysis() {
       if(running) return;
       running = true;
       try {
+        SLbegin("ChordS");
         window.__radioKind = null; // RadioMode no engancha vueltas de otras creaturas sobre CommonChords
         if(typeof window.__rollToFront === "function") window.__rollToFront();
         clickIfEnabled("consolaStopBtn");
@@ -22193,7 +22322,8 @@ function runAnalysis() {
         if(typeof window.__rollToFront === "function") window.__rollToFront();
         clickIfEnabled("consolaStopBtn");
         await wait(300);
-        window.__partimenti.randomize();                 // sortea disminución, MyCadences y esquemas galantes
+        SLbegin(radio === true ? "Partimenti (RadioClassical)" : "Partimenti");
+        SLpartimenti(window.__partimenti.randomize());   // sortea disminución, MyCadences y esquemas galantes
         rcPre("partimenti");
         window.__partimenti.start();
         rcPost("partimenti");
@@ -22326,6 +22456,57 @@ function runAnalysis() {
       if(!RP.isOn() || !H || H.len() === 0){ RP.start(); return; }
       rpPlayHist(Math.max(0, H.pos() - 1));   // en la primera canción: la reinicia
     };
+    // 📝 Log de la canción: panel plegable (comprimido por defecto) que va encima de cualquier skin del Player.
+    var rvLogOpen = false;
+    function rvLogEsc(t){ return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+    function rvLogCopy(btnEl){
+      var L = window.__songLog, text = L ? L.text() : "";
+      function done(ok){ if(btnEl){ var old = btnEl.textContent; btnEl.textContent = ok ? "¡Copiado!" : "No se pudo"; setTimeout(function(){ btnEl.textContent = old; }, 1400); } }
+      if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(text).then(function(){ done(true); }, function(){ done(false); }); return; }
+      try{
+        var ta = document.createElement("textarea"); ta.value = text; ta.style.cssText = "position:fixed;left:-9999px;top:0;";
+        document.body.appendChild(ta); ta.select(); var ok = document.execCommand("copy"); document.body.removeChild(ta); done(!!ok);
+      }catch(_e){ done(false); }
+    }
+    function rvLogMount(){
+      if(!rvEl) return;
+      var box = document.createElement("div");
+      box.id = "rvLogBox";
+      box.innerHTML = '<button type="button" id="rvLogBtn" aria-expanded="false" aria-controls="rvLogPanel" title="Qué sorteó el random en cada canción (compases, reverb, presets, sliders...)">📝 Log</button><div id="rvLogPanel" hidden></div>';
+      box.addEventListener("click", function(e){
+        var t = e.target;
+        if(t.closest && t.closest("#rvLogBtn")){ rvLogOpen = !rvLogOpen; rvLogUpdate(); return; }
+        var c = t.closest ? t.closest("[data-rvl=copy]") : null;
+        if(c) rvLogCopy(c);
+      });
+      rvEl.appendChild(box);
+      rvLogUpdate();
+    }
+    function rvLogUpdate(){
+      var L = window.__songLog, btn = document.getElementById("rvLogBtn"), pn = document.getElementById("rvLogPanel");
+      if(!btn || !pn) return;
+      btn.setAttribute("aria-expanded", rvLogOpen ? "true" : "false");
+      pn.hidden = !rvLogOpen;
+      if(!rvLogOpen || !L) return;
+      var v = L.view(), key = L.ver + "|" + (v.cur ? v.cur.id : 0);
+      if(pn.__k === key) return;
+      pn.__k = key;
+      var top = pn.scrollTop;
+      var h = '<div class="rvl-h"><span>Selecciones de cada canción</span><button type="button" data-rvl="copy">Copiar</button></div>';
+      if(!v.items.length) h += '<div class="rvl-s">Todavía no hay canciones registradas: apretá Play o Next.</div>';
+      v.items.forEach(function(e){
+        h += '<div class="rvl-e' + (e === v.cur ? ' cur' : '') + '"><div class="rvl-t">#' + e.id + ' · ' + rvLogEsc(e.kind || "—") + ' · ' + rvLogEsc(e.title || "(sin título)") + (e === v.cur ? '<em>▶ EN CURSO</em>' : '') + '</div>';
+        if(e.sets) h += '<div class="rvl-s">' + rvLogEsc(e.sets) + '</div>';
+        e.state.forEach(function(r){ h += '<div class="rvl-r"><span>' + rvLogEsc(r[0]) + '</span><i>' + rvLogEsc(r[1]) + '</i></div>'; });
+        if(e.events.length){
+          h += '<div class="rvl-sub">sorteos</div>';
+          e.events.forEach(function(r){ h += '<div class="rvl-r"><span>' + rvLogEsc(r[0]) + '</span><i>' + rvLogEsc(r[1]) + '</i></div>'; });
+        }
+        h += '</div>';
+      });
+      pn.innerHTML = h;
+      pn.scrollTop = top;
+    }
     function rvBuild(){
       if(rvEl) return rvEl;
       rvEl = document.createElement("div");
@@ -22389,6 +22570,7 @@ function runAnalysis() {
       document.getElementById("rvKind").textContent = on ? (RV_KINDS[window.__radioMixLast] || "RADIO !") : "RADIO OFF";
       var pk = rvEl.querySelector('[data-act="play"]');
       if(pk) pk.classList.toggle("rv-lit", on);
+      rvLogUpdate();
     }
     // Skins: al abrir el player se sortea una (50% "portada"; 50% una de radio/vinilo/cassette/dial/texto/marco/polaroid). El markup está en window.__RV_SKINS.
     function rvFit(){
@@ -22407,6 +22589,7 @@ function runAnalysis() {
       rvEl.setAttribute("data-skin", name);
       var SK = window.__RV_SKINS;
       rvEl.innerHTML = (name === "classic" || !SK) ? RV_CLASSIC : SK.html(name);
+      rvLogMount();   // 📝 el panel Log va encima de cualquier skin
       rvFit();
     }
     // Skin a mano (para probar): __radioPlayer.skin(1..7 | 9) ; skin(0) = el vintage original
