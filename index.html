@@ -181,6 +181,9 @@
   /* RadioMode: botón chico en la esquina superior derecha de la tarjeta Clock/Piano */
   .radio-mode-wrap.radio-top{position:absolute;top:25px;right:10px;z-index:2;white-space:nowrap;}
   .radio-mode-wrap.radio-top .chip{font-size:9px;padding:2px 8px;line-height:1.3;}
+  /* Botón ▶ Player (abre la radio vintage): grande y bien visible, relleno dorado */
+  #radioVintageOpenBtn{position:absolute;top:8px;left:12px;z-index:3;font-size:18px;font-weight:700;padding:8px 22px;line-height:1.2;background:var(--gold);border-color:var(--gold);color:#1a1622;box-shadow:0 0 0 2px rgba(255,255,255,.12),0 4px 14px rgba(0,0,0,.45);}
+  #radioVintageOpenBtn:hover{background:var(--gold);border-color:var(--gold);filter:brightness(1.12);color:#1a1622;}
   .radio-mode-wrap.radio-top2{top:45px;}
   .radio-mode-wrap.radio-top0{top:5px;}
   /* ===== 📻 RADIO!: reproductor vintage a pantalla completa ===== */
@@ -968,7 +971,7 @@
     display:block;
   }
   /* Shortcuts: mismo estilo que el "+" de arriba a la derecha, pero arriba a la izquierda */
-  .shortcuts-panel{position:fixed;left:env(safe-area-inset-left,0px);top:calc(env(safe-area-inset-top,0px) + 74px);z-index:100;display:flex;flex-direction:column;gap:6px;background:var(--surface);padding:12px;border:1px solid var(--line);border-left:0;border-radius:0 8px 8px 0;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.06em;color:var(--ink-muted);transform:scale(.7);transform-origin:top left;}
+  .shortcuts-panel{position:fixed;left:env(safe-area-inset-left,0px);top:calc(env(safe-area-inset-top,0px) + 74px);z-index:100;display:flex;flex-direction:column;gap:6px;background:var(--surface);padding:12px;border:1px solid var(--line);border-left:0;border-radius:0 8px 8px 0;font-family:'JetBrains Mono',monospace;font-size:33px;letter-spacing:.06em;color:var(--ink-muted);transform:scale(.7);transform-origin:top left;}
   .shortcuts-panel.is-collapsed{padding:0;gap:0;width:32px;overflow:hidden;background:transparent;border:0;}
   .shortcuts-panel.is-collapsed .shortcuts-label,.shortcuts-panel.is-collapsed .shortcuts-list{display:none;}
   .shortcuts-header{display:flex;align-items:center;justify-content:space-between;gap:10px;}
@@ -979,7 +982,7 @@
   .shortcuts-panel.is-collapsed .shortcuts-toggle{width:32px;height:32px;font-size:18px;background:var(--surface);border:1px solid var(--line);border-left:0;border-radius:0 8px 8px 0;}
   .shortcuts-panel.is-collapsed .shortcuts-toggle::after{content:"+";}
   .shortcuts-list{display:flex;flex-direction:column;gap:4px;}
-  .shortcuts-list kbd{display:inline-block;min-width:18px;text-align:center;padding:1px 6px;margin-right:8px;border:1px solid var(--line);border-radius:4px;color:var(--gold);background:var(--surface-2);font-family:inherit;}
+  .shortcuts-list kbd{display:inline-block;min-width:54px;text-align:center;padding:3px 18px;margin-right:24px;border:1px solid var(--line);border-radius:4px;color:var(--gold);background:var(--surface-2);font-family:inherit;}
   .nav-modules{
     position:fixed;
     right:env(safe-area-inset-right, 0px);
@@ -1194,20 +1197,21 @@
 <div class="page-bg-avatar"></div>
 
 <!-- Panel de Shortcuts (a la izquierda, debajo del botón rosa + / − del piano roll) -->
-<div class="shortcuts-panel" id="shortcutsPanel">
+<div class="shortcuts-panel is-collapsed" id="shortcutsPanel">
   <div class="shortcuts-header">
     <span class="shortcuts-label">Shortcuts</span>
-    <button type="button" class="shortcuts-toggle" id="shortcutsToggle" aria-expanded="true" aria-controls="shortcutsList" title="Mostrar/ocultar Shortcuts"></button>
+    <button type="button" class="shortcuts-toggle" id="shortcutsToggle" aria-expanded="false" aria-controls="shortcutsList" title="Mostrar/ocultar Shortcuts"></button>
   </div>
   <div class="shortcuts-list" id="shortcutsList">
-    <div><kbd>G</kbd>Regenerate</div>
-    <div><kbd>F</kbd>Stop</div>
+    <div><kbd>G</kbd>&#128256;</div>
+    <div><kbd>F</kbd>&#9632;</div>
+    <div><kbd>D</kbd>&#9658;</div>
     <div><kbd>H</kbd>CreaturaRandom</div>
-    <div><kbd>B</kbd>CreaturaBella</div>
+    <div><kbd>J</kbd>CreaturaBella</div>
     <div><kbd>A</kbd>CommonChords</div>
-    <div><kbd>J</kbd>Random fill</div>
-    <div><kbd>S</kbd>Clear</div>
-    <div><kbd>D</kbd>Play</div>
+    <div><kbd>K</kbd>Partimenti</div>
+    <div><kbd>C</kbd>Random fill</div>
+    <div><kbd>V</kbd>Clear</div>
   </div>
 </div>
 
@@ -1262,8 +1266,8 @@
       <span class="radio-mode-wrap radio-top radio-top0" title="RADIO! (botón ON/OFF): mix random. Al pasar a ON arranca una canción de un tipo al azar y en cada vuelta nueva sortea de nuevo entre CreaturaBella, CreaturaRandom, CommonChords y Partimenti, sin cortar el audio. Se corta con Detener o con OFF. Usa el modo en vivo (no Prerender).">
         <input type="checkbox" id="consolaRadioMixChk" hidden>
         <button type="button" class="chip" id="consolaRadioMixBtn" aria-pressed="false">&#128251; RADIO!: OFF</button>
-        <button type="button" class="chip" id="radioVintageOpenBtn" title="Abrir el reproductor de radio vintage (Previous / Play / Stop / Next)">&#9654;&#65038; Player</button>
       </span>
+      <button type="button" class="chip" id="radioVintageOpenBtn" title="Abrir el reproductor de radio vintage (Previous / Play / Stop / Next)">&#9654;&#65038; Player</button>
       <span class="radio-mode-wrap radio-top" title="RadioCreaturaMode (botón ON/OFF): al pasar a ON arranca solo (CreaturaRandom o CreaturaBella al azar); con ON, después de 🪄 CreaturaRandom o 🪄 CreaturaBella, cuando termina la vuelta engancha otra vuelta nueva, alternando al azar Random/Bella (sets y sliders nuevos) y barajando los presets de Armonía y Melodía en cada canción nueva, sin cortar el audio. Se corta con Detener o con OFF. Usa el modo en vivo (no Prerender).">
         <input type="checkbox" id="consolaRadioChk" hidden>
         <button type="button" class="chip" id="consolaRadioBtn" aria-pressed="false">&#128251; RadioCreaturaMode: OFF</button>
@@ -1486,6 +1490,7 @@
         </select>
         <input type="range" id="consolaExprSlider" min="0" max="100" value="50" step="1">
         <span class="consola-val" id="consolaExprVal">50%</span>
+        <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;" title="Click audible en cada pulso (acento en el primer pulso de cada compás). Sigue el mismo mapa de tempo que las notas: con Accelerando/Ritardando/Rubato/Ad libitum se oye cómo se mueve el tempo. Solo suena en vivo (no entra en el export MIDI/MP3)."><input type="checkbox" id="consolaClickChk"> click</label>
       </div>
       <div class="consola-field consola-instruments">
         <label>Engine options</label>
@@ -1566,9 +1571,15 @@
         <input type="checkbox" id="consolaLoopChk" checked>
         <label for="consolaLoopChk">Loop</label>
       </div>
-      <div class="consola-field consola-loop" title="Duplica la duración del segmento a 24 compases en vez de los 12 de siempre — mismo motor, mismas reglas (Chromatism, Chords, Jazz, MelodicSpace/HarmonicSpace/RythmSpace, Swing Drums, etc.), el doble de largo. Se aplica en el próximo Reproducir/Regenerar/Simplicity.">
+      <div class="consola-field consola-loop" style="flex-wrap:wrap;" title="Largo del segmento: 24 bars / 12 bars / Random 4–48 / campo manual (1–96). Duplica la duración del segmento a 24 compases en vez de los 12 de siempre — mismo motor, mismas reglas (Chromatism, Chords, Jazz, MelodicSpace/HarmonicSpace/RythmSpace, Swing Drums, etc.), el doble de largo. Se aplica en el próximo Reproducir/Regenerar/Simplicity.">
         <input type="checkbox" id="consola24BarsChk" checked>
         <label for="consola24BarsChk">24 bars</label>
+        <input type="checkbox" id="consola12BarsChk" title="12 compases (el largo de siempre)">
+        <label for="consola12BarsChk" title="12 compases (el largo de siempre)">12 bars</label>
+        <input type="checkbox" id="consolaRandBarsChk" title="Sortea un largo entre 4 y 48 compases en cada generación nueva (Regenerar, CreaturaRandom/Bella, CommonChords, Partimenti, RadioMode).">
+        <label for="consolaRandBarsChk" title="Sortea un largo entre 4 y 48 compases en cada generación nueva (Regenerar, CreaturaRandom/Bella, CommonChords, Partimenti, RadioMode).">Random 4–48</label>
+        <label for="consolaBarsNum" title="Cantidad de compases a mano (1–96). Si hay un número acá manda sobre los checkboxes; vacío = vale el checkbox tildado.">bars</label>
+        <input type="number" id="consolaBarsNum" min="1" max="96" step="1" placeholder="–" title="Cantidad de compases a mano (1–96). Si hay un número acá manda sobre los checkboxes; vacío = vale el checkbox tildado." style="width:58px;">
       </div>
         </div>
       </div>
@@ -5894,7 +5905,7 @@ const SF_BASE_URLS = []; // Instruments/Drums/Percussion.sf2 ya no existen (ver 
 // cambiar un default: reemplazá el archivo en Soundfonts/ o editá su fila.
 const SF_DEFAULT_FILES = [
   { mix: "harmony",      file: "Piano default.sf2", bank: 0, program: 0,  label: "Grand Piano",          kind: "melodic", family: "piano" },
-  { mix: "chordDouble",  file: "Extra v2/Keys/Nord Pad.sf2", bank: 0, program: 0,  label: "Warm Pad Pro",         kind: "melodic", family: "pad"   },
+  { mix: "chordDouble",  file: "Extra v2/Synth/Nord Pad.sf2", bank: 0, program: 0,  label: "Warm Pad Pro",         kind: "melodic", family: "pad"   },
   { mix: "melody",       file: "BasoonFlute.sf2",   bank: 0, program: 0,  label: "Ethan's Bassoon",      kind: "melodic", family: "flute" },
   { mix: "melodyDouble", file: "Extra v2/LEAD/Armonica.sf2", bank: 0, program: 0,  label: "Hohner C Harmonica",   kind: "melodic", family: "flute" },
   { mix: "bass",         file: "Bass default.sf2",  bank: 0, program: 32, label: "Acoust. Bass (Solar)", kind: "melodic", family: "bass"  },
@@ -5924,11 +5935,11 @@ const SF_LEGACY_FILES = {
   strings:     { file: "Extra v2/Brass & Strings/Instruments - 000-048 String Section 1 (Ma.sf2",   bank: 0, program: 48 },
   brass1:      { file: "Extra v2/Brass & Strings/Instruments - 000-061 Brass Section 1.sf2",      bank: 0, program: 61 },
   sopranoSax:  { file: "Extra v2/LEAD/Instruments - 000-064 Soprano Sax.sf2",    bank: 0, program: 64 },
-  tenorSax:    { file: "Extra v2/LEAD/Instruments - 000-066 Tenor Sax.sf2",      bank: 0, program: 66 },
+  tenorSax:    { file: "Extra v2/LEAD/Live HQ Natural SoundFont GM - 000-066 Jazz Tenor Sax.sf2",      bank: 0, program: 66 },
   bassoon:     { file: "Extra v2/LEAD/Instruments - 000-070 Bassoon.sf2",      bank: 0, program: 70 },
   flute:       { file: "Flute default.sf2",                                     bank: 0, program: 73 },
   contrabass:  { file: "Extra v2/BASS/Instruments - 000-043 Contrabass.sf2",      bank: 0, program: 43 },
-  jazzGuitar:  { file: "Extra v2/Instruments - 000-026 Jazz Guitar.sf2",      bank: 0, program: 26 },
+  jazzGuitar:  { file: "Extra v2/Guitars/alex_gm - 000-026 Jazz guitar.sf2",      bank: 0, program: 26 },
   kit:         { file: "Drums default.sf2",                                     bank: 128, program: 0  }
 };
 function sfLegacyUrl(key) { const l = SF_LEGACY_FILES[key]; return l ? sfUrlForPath(SF_ROOT_DIR + "/" + l.file) : null; }
@@ -7844,7 +7855,20 @@ function runAnalysis() {
   // parámetro o directamente de este cierre, así que alcanza con
   // reasignar la variable ANTES de regenerateConsola()/normalizeConsola()
   // — no hace falta tocar nada más del motor.
-  function desiredNumBars(){
+  // Largo del segmento: campo manual #consolaBarsNum (1–96, manda si tiene un número) > "Random 4–48"
+  // (#consolaRandBarsChk: sortea UNA vez por generación — reroll=true lo pide solo el punto de entrada
+  // de cada generación; normalizeConsola, que regenerateConsola delega, reutiliza el mismo largo) >
+  // "24 bars" > "12 bars" / ninguno = 12 de siempre.
+  var RANDOM_BARS_CUR = 12;
+  function desiredNumBars(reroll){
+    var num = document.getElementById("consolaBarsNum");
+    var n = num ? parseInt(num.value, 10) : NaN;
+    if(n >= 1) return Math.min(96, n);
+    var rnd = document.getElementById("consolaRandBarsChk");
+    if(rnd && rnd.checked){
+      if(reroll) RANDOM_BARS_CUR = 4 + Math.floor(Math.random() * 45);   // 4..48
+      return RANDOM_BARS_CUR;
+    }
     var chk = document.getElementById("consola24BarsChk");
     return (chk && chk.checked) ? 24 : 12;
   }
@@ -13294,7 +13318,7 @@ function runAnalysis() {
     };
   })();
   function regenerateConsola(){
-    NUM_BARS = desiredNumBars();
+    NUM_BARS = desiredNumBars(true);
     RHYTHM.recompute();
     TOTAL_BEATS = RHYTHM.total();
     DYNAMICS.newPlan(); // Dynamics: curva nueva por generación
@@ -13776,7 +13800,7 @@ function runAnalysis() {
       }
       var testH = modeTestOn("commonChordsModeTestH"), testM = modeTestOn("commonChordsModeTestM");
       var narrow = narrowOn(), prevRange = null, narrowMiss = 0; // narrowregister: [nota más grave, más aguda] del acorde anterior
-      NUM_BARS = desiredNumBars();
+      NUM_BARS = desiredNumBars(true);
       RHYTHM.recompute();
       TOTAL_BEATS = RHYTHM.total();
       var allowRepeat = Math.random() < 0.5;      // por canción: ¿se pueden repetir acordes?
@@ -15582,7 +15606,7 @@ function runAnalysis() {
     }
 
     function build(){
-      NUM_BARS = desiredNumBars();
+      NUM_BARS = desiredNumBars(true);
       var tsN = document.getElementById("partimentiTSNum"), tsD = document.getElementById("partimentiTSDen");
       RHYTHM.recompute(tsN && tsD ? RHYTHM.parse(tsN.value + "/" + tsD.value) : null);   // compás propio de Partimenti (inválido → 4/4)
       TOTAL_BEATS = RHYTHM.total();
@@ -18729,6 +18753,50 @@ function runAnalysis() {
       mdInterval: (altMelodyChk && altMelodyChk.checked) ? -7 : -12
     };
   }
+  // Click de tempo (checkbox #consolaClickChk): un tic por pulso, con acento en el primer pulso de cada compás.
+  // Usa el MISMO mapa beat→tiempo que las notas (Tempo & Expression), así se oye cómo se mueve el tempo.
+  // En vivo lo programa scheduleLoopAt (misma ventana/foto que las notas); en prerender, runRendered (las pistas ya vienen congeladas).
+  var CLICK = (function(){
+    var timer = null;
+    function on(){ var c = document.getElementById("consolaClickChk"); return !!(c && c.checked); }
+    function beats(){
+      var out = [];
+      for(var bar = 0; bar < NUM_BARS; bar++){
+        var s = RHYTHM.start(bar), e = RHYTHM.start(bar + 1);
+        for(var b = s, i = 0; b < e - 1e-6; b += 1, i++) out.push({ b: b, acc: i === 0 });
+      }
+      return out;
+    }
+    function blip(ctx, t, acc){
+      var o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = "sine"; o.frequency.value = acc ? 1600 : 1000;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.linearRampToValueAtTime(acc ? 0.5 : 0.35, t + 0.002);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
+      o.connect(g); g.connect(ensureMasterGain(ctx));
+      o.start(t); o.stop(t + 0.06);
+      trackVoice(o);
+    }
+    function stop(){ if(timer){ clearInterval(timer); timer = null; } }
+    function runRendered(ctx, t0, spb, loopDur, tw){
+      stop();
+      var cb = beats(), N = cb.length, ci = 0, loopChk = document.getElementById("consolaLoopChk");
+      if(!N) return;
+      timer = setInterval(function(){
+        if(!playing){ stop(); return; }
+        var curLi = Math.max(0, Math.floor((ctx.currentTime - t0) / loopDur)), guard = 0;
+        while(guard++ < 200){
+          var li = Math.floor(ci / N), k = ci % N;
+          if(li > curLi && !loopChk.checked){ stop(); return; }
+          var t = t0 + li * loopDur + tw.f(cb[k].b) * spb;
+          if(t > ctx.currentTime + 0.5) break;
+          if(on() && t >= ctx.currentTime - 0.02) blip(ctx, t, cb[k].acc);
+          ci++;
+        }
+      }, 50);
+    }
+    return { on: on, beats: beats, blip: blip, stop: stop, runRendered: runRendered };
+  })();
   function scheduleLoopAt(ctx, dest, loopStartTime, spb, only, win){
     // only (opcional): nombre de UNA pista (chord, chordDouble, bass, melody,
     // melodyDouble, drum, comping2, bebop). Sin él, programa todas (modo en vivo).
@@ -18959,6 +19027,15 @@ function runAnalysis() {
       if(sm2Active && playSM2Voice(ctx, gains.melody3, P.melody3, ev.midi, t, dur*0.95, 0.16*velK(ev), velL(ev))) return;
       melody3Fam.fn(ctx, gains.melody3, ev.midi, t, dur*0.95, velOpts(melody3Fam, dur*0.95, ev));
     });
+    // Click de tempo: solo en vivo (sin "only" = no es un stem de prerender; ctx real = no es export offline)
+    if(!only && !ctx.startRendering && CLICK.on()){
+      var ckb = CLICK.beats();
+      for(var ck = 0; ck < ckb.length; ck++){
+        var cbt = ckb[ck].b;
+        if(cbt < wFrom || cbt >= wTo) continue;
+        CLICK.blip(ctx, loopStartTime + TWf(cbt)*spb, ckb[ck].acc);
+      }
+    }
   }
 
   function tickPlayhead(ctx, loopAnchor, spb, loopDur, clk, tw0){
@@ -19228,6 +19305,7 @@ function runAnalysis() {
         } else {
           window._consolaStopTimer = setTimeout(stopPlayback, (loopDur + 0.3) * 1000);
         }
+        CLICK.runRendered(ctx, t0, spb, loopDur, rsnap.tw);   // click de tempo (las pistas ya vienen congeladas)
         tickPlayhead(ctx, t0, spb, loopDur, null, rsnap.tw);
       } catch(err){
         console.error("Prerender failed; using live mode:", err);
@@ -19754,6 +19832,7 @@ function runAnalysis() {
     var prSt = document.getElementById("consolaPrerenderStatus");
     if(prSt && prSt.textContent.indexOf("⏳") === 0) prSt.textContent = "";
     if(schedulerTimer){ clearInterval(schedulerTimer); schedulerTimer = null; }
+    CLICK.stop();
     if(rafId){ cancelAnimationFrame(rafId); rafId = null; }
     if(window._consolaStopTimer){ clearTimeout(window._consolaStopTimer); window._consolaStopTimer = null; }
     var ctx = getAudioCtx();
@@ -19993,9 +20072,32 @@ function runAnalysis() {
   // — hace falta un regenerateConsola() completo, mismo motivo que Time
   // signature arriba (RHYTHM, progresión, bajo/melodía y batería dependen
   // todos del largo del segmento).
-  document.getElementById("consola24BarsChk").addEventListener("change", function(){
-    if(state.rootChord.length) regenerateConsola();
-  });
+  // 24 / 12 / Random 4–48 son excluyentes entre sí y con el campo manual (#consolaBarsNum).
+  (function(){
+    var ids = ["consola24BarsChk", "consola12BarsChk", "consolaRandBarsChk"];
+    var num = document.getElementById("consolaBarsNum");
+    function regen(){ if(state.rootChord.length) regenerateConsola(); }
+    ids.forEach(function(id){
+      document.getElementById(id).addEventListener("change", function(){
+        if(this.checked){
+          ids.forEach(function(o){ if(o !== id) document.getElementById(o).checked = false; });
+          if(num) num.value = "";
+        }
+        regen();
+      });
+    });
+    if(num){
+      num.addEventListener("input", function(){
+        if(parseInt(num.value, 10) >= 1) ids.forEach(function(o){ document.getElementById(o).checked = false; });
+      });
+      num.addEventListener("change", function(){
+        var n = parseInt(num.value, 10);
+        if(!(n >= 1)){ num.value = ""; if(!ids.some(function(o){ return document.getElementById(o).checked; })) document.getElementById("consola12BarsChk").checked = true; }
+        else num.value = Math.min(96, n);
+        regen();
+      });
+    }
+  })();
   // Variaciones de ritmo (Velocity humanizada/Micro-timing/Variación por
   // sección/other-rhythm-variations) — se leen en vivo del DOM (ver
   // velocityHumanizeEnabled()/etc. junto a buildDrumEvents), así que acá
@@ -21434,7 +21536,7 @@ function runAnalysis() {
     function randomizeVoices(radio){
       var harm = [radio ? "piano" : null, "epiano", "celesta"]; // sin "pad" (Warm Pad HIFI): pedido del usuario 2026-10-06
       var mel = [radio ? "flute" : null,
-        sfKey("Extra v2/PSR-SX700_GM_Soundbank_-_Part_2 - 000-114 Steel Drums.sf2", 0, 114),
+        sfKey("Extra v2/Steel Drums 1.sf2", 0, 114),
         sfKey("Extra v2/Keys/PSR-SX700_GM_Soundbank_-_Part_2 - 000-023 Tango Accordion.sf2", 0, 23)];
       if(radio){ harm.push("harpsichord"); mel.push("sopranoSax", "tenorSax"); } // RadioMode: también los presets de los estilos Baroque/Jazz (siempre disponibles, sin loadExtra)
       function pick(id, list){
@@ -22027,14 +22129,14 @@ function runAnalysis() {
 })(typeof window !== 'undefined' ? window : globalThis);
 </script>
 <script>
-  // Shortcuts: A CommonChords, G regenerate, F stop, H creatura, J random fill, S limpiar, D play.
+  // Shortcuts: G shuffle (handler aparte), F stop, D play, H CreaturaRandom, J CreaturaBella, A CommonChords, K Partimenti, C Random fill, V Clear.
   (function(){
     var panel=document.getElementById("shortcutsPanel"), tg=document.getElementById("shortcutsToggle");
     if(tg) tg.addEventListener("click", function(){
       var c=panel.classList.toggle("is-collapsed");
       tg.setAttribute("aria-expanded", c?"false":"true");
     });
-    var MAP={ a:"commonChordsBtn", f:"consolaStopBtn", h:"creaturaBtn", b:"creaturaBellaBtn", j:"multiSetsRandomFillBtn", s:"clearBtn", d:"consolaPlayBtn" };
+    var MAP={ a:"commonChordsBtn", f:"consolaStopBtn", d:"consolaPlayBtn", h:"creaturaBtn", j:"creaturaBellaBtn", k:"partimentiBtn", c:"multiSetsRandomFillBtn", v:"clearBtn" };
     document.addEventListener("keydown", function(e){
       var k=(e.key||"").toLowerCase(), id=MAP[k];
       if(!id) return;
