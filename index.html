@@ -1470,6 +1470,23 @@
         <input type="range" id="consolaDynamicsSlider" min="0" max="100" value="50" step="1">
         <span class="consola-val" id="consolaDynamicsVal">50%</span>
       </div>
+      <div class="consola-field" title="Tempo &amp; Expression: variaciones de tiempo y dinámica DENTRO de cada vuelta. Elegí un preset y la intensidad con el slider (0% = tempo estricto). Rubato = el tempo respira por frases; Accelerando / Ritardando (desacelerando) = el tempo sube o baja a lo largo de la vuelta; Rit. al final = frena en los últimos compases; Crescendo / Decrescendo = la velocity sube o baja; Stringendo = accel + cresc; Morendo = rit + dim; Ad libitum = tempo y dinámica libres con calderones al azar. El BPM elegido es el promedio: la duración de la vuelta no cambia, así el loop, la batería y el piano roll siguen alineados. En vivo cada vuelta sortea una variación nueva; con prerender se escucha al volver a dar Play. Se suma a Dynamics. El export MIDI no lo incluye.">
+        <label for="consolaExprSelect">Tempo &amp; Expression</label>
+        <select id="consolaExprSelect">
+          <option value="none">None (strict tempo)</option>
+          <option value="rubato">Rubato</option>
+          <option value="accel">Accelerando</option>
+          <option value="rit">Ritardando (desacelerando)</option>
+          <option value="ritEnd">Rit. al final (last bars)</option>
+          <option value="cresc">Crescendo</option>
+          <option value="dim">Decrescendo</option>
+          <option value="stringendo">Stringendo (accel + cresc)</option>
+          <option value="morendo">Morendo (rit + dim)</option>
+          <option value="adlib">Ad libitum (free)</option>
+        </select>
+        <input type="range" id="consolaExprSlider" min="0" max="100" value="50" step="1">
+        <span class="consola-val" id="consolaExprVal">50%</span>
+      </div>
       <div class="consola-field consola-instruments">
         <label>Engine options</label>
         <div class="consola-inst-row">
@@ -18579,6 +18596,114 @@ function runAnalysis() {
     if(gmNote === 38 && ev && ev.vel != null && ev.vel >= 75) return 47; // caja fuerte -> Hrd Brush Snare1
     return JAZZ_TRAPS_REMAP[gmNote] != null ? JAZZ_TRAPS_REMAP[gmNote] : gmNote;
   }
+  /* ================================================================
+     MÓDULO EXPR — "Tempo & Expression": rubato, accelerando, ritardando
+     (desacelerando), crescendo, decrescendo, ad libitum y combinados.
+     Select #consolaExprSelect + slider #consolaExprSlider (intensidad 0-100%).
+     · Tempo: mapa beat → tiempo (tw.f) que CONSERVA la duración de la vuelta
+       (f(0)=0, f(TOTAL_BEATS)=TOTAL_BEATS): el tempo oscila alrededor del BPM
+       elegido, así loop, batería, piano roll y MP3 siguen alineados.
+       tw.inv() es la inversa (la usan el scheduler en vivo y el playhead).
+     · Dinámica: tw.mul(beat) multiplica la velocity de cada evento (ev.vel, o 96
+       si no trae) — misma vía que Dynamics (ganancia + capa de velocity del .sf2).
+     · Se decide por vuelta: current() devuelve la misma "foto" cacheada hasta
+       reroll() (inicio de Play / empalme de vuelta), así todas las pistas del
+       prerender comparten UN mismo mapa. Sin preset o con 0% devuelve la
+       identidad (tw.on = false): el audio queda idéntico al de siempre.
+     ================================================================ */
+  var EXPR = (function(){
+    var K = 8;                 // muestras por beat de la tabla del mapa de tiempo
+    var TAU = Math.PI*2;
+    var PRESETS = {
+      none:{}, rubato:{ tempo:"rubato" }, accel:{ tempo:"accel" }, rit:{ tempo:"rit" }, ritEnd:{ tempo:"ritEnd" },
+      cresc:{ dyn:"cresc" }, dim:{ dyn:"dim" },
+      stringendo:{ tempo:"accel", dyn:"cresc" }, morendo:{ tempo:"rit", dyn:"dim" },
+      adlib:{ tempo:"adlib", dyn:"adlib" }
+    };
+    function idf(b){ return b; }
+    function one(){ return 1; }
+    var IDENT = { on:false, ck:"", f:idf, inv:idf, mul:one };
+    var cur = null;
+    function rnd(a, b){ return a + Math.random()*(b - a); }
+    function clampR(r){ return r < 0.35 ? 0.35 : r > 2.5 ? 2.5 : r; }
+    // s(b) = segundos relativos por beat (1 = tempo base). Se normaliza después para conservar la duración de la vuelta.
+    function tempoCurve(kind, a, T, BPB){
+      var A = 0.45*a;
+      if(kind === "accel") return function(b){ return 1/clampR(1 + A*(2*b/T - 1)); };
+      if(kind === "rit")   return function(b){ return 1/clampR(1 - A*(2*b/T - 1)); };
+      if(kind === "ritEnd"){
+        var L = Math.min(T, Math.max(2*BPB, 0.125*T)), b0 = T - L;
+        return function(b){ if(b <= b0) return 1; var u = (b - b0)/L; return 1/clampR(1 - 0.6*a*u*u); };
+      }
+      if(kind === "rubato"){
+        // respira por frases (~4 compases) + una onda más corta e irregular; ciclos enteros → empalma sin saltos
+        var c1 = Math.max(1, Math.round(T/(4*BPB))), c2 = Math.max(2, Math.round(T/6.5)), p1 = rnd(0, TAU), p2 = rnd(0, TAU);
+        return function(b){ return 1/clampR(1 + 0.22*a*(0.65*Math.sin(TAU*c1*b/T + p1) + 0.35*Math.sin(TAU*c2*b/T + p2))); };
+      }
+      // adlib: tempo libre = 4 ondas lentas al azar (ciclos enteros) + 1-2 calderones (frenada local en un compás)
+      var w = [], n = [], ph = [], sw = 0, i;
+      for(i = 0; i < 4; i++){ w.push(rnd(0.4, 1)); n.push(1 + Math.floor(Math.random()*7)); ph.push(rnd(0, TAU)); sw += w[i]; }
+      var F = [], nf = a > 0.25 ? 2 : 1;
+      for(i = 0; i < nf; i++) F.push(Math.round(rnd(0.15, 0.85)*T/BPB)*BPB);
+      var sig = 0.6*BPB;
+      return function(b){
+        var s = 0, k, f = 1, d;
+        for(k = 0; k < 4; k++) s += w[k]*Math.sin(TAU*n[k]*b/T + ph[k]);
+        for(k = 0; k < F.length; k++){ d = b - F[k]; f += 1.2*a*Math.exp(-d*d/(2*sig*sig)); }
+        return f/clampR(1 + 0.32*a*s/sw);
+      };
+    }
+    // m(x), x = beat/T en 0..1: multiplicador de velocity
+    function dynCurve(kind, a){
+      if(kind === "cresc") return function(x){ return 1 + a*(-0.55 + 0.85*x); };
+      if(kind === "dim")   return function(x){ return 1 + a*(0.30 - 0.85*x); };
+      var n1 = 1 + Math.floor(Math.random()*4), n2 = 1 + Math.floor(Math.random()*4), p1 = rnd(0, TAU), p2 = rnd(0, TAU);
+      return function(x){ return 1 + 0.30*a*(0.6*Math.sin(TAU*n1*x + p1) + 0.4*Math.sin(TAU*n2*x + p2)); };
+    }
+    function build(key, a, ck, T){
+      var P = PRESETS[key];
+      if(!P || !(T > 0) || (!P.tempo && !P.dyn)) return IDENT;
+      var tw = { on:true, ck:ck, f:idf, inv:idf, mul:one };
+      if(P.tempo){
+        var s = tempoCurve(P.tempo, a, T, BEATS_PER_BAR);
+        var N = Math.max(8, Math.round(T*K)), h = T/N, cum = new Float64Array(N + 1), i;
+        for(i = 1; i <= N; i++) cum[i] = cum[i-1] + s((i - 0.5)*h)*h;
+        var sc = T/cum[N];
+        for(i = 1; i <= N; i++) cum[i] *= sc;
+        cum[N] = T;
+        tw.f = function(b){
+          if(!(b > 0) || b >= T) return b;           // fuera de la vuelta: identidad (f(T) = T)
+          var p = b/h, j = p|0;
+          if(j >= N) return b;
+          return cum[j] + (cum[j+1] - cum[j])*(p - j);
+        };
+        tw.inv = function(x){
+          if(!(x > 0) || x >= T) return x;
+          var lo = 0, hi = N, mid, d;
+          while(hi - lo > 1){ mid = (lo + hi) >> 1; if(cum[mid] <= x) lo = mid; else hi = mid; }
+          d = cum[hi] - cum[lo];
+          return (lo + (d > 0 ? (x - cum[lo])/d : 0))*h;
+        };
+      }
+      if(P.dyn){
+        var m = dynCurve(P.dyn, a);
+        tw.mul = function(b){ var x = b/T, v; x = x < 0 ? 0 : x > 1 ? 1 : x; v = m(x); return v < 0.2 ? 0.2 : v > 1.3 ? 1.3 : v; };
+      }
+      return tw;
+    }
+    function current(){
+      var sel = document.getElementById("consolaExprSelect"), sl = document.getElementById("consolaExprSlider");
+      var key = sel ? sel.value : "none";
+      var a = sl ? Math.max(0, Math.min(100, parseInt(sl.value, 10) || 0))/100 : 0;
+      if(key === "none" || a <= 0 || !PRESETS[key]) return IDENT;
+      var T = TOTAL_BEATS, ck = key + "|" + a + "|" + T;
+      if(cur && cur.ck === ck) return cur;
+      cur = build(key, a, ck, T);
+      return cur;
+    }
+    function reroll(){ cur = null; }   // próxima foto = variación nueva (rubato / ad libitum sortean fase)
+    return { current:current, reroll:reroll, ident:IDENT, build:build, presets:PRESETS };
+  })();
   // Dynamics: ev.vel (0-127, neutra 96) escala la ganancia y elige la capa de velocity del .sf2; sin ev.vel, igual que siempre.
   function velK(ev){ return ev.vel != null ? ev.vel/96 : 1; }
   function velL(ev){ return ev.vel != null ? ev.vel : undefined; }
@@ -18600,7 +18725,7 @@ function runAnalysis() {
     return {
       chord: state.chordEvents, bass: state.bassEvents, melody: state.melodyEvents,
       comping2: state.comping2Events, bebop: state.bebopEvents, melody2: state.melody2Events, melody3: state.melody3Events,
-      drum: drumEvents, presets: Object.assign({}, mixPresets),
+      drum: drumEvents, presets: Object.assign({}, mixPresets), tw: EXPR.current(),
       mdInterval: (altMelodyChk && altMelodyChk.checked) ? -7 : -12
     };
   }
@@ -18613,6 +18738,21 @@ function runAnalysis() {
     function want(t){ return !only || only === t; }
     var S = (win && win.snap) || liveSnap();
     var P = S.presets;
+    // Tempo & Expression (EXPR): mapa beat→tiempo y multiplicador de velocity de ESTA vuelta.
+    // Sin preset (o 0%) es la identidad: mismos tiempos y velocities de siempre.
+    var TW = S.tw || EXPR.ident, TWf = TW.f;
+    function twD(ev){ return TW.on ? TWf(ev.startBeat + ev.durBeats) - TWf(ev.startBeat) : ev.durBeats; }
+    function velK(ev){ return (ev.vel != null ? ev.vel/96 : 1) * (TW.on ? TW.mul(ev.startBeat) : 1); }
+    function velL(ev){
+      if(!TW.on) return ev.vel != null ? ev.vel : undefined;
+      var v = Math.round((ev.vel != null ? ev.vel : 96) * TW.mul(ev.startBeat));
+      return v < 1 ? 1 : v > 127 ? 127 : v;
+    }
+    function velOpts(fam, d, ev){
+      var o = fam.mk(d);
+      if(ev.vel != null || TW.on) o.peakGain = (o.peakGain != null ? o.peakGain : 0.15) * velK(ev);
+      return o;
+    }
     var wFrom = win ? win.from : -Infinity, wTo = win ? win.to : Infinity;
     function inWin(ev){ return ev.startBeat >= wFrom && ev.startBeat < wTo; }
     // Mini mixer: un canal de ganancia por instrumento (independiente
@@ -18625,8 +18765,8 @@ function runAnalysis() {
       var hdSm2 = 0, hdFb = 0; // diagnóstico Armonía muda (solo lectura)
       (want("chord") ? S.chord : []).forEach(function(ev){
         if(!inWin(ev)) return;
-        var t = loopStartTime + ev.startBeat*spb;
-        var dur = ev.durBeats*spb;
+        var t = loopStartTime + TWf(ev.startBeat)*spb;
+        var dur = twD(ev)*spb;
         // ev.vel (solo Harmony testing/accent): escala el volumen y elige capa de velocidad del .sf2
         if(sm2Active && playSM2Voice(ctx, gains.chord, P.harmony, ev.midi, t, dur*0.93, 0.2*velK(ev), velL(ev))){ hdSm2++; return; }
         hdFb++;
@@ -18683,8 +18823,8 @@ function runAnalysis() {
         var chordDoubleFam = voiceFamilyFor(P.chordDouble, "strings1");
         S.chord.forEach(function(ev){
           if(!inWin(ev)) return;
-          var t = loopStartTime + ev.startBeat*spb;
-          var dur = ev.durBeats*spb;
+          var t = loopStartTime + TWf(ev.startBeat)*spb;
+          var dur = twD(ev)*spb;
           if(sm2Active && playSM2Voice(ctx, gains.chordDouble, P.chordDouble, ev.midi, t, dur*0.93, 0.2*velK(ev), velL(ev))) return;
           chordDoubleFam.fn(ctx, gains.chordDouble, ev.midi, t, dur*0.93, velOpts(chordDoubleFam, dur*0.93, ev));
         });
@@ -18694,8 +18834,8 @@ function runAnalysis() {
       var bassFam = voiceFamilyFor(P.bass, "contrabass");
       (want("bass") ? S.bass : []).forEach(function(ev){
         if(!inWin(ev)) return;
-        var t = loopStartTime + ev.startBeat*spb;
-        var dur = ev.durBeats*spb;
+        var t = loopStartTime + TWf(ev.startBeat)*spb;
+        var dur = twD(ev)*spb;
         if(sm2Active && playSM2Voice(ctx, gains.bass, P.bass, ev.midi, t, dur*0.9, 0.24*velK(ev), velL(ev))) return;
         bassFam.fn(ctx, gains.bass, ev.midi, t, dur*0.9, velOpts(bassFam, dur*0.9, ev));
       });
@@ -18705,8 +18845,8 @@ function runAnalysis() {
         var bassDoubleFam = voiceFamilyFor(P.bassDouble, "contrabass");
         S.bass.forEach(function(ev){
           if(!inWin(ev)) return;
-          var t = loopStartTime + ev.startBeat*spb;
-          var dur = ev.durBeats*spb;
+          var t = loopStartTime + TWf(ev.startBeat)*spb;
+          var dur = twD(ev)*spb;
           if(sm2Active && playSM2Voice(ctx, gains.bassDouble, P.bassDouble, ev.midi, t, dur*0.9, 0.24*velK(ev), velL(ev))) return;
           bassDoubleFam.fn(ctx, gains.bassDouble, ev.midi, t, dur*0.9, velOpts(bassDoubleFam, dur*0.9, ev));
         });
@@ -18716,8 +18856,8 @@ function runAnalysis() {
       var melodyFam = voiceFamilyFor(P.melody, "flute");
       (want("melody") ? S.melody : []).forEach(function(ev){
         if(!inWin(ev)) return;
-        var t = loopStartTime + ev.startBeat*spb;
-        var dur = ev.durBeats*spb;
+        var t = loopStartTime + TWf(ev.startBeat)*spb;
+        var dur = twD(ev)*spb;
         PITCHFX_CUR = pitchFxFor(ev, t, dur*0.85);
         try{
           if(sm2Active && playSM2Voice(ctx, gains.melody, P.melody, ev.midi, t, dur*0.85, 0.2*velK(ev), velL(ev))) return;
@@ -18738,8 +18878,8 @@ function runAnalysis() {
         var melodyDoubleInterval = S.mdInterval;
         S.melody.forEach(function(ev){
           if(!inWin(ev)) return;
-          var t = loopStartTime + ev.startBeat*spb;
-          var dur = ev.durBeats*spb;
+          var t = loopStartTime + TWf(ev.startBeat)*spb;
+          var dur = twD(ev)*spb;
           var mdMidi = ev.midi + melodyDoubleInterval;
           PITCHFX_CUR = pitchFxFor(ev, t, dur*0.85);
           try{
@@ -18758,10 +18898,10 @@ function runAnalysis() {
       var drumWin = S.drum.filter(inWin);
       var kitIsJazzTraps = sm2Active && drumWin.length > 0 && drumKitIsJazzTraps(drumKitKey);
       drumWin.forEach(function(ev){
-        var t = loopStartTime + ev.startBeat*spb;
+        var t = loopStartTime + TWf(ev.startBeat)*spb;
         // Swing Drums / Velocity humanizada / ghost notes traen ev.vel
         // (0-127): escala la ganancia de siempre. Sin ev.vel queda en 1.
-        var velScale = ev.vel != null ? ev.vel/96 : 1;
+        var velScale = velK(ev);
         var sm2Gain = (ev.type === "kick" ? 0.34 : ev.type === "snare" ? 0.26 : ev.type === "rimshot" ? 0.2 : (ev.open ? 0.2 : 0.15)) * velScale;
         var sm2Dur = ev.type === "kick" ? 0.3 : ev.type === "snare" ? 0.25 : ev.type === "rimshot" ? 0.12 : (ev.open ? 0.5 : 0.15);
         // Ride/campana/crash suenan largo; toms un poco más que el bombo
@@ -18769,7 +18909,7 @@ function runAnalysis() {
         if (ev.midi === 51 || ev.midi === 53 || ev.midi === 59) sm2Dur = 0.9;
         else if (ev.midi === 49 || ev.midi === 57 || ev.midi === 55) sm2Dur = 1.4;
         else if (ev.midi === 41 || ev.midi === 43 || ev.midi === 45 || ev.midi === 47 || ev.midi === 48 || ev.midi === 50) sm2Dur = 0.45;
-        if(sm2Active && playSM2Voice(ctx, gains.drum, drumKitKey, drumNoteForKit(kitIsJazzTraps, drumMidiFor(ev), ev), t, sm2Dur, sm2Gain, ev.vel)) return;
+        if(sm2Active && playSM2Voice(ctx, gains.drum, drumKitKey, drumNoteForKit(kitIsJazzTraps, drumMidiFor(ev), ev), t, sm2Dur, sm2Gain, velL(ev))) return;
         if(ev.type === "kick") playKickDrum(ctx, gains.drum, t, velScale);
         else if(ev.type === "snare") playSnareDrum(ctx, gains.drum, t, velScale);
         else if(ev.type === "rimshot") playRimShot(ctx, gains.drum, t, velScale);
@@ -18781,8 +18921,8 @@ function runAnalysis() {
     var comping2Fam = voiceFamilyFor(P.comping2, "epiano");
     (want("comping2") ? S.comping2 : []).forEach(function(ev){
       if(!inWin(ev)) return;
-      var t = loopStartTime + ev.startBeat*spb;
-      var dur = ev.durBeats*spb;
+      var t = loopStartTime + TWf(ev.startBeat)*spb;
+      var dur = twD(ev)*spb;
       if(sm2Active && playSM2Voice(ctx, gains.comping2, P.comping2, ev.midi, t, dur*0.9, 0.16*velK(ev), velL(ev))) return;
       comping2Fam.fn(ctx, gains.comping2, ev.midi, t, dur*0.9, velOpts(comping2Fam, dur*0.9, ev));
     });
@@ -18792,8 +18932,8 @@ function runAnalysis() {
     var bebopFam = voiceFamilyFor(P.bebop, "sopranoSax");
     (want("bebop") ? S.bebop : []).forEach(function(ev){
       if(!inWin(ev)) return;
-      var t = loopStartTime + ev.startBeat*spb;
-      var dur = ev.durBeats*spb;
+      var t = loopStartTime + TWf(ev.startBeat)*spb;
+      var dur = twD(ev)*spb;
       if(sm2Active && playSM2Voice(ctx, gains.bebop, P.bebop, ev.midi, t, dur*0.85, 0.16*velK(ev), velL(ev))) return;
       bebopFam.fn(ctx, gains.bebop, ev.midi, t, dur*0.85, velOpts(bebopFam, dur*0.85, ev));
     });
@@ -18802,8 +18942,8 @@ function runAnalysis() {
     var melody2Fam = voiceFamilyFor(P.melody2, "flute");
     (want("melody2") ? S.melody2 : []).forEach(function(ev){
       if(!inWin(ev)) return;
-      var t = loopStartTime + ev.startBeat*spb;
-      var dur = ev.durBeats*spb;
+      var t = loopStartTime + TWf(ev.startBeat)*spb;
+      var dur = twD(ev)*spb;
       PITCHFX_CUR = pitchFxFor(ev, t, dur*0.9);
       try{
         if(sm2Active && playSM2Voice(ctx, gains.melody2, P.melody2, ev.midi, t, dur*0.9, 0.16*velK(ev), velL(ev))) return;
@@ -18814,14 +18954,14 @@ function runAnalysis() {
     var melody3Fam = voiceFamilyFor(P.melody3, "flute");
     (want("melody3") ? (S.melody3 || []) : []).forEach(function(ev){
       if(!inWin(ev)) return;
-      var t = loopStartTime + ev.startBeat*spb;
-      var dur = ev.durBeats*spb;
+      var t = loopStartTime + TWf(ev.startBeat)*spb;
+      var dur = twD(ev)*spb;
       if(sm2Active && playSM2Voice(ctx, gains.melody3, P.melody3, ev.midi, t, dur*0.95, 0.16*velK(ev), velL(ev))) return;
       melody3Fam.fn(ctx, gains.melody3, ev.midi, t, dur*0.95, velOpts(melody3Fam, dur*0.95, ev));
     });
   }
 
-  function tickPlayhead(ctx, loopAnchor, spb, loopDur, clk){
+  function tickPlayhead(ctx, loopAnchor, spb, loopDur, clk, tw0){
     // Optimizado: los elementos se buscan una vez y el ancho scrolleable
     // (scrollWidth/clientWidth, que fuerzan layout) se mide cada ~0.5 s en
     // vez de en cada frame; scrollLeft solo se escribe si cambió. Antes eran
@@ -18839,6 +18979,7 @@ function runAnalysis() {
     var hostVel = null, maxSV = 0;
     var shown = false;
     var kbMain = null, kbBebop = null;   // teclados fijos (se mueven junto con el scroll)
+    var tw = tw0 || EXPR.ident;          // Tempo & Expression: mapa de la vuelta en curso (el playhead sigue al audio)
     function measure(){
       ph = document.getElementById("consolaPlayhead");               // el roll se redibuja al enganchar una canción nueva (radio): el playhead es un elemento nuevo
       phBebop = document.getElementById("consolaBebopPlayhead");
@@ -18859,11 +19000,12 @@ function runAnalysis() {
       if(clk && clk.pend && ctx.currentTime >= clk.pend.anchor){
         loopAnchor = clk.pend.anchor; loopDur = clk.pend.dur; if(clk.pend.spb) spb = clk.pend.spb; clk.pend = null; // RadioMode: arrancó la vuelta nueva (con su tempo)
       }
+      if(clk && clk.twq && ctx.currentTime >= clk.twq.anchor){ tw = clk.twq.tw; clk.twq = null; }   // arrancó una vuelta con otro mapa
       var elapsed = ctx.currentTime - loopAnchor;
       if(elapsed >= 0){
         if(ts - lastMeasure > 500){ measure(); lastMeasure = ts; }
         var inLoop = elapsed % loopDur;
-        var beats = inLoop/spb;
+        var beats = tw.inv(inLoop/spb);
         var x = MARGIN_L + beats*PPB;
         var xs = x.toFixed(1);
         if(ph){ ph.setAttribute("x1", xs); ph.setAttribute("x2", xs); }
@@ -18947,7 +19089,7 @@ function runAnalysis() {
   }
   // Renderiza UNA pista, seca y mono. Mismo truco de apartar/restaurar el
   // grafo de módulo que renderLoopOffline (todo sincrónico antes del await).
-  function renderTrackDry(track, sr, spb, loopDur){
+  function renderTrackDry(track, sr, spb, loopDur, snapIn){
     var OCtx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
     var off = new OCtx(1, Math.ceil((loopDur + EXPORT_TAIL_SEC) * sr), sr);
     var saved = {
@@ -18968,7 +19110,7 @@ function runAnalysis() {
       // sin boost ni limiter: eso lo hace la cadena master del contexto en vivo
       masterGain.gain.value = 1; masterBoost.gain.value = 1;
       masterLimiter.disconnect(); masterBoost.disconnect(); masterBoost.connect(off.destination);
-      scheduleLoopAt(off, m, 0, spb, track);
+      scheduleLoopAt(off, m, 0, spb, track, snapIn ? { from: -Infinity, to: Infinity, snap: snapIn } : undefined);
       // ganancias de pista a 1: el mixer vive en los GainNode en vivo
       [chordGainNode, bassGainNode, melodyGainNode, drumGainNode, melodyDoubleGainNode, chordDoubleGainNode, bassDoubleGainNode, comping2GainNode, bebopGainNode, melody2GainNode, melody3GainNode]
         .forEach(function(g){ if(g) g.gain.value = 1; });
@@ -19028,6 +19170,8 @@ function runAnalysis() {
     var ctx = getAudioCtx(); // síncrono, dentro del gesto del usuario (iOS)
     if(!ctx) return;
     var token = prToken = (prToken | 0) + 1;
+    EXPR.reroll();
+    var rsnap = liveSnap();   // UNA foto para todas las pistas: mismo mapa de tempo/dinámica en cada stem
     var tempoEl = document.getElementById("consolaTempo");
     var spb = 60 / parseInt(tempoEl.value, 10);
     var loopDur = TOTAL_BEATS * spb;
@@ -19052,7 +19196,7 @@ function runAnalysis() {
           prStatus("⏳ Rendering " + (k + 1) + "/" + tracks.length + "…");
           await yieldToUI();
           if(token !== prToken) return;
-          var rendered = await renderTrackDry(tracks[k], sr, spb, loopDur);
+          var rendered = await renderTrackDry(tracks[k], sr, spb, loopDur, rsnap);
           if(token !== prToken) return;
           bufs[tracks[k]] = prMakeBuffer(ctx, rendered, sr, loopDur, looping);
         }
@@ -19084,7 +19228,7 @@ function runAnalysis() {
         } else {
           window._consolaStopTimer = setTimeout(stopPlayback, (loopDur + 0.3) * 1000);
         }
-        tickPlayhead(ctx, t0, spb, loopDur);
+        tickPlayhead(ctx, t0, spb, loopDur, null, rsnap.tw);
       } catch(err){
         console.error("Prerender failed; using live mode:", err);
         if(token !== prToken) return;
@@ -19131,10 +19275,11 @@ function runAnalysis() {
     // que ahí la ventana se agranda para no dejar huecos.
     var TICK_MS = 50, AHEAD_FG = 0.8, AHEAD_BG = 6; // BG: iOS con pantalla bloqueada frena los timers; 6 s de colchón
     var LOOP_BEATS = TOTAL_BEATS; // fijo durante la reproducción (salvo RadioMode: cambia al enganchar una vuelta nueva), igual que loopDur
-    var loopAnchor = ctx.currentTime + 0.1 - off*spb;   // con off > 0 la grilla de la vuelta queda corrida hacia atrás: suena desde el compás elegido
+    EXPR.reroll();                    // Tempo & Expression: variación nueva en cada Play
+    var snap = liveSnap();            // foto de la vuelta en curso (notas/presets/tempo&expression)
+    var loopAnchor = ctx.currentTime + 0.1 - snap.tw.f(off)*spb;   // con off > 0 la grilla de la vuelta queda corrida hacia atrás: suena desde el compás elegido
     var schedLoopStart = loopAnchor;  // inicio (en el reloj de audio) de la vuelta en curso
     var schedBeat = off;              // próximo beat sin programar dentro de esa vuelta
-    var snap = liveSnap();            // foto de la vuelta en curso (notas/presets)
     try{ if(window.__radioHist) window.__radioHist.note(); }catch(errH){} // RADIO!: historial (Previous)
     var loopChk = document.getElementById("consolaLoopChk");
     var ending = false;
@@ -19149,8 +19294,8 @@ function runAnalysis() {
       // Atrasados (pestaña dormida, hilo trabado): no se recuperan notas
       // viejas — Web Audio las tocaría todas juntas. Se salta al presente,
       // manteniendo la grilla de vueltas (loopAnchor + k*loopDur).
-      if(schedLoopStart + schedBeat*spb < now - 0.02){
-        var nowBeatAbs = (now - schedLoopStart) / spb;
+      if(schedLoopStart + snap.tw.f(schedBeat)*spb < now - 0.02){
+        var nowBeatAbs = snap.tw.inv((now - schedLoopStart) / spb);
         if(window.__radioKind && nowBeatAbs >= LOOP_BEATS){
           nowBeatAbs = LOOP_BEATS; // RadioMode: el bloque de fin de vuelta de abajo avanza UNA vuelta y genera la nueva
         } else if(nowBeatAbs >= LOOP_BEATS){
@@ -19158,14 +19303,16 @@ function runAnalysis() {
           var skip = Math.floor(nowBeatAbs / LOOP_BEATS);
           schedLoopStart += skip * loopDur;
           nowBeatAbs -= skip * LOOP_BEATS;
-          snap = liveSnap();
+          EXPR.reroll(); snap = liveSnap();
+          clk.twq = { anchor: schedLoopStart, tw: snap.tw };
+          nowBeatAbs = snap.tw.inv(nowBeatAbs);   // el resto está en beats de reloj: se pasa al mapa de la vuelta nueva
         }
         schedBeat = nowBeatAbs;
       }
       var horizon = now + (document.hidden ? AHEAD_BG : AHEAD_FG);
       var guard = 0;
-      while(schedLoopStart + schedBeat*spb < horizon && guard++ < 64){
-        var toBeat = Math.min(LOOP_BEATS, (horizon - schedLoopStart) / spb);
+      while(schedLoopStart + snap.tw.f(schedBeat)*spb < horizon && guard++ < 64){
+        var toBeat = Math.min(LOOP_BEATS, snap.tw.inv((horizon - schedLoopStart) / spb));
         if(toBeat > schedBeat){
           scheduleLoopAt(ctx, dest, schedLoopStart, spb, null, { from: schedBeat, to: (toBeat >= LOOP_BEATS ? Infinity : toBeat), snap: snap });
           schedBeat = toBeat;
@@ -19188,14 +19335,16 @@ function runAnalysis() {
           schedLoopStart += loopDur;
         }
         schedBeat = 0;
-        snap = liveSnap(); // cambios de notas/presets entran en la vuelta nueva
+        EXPR.reroll(); snap = liveSnap(); // cambios de notas/presets/tempo&expression entran en la vuelta nueva
+        clk.twq = { anchor: schedLoopStart, tw: snap.tw };
         try{ if(window.__radioHist) window.__radioHist.note(); }catch(errH){} // RADIO!: la vuelta nueva entra al historial
       }
     }
+    var tw0 = snap.tw;   // mapa de la primera vuelta (el pump puede avanzar de vuelta antes de que arranque el playhead)
     pump();
     if(playing && !ending) schedulerTimer = setInterval(pump, TICK_MS);
 
-    tickPlayhead(ctx, loopAnchor, spb, loopDur, clk);
+    tickPlayhead(ctx, loopAnchor, spb, loopDur, clk, tw0);
   }
   window.consolaStartPlayback = startPlayback;
   // Piano roll en primer plano (botón +): un clic en un compás reproduce desde ahí. Con el roll de fondo no hace nada.
@@ -20078,6 +20227,9 @@ function runAnalysis() {
   document.getElementById("consolaDynamicsSlider").addEventListener("change", function(){
     DYNAMICS.reapply(); // mismas notas, otra dinámica (no regenera)
     renderRoll(); renderBebopRoll();
+  });
+  document.getElementById("consolaExprSlider").addEventListener("input", function(){
+    document.getElementById("consolaExprVal").textContent = this.value + "%";
   });
   document.getElementById("consolaTripletsSlider").addEventListener("input", function(){
     document.getElementById("consolaTripletsVal").textContent = this.value + "%";
