@@ -4436,9 +4436,9 @@ function setsByHierarchy(card) {
     .sort(function (a, b) { return a.card - b.card || a.rank - b.rank; });
 }
 
-// Peso de elección: lineal dentro de su cardinalidad (rank 1 pesa `total`,
-// el último pesa 1). Cambiar solo esta línea cambia la curva de probabilidad.
-function setHierarchyWeight(entry) { return entry.total - entry.rank + 1; }
+// Peso de elección: 1/rank dentro de su cardinalidad (rank 1 pesa 1, rank 2
+// pesa 1/2, rank 3 pesa 1/3...). Cambiar solo esta línea cambia la curva de probabilidad.
+function setHierarchyWeight(entry) { return 1 / entry.rank; }
 
 // Sortea un set del índice con cardinalidad `card`: más probable cuanto
 // mayor jerarquía. `exclude` = objeto {codigo:true} de códigos ya usados.
