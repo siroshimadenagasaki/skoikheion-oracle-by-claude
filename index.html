@@ -5470,10 +5470,10 @@ const HIFI_MANIFEST_URL = SF_ROOT_DIR.split("/").map(encodeURIComponent).join("/
 // soundfonts nuevos sin tocar código — ver comentario de formato más
 // abajo, junto a hifiLoadManifest.
 const HIFI_DEFAULT_MANIFEST = [
-  { key: "piano",             file: "Keys/Steinway Grand Piano 1.2 - 000-000 Steinway Grand.sf2", bank: 0, program: 0,  label: "Steinway D",           mode: "replace" },
-  { key: "pad",                file: "Synth/Warm Pad.sf2",              bank: 0, program: 0,  label: "Warm Pad",             mode: "new", fallbackFamily: "pad",  target: "melodic" },
-  { key: "bassSuperElectric",  file: "BASS/super bass electric.sf2",   bank: 0, program: 0,  label: "Super Bass Electric",  mode: "new", fallbackFamily: "bass", target: "melodic" },
-  { key: "kit",                file: "Drums/Jazz Kit - 000-000 Jazz Traps.sf2", bank: 0, program: 0,  label: "Jazz Kit (Jazz Traps)", mode: "replace" }
+  { key: "piano",             file: "Keys/ Steinway Grand.sf2",        bank: 0, program: 0,  label: "Steinway D",           mode: "replace" },
+  { key: "pad",                file: "Polysynths/Warm Pad.sf2",         bank: 0, program: 0,  label: "Warm Pad",             mode: "new", fallbackFamily: "pad",  target: "melodic" },
+  { key: "bassSuperElectric",  file: "BASS/super bass electric.sf2",   bank: 0, program: 0,  label: "Super Bass Electric",  mode: "new", fallbackFamily: "bass", target: "melodic" }
+  // Jazz Kit (Jazz Traps) sacado 2026-10-11: el archivo ya no está; "kit" usa Drums default.sf2.
 ];
 const HIFI_FILES = [];
 const HIFI_FILES_BY_KEY = {};
@@ -6097,7 +6097,7 @@ const SF_BASE_URLS = []; // Instruments/Drums/Percussion.sf2 ya no existen (ver 
 // cambiar un default: reemplazá el archivo en Soundfonts/ o editá su fila.
 const SF_DEFAULT_FILES = [
   { mix: "harmony",      file: "Piano default.sf2", bank: 0, program: 0,  label: "Grand Piano",          kind: "melodic", family: "piano" },
-  { mix: "chordDouble",  file: "Extra v2/Synth/Nord Pad.sf2", bank: 0, program: 0,  label: "Warm Pad Pro",         kind: "melodic", family: "pad"   },
+  { mix: "chordDouble",  file: "Extra v2/Polysynths/Warm Pad.sf2", bank: 0, program: 0,  label: "Warm Pad",         kind: "melodic", family: "pad"   },
   { mix: "melody",       file: "BasoonFlute.sf2",   bank: 0, program: 0,  label: "Ethan's Bassoon",      kind: "melodic", family: "flute" },
   { mix: "melodyDouble", file: "Extra v2/LEAD/Armonica.sf2", bank: 0, program: 0,  label: "Hohner C Harmonica",   kind: "melodic", family: "flute" },
   { mix: "bass",         file: "Bass default.sf2",  bank: 0, program: 32, label: "Acoust. Bass (Solar)", kind: "melodic", family: "bass"  },
@@ -6120,24 +6120,24 @@ function sfIsDefaultId(id) { return SF_DEFAULT_FILES.some((d) => sfDefaultId(d) 
 // cae al sintetizador de batería.
 const SF_LEGACY_FILES = {
   piano:       { file: "Piano default.sf2",                                     bank: 0, program: 0  },
-  epiano:      { file: "Extra v2/Keys/Instruments - 000-004 E.Pïano 1.sf2",      bank: 0, program: 4  },
-  harpsichord: { file: "Extra v2/Keys/Instruments - 000-006 Harpsichord.sf2",      bank: 0, program: 6  },
-  celesta:     { file: "Extra v2/Keys/Instruments - 000-008 Celesta.sf2",      bank: 0, program: 8  },
-  strings1:    { file: "Extra v2/Brass & Strings/Instruments - 000-048 String Section 1 (Ma.sf2",   bank: 0, program: 48 },
-  strings:     { file: "Extra v2/Brass & Strings/Instruments - 000-048 String Section 1 (Ma.sf2",   bank: 0, program: 48 },
+  epiano:      { file: "Extra v2/Keys/ E.Pïano 1.sf2",      bank: 0, program: 4  },
+  harpsichord: { file: "Extra v2/Keys/Harpsichord hardcore.sf2",      bank: 0, program: 6  },
+  celesta:     { file: "Extra v2/Percusive melodic/Celesta.sf2",      bank: 0, program: 8  },
+  strings1:    { file: "Extra v2/Brass & Strings/Super strings.sf2",   bank: 0, program: 0 },
+  strings:     { file: "Extra v2/Brass & Strings/Super strings.sf2",   bank: 0, program: 0 },
   brass1:      { file: "Extra v2/Brass & Strings/Instruments - 000-061 Brass Section 1.sf2",      bank: 0, program: 61 },
   sopranoSax:  { file: "Extra v2/LEAD/Instruments - 000-064 Soprano Sax.sf2",    bank: 0, program: 64 },
   tenorSax:    { file: "Extra v2/LEAD/Live HQ Natural SoundFont GM - 000-066 Jazz Tenor Sax.sf2",      bank: 0, program: 66 },
-  bassoon:     { file: "Extra v2/LEAD/Instruments - 000-070 Bassoon.sf2",      bank: 0, program: 70 },
+  bassoon:     { file: "BasoonFlute.sf2",      bank: 0, program: 0 },
   flute:       { file: "Flute default.sf2",                                     bank: 0, program: 73 },
-  contrabass:  { file: "Extra v2/BASS/Instruments - 000-043 Contrabass.sf2",      bank: 0, program: 43 },
-  jazzGuitar:  { file: "Extra v2/Guitars/alex_gm - 000-026 Jazz guitar.sf2",      bank: 0, program: 26 },
+  contrabass:  { file: "Extra v2/BASS/Contrabass.sf2",      bank: 0, program: 43 },
+  jazzGuitar:  { file: "Extra v2/Guitars/Jazz guitar.sf2",      bank: 0, program: 26 },
   kit:         { file: "Drums default.sf2",                                     bank: 128, program: 0  }
 };
 function sfLegacyUrl(key) { const l = SF_LEGACY_FILES[key]; return l ? sfUrlForPath(SF_ROOT_DIR + "/" + l.file) : null; }
 function sfLegacyId(key) { const l = SF_LEGACY_FILES[key]; return l ? "x_" + encodeURIComponent(l.file) : null; }
 // Otros .sf2 que usan los estilos (Jazz fusion → "sf:x_bassoon.sf2:0:0").
-const SF_ALWAYS_FILES = ["Extra v2/bassoon.sf2", "Extra v2/Brass & Strings/French_Horns.sf2"];
+const SF_ALWAYS_FILES = ["BasoonFlute.sf2", "Extra v2/Brass & Strings/French_Horns.sf2"];
 // Key "sf:..." de un archivo (ruta relativa a SF_ROOT_DIR) — para usar en PRESET_SETS.
 function sfKeyForFile(file, bank, program) { return "sf:x_" + encodeURIComponent(file) + ":" + (bank || 0) + ":" + (program || 0); }
 // Archivos que se bajan solos al abrir la página: defaults + clásicos.
@@ -17098,7 +17098,7 @@ function runAnalysis() {
   // Defaults propios (no los de SF_DEFAULT_FILES): Bajo = "synthBass" (Bajo original sintetizado) y
   // Doblar melodía = "bassoon" (Fagot, Instruments.sf2). Doblar armonía = Nord Pad (SF_DEFAULT_FILES).
   // Las filas de "Bass default.sf2" y "Armonica.sf2" siguen en el catálogo, elegibles a mano.
-  var mixPresets = { harmony: sfDefaultKeyFor("harmony", "piano"), melody: sfDefaultKeyFor("melody", "flute"), melodyDouble: sfKeyForFile("Extra v2/bassoon.sf2", 0, 0), comping2: "epiano", chordDouble: sfDefaultKeyFor("chordDouble", "mute"), bassDouble: sfDefaultKeyFor("bass", "mute"), bass: "synthBass", drum: sfDefaultKeyFor("drum", "kit"), bebop: "sopranoSax", melody2: "flute", melody3: "flute", modalVamps: sfDefaultKeyFor("harmony", "piano") };
+  var mixPresets = { harmony: sfDefaultKeyFor("harmony", "piano"), melody: sfDefaultKeyFor("melody", "flute"), melodyDouble: sfKeyForFile("BasoonFlute.sf2", 0, 0), comping2: "epiano", chordDouble: sfDefaultKeyFor("chordDouble", "mute"), bassDouble: sfDefaultKeyFor("bass", "mute"), bass: "synthBass", drum: sfDefaultKeyFor("drum", "kit"), bebop: "sopranoSax", melody2: "flute", melody3: "flute", modalVamps: sfDefaultKeyFor("harmony", "piano") };
   var chordGainNode = null, bassGainNode = null, melodyGainNode = null, drumGainNode = null, melodyDoubleGainNode = null, chordDoubleGainNode = null, bassDoubleGainNode = null, comping2GainNode = null, bebopGainNode = null, melody2GainNode = null, melody3GainNode = null;
 
   // ---------- Reverb: bus de envío compartido ----------
@@ -17342,10 +17342,10 @@ function runAnalysis() {
      ================================================================ */
   // roles: qué carpetas de "Soundfonts v2/" alimentan cada selector (ver sfRoleFor).
   //   drum    -> Extra v2/Drums/            (Batería)
-  //   lead    -> Extra v2/LEAD/             (Melodía, Melody N2, Bebop, Doblar melodía)
-  //   (Melodía, Doblar melodía, Melody N2 y Bebop también muestran "harmony": Keys/ + Synth/ + Brass & Strings/ — 2026-10-10)
+  //   lead    -> Extra v2/LEAD/ + Synth Leads/ + Percusive melodic/ (Melodía, Melody N2, Bebop, Doblar melodía)
+  //   (Melodía, Doblar melodía, Melody N2 y Bebop también muestran "harmony": Keys/ + Guitars/ + Polysynths/ + Brass & Strings/ — 2026-10-10)
   //   bass    -> Extra v2/BASS/             (Bajo, Doblar bajo)
-  //   harmony -> Extra v2/Keys/ + Synth/ + Brass & Strings/ (Armonía y sus dobles)
+  //   harmony -> Extra v2/Keys/ + Guitars/ + Polysynths/ + Brass & Strings/ (Armonía y sus dobles)
   //   loose   -> archivos sueltos en Extra v2/ (melódicos y armónicos)
   // Siempre se conservan: el grupo "Classics", el archivo default del selector,
   // los archivos que usan los estilos (SF_ALWAYS_FILES) y el archivo del preset elegido.
@@ -17376,10 +17376,10 @@ function runAnalysis() {
     if(sub.indexOf("/") === -1) return "loose";
     var folder = sub.split("/")[0].toLowerCase();
     if(folder === "drums") return "drum";
-    if(folder === "lead") return "lead";
+    if(folder === "lead" || folder === "synth leads" || folder === "percusive melodic") return "lead";
     if(folder === "bass") return "bass";
-    if(folder === "keys" || folder === "synth" || folder === "brass & strings") return "harmony";
-    return "loose";
+    if(folder === "keys" || folder === "guitars" || folder === "polysynths" || folder === "brass & strings") return "harmony";
+    return "loose"; // incluye 8bits/ (decisión del usuario 2026-10-11) y los sueltos de Extra v2/
   }
   // Familia de sintetizador de respaldo (cuando el SoundFont está apagado o
   // el archivo no cargó) para un preset SIN familia declarada: se deduce del
@@ -22635,8 +22635,8 @@ function runAnalysis() {
     function randomizeVoices(radio){
       var harm = [radio ? "piano" : null, "epiano", "celesta"]; // sin "pad" (Warm Pad HIFI): pedido del usuario 2026-10-06
       var mel = [radio ? "flute" : null,
-        sfKey("Extra v2/Steel Drums 1.sf2", 0, 114),
-        sfKey("Extra v2/Keys/PSR-SX700_GM_Soundbank_-_Part_2 - 000-023 Tango Accordion.sf2", 0, 23)];
+        sfKey("Extra v2/Percusive melodic/Steel Drums 1.sf2", 0, 114),
+        sfKey("Extra v2/Keys/ Tango Accordion.sf2", 0, 23)];
       if(radio){ harm.push("harpsichord"); mel.push("sopranoSax", "tenorSax"); } // RadioMode: también los presets de los estilos Baroque/Jazz (siempre disponibles, sin loadExtra)
       function pick(id, list){
         var el = document.getElementById(id);
