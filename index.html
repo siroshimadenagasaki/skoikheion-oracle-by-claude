@@ -1352,7 +1352,7 @@
     <div><kbd>D</kbd>&#9658;</div>
     <div><kbd>H</kbd>CreaturaRandom</div>
     <div><kbd>J</kbd>CreaturaBella</div>
-    <div><kbd>A</kbd>CommonChords</div>
+    <div><kbd>A</kbd>ChordS</div>
     <div><kbd>K</kbd>Partimenti</div>
     <div><kbd>C</kbd>Random fill</div>
     <div><kbd>V</kbd>Clear</div>
@@ -1407,7 +1407,7 @@
   <div class="stage">
     <div class="clock-col">
     <div class="clock-card">
-      <span class="radio-mode-wrap radio-top radio-top0" title="RADIO! (botón ON/OFF): mix random. Al pasar a ON arranca una canción de un tipo al azar y en cada vuelta nueva sortea de nuevo entre CreaturaBella, CreaturaRandom, CommonChords y Partimenti, sin cortar el audio. Se corta con Detener o con OFF. Usa el modo en vivo (no Prerender).">
+      <span class="radio-mode-wrap radio-top radio-top0" title="RADIO! (botón ON/OFF): mix random. Al pasar a ON arranca una canción de un tipo al azar y en cada vuelta nueva sortea de nuevo entre CreaturaBella, CreaturaRandom, ChordS y Partimenti, sin cortar el audio. Se corta con Detener o con OFF. Usa el modo en vivo (no Prerender).">
         <input type="checkbox" id="consolaRadioMixChk" hidden>
         <button type="button" class="chip" id="consolaRadioMixBtn" aria-pressed="false">&#128251; RADIO!: OFF</button>
       </span>
@@ -1445,7 +1445,7 @@
         <div style="display:flex;flex-direction:column;align-items:stretch;gap:6px;">
           <button class="chip primary" id="creaturaBtn" type="button" title="Corre sola la secuencia: sortea Chromatism (2–40%), Chords (20–60%), Triplets (0–100%), Melodic/Harmonic/RythmSpace (0–100%) y Rapid runs (0–30%), Simplicity (0–50%), Melody n2 (on/off al azar) y una combinación totalmente al azar de Cycles (intervalos + Chromatism; prende Cycles) → Random Fill (5 o 2 sets al azar; 2–3/2–4/2–5 notas, modo Mezcla) → Compose → tilda Mix time signatures → Detener → espera 2s → 🔀 Regenerar. Una sola pasada por click.">🪄 CreaturaRandom</button>
           <button class="chip primary" id="creaturaBellaBtn" type="button" title="Igual que CreaturaRandom (mismos sliders, incluidos Simplicity 0–50%, Melody n2 on/off y Cycles al azar; Compose, Mix time signatures, Detener, espera 2s y Regenerar), pero los 5 o 2 sets salen SOLO del índice del libro (jerarquías de sets) y con más probabilidad cuanto mayor es su jerarquía: dentro de cada cardinalidad (3 hasta el máximo del slider, el índice no tiene sets de 2 notas) el set 1 del índice es el más probable y el último el menos probable. Cada set sale transportado a una tónica al azar.">🪄 CreaturaBella</button>
-          <div style="display:flex;align-items:center;gap:8px;"><button class="chip primary" id="commonChordsBtn" type="button" style="flex:1;" title="CommonChords: en vez de sets, compone una canción con acordes de la base de acordes (tríadas, sextas, séptimas, add, extendidos, alterados), en cualquier tónica y siempre en inversión: el bajo toca la tónica, la tercera, la quinta o la séptima. Cantidad de acordes al azar (1, 2 o 4 por compás; se pueden repetir o no). La melodía toca solo notas del modo del acorde en curso (Cmaj7 sin #11 = Jónico o Lidio). 🔀 / tecla G sortean otra canción CommonChords.">🎼 CommonChords</button></div><details style="margin-top:4px;"><summary style="font-size:12px;color:var(--ink-muted);cursor:pointer;" title="Test (CommonChords): ModeTestHarmony, ModeTestMelody y narrowregister.">🧪 Test</summary><div style="display:flex;flex-wrap:wrap;gap:4px 10px;padding:4px 0;"><label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="ModeTestHarmony: la armonía del ModeTest — un solo acorde cada 2 compases, con todas las notas atacando juntas (simultáneo) y sonando los 2 compases completos. La melodía queda normal. Con ModeTestMelody también tildado = ModeTest completo."><input type="checkbox" id="commonChordsModeTestH"> ModeTestHarmony</label><label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="ModeTestMelody: la melodía del ModeTest — toca únicamente la escala (el modo) de cada acorde, de la tónica hacia arriba o abajo, 1–3 octavas. La armonía queda normal (1, 2 o 4 acordes por compás). Con ModeTestHarmony también tildado = ModeTest completo."><input type="checkbox" id="commonChordsModeTestM"> ModeTestMelody</label><label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="narrowregister: el registro de un acorde al siguiente no se aleja más de una octava (la nota más grave y la más aguda de cada acorde quedan a no más de 12 semitonos de las del acorde anterior)."> <input type="checkbox" id="commonChordsNarrow"> narrowregister</label></div></details><details style="margin-top:4px;"><summary style="font-size:12px;color:var(--ink-muted);cursor:pointer;" title="Categoría: limita los acordes que se sortean a las familias tildadas. Sin tildar ninguna = todas.">🧬 Familias de acordes</summary><div id="commonChordsFamilies" style="display:flex;flex-wrap:wrap;gap:4px 10px;padding:4px 0;"><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;font-weight:700;" title="All: tilda o destilda todas las familias."><input type="checkbox" id="commonChordsFamiliesAll"> All</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Maj7"> Maj7</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="m7"> m7</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="7"> 7</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="7Alt"> 7Alt</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Sus 2b"> Sus 2b</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Semidisminuido"> Semidisminuido</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Disminuida"> Disminuida</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Aumentada"> Aumentada</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Díada"> Díada</label></div></details><details style="margin-top:4px;"><summary style="font-size:12px;color:var(--ink-muted);cursor:pointer;" title="Escalas: con una o más tildadas, la melodía de cada acorde toca solo modos de esas escalas (solo se sortean acordes que tengan algún modo en esas escalas; si la combinación con las familias no deja ninguno, usa cualquier modo y se marca con * en el subtítulo). Sin tildar = todas (menos las 4 de Barry Harris, que solo entran si se tildan y cuyas corridas de escala siempre bajan).">🎼 Escalas de la melodía</summary><div id="commonChordsScales" style="display:flex;flex-wrap:wrap;gap:4px 10px;padding:4px 0;"><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;font-weight:700;" title="All: tilda o destilda todas las escalas."><input type="checkbox" id="commonChordsScalesAll"> All</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Diatónica"> Diatónica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Menor melódica"> Menor melódica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Menor armónica"> Menor armónica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Mayor armónica"> Mayor armónica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Enigmática"> Enigmática</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Aumentada"> Aumentada</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Octatónica"> Octatónica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-35"> Pent. 5-35 (tradicional)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-34"> Pent. 5-34 (Prometeo)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-29B"> Pent. 5-29B (Kumoi I)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-29"> Pent. 5-29 (Kumoi II)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-30"> Pent. 5-30 (Enigmática)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-30B"> Pent. 5-30B (Enigmática II)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="Barry Harris: sexta mayor + disminuido (C D E F G Ab A B). Solo entra si la tildás; la corrida de escala (ModeTestMelody / Semis) siempre baja."><input type="checkbox" value="Harris Major 6th dim"> Harris Major 6th dim (8-26)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="Barry Harris: sexta menor + disminuido (C D Eb F G Ab A B). Solo entra si la tildás; la corrida de escala siempre baja."><input type="checkbox" value="Harris Minor 6th dim"> Harris Minor 6th dim (8-27)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="Barry Harris: séptima dominante + disminuido (C D E F G Ab Bb B). Solo entra si la tildás; la corrida de escala siempre baja."><input type="checkbox" value="Harris Dominant dim"> Harris Dominant dim (8-27B)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="Barry Harris: séptima dominante b5 + disminuido (C D E F Gb Ab Bb B). Solo entra si la tildás; la corrida de escala siempre baja."><input type="checkbox" value="Harris Dominant b5 dim"> Harris Dominant b5 dim (8-25)</label></div><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;padding-bottom:4px;" title="Semis: la melodía toca la escala del modo de cada acorde, de la tónica hacia arriba, al doble de velocidad que ModeTest (cada nota dura la mitad y la escala se repite desde la tónica hasta llenar el acorde). Funciona con o sin ModeTestMelody."><input type="checkbox" id="commonChordsSemis"> Semis (escalas al doble de velocidad)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;padding-bottom:4px;" title="MelodicPatternsV2: la melodía recorre las notas del modo del acorde con patrones del tester (1 a 8 pasos diatónicos, 2 a 4 movimientos, hacia arriba o abajo; ej. 2↑ 1↓ = C E D). Cada patrón se usa una sola vez y le sigue otro nuevo. No aplica con ModeTestMelody ni Semis (corridas de escala)."><input type="checkbox" id="commonChordsPatV2"> MelodicPatternsV2 (patrones del tester)</label></details>
+          <div style="display:flex;align-items:center;gap:8px;"><button class="chip primary" id="commonChordsBtn" type="button" style="flex:1;" title="ChordS: en vez de sets, compone una canción con acordes de la base de acordes (tríadas, sextas, séptimas, add, extendidos, alterados), en cualquier tónica y siempre en inversión: el bajo toca la tónica, la tercera, la quinta o la séptima. Cantidad de acordes al azar (1, 2 o 4 por compás; se pueden repetir o no). La melodía toca solo notas del modo del acorde en curso (Cmaj7 sin #11 = Jónico o Lidio). 🔀 / tecla G sortean otra canción ChordS.">🎼 ChordS</button></div><details style="margin-top:4px;"><summary style="font-size:12px;color:var(--ink-muted);cursor:pointer;" title="Test (ChordS): ModeTestHarmony, ModeTestMelody y narrowregister.">🧪 Test</summary><div style="display:flex;flex-wrap:wrap;gap:4px 10px;padding:4px 0;"><label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="ModeTestHarmony: la armonía del ModeTest — un solo acorde cada 2 compases, con todas las notas atacando juntas (simultáneo) y sonando los 2 compases completos. La melodía queda normal. Con ModeTestMelody también tildado = ModeTest completo."><input type="checkbox" id="commonChordsModeTestH"> ModeTestHarmony</label><label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="ModeTestMelody: la melodía del ModeTest — toca únicamente la escala (el modo) de cada acorde, de la tónica hacia arriba o abajo, 1–3 octavas. La armonía queda normal (1, 2 o 4 acordes por compás). Con ModeTestHarmony también tildado = ModeTest completo."><input type="checkbox" id="commonChordsModeTestM"> ModeTestMelody</label><label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="narrowregister: el registro de un acorde al siguiente no se aleja más de una octava (la nota más grave y la más aguda de cada acorde quedan a no más de 12 semitonos de las del acorde anterior)."> <input type="checkbox" id="commonChordsNarrow"> narrowregister</label></div></details><details style="margin-top:4px;"><summary style="font-size:12px;color:var(--ink-muted);cursor:pointer;" title="Categoría: limita los acordes que se sortean a las familias tildadas. Sin tildar ninguna = todas.">🧬 Familias de acordes</summary><div id="commonChordsFamilies" style="display:flex;flex-wrap:wrap;gap:4px 10px;padding:4px 0;"><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;font-weight:700;" title="All: tilda o destilda todas las familias."><input type="checkbox" id="commonChordsFamiliesAll"> All</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Maj7"> Maj7</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="m7"> m7</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="7"> 7</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="7Alt"> 7Alt</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Sus 2b"> Sus 2b</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Semidisminuido"> Semidisminuido</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Disminuida"> Disminuida</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Aumentada"> Aumentada</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Díada"> Díada</label></div></details><details style="margin-top:4px;"><summary style="font-size:12px;color:var(--ink-muted);cursor:pointer;" title="Escalas: con una o más tildadas, la melodía de cada acorde toca solo modos de esas escalas (solo se sortean acordes que tengan algún modo en esas escalas; si la combinación con las familias no deja ninguno, usa cualquier modo y se marca con * en el subtítulo). Sin tildar = todas (menos las 4 de Barry Harris, que solo entran si se tildan y cuyas corridas de escala siempre bajan).">🎼 Escalas de la melodía</summary><div id="commonChordsScales" style="display:flex;flex-wrap:wrap;gap:4px 10px;padding:4px 0;"><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;font-weight:700;" title="All: tilda o destilda todas las escalas."><input type="checkbox" id="commonChordsScalesAll"> All</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Diatónica"> Diatónica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Menor melódica"> Menor melódica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Menor armónica"> Menor armónica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Mayor armónica"> Mayor armónica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Enigmática"> Enigmática</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Aumentada"> Aumentada</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Octatónica"> Octatónica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-35"> Pent. 5-35 (tradicional)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-34"> Pent. 5-34 (Prometeo)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-29B"> Pent. 5-29B (Kumoi I)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-29"> Pent. 5-29 (Kumoi II)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-30"> Pent. 5-30 (Enigmática)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-30B"> Pent. 5-30B (Enigmática II)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="Barry Harris: sexta mayor + disminuido (C D E F G Ab A B). Solo entra si la tildás; la corrida de escala (ModeTestMelody / Semis) siempre baja."><input type="checkbox" value="Harris Major 6th dim"> Harris Major 6th dim (8-26)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="Barry Harris: sexta menor + disminuido (C D Eb F G Ab A B). Solo entra si la tildás; la corrida de escala siempre baja."><input type="checkbox" value="Harris Minor 6th dim"> Harris Minor 6th dim (8-27)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="Barry Harris: séptima dominante + disminuido (C D E F G Ab Bb B). Solo entra si la tildás; la corrida de escala siempre baja."><input type="checkbox" value="Harris Dominant dim"> Harris Dominant dim (8-27B)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="Barry Harris: séptima dominante b5 + disminuido (C D E F Gb Ab Bb B). Solo entra si la tildás; la corrida de escala siempre baja."><input type="checkbox" value="Harris Dominant b5 dim"> Harris Dominant b5 dim (8-25)</label></div><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;padding-bottom:4px;" title="Semis: la melodía toca la escala del modo de cada acorde, de la tónica hacia arriba, al doble de velocidad que ModeTest (cada nota dura la mitad y la escala se repite desde la tónica hasta llenar el acorde). Funciona con o sin ModeTestMelody."><input type="checkbox" id="commonChordsSemis"> Semis (escalas al doble de velocidad)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;padding-bottom:4px;" title="MelodicPatternsV2: la melodía recorre las notas del modo del acorde con patrones del tester (1 a 8 pasos diatónicos, 2 a 4 movimientos, hacia arriba o abajo; ej. 2↑ 1↓ = C E D). Cada patrón se usa una sola vez y le sigue otro nuevo. No aplica con ModeTestMelody ni Semis (corridas de escala)."><input type="checkbox" id="commonChordsPatV2"> MelodicPatternsV2 (patrones del tester)</label></details>
           <button class="chip primary" id="partimentiBtn" type="button" title="Partimenti (experimental): el motor inventa un bajo (Regla de la octava ascendente/descendente, quintas descendentes, I–IV–V–I, esquemas galantes y cadencias simple/compuesta/doble) en una tonalidad mayor al azar y lo completa a 4 voces con conducción de voces (sin quintas ni octavas paralelas, la 7ª baja, la sensible sube): bajo en Bass, tenor y alto en Harmony, soprano con diminuciones en Melody. Al entrar pone Clavecín en los tres y Batería a 0%. Cada canción sortea un movimiento de tempo (Grave…Prestissimo). En el piano roll: cifra romana e inversión (V4/3, V6/4, I6...). Las opciones están en el desplegable de abajo. 🔀 / tecla G sortean otra canción.">🎹 Partimenti</button>
           <details id="partimentiOpts" style="margin-top:2px;"><summary style="font-size:12px;color:var(--ink-muted);cursor:pointer;" title="Partimenti: elegí qué celdas de bajo, esquemas galantes (Romanesca, Prinner, Meyer, Do-Re-Mi, Sol-Fa-Mi, Aprile, Jupiter, Pastorella, Fenaroli, Ponte, Passo Indietro, Quiescenza), cadencias (simple, compuesta, doble) y movimientos de tempo (Grave…Prestissimo) puede sortear. Sin tildar nada = todo.">🎹 Partimenti: esquemas, cadencias, tempo</summary><div id="partimentiOptsBody" style="padding:4px 0;"></div></details>
           <button class="chip primary" id="creaturaIntervalicBtn" type="button" title="Igual que CreaturaRandom (mismos sliders, Compose, Mix time signatures, Detener, espera 2s y Regenerar, con 5 o 2 sets), pero antes sortea una combinación de clases de intervalo (1, 2 o 3 de ic1..ic6) y los sets salen SOLO de los que tienen todas esas clases en su vector de intervalos, con más probabilidad cuanto mayor parte del vector ocupan esas clases.">🪄 CreaturaIntervalic</button>
@@ -1461,7 +1461,7 @@
         <button class="chip" id="loadExtraBtn" type="button" title="Carga los SoundFonts de la carpeta Soundfonts v2/Extra v2/ (Piano Steinway D, Warm Pad, Super Bass Electric, Jazz Kit… y cualquier .sf2 que subas ahí) y activa sus opciones (HIFI) en los selectores del mini mixer. Solo se nota con '🎼 Sonido real' activado. Si alguno falla, volvé a apretarlo para reintentar.">loadExtra</button>
           </div>
         </div>
-        <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="AutoShow: tildado, los botones que generan y reproducen solos (CreaturaRandom / Bella / Intervalic, CommonChords, Compose, RadioMode) traen el piano roll al primer plano automáticamente. Sin tildar (por defecto), el piano roll no cambia de vista solo; el botón + / − de arriba a la izquierda lo sigue controlando a mano."><input type="checkbox" id="consolaAutoShowChk"> AutoShow</label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="AutoShow: tildado, los botones que generan y reproducen solos (CreaturaRandom / Bella / Intervalic, ChordS, Compose, RadioMode) traen el piano roll al primer plano automáticamente. Sin tildar (por defecto), el piano roll no cambia de vista solo; el botón + / − de arriba a la izquierda lo sigue controlando a mano."><input type="checkbox" id="consolaAutoShowChk"> AutoShow</label>
       </div>
       <div class="ivector-tablet" id="ivectorTablet" title="Vector de intervalos del set actual (6 clases de intervalo) — se contrasta con la Tabla de Sets completa (Anexo 1)">
         <div class="ivector-head">
@@ -1582,8 +1582,8 @@
         <label for="consola24BarsChk">24 bars</label>
         <input type="checkbox" id="consola12BarsChk" title="12 compases (el largo de siempre)">
         <label for="consola12BarsChk" title="12 compases (el largo de siempre)">12 bars</label>
-        <input type="checkbox" id="consolaRandBarsChk" title="Sortea un largo entre 4 y 48 compases en cada generación nueva (Regenerar, CreaturaRandom/Bella, CommonChords, Partimenti, RadioMode).">
-        <label for="consolaRandBarsChk" title="Sortea un largo entre 4 y 48 compases en cada generación nueva (Regenerar, CreaturaRandom/Bella, CommonChords, Partimenti, RadioMode).">Random 4–48</label>
+        <input type="checkbox" id="consolaRandBarsChk" title="Sortea un largo entre 4 y 48 compases en cada generación nueva (Regenerar, CreaturaRandom/Bella, ChordS, Partimenti, RadioMode).">
+        <label for="consolaRandBarsChk" title="Sortea un largo entre 4 y 48 compases en cada generación nueva (Regenerar, CreaturaRandom/Bella, ChordS, Partimenti, RadioMode).">Random 4–48</label>
         <label for="consolaBarsNum" title="Cantidad de compases a mano (1–96). Si hay un número acá manda sobre los checkboxes; vacío = vale el checkbox tildado.">bars</label>
         <input type="number" id="consolaBarsNum" min="1" max="96" step="1" placeholder="–" title="Cantidad de compases a mano (1–96). Si hay un número acá manda sobre los checkboxes; vacío = vale el checkbox tildado." style="width:58px;">
       </div>
@@ -1629,6 +1629,11 @@
         <label for="consolaTripletsSlider">Triplets</label>
         <input type="range" id="consolaTripletsSlider" min="0" max="100" value="0" step="1">
         <span class="consola-val" id="consolaTripletsVal">0%</span>
+      </div>
+      <div class="consola-field" title="musicSilence: silencios TOTALES (todas las pistas a la vez, batería incluida) al final de una frase de 4 compases (compás 4, 8, 12…), nunca más de la mitad de esa frase ni en el último tramo. 0% = ninguno (como siempre). Menos de 30%: algunas pausas de menos de 2 s, en cualquier parte. 30–60%: más seguidas y algo más largas (hasta 3 s), en cualquier parte. Más de 60%: pausas de hasta 3 s solo en la primera mitad de la canción. 100%: pausas de hasta 5 s en cualquier parte. Los segundos dependen del tempo. Solo motor libre: no afecta a Simplicity puro ni a Partimenti (que tiene su propio musicSilence junto a silences).">
+        <label for="consolaMusicSilenceSlider">musicSilence</label>
+        <input type="range" id="consolaMusicSilenceSlider" min="0" max="100" value="0" step="5">
+        <span class="consola-val" id="consolaMusicSilenceVal">0%</span>
       </div>
       <div class="consola-field" title="Síncopa en los ataques de ACORDES (armonía). Probabilidad, compás a compás, de que el primer ataque del compás NO caiga en el tiempo 1: o se ANTICIPA (el acorde entra antes del 1, p.ej. en el 'y' del 4 del compás anterior) o se RETRASA (el 1 queda sin ataque de armonía y el acorde entra después), en cualquier punto de la rejilla de corcheas. 0% = como antes (siempre en el 1). Solo mueve ataques de la armonía: nunca cambia notas, así que el set no se traiciona; bajo y melodía siguen su acorde de siempre. No afecta a Simplicity.">
         <label for="consolaSyncopationSlider">Syncopation</label>
@@ -1979,53 +1984,53 @@
       <div class="mix-grid">
         <div class="mix-channel">
           <label for="mixDrumVol">&#129345; Drums</label>
-          <input type="range" id="mixDrumVol" min="0" max="150" value="100" step="1">
+          <input type="range" id="mixDrumVol" min="0" max="150" value="105" step="1">
           <div class="mix-val-row">
-            <span class="mix-val" id="mixDrumVolVal">100%</span>
+            <span class="mix-val" id="mixDrumVolVal">105%</span>
             <input type="checkbox" class="mix-solo" data-track="drum" title="Solo: silencia TODAS las demás pistas mientras esté tildado (a diferencia de Foco, que solo las baja) — este fader no cambia. Al destildarlo, todo vuelve exactamente al nivel que tenía antes (no se pisa ningún valor)." aria-label="Solo en Batería"><span class="mix-solo-lbl">solo</span>
           </div>
         </div>
         <div class="mix-channel">
           <label for="mixBassVol">Bass</label>
-          <input type="range" id="mixBassVol" min="0" max="150" value="40" step="1">
+          <input type="range" id="mixBassVol" min="0" max="150" value="25" step="1">
           <div class="mix-val-row">
-            <span class="mix-val" id="mixBassVolVal">40%</span>
+            <span class="mix-val" id="mixBassVolVal">25%</span>
             <input type="checkbox" class="mix-solo" data-track="bass" title="Solo: silencia TODAS las demás pistas mientras esté tildado (a diferencia de Foco, que solo las baja) — este fader no cambia. Al destildarlo, todo vuelve exactamente al nivel que tenía antes (no se pisa ningún valor)." aria-label="Solo en Bajo"><span class="mix-solo-lbl">solo</span>
           </div>
         </div>
         <div class="mix-channel">
           <label for="mixChordVol">Harmony</label>
-          <input type="range" id="mixChordVol" min="0" max="150" value="100" step="1">
+          <input type="range" id="mixChordVol" min="0" max="150" value="85" step="1">
           <div class="mix-val-row">
-            <span class="mix-val" id="mixChordVolVal">100%</span>
+            <span class="mix-val" id="mixChordVolVal">85%</span>
             <input type="checkbox" class="mix-solo" data-track="chord" title="Solo: silencia TODAS las demás pistas mientras esté tildado (a diferencia de Foco, que solo las baja) — este fader no cambia. Al destildarlo, todo vuelve exactamente al nivel que tenía antes (no se pisa ningún valor)." aria-label="Solo en Armonía"><span class="mix-solo-lbl">solo</span>
           </div>
         </div>
         <div class="mix-channel">
           <label for="mixMelodyVol">Melody</label>
-          <input type="range" id="mixMelodyVol" min="0" max="150" value="100" step="1">
+          <input type="range" id="mixMelodyVol" min="0" max="150" value="85" step="1">
           <div class="mix-val-row">
-            <span class="mix-val" id="mixMelodyVolVal">100%</span>
+            <span class="mix-val" id="mixMelodyVolVal">85%</span>
             <input type="checkbox" class="mix-solo" data-track="melody" title="Solo: silencia TODAS las demás pistas mientras esté tildado (a diferencia de Foco, que solo las baja) — este fader no cambia. Al destildarlo, todo vuelve exactamente al nivel que tenía antes (no se pisa ningún valor)." aria-label="Solo en Melodía"><span class="mix-solo-lbl">solo</span>
           </div>
         </div>
         <div class="mix-channel" title="Volumen de Melody n2 (melodía alternativa independiente, con silencios random de 1, 2 o 4 compases). Sin efecto mientras el checkbox Melody n2 esté apagado.">
           <label for="mixMelody2Vol">&#127925; Melody n2</label>
-          <input type="range" id="mixMelody2Vol" min="0" max="150" value="100" step="1">
+          <input type="range" id="mixMelody2Vol" min="0" max="150" value="85" step="1">
           <div class="mix-val-row">
-            <span class="mix-val" id="mixMelody2VolVal">100%</span>
+            <span class="mix-val" id="mixMelody2VolVal">85%</span>
             <input type="checkbox" class="mix-solo" data-track="melody2" title="Solo: silencia TODAS las demás pistas mientras esté tildado — este fader no cambia.">
           </div>
         </div>
         <div class="mix-channel" title="Volumen de Melody n3 (melodía minimalista: notas largas o la melodía principal una octava abajo). Sin efecto mientras el checkbox Melody n3 esté apagado.">
           <label for="mixMelody3Vol">&#127925; Melody n3</label>
-          <input type="range" id="mixMelody3Vol" min="0" max="150" value="100" step="1">
+          <input type="range" id="mixMelody3Vol" min="0" max="150" value="85" step="1">
           <div class="mix-val-row">
-            <span class="mix-val" id="mixMelody3VolVal">100%</span>
+            <span class="mix-val" id="mixMelody3VolVal">85%</span>
             <input type="checkbox" class="mix-solo" data-track="melody3" title="Solo: silencia TODAS las demás pistas mientras esté tildado — este fader no cambia.">
           </div>
         </div>
-        <div class="mix-channel" title="Volumen de la pista bebopMelody (línea melódica independiente, chord-scale). Al prender el botón bebopMelody, este fader sube solo a 100% la primera vez — después queda a mano.">
+        <div class="mix-channel" title="Volumen de la pista bebopMelody (línea melódica independiente, chord-scale). Al prender el botón bebopMelody, este fader sube solo a 85% la primera vez — después queda a mano.">
           <label for="mixBebopVol">&#127929; Bebop</label>
           <input type="range" id="mixBebopVol" min="0" max="150" value="0" step="1">
           <div class="mix-val-row">
@@ -2035,25 +2040,25 @@
         </div>
         <div class="mix-channel" title="Volumen de Doblar melodía (repite la Melodía una octava — o una quinta con 'alt-melody' — abajo, con su propio timbre). Sin efecto mientras el selector 'Doblar melodía' esté en Mute.">
           <label for="mixMelodyDoubleVol">Double melody</label>
-          <input type="range" id="mixMelodyDoubleVol" min="0" max="150" value="50" step="1">
+          <input type="range" id="mixMelodyDoubleVol" min="0" max="150" value="35" step="1">
           <div class="mix-val-row">
-            <span class="mix-val" id="mixMelodyDoubleVolVal">50%</span>
+            <span class="mix-val" id="mixMelodyDoubleVolVal">35%</span>
             <input type="checkbox" class="mix-solo" data-track="melodyDouble" title="Solo: silencia TODAS las demás pistas mientras esté tildado (a diferencia de Foco, que solo las baja) — este fader no cambia. Al destildarlo, todo vuelve exactamente al nivel que tenía antes (no se pisa ningún valor)." aria-label="Solo en Doblar melodía"><span class="mix-solo-lbl">solo</span>
           </div>
         </div>
         <div class="mix-channel" title="Volumen de Doblar armonía (repite la Armonía con un segundo timbre). Sin efecto mientras el selector 'Doblar armonía' esté en Mute.">
           <label for="mixChordDoubleVol">Double harmony</label>
-          <input type="range" id="mixChordDoubleVol" min="0" max="150" value="50" step="1">
+          <input type="range" id="mixChordDoubleVol" min="0" max="150" value="35" step="1">
           <div class="mix-val-row">
-            <span class="mix-val" id="mixChordDoubleVolVal">50%</span>
+            <span class="mix-val" id="mixChordDoubleVolVal">35%</span>
             <input type="checkbox" class="mix-solo" data-track="chordDouble" title="Solo: silencia TODAS las demás pistas mientras esté tildado (a diferencia de Foco, que solo las baja) — este fader no cambia. Al destildarlo, todo vuelve exactamente al nivel que tenía antes (no se pisa ningún valor)." aria-label="Solo en Doblar armonía"><span class="mix-solo-lbl">solo</span>
           </div>
         </div>
         <div class="mix-channel" title="Volumen de BassDuplicated (repite el Bajo con un segundo timbre). Sin efecto mientras el selector 'BassDuplicated' esté en Empty.">
           <label for="mixBassDoubleVol">BassDuplicated</label>
-          <input type="range" id="mixBassDoubleVol" min="0" max="150" value="40" step="1">
+          <input type="range" id="mixBassDoubleVol" min="0" max="150" value="25" step="1">
           <div class="mix-val-row">
-            <span class="mix-val" id="mixBassDoubleVolVal">40%</span>
+            <span class="mix-val" id="mixBassDoubleVolVal">25%</span>
             <input type="checkbox" class="mix-solo" data-track="bassDouble" title="Solo: silencia TODAS las demás pistas mientras esté tildado (a diferencia de Foco, que solo las baja) — este fader no cambia. Al destildarlo, todo vuelve exactamente al nivel que tenía antes (no se pisa ningún valor)." aria-label="Solo en BassDuplicated"><span class="mix-solo-lbl">solo</span>
           </div>
         </div>
@@ -8703,6 +8708,74 @@ function runAnalysis() {
   var RHYTHMSPACE = makeSpaceModule("consolaRhythmSpaceSlider", 0);
 
   /* ================================================================
+     MÓDULO MUSICSILENCE — silencios TOTALES (todas las pistas a la vez, batería incluida).
+     Sliders: #partimentiMusicSilence (🎹 Partimenti, junto a "silences") y #consolaMusicSilenceSlider (How to play, motor libre).
+     Cada slider vale SOLO en su modo (Partimenti no lee el de How to play ni al revés). 0 % = apagado (no cambia nada).
+     Lugares con lógica = el final de una frase: justo ANTES de que empiece la celda siguiente (Partimenti) o el compás 4, 8, 12… (motor libre). Nunca en el
+     comienzo ni en el último tramo de la canción, y nunca más de la mitad de la frase que cierra.
+       < 30 %   : algunas pausas de menos de 2 s, en cualquier parte
+       30–60 %  : más seguidas y algo más largas (hasta 3 s), en cualquier parte
+       > 60 %   : pausas de hasta 3 s, solo en la 1ª mitad de la canción
+       100 %    : pausas de hasta 5 s en cualquier parte de la canción
+     El silencio arranca en una corchea; las notas que suenan en ese momento se cortan y las que empiezan dentro de la pausa se quitan.
+     ================================================================ */
+  var MUSICSILENCE = (function(){
+    var EPS = 1e-6;
+    function bpm(){
+      var el = document.getElementById("consolaTempo");
+      var v = el ? parseFloat(el.value) : NaN;
+      return v > 0 ? v : 100;
+    }
+    // q = probabilidad por final de frase; lmin / lmax = largo de la pausa en segundos; half = solo en la primera mitad de la canción
+    function params(pct){
+      var p = Math.max(0, Math.min(100, pct)), t;
+      if(!(p > 0)) return null;
+      if(p <= 30) return { q: 0.35 * p / 30, lmin: 0.5, lmax: 1.9, half: false };
+      if(p <= 60){ t = (p - 30) / 30; return { q: 0.35 + 0.15 * t, lmin: 0.5 + 0.5 * t, lmax: 1.9 + 1.1 * t, half: false }; }
+      if(p < 100) return { q: 0.5 + 0.4 * (p - 60) / 40, lmin: 1.0, lmax: 3.0, half: true };
+      return { q: 0.9, lmin: 1.5, lmax: 5.0, half: false };
+    }
+    // cands = [{ s: comienzo de la frase, e: final de la frase = comienzo de la siguiente }] en pulsos; total = pulsos de la canción; bp = BPM
+    function plan(pct, cands, total, bp){
+      var pr = params(pct), gaps = [], spb = 60 / (bp > 0 ? bp : bpm());
+      if(pr){
+        var zoneEnd = pr.half ? total / 2 : Infinity;
+        (cands || []).forEach(function(c){
+          if(c.e > zoneEnd + EPS || c.e >= total - EPS) return;
+          if(Math.random() >= pr.q) return;
+          var sec = pr.lmin + Math.random() * (pr.lmax - pr.lmin);
+          var len = Math.min(sec / spb, 0.5 * (c.e - c.s));                 // en pulsos; nunca más de la mitad de la frase que cierra
+          var s = Math.ceil((c.e - len) * 2 - EPS) / 2;                     // arranca en una corchea (redondea hacia el final: la pausa nunca crece)
+          if(c.e - s < 0.5 - EPS || s <= c.s + EPS) return;
+          gaps.push({ s: s, e: c.e, sec: (c.e - s) * spb });
+        });
+      }
+      var secTot = 0; gaps.forEach(function(g){ secTot += g.sec; });
+      return { pct: pct, gaps: gaps, n: gaps.length, sec: secTot };
+    }
+    // Devuelve una lista nueva: quita lo que empieza dentro de una pausa y corta lo que la atraviesa (batería: sin duración, solo se quita).
+    function cut(evs, pl){
+      if(!pl || !pl.n || !evs || !evs.length) return evs;
+      var out = [];
+      evs.forEach(function(ev){
+        var t = ev.startBeat, keep = true, e2 = ev, i, g;
+        for(i = 0; i < pl.gaps.length; i++){
+          g = pl.gaps[i];
+          if(t >= g.s - EPS && t < g.e - EPS){ keep = false; break; }
+          if(ev.durBeats != null && t < g.s - EPS && t + ev.durBeats > g.s + EPS){
+            e2 = {}; for(var k in ev) e2[k] = ev[k];
+            e2.durBeats = g.s - t;
+            break;
+          }
+        }
+        if(keep) out.push(e2);
+      });
+      return out;
+    }
+    return { params: params, plan: plan, cut: cut, bpm: bpm };
+  })();
+
+  /* ================================================================
      MÓDULO RAPID RUNS — slider #consolaRapidRunsSlider (0–100%,
      default 5%; 0% = apagado). Por CADA compás del motor libre, con
      esa probabilidad, reemplaza la célula rítmica de la melodía por una
@@ -13617,6 +13690,17 @@ function runAnalysis() {
     PITCHFX.mark(state.melodyEvents); PITCHFX.mark(state.melody2Events); // glissando / bend↓ (Ornaments): marcas para el audio
     DYNAMICS.applyPitched(state); // Dynamics (0% = no-op)
     drumEvents = buildDrumEvents(NUM_BARS);
+    // musicSilence (How to play, 0% = no-op): silencios totales (todas las pistas, batería incluida) al final de frases de 4 compases. Solo motor libre.
+    var muSilF = parseInt((document.getElementById("consolaMusicSilenceSlider") || {}).value, 10) || 0;
+    MUSICSILENCE.last = null;
+    if(muSilF > 0){
+      var muSilCF = [];
+      for(var muB = 4; muB < NUM_BARS; muB += 4) muSilCF.push({ s: RHYTHM.start(muB - 4), e: RHYTHM.start(muB) });
+      var muSilPF = MUSICSILENCE.plan(muSilF, muSilCF, TOTAL_BEATS, MUSICSILENCE.bpm());
+      ["chordEvents", "bassEvents", "melodyEvents", "melody2Events", "melody3Events", "comping2Events", "bebopEvents"].forEach(function(k){ state[k] = MUSICSILENCE.cut(state[k], muSilPF); });
+      drumEvents = MUSICSILENCE.cut(drumEvents, muSilPF);
+      MUSICSILENCE.last = muSilPF;
+    }
     renderRoll();
     renderBebopRoll();
   }
@@ -14115,7 +14199,7 @@ function runAnalysis() {
       if(sol) sol.innerHTML = "";
       if(SONGTITLE) SONGTITLE.next();
       var sub = document.getElementById("consolaSongSets");
-      if(sub) sub.textContent = "(CommonChords" + (testH && testM ? " · ModeTest" : (testH ? " · ModeTestHarmony" : (testM ? " · ModeTestMelody" : ""))) + " · " + song.length + " acordes · " +
+      if(sub) sub.textContent = "(ChordS" + (testH && testM ? " · ModeTest" : (testH ? " · ModeTestHarmony" : (testM ? " · ModeTestMelody" : ""))) + " · " + song.length + " acordes · " +
         (allowRepeat ? "con" : "sin") + " repetición" + (famOn.length ? " · familias: " + famOn.join(", ") : "") + (scOn.length ? " · escalas: " + scOn.join(", ") : "") + (semisOn ? " · Semis" : "") + (patV2On && !testM && !semisOn ? " · PatternsV2" : "") + " — " +
         song.map(function(s){ return s.label + " [" + s.mode + (s.modeFb ? "*" : "") + " · " + s.fam + " › " + s.tipo + "]"; }).join(" | ") + ")";
       ["consolaPlayBtn", "consolaRegenPlayBtn"].forEach(function(id){
@@ -15587,6 +15671,11 @@ function runAnalysis() {
       var sv = mk("span", "min-width:34px;text-align:right;", "50%");
       sr.addEventListener("input", function(){ sv.textContent = sr.value + "%"; });
       sl2.appendChild(document.createTextNode("silences ")); sl2.appendChild(sr); sl2.appendChild(sv); db.appendChild(sl2);
+      var ms2 = mk("label", LBL); ms2.title = "musicSilence: silencios TOTALES (todas las voces a la vez) al final de una frase o celda, justo antes de que empiece la siguiente; nunca en el comienzo ni en el último tramo, y nunca más de la mitad de la frase que cierra. 0 = ninguno. Menos de 30 %: algunas pausas de menos de 2 s, en cualquier parte. 30–60 %: más seguidas y algo más largas (hasta 3 s), en cualquier parte. Más de 60 %: pausas de hasta 3 s solo en la primera mitad de la canción. 100 %: pausas de hasta 5 s en cualquier parte de la canción. Vale desde la próxima canción (🔀 / G). No usa el musicSilence de How to play.";
+      var msr = mk("input"); msr.type = "range"; msr.min = 0; msr.max = 100; msr.step = 5; msr.value = 0; msr.id = "partimentiMusicSilence"; msr.style.cssText = "width:110px;";
+      var msv = mk("span", "min-width:34px;text-align:right;", "0%");
+      msr.addEventListener("input", function(){ msv.textContent = msr.value + "%"; });
+      ms2.appendChild(document.createTextNode("musicSilence ")); ms2.appendChild(msr); ms2.appendChild(msv); db.appendChild(ms2);
       var DIM_TIP = { passing: "Notas de paso: la melodía llena por grados conjuntos el salto hacia el soprano del acorde siguiente.",
                       neighbor: "Bordaduras: sube o baja un grado y vuelve a la nota del acorde.",
                       turn: "Giros: nota superior, nota, nota inferior, nota (solo con subdivisión rápida).",
@@ -16004,6 +16093,16 @@ function runAnalysis() {
       RHYTHMSPACE.reset(0);          // batería compartida, sin tramos de respiro ni tresillos (igual que CommonChords)
       TRIPLETS.setActive(false);
       drumEvents = buildDrumEvents(NUM_BARS);
+      // musicSilence (slider #partimentiMusicSilence): silencios totales al final de una celda/frase, justo antes de que empiece la siguiente (0 % = no cambia nada)
+      var muSilEl = document.getElementById("partimentiMusicSilence"), muSilPct = muSilEl ? parseInt(muSilEl.value, 10) : 0, muSilPlan = null;
+      if(muSilPct > 0){
+        var muSilC = [], muSilPrev = 0;
+        slotRefs.forEach(function(sr){ if(sr.idx > 0 && sr.ch.cellStart){ muSilC.push({ s: muSilPrev, e: sr.abs }); muSilPrev = sr.abs; } });
+        muSilPlan = MUSICSILENCE.plan(muSilPct, muSilC, TOTAL_BEATS, tempo.bpm);
+        ["chordEvents", "bassEvents", "melodyEvents", "melody2Events", "melody3Events", "comping2Events", "bebopEvents"].forEach(function(k){ state[k] = MUSICSILENCE.cut(state[k], muSilPlan); });
+        drumEvents = MUSICSILENCE.cut(drumEvents, muSilPlan);
+      }
+      api.lastMusicSilence = muSilPlan;   // (para pruebas)
       api.lastSong = song;
 
       var rd = document.getElementById("consolaNotesReadout");
@@ -16019,7 +16118,7 @@ function runAnalysis() {
                  " [aflojó " + (song.stats.ctpL1 || 0) + " + sin reglas " + (song.stats.ctpL2 || 0) + " acordes; soprano liso " + song.ctp.stats.dimPlain + "]";
       }
       var sub = document.getElementById("consolaSongSets");
-      if(sub) sub.textContent = "(Partimenti · experimental · " + keyName + (space ? " · Space" : "") + (ocmN !== null ? " · Movimientos " + ocmN : "") + (foxN !== null ? " · Fouxbourdon " + foxN : "") + (song.mod && song.stats.modCells ? " · Modulatorias " + song.stats.modCells : "") + (song.schemata && song.stats.schtCells ? " · Schemata " + song.stats.schtCells : "") + (song.cyc && song.mode !== "minor" ? " · Ciclos " + song.stats.cycCells + (song.stats.cycCells === 1 ? " ciclo" : " ciclos") : "") + (song.mycad ? " · MyCadences " + song.stats.myCells + (song.stats.myCells === 1 ? " celda" : " celdas") : "") + (song.rofo && song.stats.rofoSteps ? " · RofO " + Math.round(100 * song.stats.rofoVar / song.stats.rofoSteps) + "% variantes" : (song.rofo ? " · RofO" : "")) + " · " + (tempo.name ? tempo.name + " " : "") + "♩=" + tempo.bpm + " · dim " + dimPct + "%" + (tex ? " · textura " + tex.name + (texDblOn ? " + voces duplicadas" : "") : "") + (silPct !== 50 ? " · silences " + silPct + "%" : " · silences") + (innerN !== null ? " · internal_movement " + innerN + (innerN === 1 ? " figura" : " figuras") + " (" + innerDimN + " rápidas · dim interna " + innerDimPct + "%)" : "") + " · " + N + " acordes · " + dens + " por compás · " +
+      if(sub) sub.textContent = "(Partimenti · experimental · " + keyName + (space ? " · Space" : "") + (ocmN !== null ? " · Movimientos " + ocmN : "") + (foxN !== null ? " · Fouxbourdon " + foxN : "") + (song.mod && song.stats.modCells ? " · Modulatorias " + song.stats.modCells : "") + (song.schemata && song.stats.schtCells ? " · Schemata " + song.stats.schtCells : "") + (song.cyc && song.mode !== "minor" ? " · Ciclos " + song.stats.cycCells + (song.stats.cycCells === 1 ? " ciclo" : " ciclos") : "") + (song.mycad ? " · MyCadences " + song.stats.myCells + (song.stats.myCells === 1 ? " celda" : " celdas") : "") + (song.rofo && song.stats.rofoSteps ? " · RofO " + Math.round(100 * song.stats.rofoVar / song.stats.rofoSteps) + "% variantes" : (song.rofo ? " · RofO" : "")) + " · " + (tempo.name ? tempo.name + " " : "") + "♩=" + tempo.bpm + " · dim " + dimPct + "%" + (tex ? " · textura " + tex.name + (texDblOn ? " + voces duplicadas" : "") : "") + (silPct !== 50 ? " · silences " + silPct + "%" : " · silences") + (muSilPlan ? " · musicSilence " + muSilPct + "% (" + muSilPlan.n + (muSilPlan.n === 1 ? " pausa" : " pausas") + (muSilPlan.n ? ", " + muSilPlan.sec.toFixed(1) + " s" : "") + ")" : "") + (innerN !== null ? " · internal_movement " + innerN + (innerN === 1 ? " figura" : " figuras") + " (" + innerDimN + " rápidas · dim interna " + innerDimPct + "%)" : "") + " · " + N + " acordes · " + dens + " por compás · " +
         song.stats.cells.map(function(c){ return core.CELL_NAME[c]; }).join(" → ") + " · " + labels.join(" ") + ctpTxt + ")";
       ["consolaPlayBtn", "consolaRegenPlayBtn"].forEach(function(id){
         var bt2 = document.getElementById(id); if(bt2) bt2.disabled = false;
@@ -16830,7 +16929,7 @@ function runAnalysis() {
   // presets deciden qué instrumento usar en armonía/melodía/bajo (los
   // 12 de Instruments.sf2, con sintetizador de siempre como respaldo)
   // y qué muestras usar en batería (kit real o percusión/congas).
-  var mixGains = { drum: 1, bass: 0.4, chord: 1, melody: 1, melodyDouble: 0.5, chordDouble: 0.5, bassDouble: 0.4, comping2: 1, bebop: 0, melody2: 1, melody3: 1 }; // Bajo: 40% por defecto. Doblar melodía / Doblar armonía: 50% por defecto
+  var mixGains = { drum: 1.05, bass: 0.25, chord: 0.85, melody: 0.85, melodyDouble: 0.35, chordDouble: 0.35, bassDouble: 0.25, comping2: 0.85, bebop: 0, melody2: 0.85, melody3: 0.85 }; // Defaults (11/10): todo 15 puntos más bajo que antes salvo Drums (+5) y Bebop (0 = apagado). Drums 105%, Bajo 25%, Doblar melodía / Doblar armonía 35%, BassDuplicated 25%, el resto 85%
   // ---------- Foco: checkbox chico junto a cada fader del mini mixer ----------
   // mixGains sigue guardando SIEMPRE el valor crudo del fader. El nivel real
   // que llega al gain node es mixGains * focusFactor: 1 para las pistas
@@ -20491,6 +20590,12 @@ function runAnalysis() {
   document.getElementById("consolaTripletsSlider").addEventListener("change", function(){
     if(state.rootChord.length) regenerateConsola();
   });
+  document.getElementById("consolaMusicSilenceSlider").addEventListener("input", function(){
+    document.getElementById("consolaMusicSilenceVal").textContent = this.value + "%";
+  });
+  document.getElementById("consolaMusicSilenceSlider").addEventListener("change", function(){
+    if(state.rootChord.length) regenerateConsola();
+  });
   document.getElementById("consolaSyncopationSlider").addEventListener("input", function(){
     document.getElementById("consolaSyncopationVal").textContent = this.value + "%";
   });
@@ -20587,9 +20692,9 @@ function runAnalysis() {
     if(this.classList.contains("primary") && mixGains.bebop === 0){
       var bebopVolEl = document.getElementById("mixBebopVol");
       var bebopVolValEl = document.getElementById("mixBebopVolVal");
-      if(bebopVolEl) bebopVolEl.value = 100;
-      if(bebopVolValEl) bebopVolValEl.textContent = "100%";
-      setMixGain("bebop", 1);
+      if(bebopVolEl) bebopVolEl.value = 85;
+      if(bebopVolValEl) bebopVolValEl.textContent = "85%";
+      setMixGain("bebop", 0.85);
     }
     if(state.rootChord.length) regenerateConsola();
   });
@@ -21991,7 +22096,7 @@ function runAnalysis() {
     if(stopBtnRM) stopBtnRM.addEventListener("click", function(){ mixSet(false); });
     // 📻 Reproductor vintage (RADIO!): Previous / Play / Stop / Next. Los mismos controles los usa Media Session (auricular / CarPlay).
     var rvBusy = false, rvEl = null, rvTimer = null, rvSkin = "classic", RV_CLASSIC = "";
-    var RV_KINDS = { random: "CreaturaRandom", bella: "CreaturaBella", common: "CommonChords", partimenti: "Partimenti" };
+    var RV_KINDS = { random: "CreaturaRandom", bella: "CreaturaBella", common: "ChordS", partimenti: "Partimenti" };
     var RP = window.__radioPlayer = { resumable: false };
     RP.isOn = function(){ return !!(rmChk && rmChk.checked); };
     function rpFlags(){ // la radio sigue enganchando vueltas (los Detener internos la habían apagado)
