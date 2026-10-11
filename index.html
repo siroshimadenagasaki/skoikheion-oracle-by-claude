@@ -238,6 +238,150 @@
   #radioVintage .rv-lamp{z-index:2;}
   #radioVintage .rv-art{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);height:calc(100% - 20px);max-width:calc(100% - 20px);aspect-ratio:1/1;border-radius:6px;image-rendering:pixelated;box-shadow:0 0 0 2px #c9a45c,0 0 0 5px #2a1608,0 8px 22px rgba(0,0,0,.7);}
   @media (max-height:520px){#radioVintage .rv-brand{display:none}#radioVintage .rv-grille{min-height:34px}#radioVintage .rv-key{min-height:52px}}
+  /* ===== 📻 Player: skins (se sortea una al abrir: 50% "portada", 50% una de las otras 7) ===== */
+  #radioVintage{overflow:hidden;}
+  #radioVintage .sk{--ac:#ff5a1f;--acfg:#fff;--acs:rgba(255,90,31,.28);--fg:#1a1a1a;--mut:#8a877e;position:relative;flex:none;width:760px;height:500px;box-sizing:border-box;transform-origin:50% 50%;
+    display:flex;align-items:center;justify-content:center;color:var(--fg);font:400 16px/1.2 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;}
+  #radioVintage.rv-portrait .sk{width:460px;height:780px;}
+  #radioVintage .sk,#radioVintage .sk *{box-sizing:border-box;}
+  #radioVintage .sk .x{position:absolute;right:22px;top:20px;width:36px;height:36px;padding:0;border:0;background:transparent;color:var(--mut);cursor:pointer;display:flex;align-items:center;justify-content:center;touch-action:manipulation;z-index:5;}
+  #radioVintage .sk .keys{display:flex;gap:10px;align-items:center;}
+  #radioVintage .sk .b{width:44px;height:44px;padding:0;border-radius:50%;border:1.5px solid currentColor;background:transparent;color:var(--fg);cursor:pointer;display:flex;align-items:center;justify-content:center;touch-action:manipulation;-webkit-tap-highlight-color:transparent;}
+  #radioVintage .sk .b:active{transform:scale(.94);}
+  #radioVintage .sk .b.p{border:0;background:var(--ac);color:var(--acfg);}
+  #radioVintage .sk .b.rv-lit{box-shadow:0 0 0 4px var(--acs);}
+  #radioVintage.rv-busy .sk .b{opacity:.7;}
+  #radioVintage .sk .k{font-size:12px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--mut);}
+  #radioVintage .sk .t{font-weight:600;line-height:1.15;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;min-height:1.15em;}
+  #radioVintage .sk .s{color:var(--mut);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:1.2em;}
+  #radioVintage .sk canvas.art{display:block;image-rendering:pixelated;background:#000;}
+  #radioVintage .sk .sk-needle{position:absolute;left:50%;width:2px;margin-left:-1px;}
+  @keyframes skDrift{from{left:6%}to{left:94%}}
+  @keyframes skRec{to{transform:rotate(360deg)}}
+  @keyframes skSlide{from{left:0}to{left:80%}}
+  /* 1 · Radio */
+  #radioVintage[data-skin="radio"]{background:#e9e8e4;}
+  #radioVintage .sk-radio{--ac:#ff5a1f;--acs:rgba(255,90,31,.28);--fg:#1a1a1a;--mut:#8a877e;}
+  #radioVintage .sk-radio .body{display:flex;gap:36px;width:600px;height:300px;padding:36px;border-radius:28px;background:#f8f7f4;border:1px solid #d3d1ca;box-shadow:0 18px 40px rgba(0,0,0,.08);}
+  #radioVintage .sk-radio canvas.art{width:228px;height:228px;flex:none;border-radius:14px;border:1.5px solid #cfcdc6;}
+  #radioVintage .sk-radio .col{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:space-between;gap:10px;}
+  #radioVintage .sk-radio .t{font-size:24px;color:#1a1a1a;margin-top:4px;-webkit-line-clamp:2;}
+  #radioVintage .sk-radio .s{font-size:14px;margin-top:4px;}
+  #radioVintage .sk-radio .scale{position:relative;height:26px;overflow:hidden;flex:none;}
+  #radioVintage .sk-radio .scale:before{content:"";position:absolute;left:0;right:0;bottom:0;height:10px;background-image:repeating-linear-gradient(90deg,#bdbab2 0 1px,transparent 1px 10px);}
+  #radioVintage .sk-radio .sk-needle{top:0;height:26px;background:#ff5a1f;}
+  #radioVintage.rv-portrait .sk-radio .body{flex-direction:column;align-items:center;width:390px;height:auto;padding:30px;gap:22px;}
+  #radioVintage.rv-portrait .sk-radio .col{width:100%;flex:none;justify-content:flex-start;gap:20px;}
+  /* 2 · Vinilo */
+  #radioVintage[data-skin="vinilo"]{background:#111214;}
+  #radioVintage .sk-vinilo{--ac:#ffb400;--acfg:#111214;--acs:rgba(255,180,0,.3);--fg:#f2f2f2;--mut:#6d7078;gap:64px;}
+  #radioVintage .sk-vinilo .deck{position:relative;width:300px;height:300px;flex:none;}
+  #radioVintage .sk-vinilo .rec{position:absolute;inset:0;border-radius:50%;background:repeating-radial-gradient(circle,#1b1c1f 0 17px,#232428 17px 18px);box-shadow:0 0 0 1px #2b2c30;animation:skRec 4s linear infinite;}
+  #radioVintage .sk-vinilo .tick{position:absolute;left:149px;top:22px;width:2px;height:56px;background:rgba(255,255,255,.28);}
+  #radioVintage .sk-vinilo canvas.art{position:absolute;left:85px;top:85px;width:130px;height:130px;border-radius:50%;box-shadow:0 0 0 3px #ffb400;}
+  #radioVintage .sk-vinilo .dot{position:absolute;left:145px;top:145px;width:10px;height:10px;border-radius:50%;background:#111214;}
+  #radioVintage .sk-vinilo .piv{position:absolute;left:321px;top:4px;width:14px;height:14px;border-radius:50%;background:#6d7078;}
+  #radioVintage .sk-vinilo .arm{position:absolute;left:326.5px;top:11px;width:3px;height:190px;border-radius:2px;background:#8b8d93;transform-origin:1.5px 0;transform:rotate(2deg);transition:transform .9s ease;}
+  #radioVintage.rv-on .sk-vinilo .arm{transform:rotate(35deg);}
+  #radioVintage .sk-vinilo .info{width:280px;}
+  #radioVintage .sk-vinilo .t{font-size:28px;color:#f2f2f2;margin-top:14px;}
+  #radioVintage .sk-vinilo .s{font-size:14px;margin-top:4px;}
+  #radioVintage .sk-vinilo .keys{margin-top:36px;}
+  #radioVintage.rv-portrait .sk-vinilo{flex-direction:column;gap:44px;}
+  #radioVintage.rv-portrait .sk-vinilo .info{width:320px;}
+  /* 3 · Cassette */
+  #radioVintage[data-skin="cassette"]{background:#f2f2f0;}
+  #radioVintage .sk-cassette{--ac:#e5391f;--acfg:#fff;--acs:rgba(229,57,31,.28);--fg:#1a1a1a;--mut:#8a8a86;flex-direction:column;gap:40px;}
+  #radioVintage .sk-cassette .cas{position:relative;width:440px;height:280px;flex:none;border:2px solid #1a1a1a;border-radius:16px;}
+  #radioVintage .sk-cassette .lab{position:absolute;left:18px;right:18px;top:18px;height:84px;border:1.5px solid #1a1a1a;border-radius:6px;padding:10px 78px 8px 16px;overflow:hidden;}
+  #radioVintage .sk-cassette .kk{display:flex;align-items:center;gap:8px;}
+  #radioVintage .sk-cassette .sq{display:block;width:8px;height:8px;background:#e5391f;}
+  #radioVintage .sk-cassette .k{font-size:11px;letter-spacing:3px;}
+  #radioVintage .sk-cassette .t{font-size:20px;margin-top:4px;-webkit-line-clamp:1;min-height:0;}
+  #radioVintage .sk-cassette .s{font-size:12px;margin-top:2px;-webkit-line-clamp:1;min-height:0;}
+  #radioVintage .sk-cassette .lab canvas.art{position:absolute;right:8px;top:8px;width:60px;height:60px;border-radius:4px;}
+  #radioVintage .sk-cassette .win{position:absolute;left:90px;right:90px;top:118px;height:84px;border:1.5px solid #1a1a1a;border-radius:42px;}
+  #radioVintage .sk-cassette .reel{position:absolute;top:10px;width:60px;height:60px;border:2px solid #1a1a1a;border-radius:50%;animation:skRec 2.4s linear infinite;}
+  #radioVintage .sk-cassette .reel.l{left:10px;}
+  #radioVintage .sk-cassette .reel.r{right:10px;}
+  #radioVintage .sk-cassette .reel u{position:absolute;left:26px;top:6px;width:2px;height:16px;background:#1a1a1a;}
+  #radioVintage .sk-cassette .bar{position:absolute;left:140px;right:140px;bottom:18px;height:24px;border:1.5px solid #1a1a1a;border-radius:6px;}
+  /* 4 · Dial */
+  #radioVintage[data-skin="dial"]{background:#0e1116;}
+  #radioVintage .sk-dial{--ac:#4da3ff;--acfg:#0e1116;--acs:rgba(77,163,255,.3);--fg:#f2f4f8;--mut:#8a93a5;}
+  #radioVintage .sk-dial .wrap{width:560px;}
+  #radioVintage .sk-dial .head{display:flex;align-items:center;justify-content:space-between;gap:24px;}
+  #radioVintage .sk-dial .txt{min-width:0;}
+  #radioVintage .sk-dial .k{color:#5b6270;}
+  #radioVintage .sk-dial .t{font-size:34px;margin-top:14px;color:#f2f4f8;}
+  #radioVintage .sk-dial .s{font-size:15px;margin-top:6px;}
+  #radioVintage .sk-dial canvas.art{width:136px;height:136px;flex:none;border-radius:10px;}
+  #radioVintage .sk-dial .scale{position:relative;height:56px;margin-top:56px;overflow:hidden;}
+  #radioVintage .sk-dial .scale:before{content:"";position:absolute;left:0;right:0;bottom:0;height:28px;background-image:repeating-linear-gradient(90deg,#3a404c 0 1px,transparent 1px 14px);}
+  #radioVintage .sk-dial .scale:after{content:"";position:absolute;left:0;right:0;bottom:0;height:40px;background-image:repeating-linear-gradient(90deg,#8a93a5 0 1px,transparent 1px 70px);}
+  #radioVintage .sk-dial .sk-needle{top:0;height:56px;background:#4da3ff;z-index:1;}
+  #radioVintage .sk-dial .keys{margin-top:40px;}
+  #radioVintage.rv-portrait .sk-dial .wrap{width:400px;}
+  #radioVintage.rv-portrait .sk-dial .head{flex-direction:column-reverse;align-items:flex-start;gap:24px;}
+  #radioVintage.rv-portrait .sk-dial canvas.art{width:160px;height:160px;}
+  /* 5 · Solo texto */
+  #radioVintage[data-skin="texto"]{background:#fafafa;}
+  #radioVintage .sk-texto{--ac:#111;--acfg:#fff;--acs:rgba(0,0,0,.15);--fg:#111;--mut:#999;flex-direction:column;align-items:flex-start;justify-content:center;padding:0 72px;}
+  #radioVintage .sk-texto canvas.art{position:absolute;right:72px;top:56px;width:170px;height:170px;border-radius:4px;}
+  #radioVintage .sk-texto .t{font-size:56px;font-weight:700;letter-spacing:-1.5px;line-height:1.02;margin-top:18px;max-width:400px;color:#111;}
+  #radioVintage .sk-texto .s{font-size:18px;color:#777;margin-top:14px;}
+  #radioVintage .sk-texto .line{position:relative;width:100%;height:2px;background:#ddd;margin-top:44px;overflow:hidden;flex:none;}
+  #radioVintage .sk-texto .line i{position:absolute;top:0;left:0;width:20%;height:2px;background:#111;animation:skSlide 3s ease-in-out infinite alternate;}
+  #radioVintage .sk-texto .cmd{display:flex;gap:32px;margin-top:22px;}
+  #radioVintage .sk-texto .tb{font-family:inherit;font-weight:700;font-size:14px;letter-spacing:2px;text-transform:uppercase;color:#111;background:transparent;border:0;border-bottom:2px solid transparent;padding:10px 0;cursor:pointer;touch-action:manipulation;}
+  #radioVintage .sk-texto .tb:hover,#radioVintage .sk-texto .tb.rv-lit{border-bottom-color:#111;}
+  #radioVintage.rv-portrait .sk-texto{padding:0 40px;}
+  #radioVintage.rv-portrait .sk-texto canvas.art{right:40px;top:48px;width:150px;height:150px;}
+  #radioVintage.rv-portrait .sk-texto .t{font-size:46px;max-width:none;}
+  /* 6 · Marco de galería */
+  #radioVintage[data-skin="marco"]{background:#f4f3ef;}
+  #radioVintage .sk-marco{--ac:#1a1a1a;--acfg:#fff;--acs:rgba(0,0,0,.15);--fg:#1a1a1a;--mut:#8a8a86;gap:52px;}
+  #radioVintage .sk-marco .frame{width:300px;height:300px;flex:none;border:12px solid #1a1a1a;background:#fff;padding:26px;box-shadow:0 20px 40px rgba(0,0,0,.16);}
+  #radioVintage .sk-marco .frame canvas.art{width:100%;height:100%;outline:1px solid rgba(0,0,0,.18);}
+  #radioVintage .sk-marco .side{width:250px;}
+  #radioVintage .sk-marco .card{border:1px solid #1a1a1a;background:#fff;padding:18px 20px;}
+  #radioVintage .sk-marco .t{font-size:22px;margin-top:10px;}
+  #radioVintage .sk-marco .s{font-size:13px;margin-top:4px;}
+  #radioVintage .sk-marco .keys{margin-top:28px;}
+  #radioVintage.rv-portrait .sk-marco{flex-direction:column;gap:36px;}
+  #radioVintage.rv-portrait .sk-marco .side{width:310px;}
+  /* 7 · Polaroid */
+  #radioVintage[data-skin="polaroid"]{background:#cdd2d8;}
+  #radioVintage .sk-polaroid{--ac:#2a2a2a;--acfg:#fff;--acs:rgba(0,0,0,.18);--fg:#2a2a2a;--mut:#6c737d;gap:60px;}
+  #radioVintage .sk-polaroid .pol{width:300px;flex:none;padding:18px 18px 22px;background:#fff;transform:rotate(-3deg);box-shadow:0 18px 36px rgba(0,0,0,.25);}
+  #radioVintage .sk-polaroid .pol canvas.art{width:264px;height:264px;}
+  #radioVintage .sk-polaroid .pol .t{font-family:"Segoe Print","Bradley Hand","Chalkboard SE","Marker Felt","Comic Sans MS",cursive;font-size:26px;font-weight:400;text-align:center;margin-top:16px;-webkit-line-clamp:2;color:#2a2a2a;}
+  #radioVintage .sk-polaroid .side{width:230px;}
+  #radioVintage .sk-polaroid .s{font-size:14px;color:#4a5059;margin-top:12px;}
+  #radioVintage .sk-polaroid .keys{margin-top:36px;}
+  #radioVintage.rv-portrait .sk-polaroid{flex-direction:column;gap:40px;}
+  #radioVintage.rv-portrait .sk-polaroid .side{width:300px;}
+  /* 9 · Portada completa (a pantalla completa, sin escalar) */
+  #radioVintage[data-skin="portada"]{background:#111;}
+  #radioVintage .sk.sk-portada{position:absolute;inset:0;width:auto;height:auto;transform:none !important;display:block;--ac:#fff;--acfg:#111;--acs:rgba(255,255,255,.3);--fg:#fff;--mut:rgba(255,255,255,.75);}
+  #radioVintage.rv-portrait .sk.sk-portada{width:auto;height:auto;}
+  #radioVintage .sk-portada canvas.art{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#111;}
+  #radioVintage .sk-portada .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.25) 0%,rgba(0,0,0,0) 35%,rgba(0,0,0,.78) 100%);pointer-events:none;}
+  #radioVintage .sk-portada .k{position:absolute;left:clamp(20px,5vw,40px);top:max(26px,calc(env(safe-area-inset-top) + 14px));color:rgba(255,255,255,.85);}
+  #radioVintage .sk-portada .x{top:max(14px,env(safe-area-inset-top));right:max(14px,env(safe-area-inset-right));border-radius:50%;background:rgba(0,0,0,.35);color:#fff;}
+  #radioVintage .sk-portada .bot{position:absolute;left:clamp(20px,5vw,40px);right:clamp(20px,5vw,40px);bottom:max(30px,calc(env(safe-area-inset-bottom) + 18px));}
+  #radioVintage .sk-portada .t{font-size:clamp(28px,6.4vw,52px);font-weight:700;letter-spacing:-.03em;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.45);}
+  #radioVintage .sk-portada .s{font-size:clamp(13px,2.4vw,16px);color:rgba(255,255,255,.8);margin-top:6px;}
+  #radioVintage .sk-portada .keys{margin-top:24px;}
+  #radioVintage .sk-portada .b{width:48px;height:48px;border-color:rgba(255,255,255,.9);color:#fff;}
+  #radioVintage .sk-portada .b.p{background:#fff;color:#111;}
+  /* animaciones: solo mientras suena (rv-on); estas reglas van al final a propósito */
+  #radioVintage .sk .sp{animation-play-state:paused;}
+  #radioVintage.rv-on .sk .sp{animation-play-state:running;}
+  #radioVintage.rv-on .sk .sk-needle{animation:skDrift 12s ease-in-out infinite alternate;}
+  #radioVintage .sk .sk-needle.rv-sweep{animation:rvSweep .9s cubic-bezier(.5,0,.2,1);}
+  @media (prefers-reduced-motion:reduce){#radioVintage .sk *{animation:none !important;transition:none !important;}}
+
 
   .toggle-btn{
     font-family:'JetBrains Mono',monospace;
@@ -21838,7 +21982,7 @@ function runAnalysis() {
     var stopBtnRM = document.getElementById("consolaStopBtn");
     if(stopBtnRM) stopBtnRM.addEventListener("click", function(){ mixSet(false); });
     // 📻 Reproductor vintage (RADIO!): Previous / Play / Stop / Next. Los mismos controles los usa Media Session (auricular / CarPlay).
-    var rvBusy = false, rvEl = null, rvTimer = null;
+    var rvBusy = false, rvEl = null, rvTimer = null, rvSkin = "classic", RV_CLASSIC = "";
     var RV_KINDS = { random: "CreaturaRandom", bella: "CreaturaBella", common: "CommonChords", partimenti: "Partimenti" };
     var RP = window.__radioPlayer = { resumable: false };
     RP.isOn = function(){ return !!(rmChk && rmChk.checked); };
@@ -21913,7 +22057,7 @@ function runAnalysis() {
       var bars = "";
       for(var i = 0; i < 18; i++) bars += '<i style="animation-delay:' + (-(i * 137 % 900)) + 'ms;animation-duration:' + (620 + (i * 83 % 520)) + 'ms"></i>';
       function key(act, icon, label){ return '<button type="button" class="rv-key" data-act="' + act + '"><span class="rv-ic">' + icon + '</span>' + label + '</button>'; }
-      rvEl.innerHTML =
+      RV_CLASSIC =
         '<div class="rv-cab">' +
           '<button type="button" class="rv-close" id="rvClose" aria-label="Cerrar">&#10005;</button>' +
           '<div class="rv-brand">STOIKHEION &middot; RADIO !</div>' +
@@ -21949,7 +22093,7 @@ function runAnalysis() {
       return rvEl;
     }
     function rvSync(){
-      if(!rvEl) return;
+      if(!rvEl || !document.getElementById("rvTitle")) return;
       var on = RP.isOn(), pb = document.getElementById("consolaPlayBtn");
       var playing = !!(pb && pb.disabled);
       rvEl.classList.toggle("rv-on", on && playing);
@@ -21967,7 +22111,44 @@ function runAnalysis() {
       var pk = rvEl.querySelector('[data-act="play"]');
       if(pk) pk.classList.toggle("rv-lit", on);
     }
-    function rvOpen(){ rvBuild(); rvEl.classList.add("open"); rvSync(); if(!rvTimer) rvTimer = setInterval(rvSync, 400); }
+    // Skins: al abrir el player se sortea una (50% "portada"; 50% una de radio/vinilo/cassette/dial/texto/marco/polaroid). El markup está en window.__RV_SKINS.
+    function rvFit(){
+      if(!rvEl) return;
+      var port = window.innerHeight > window.innerWidth;
+      rvEl.classList.toggle("rv-portrait", port);
+      var st = rvEl.querySelector(".sk");
+      if(!st) return;
+      if(st.classList.contains("sk-portada")){ st.style.transform = ""; return; }
+      var W = port ? 460 : 760, H = port ? 780 : 500;
+      var sc = Math.min((window.innerWidth - 24) / W, (window.innerHeight - 24) / H, 2.4);
+      st.style.transform = "scale(" + (sc > 0 ? sc : 1).toFixed(3) + ")";
+    }
+    function rvRender(name){
+      rvSkin = name;
+      rvEl.setAttribute("data-skin", name);
+      var SK = window.__RV_SKINS;
+      rvEl.innerHTML = (name === "classic" || !SK) ? RV_CLASSIC : SK.html(name);
+      rvFit();
+    }
+    // Skin a mano (para probar): __radioPlayer.skin(1..7 | 9) ; skin(0) = el vintage original
+    RP.skin = function(n){
+      rvBuild();
+      var SK = window.__RV_SKINS, name = (n === 0) ? "classic" : (SK && SK.byNumber[n]);
+      if(!name) return false;
+      rvRender(name);
+      if(rvEl.classList.contains("open")) rvSync();
+      return true;
+    };
+    window.addEventListener("resize", rvFit);
+    window.addEventListener("orientationchange", rvFit);
+    function rvOpen(){
+      rvBuild();
+      if(!rvEl.classList.contains("open")){
+        var SK = window.__RV_SKINS;
+        rvRender(SK ? SK.pick() : "classic");
+      }
+      rvEl.classList.add("open"); rvFit(); rvSync(); if(!rvTimer) rvTimer = setInterval(rvSync, 400);
+    }
     function rvClose(){ if(rvEl) rvEl.classList.remove("open"); if(rvTimer){ clearInterval(rvTimer); rvTimer = null; } }
     RP.open = rvOpen;
     document.addEventListener("keydown", function(e){ if(e.key === "Escape" && rvEl && rvEl.classList.contains("open")) rvClose(); });
@@ -22127,6 +22308,55 @@ function runAnalysis() {
 
   root.PixelArt = { render: render, build: build, hash: hashStr };
 })(typeof window !== 'undefined' ? window : globalThis);
+</script>
+<script>
+/* Skins del player RADIO!: 1 radio, 2 vinilo, 3 cassette, 4 dial, 5 texto, 6 marco, 7 polaroid, 9 portada (la 8 "consola" no se usa).
+   Al abrir el player: 50% "portada", 50% una de las otras 7 al azar. window.__RV_SKINS.html(nombre) devuelve el markup (mismos ids que el player: rvClose, rvKind, rvTitle, rvSets, rvArt, rvNeedle, data-act). */
+(function(){
+  var sv = function(d){ return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + '</svg>'; };
+  var IC = {
+    prev: sv('<path d="M19 5v14L9 12z"/><path d="M5 5v14"/>'),
+    play: sv('<path d="M7 4l13 8-13 8z"/>'),
+    stop: sv('<rect x="6" y="6" width="12" height="12" rx="1"/>'),
+    next: sv('<path d="M5 5v14l10-7z"/><path d="M19 5v14"/>'),
+    close: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12"/><path d="M18 6L6 18"/></svg>'
+  };
+  var X = '<button type="button" class="x" id="rvClose" aria-label="Cerrar">' + IC.close + '</button>';
+  var ART = '<canvas class="art" id="rvArt" width="256" height="256" aria-hidden="true"></canvas>';
+  var K = '<div class="k" id="rvKind">RADIO !</div>', T = '<div class="t" id="rvTitle">&nbsp;</div>', S = '<div class="s" id="rvSets"></div>';
+  var NEEDLE = '<div class="scale"><b class="sk-needle" id="rvNeedle"></b></div>';
+  function keys(){
+    return '<div class="keys">' +
+      '<button type="button" class="b" data-act="prev" aria-label="Previous">' + IC.prev + '</button>' +
+      '<button type="button" class="b p" data-act="play" aria-label="Play">' + IC.play + '</button>' +
+      '<button type="button" class="b" data-act="stop" aria-label="Stop">' + IC.stop + '</button>' +
+      '<button type="button" class="b" data-act="next" aria-label="Next">' + IC.next + '</button></div>';
+  }
+  function cmd(){
+    return '<div class="cmd">' +
+      '<button type="button" class="tb" data-act="prev">Prev</button>' +
+      '<button type="button" class="tb" data-act="play">Play</button>' +
+      '<button type="button" class="tb" data-act="stop">Stop</button>' +
+      '<button type="button" class="tb" data-act="next">Next</button></div>';
+  }
+  var HTML = {
+    radio: function(){ return '<div class="sk sk-radio">' + X + '<div class="body">' + ART + '<div class="col">' + K + '<div>' + T + S + '</div>' + NEEDLE + keys() + '</div></div></div>'; },
+    vinilo: function(){ return '<div class="sk sk-vinilo">' + X + '<div class="deck"><div class="rec sp"><i class="tick"></i>' + ART + '<i class="dot"></i></div><i class="piv"></i><i class="arm"></i></div><div class="info">' + K + T + S + keys() + '</div></div>'; },
+    cassette: function(){ return '<div class="sk sk-cassette">' + X + '<div class="cas"><div class="lab"><div class="kk"><i class="sq"></i>' + K + '</div>' + T + S + ART + '</div><div class="win"><div class="reel l sp"><u></u></div><div class="reel r sp"><u></u></div></div><div class="bar"></div></div>' + keys() + '</div>'; },
+    dial: function(){ return '<div class="sk sk-dial">' + X + '<div class="wrap"><div class="head"><div class="txt">' + K + T + S + '</div>' + ART + '</div>' + NEEDLE + keys() + '</div></div>'; },
+    texto: function(){ return '<div class="sk sk-texto">' + X + ART + K + T + S + '<div class="line"><i class="sp"></i></div>' + cmd() + '</div>'; },
+    marco: function(){ return '<div class="sk sk-marco">' + X + '<div class="frame">' + ART + '</div><div class="side"><div class="card">' + K + T + S + '</div>' + keys() + '</div></div>'; },
+    polaroid: function(){ return '<div class="sk sk-polaroid">' + X + '<div class="pol">' + ART + T + '</div><div class="side">' + K + S + keys() + '</div></div>'; },
+    portada: function(){ return '<div class="sk sk-portada">' + ART + '<div class="shade"></div>' + K + X + '<div class="bot">' + T + S + keys() + '</div></div>'; }
+  };
+  var OTHERS = ["radio", "vinilo", "cassette", "dial", "texto", "marco", "polaroid"];
+  var BY_NUM = { 1: "radio", 2: "vinilo", 3: "cassette", 4: "dial", 5: "texto", 6: "marco", 7: "polaroid", 9: "portada" };
+  window.__RV_SKINS = {
+    byNumber: BY_NUM,
+    html: function(name){ return (HTML[name] || HTML.portada)(); },
+    pick: function(){ return Math.random() < 0.5 ? "portada" : OTHERS[Math.floor(Math.random() * OTHERS.length)]; }
+  };
+})();
 </script>
 <script>
   // Shortcuts: G shuffle (handler aparte), F stop, D play, H CreaturaRandom, J CreaturaBella, A CommonChords, K Partimenti, C Random fill, V Clear.
