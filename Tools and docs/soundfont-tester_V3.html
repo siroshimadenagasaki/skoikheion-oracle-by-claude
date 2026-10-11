@@ -142,6 +142,16 @@
   .preset-row .idx{color:var(--text-dim); flex-shrink:0;}
   .preset-row.active .idx{color:#e0c090;}
   .preset-row .nm{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .font-head{
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--amber);
+    padding:10px 8px 4px;
+    margin-top:4px;
+    border-top:1px solid var(--line);
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .font-head:first-child{border-top:none; margin-top:0;}
   #emptyState{
     padding:24px 16px;
     color:var(--text-dim);
@@ -279,6 +289,7 @@
     overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
   }
   #midiName.loaded{color:var(--text);}
+  .btn.on{border-color:var(--amber); color:var(--amber); background:rgba(255,179,71,.12);}
   #midiSeek{flex:1; min-width:0; accent-color:var(--amber);}
   #midiTime{font-family:var(--mono); font-size:12px; color:var(--amber); white-space:nowrap;}
   #midiMode{
@@ -307,7 +318,7 @@
 <header>
   <h1>SOUNDFONT TESTER</h1>
   <label id="dropzone" for="fileInput">
-    <span id="dzText">Arrastrá un .sf2 y/o un .mid a cualquier parte de la página, o tocá acá para elegirlos</span>
+    <span id="dzText">Arrastrá uno o varios .sf2 y/o un .mid a cualquier parte de la página, o tocá acá para elegirlos</span>
     <span class="fname" id="dzFname"></span>
   </label>
   <input type="file" id="fileInput" accept=".sf2,.sf3,.mid,.midi" multiple>
@@ -319,7 +330,10 @@
   <div id="presetPane">
     <div class="label">
       <span>PRESETS</span>
-      <button class="btn sm" id="extractBtn" disabled title="Guardar cada preset como un .sf2 individual">⬇ extract</button>
+      <span>
+        <button class="btn sm" id="clearBtn" disabled title="Quitar todos los SoundFonts cargados">✕ clear</button>
+        <button class="btn sm" id="extractBtn" disabled title="Guardar cada preset de todos los SoundFonts como un .sf2 individual">⬇ extract</button>
+      </span>
     </div>
     <div id="presetList">
       <div id="emptyState">Cargá un SoundFont para ver sus presets acá.</div>
@@ -328,7 +342,7 @@
 
   <div id="playPane">
     <div id="currentPreset">—</div>
-    <div id="hint">Elegí un preset de la lista y tocá el teclado para escucharlo.</div>
+    <div id="hint">Elegí un preset de la lista y tocá el teclado para escucharlo. Flechas ↑↓ (o ←→) = preset anterior/siguiente, también mientras suena un MIDI.</div>
 
     <div id="controls">
       <button class="btn" id="octDown">◀ octava</button>
@@ -349,6 +363,7 @@
       <div class="midi-row">
         <button class="btn" id="midiPlay" disabled>▶ Play</button>
         <button class="btn" id="midiStop" disabled>■ Stop</button>
+        <button class="btn" id="midiLoop" aria-pressed="false" title="Repetir el MIDI sin cortes">🔁 Loop</button>
         <input type="range" id="midiSeek" min="0" max="1000" value="0" step="1" disabled aria-label="Posición">
         <span id="midiTime">0:00 / 0:00</span>
       </div>
@@ -794,7 +809,7 @@
   }
 
   function getSampleBuffer(sf, shdrEntry, sampleId, start, end) {
-    const key = sampleId + ":" + start + ":" + end;
+    const key = sf.id + ":" + sampleId + ":" + start + ":" + end;
     if (bufferCache.has(key)) return bufferCache.get(key);
     const count = end - start;
     if (count <= 0) return null;
@@ -909,7 +924,10 @@
   // ---------------------------------------------------------------
   // UI wiring
   // ---------------------------------------------------------------
-  let sf = null;
+  let fonts = [];        // SoundFonts cargados (cada uno con .id, .fileName, .presets)
+  let allPresets = [];   // presets de todos los fonts, agrupados por font; cada preset tiene .sf y .uid
+  let fontSeq = 0;
+  let curIdx = -1;       // índice de currentPreset dentro de allPresets
   let currentPreset = null;
   let octaveBase = 48; // low C of visible range (C3)
   const OCTAVES_SHOWN = 3;
@@ -925,42 +943,71 @@
   const pianoEl = document.getElementById("piano");
   const octaveLabel = document.getElementById("octaveLabel");
   const extractBtn = document.getElementById("extractBtn");
+  const clearBtn = document.getElementById("clearBtn");
 
   const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
   function noteName(n) { return NOTE_NAMES[n % 12] + (Math.floor(n / 12) - 1); }
 
-  function loadFile(file) {
-    if (!file) return;
+  // Parses one file and appends it to the library. Resolves true if added.
+  async function loadFile(file) {
+    if (!file) return false;
+    if (fonts.some(f => f.fileName === file.name && f.size === file.size)) return false; // ya cargado
     dzText.textContent = "Leyendo…";
     dzFname.textContent = file.name;
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        sf = parseSF2(reader.result);
-        sf.fileName = file.name;
-        bufferCache.clear(); // cached AudioBuffers belong to the previous file (keys are only sampleId:start:end)
-        extractBtn.disabled = false;
-        renderPresetList();
-        metaEl.textContent = `${sf.presets.length} presets · ${sf.instruments.length} instrumentos`;
-        dzText.textContent = "Cargado:";
-        currentPreset = null;
-        currentPresetEl.textContent = "—";
-        hintEl.textContent = "Elegí un preset de la lista y tocá el teclado para escucharlo.";
-        midiOnSoundfontLoaded();
-      } catch (err) {
-        wantAutoplay = false;
-        dzText.textContent = "Error: " + err.message;
-        dzFname.textContent = "";
-        metaEl.textContent = "";
-      }
-    };
-    reader.onerror = () => { dzText.textContent = "No se pudo leer el archivo."; };
-    reader.readAsArrayBuffer(file);
+    try {
+      const parsed = parseSF2(await file.arrayBuffer());
+      parsed.fileName = file.name;
+      parsed.size = file.size;
+      parsed.id = ++fontSeq;
+      for (const p of parsed.presets) { p.sf = parsed; p.uid = parsed.id + ":" + p.hdrIdx; }
+      fonts.push(parsed);
+      allPresets = fonts.flatMap(f => f.presets);
+      return true;
+    } catch (err) {
+      wantAutoplay = false;
+      dzText.textContent = "Error en " + file.name + ": " + err.message;
+      dzFname.textContent = "";
+      return false;
+    }
   }
+
+  function refreshFonts() {
+    renderPresetList();
+    extractBtn.disabled = clearBtn.disabled = !allPresets.length;
+    metaEl.textContent = `${allPresets.length} presets · ${fonts.length} SoundFont${fonts.length === 1 ? "" : "s"}`;
+    dzText.textContent = "Cargados:";
+    dzFname.textContent = fonts.map(f => f.fileName).join(", ");
+    midiOnSoundfontLoaded();
+  }
+
+  clearBtn.addEventListener("click", () => {
+    midiStop();
+    fonts = []; allPresets = []; currentPreset = null; curIdx = -1;
+    bufferCache.clear(); rvCache.clear(); gmCache.clear();
+    renderPresetList();
+    extractBtn.disabled = clearBtn.disabled = true;
+    metaEl.textContent = "";
+    dzText.textContent = "Arrastrá uno o varios .sf2 y/o un .mid a cualquier parte de la página, o tocá acá para elegirlos";
+    dzFname.textContent = "";
+    currentPresetEl.textContent = "—";
+  });
 
   function renderPresetList() {
     presetListEl.innerHTML = "";
-    sf.presets.forEach((p, idx) => {
+    if (!allPresets.length) {
+      presetListEl.innerHTML = '<div id="emptyState">Cargá uno o varios SoundFonts para ver sus presets acá.</div>';
+      return;
+    }
+    let lastSf = null;
+    allPresets.forEach((p, idx) => {
+      if (p.sf !== lastSf) {
+        lastSf = p.sf;
+        const head = document.createElement("div");
+        head.className = "font-head";
+        head.textContent = p.sf.fileName;
+        head.title = p.sf.fileName;
+        presetListEl.appendChild(head);
+      }
       const row = document.createElement("button");
       row.className = "preset-row";
       row.dataset.idx = idx;
@@ -968,8 +1015,17 @@
       const progStr = String(p.program).padStart(3, "0");
       row.innerHTML = `<span class="idx">${bankStr}:${progStr}</span><span class="nm">${escapeHtml(p.name)}</span>`;
       row.addEventListener("click", () => selectPreset(idx, true));
+      if (idx === curIdx) row.classList.add("active");
       presetListEl.appendChild(row);
     });
+  }
+
+  // Preset anterior/siguiente a través de TODOS los SoundFonts cargados (circular).
+  function stepPreset(d) {
+    if (!allPresets.length) return;
+    const n = allPresets.length;
+    const i = curIdx < 0 ? (d > 0 ? 0 : n - 1) : (curIdx + d + n) % n;
+    selectPreset(i, true);
   }
 
   function escapeHtml(s) {
@@ -977,19 +1033,23 @@
   }
 
   function selectPreset(idx, preview) {
-    currentPreset = sf.presets[idx];
-    [...presetListEl.children].forEach(el => el.classList.toggle("active", Number(el.dataset.idx) === idx));
+    curIdx = idx;
+    currentPreset = allPresets[idx];
+    presetListEl.querySelectorAll(".preset-row").forEach(el => el.classList.toggle("active", Number(el.dataset.idx) === idx));
+    const act = presetListEl.querySelector(".preset-row.active");
+    if (act) act.scrollIntoView({ block: "nearest" });
     const bankStr = String(currentPreset.bank).padStart(3, "0");
     const progStr = String(currentPreset.program).padStart(3, "0");
     currentPresetEl.innerHTML = `<span class="bank">${bankStr}:${progStr}</span>${escapeHtml(currentPreset.name)}`;
-    hintEl.textContent = "Tocá una tecla del piano (o de tu teclado) para escucharlo.";
-    if (preview) {
+    hintEl.textContent = `${currentPreset.sf.fileName} · Flechas ↑↓ = cambiar de preset · tocá una tecla para escucharlo.`;
+    if (mp.playing) {
+      midiRetarget(); // el MIDI sigue sonando, ahora con este preset (sin reiniciar)
+    } else if (preview) {
       ensureCtx();
       const note = 60 >= currentPreset.zones[0].keyLo && 60 <= currentPreset.zones[0].keyHi
         ? 60 : Math.floor((currentPreset.zones[0].keyLo + currentPreset.zones[0].keyHi) / 2);
-      noteOn(sf, currentPreset, note, 100);
+      noteOn(currentPreset.sf, currentPreset, note, 100);
       setTimeout(() => stopVoice(note, false), 500);
-      midiOnPresetChange();
     }
   }
 
@@ -1001,7 +1061,7 @@
 
   function extractFileName(p, used) {
     const clean = s => s.replace(/[\\/:*?"<>|\u0000-\u001f]/g, "_");
-    const base = clean((sf.fileName || sf.sfName).replace(/\.sf[23]$/i, ""));
+    const base = clean((p.sf.fileName || p.sf.sfName).replace(/\.sf[23]$/i, ""));
     const stem = `${base} - ${String(p.bank).padStart(3, "0")}-${String(p.program).padStart(3, "0")} ${clean(p.name)}`;
     let out = stem + ".sf2", i = 2;
     while (used.has(out)) out = `${stem} (${i++}).sf2`;
@@ -1018,8 +1078,8 @@
   }
 
   async function extractAll() {
-    if (!sf || !sf.presets.length) { setStatus("Primero cargá un SoundFont.", true); return; }
-    if (/\.sf3$/i.test(sf.fileName || "")) { setStatus("SF3 (comprimido) no está soportado para extraer.", true); return; }
+    if (!allPresets.length) { setStatus("Primero cargá un SoundFont.", true); return; }
+    if (fonts.some(f => /\.sf3$/i.test(f.fileName || ""))) { setStatus("SF3 (comprimido) no está soportado para extraer.", true); return; }
 
     let dir = null;
     if (window.showDirectoryPicker) {
@@ -1029,13 +1089,13 @@
 
     extractBtn.disabled = true;
     const used = new Set();
-    const n = sf.presets.length;
+    const n = allPresets.length;
     try {
       for (let i = 0; i < n; i++) {
-        const p = sf.presets[i];
+        const p = allPresets[i];
         setStatus(`Extrayendo ${i + 1}/${n}: ${p.name}`, false);
         await tick(); // let the status repaint
-        const bytes = extractPresetSF2(sf, p);
+        const bytes = extractPresetSF2(p.sf, p);
         const name = extractFileName(p, used);
         if (dir) {
           const w = await (await dir.getFileHandle(name, { create: true })).createWritable();
@@ -1198,6 +1258,8 @@
   // ---------------------------------------------------------------
   const midiPlayBtn = document.getElementById("midiPlay");
   const midiStopBtn = document.getElementById("midiStop");
+  const midiLoopBtn = document.getElementById("midiLoop");
+  let loopOn = false;
   const midiSeek = document.getElementById("midiSeek");
   const midiTimeEl = document.getElementById("midiTime");
   const midiNameEl = document.getElementById("midiName");
@@ -1228,23 +1290,25 @@
   }
 
   function getResolved(preset, note, vel) {
-    const key = preset.hdrIdx + "|" + note + "|" + vel;
+    const key = preset.uid + "|" + note + "|" + vel;
     let rv = rvCache.get(key);
-    if (rv === undefined) { rv = resolveVoice(sf, preset, note, vel); rvCache.set(key, rv); }
+    if (rv === undefined) { rv = resolveVoice(preset.sf, preset, note, vel); rvCache.set(key, rv); }
     return rv;
   }
 
   function gmLookup(bank, prog, drum) {
-    const key = (drum ? 128 : bank) + ":" + prog;
+    // Busca primero en el SoundFont del preset seleccionado, después en todos los cargados.
+    const cur = currentPreset ? currentPreset.sf : null;
+    const key = (cur ? cur.id : 0) + "|" + (drum ? 128 : bank) + ":" + prog;
     let r = gmCache.get(key);
     if (r) return r;
-    const P = sf.presets;
+    const pools = cur ? [cur.presets, allPresets] : [allPresets];
+    const find = fn => { for (const pool of pools) { const f = pool.find(fn); if (f) return f; } return null; };
     if (drum) {
-      const exact = P.find(p => p.bank === 128 && p.program === prog);
-      const any = exact || P.find(p => p.bank === 128);
+      const any = find(p => p.bank === 128 && p.program === prog) || find(p => p.bank === 128);
       r = { p: any || null, why: any ? "" : "drum" };
     } else {
-      const found = P.find(p => p.bank === bank && p.program === prog) || P.find(p => p.bank === 0 && p.program === prog);
+      const found = find(p => p.bank === bank && p.program === prog) || find(p => p.bank === 0 && p.program === prog);
       r = { p: found || null, why: found ? "" : "fallback" };
     }
     gmCache.set(key, r);
@@ -1253,7 +1317,7 @@
 
   // Which preset plays this note? -> { p: preset|null, why: ""|"fallback"|"drum" }
   function presetForNote(n) {
-    const cur = currentPreset || sf.presets[0];
+    const cur = currentPreset || allPresets[0];
     if (midiModeEl.value === "selected") {
       if (n.ch === 9 && cur.bank !== 128) return { p: null, why: "drum" }; // channel 10 is percussion
       return { p: cur, why: "" };
@@ -1348,12 +1412,21 @@
   }
 
   function schedTick() {
-    const pos = audioCtx.currentTime - mp.startCtx;
-    const horizon = pos + LOOKAHEAD;
+    let pos = audioCtx.currentTime - mp.startCtx;
     const notes = midi.notes;
-    while (mp.idx < notes.length && notes[mp.idx].t < horizon) {
-      const n = notes[mp.idx++];
-      try { scheduleNote(n, mp.startCtx + n.t); } catch (err) { console.error(err); }
+    for (;;) {
+      const horizon = pos + LOOKAHEAD;
+      while (mp.idx < notes.length && notes[mp.idx].t < horizon) {
+        const n = notes[mp.idx++];
+        try { scheduleNote(n, mp.startCtx + n.t); } catch (err) { console.error(err); }
+      }
+      // Loop: when the look-ahead window reaches the end, start the next pass right there
+      // (shift the origin by one duration) so there is no gap and the last tails keep ringing.
+      if (loopOn && midi.duration > 0 && mp.idx >= notes.length && horizon >= midi.duration) {
+        mp.startCtx += midi.duration; mp.idx = 0; pos -= midi.duration;
+        continue;
+      }
+      break;
     }
     if (!mp.seeking) updateSeek(Math.min(midi.duration, Math.max(0, pos)));
     if (pos >= midi.duration) { // song over: release tails ring out on their own
@@ -1366,7 +1439,7 @@
 
   async function midiPlay(from) {
     if (!midi) return;
-    if (!sf || !sf.presets.length) { setStatus("Primero cargá un SoundFont para escuchar el MIDI.", true); return; }
+    if (!allPresets.length) { setStatus("Primero cargá un SoundFont para escuchar el MIDI.", true); return; }
     wantAutoplay = false;
     const startPos = typeof from === "number" ? from : (mp.pos >= midi.duration - 0.05 ? 0 : mp.pos);
     haltPlayback();
@@ -1443,11 +1516,11 @@
         rollRender();
         setPlayUi("stopped");
         updateSeek(0);
-        if (sf && sf.presets.length) {
+        if (allPresets.length) {
           midiPlay(0);
         } else {
           wantAutoplay = true; // starts by itself as soon as a SoundFont is loaded
-          setStatus(sf ? "El SoundFont no tiene presets." : "MIDI cargado. Cargá un SoundFont y arranca solo.", !!sf);
+          setStatus("MIDI cargado. Cargá un SoundFont y arranca solo.", false);
         }
       } catch (err) {
         midiNameEl.textContent = "Error: " + err.message;
@@ -1460,17 +1533,21 @@
   }
 
   // hooks called from the SoundFont side
-  function midiOnSoundfontLoaded() {
-    haltPlayback();
-    mp.pos = 0;
-    rvCache.clear(); gmCache.clear();
-    setPlayUi("stopped");
-    updateSeek(0);
-    renderMidiInfo(null);
+  function midiOnSoundfontLoaded() { // fonts were added: don't interrupt a song that is already playing
+    gmCache.clear();
+    if (!mp.playing) {
+      setPlayUi("stopped");
+      renderMidiInfo(null);
+    }
     if (midi && wantAutoplay) midiPlay(0);
   }
-  function midiOnPresetChange() { // user clicked another preset: hear it on the song right away
-    if (mp.playing && midiModeEl.value === "selected") midiPlay(currentPos());
+  // Preset changed while the song plays: silence current voices and re-schedule from the
+  // current position with the new preset. No restart and no full-song prewarm -> instant.
+  function midiRetarget() {
+    if (!mp.playing) return;
+    killMidiVoices();
+    mp.idx = firstIdxFrom(currentPos());
+    schedTick();
   }
 
   // ---- piano roll básico: canción completa ajustada al ancho, cabezal en vivo, click = seek ----
@@ -1520,6 +1597,11 @@
 
   midiPlayBtn.addEventListener("click", () => { if (mp.playing) midiPause(); else midiPlay(); });
   midiStopBtn.addEventListener("click", midiStop);
+  midiLoopBtn.addEventListener("click", () => {
+    loopOn = !loopOn;
+    midiLoopBtn.classList.toggle("on", loopOn);
+    midiLoopBtn.setAttribute("aria-pressed", loopOn);
+  });
   midiSeek.addEventListener("input", () => {
     if (!midi) return;
     mp.seeking = true;
@@ -1534,12 +1616,14 @@
   midiModeEl.addEventListener("change", () => { if (mp.playing) midiPlay(currentPos()); else renderMidiInfo(null); });
 
   // ---- dispatch dropped / picked files by extension ----
-  function handleFiles(fileList) {
-    const files = [...fileList];
-    const sfFile = files.find(f => /\.sf[23]$/i.test(f.name));
+  async function handleFiles(fileList) {
+    const files = [...fileList]; // copy now: the input's FileList is live
+    const sfFiles = files.filter(f => /\.sf[23]$/i.test(f.name));
     const midiFile = files.find(f => /\.midi?$/i.test(f.name));
-    if (!sfFile && !midiFile) { loadFile(files[0]); return; } // unknown extension: try it as a SoundFont, like before
-    if (sfFile) loadFile(sfFile);
+    if (!sfFiles.length && !midiFile && files.length) sfFiles.push(files[0]); // unknown extension: try it as a SoundFont
+    let added = false;
+    for (const f of sfFiles) if (await loadFile(f)) added = true; // all fonts first, then the MIDI
+    if (added) refreshFonts();
     if (midiFile) loadMidi(midiFile);
   }
 
@@ -1638,7 +1722,7 @@
 
     pianoEl.querySelectorAll(".white-key, .black-key").forEach(el => {
       const note = Number(el.dataset.note);
-      const press = e => { e.preventDefault(); ensureCtx(); el.classList.add("down"); if (currentPreset) noteOn(sf, currentPreset, note, 100); };
+      const press = e => { e.preventDefault(); ensureCtx(); el.classList.add("down"); if (currentPreset) noteOn(currentPreset.sf, currentPreset, note, 100); };
       const release = e => { el.classList.remove("down"); stopVoice(note, false); };
       el.addEventListener("mousedown", press);
       el.addEventListener("mouseup", release);
@@ -1662,8 +1746,8 @@
   // Runner compartido por los tests; iniciar uno nuevo cancela el anterior.
   let testRun = 0;
   function runNoteTest(notes, stepMs, label) {
-    if (!sf || !sf.presets.length) { setStatus("Primero cargá un SoundFont.", true); return; }
-    selectPreset(0, false);
+    if (!allPresets.length) { setStatus("Primero cargá un SoundFont.", true); return; }
+    if (!currentPreset) selectPreset(0, false);
     const preset = currentPreset;
     ensureCtx();
     const run = ++testRun;
@@ -1673,7 +1757,7 @@
       if (i > 0) stopVoice(notes[i - 1], true);
       if (run !== testRun || i >= notes.length) return;
       const note = notes[i];
-      noteOn(sf, preset, note, 100);
+      noteOn(preset.sf, preset, note, 100);
       const el = pianoEl.querySelector(`[data-note="${note}"]`);
       if (el) el.classList.add("down");
       setTimeout(() => { if (el) el.classList.remove("down"); }, stepMs - 20);
@@ -1715,6 +1799,14 @@
   const heldKeys = new Set();
 
   window.addEventListener("keydown", e => {
+    // Flechas: preset anterior/siguiente (también mientras suena el MIDI). Permite repetir al mantener.
+    if (!e.ctrlKey && !e.altKey && !e.metaKey && allPresets.length &&
+        (e.key === "ArrowUp" || e.key === "ArrowDown" || e.key === "ArrowLeft" || e.key === "ArrowRight")) {
+      e.preventDefault();
+      if (e.target && e.target.blur) e.target.blur(); // que el slider/select no se queden con las flechas
+      stepPreset(e.key === "ArrowUp" || e.key === "ArrowLeft" ? -1 : 1);
+      return;
+    }
     if (e.repeat) return;
     if (e.target && e.target.matches && e.target.matches("select, input")) return;
     const k = e.key.toLowerCase();
@@ -1725,7 +1817,7 @@
     if (heldKeys.has(k)) return;
     heldKeys.add(k);
     ensureCtx();
-    noteOn(sf, currentPreset, note, 100);
+    noteOn(currentPreset.sf, currentPreset, note, 100);
     const el = pianoEl.querySelector(`[data-note="${note}"]`);
     if (el) el.classList.add("down");
   });
