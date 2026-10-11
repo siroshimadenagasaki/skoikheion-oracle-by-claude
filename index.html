@@ -1562,17 +1562,39 @@
     </div>
 
     <div class="consola-controls">
-      <div class="consola-field consola-instruments" title="Tempo, sliders de complejidad armónica y opciones (Subsets, Supersets, More repetition, Notas comunes) del motor libre, agrupados y contraídos por defecto para simplificar la vista — mismos controles de siempre, en el mismo lugar.">
+      <div class="consola-field consola-instruments" title="Specs: tempo, loop y largo del segmento (24 bars / 12 bars / Random 4–48 / campo manual), agrupados y contraídos por defecto — mismos controles de siempre.">
         <div class="consola-subfield-head">
-          <label>How to play</label>
-          <button type="button" class="subfield-toggle" aria-expanded="false" aria-controls="howToPlayBody" onclick="toggleModule(this)" title="Mostrar/ocultar Tempo, los sliders de complejidad y las opciones del motor"></button>
+          <label>Specs</label>
+          <button type="button" class="subfield-toggle" aria-expanded="false" aria-controls="specsBody" onclick="toggleModule(this)" title="Mostrar/ocultar Specs (Tempo, Loop y largo en compases)"></button>
         </div>
-        <div class="collapsible-content collapsed" id="howToPlayBody" style="display:flex;flex-wrap:wrap;gap:20px 30px;">
+        <div class="collapsible-content collapsed" id="specsBody" style="display:flex;flex-wrap:wrap;gap:20px 30px;">
       <div class="consola-field">
         <label for="consolaTempo">Tempo</label>
         <input type="range" id="consolaTempo" min="25" max="200" value="84" step="1">
         <span class="consola-val" id="consolaTempoVal">84 BPM</span>
       </div>
+      <div class="consola-field consola-loop">
+        <input type="checkbox" id="consolaLoopChk" checked>
+        <label for="consolaLoopChk">Loop</label>
+      </div>
+      <div class="consola-field consola-loop" style="flex-wrap:wrap;" title="Largo del segmento: 24 bars / 12 bars / Random 4–48 / campo manual (1–96). Duplica la duración del segmento a 24 compases en vez de los 12 de siempre — mismo motor, mismas reglas (Chromatism, Chords, Jazz, MelodicSpace/HarmonicSpace/RythmSpace, Swing Drums, etc.), el doble de largo. Se aplica en el próximo Reproducir/Regenerar/Simplicity.">
+        <input type="checkbox" id="consola24BarsChk" checked>
+        <label for="consola24BarsChk">24 bars</label>
+        <input type="checkbox" id="consola12BarsChk" title="12 compases (el largo de siempre)">
+        <label for="consola12BarsChk" title="12 compases (el largo de siempre)">12 bars</label>
+        <input type="checkbox" id="consolaRandBarsChk" title="Sortea un largo entre 4 y 48 compases en cada generación nueva (Regenerar, CreaturaRandom/Bella, CommonChords, Partimenti, RadioMode).">
+        <label for="consolaRandBarsChk" title="Sortea un largo entre 4 y 48 compases en cada generación nueva (Regenerar, CreaturaRandom/Bella, CommonChords, Partimenti, RadioMode).">Random 4–48</label>
+        <label for="consolaBarsNum" title="Cantidad de compases a mano (1–96). Si hay un número acá manda sobre los checkboxes; vacío = vale el checkbox tildado.">bars</label>
+        <input type="number" id="consolaBarsNum" min="1" max="96" step="1" placeholder="–" title="Cantidad de compases a mano (1–96). Si hay un número acá manda sobre los checkboxes; vacío = vale el checkbox tildado." style="width:58px;">
+      </div>
+        </div>
+      </div>
+      <div class="consola-field consola-instruments" title="Sliders de complejidad armónica y opciones (Subsets, Supersets, More repetition, Notas comunes) del motor libre, agrupados y contraídos por defecto para simplificar la vista — mismos controles de siempre, en el mismo lugar.">
+        <div class="consola-subfield-head">
+          <label>How to play</label>
+          <button type="button" class="subfield-toggle" aria-expanded="false" aria-controls="howToPlayBody" onclick="toggleModule(this)" title="Mostrar/ocultar los sliders de complejidad y las opciones del motor"></button>
+        </div>
+        <div class="collapsible-content collapsed" id="howToPlayBody" style="display:flex;flex-wrap:wrap;gap:20px 30px;">
       <div class="consola-field" title="Simplicity: 0% = motor libre de siempre (Simplicity apagado). 100% = Simplicity completo: versión simple, set completo sin transposición ni subsets, solo inversiones al azar entre compases, bajo y melodía en patrón predecible. En el medio, cada compás sale al azar de uno u otro motor (a mayor %, más compases Simplicity). Se re-sortea en cada variación. Con Multi Sets, cada compás Simplicity toca entero uno de los sets guardados (el que le tocó), solo con inversiones.">
         <label for="consolaNormalSlider">&#8634; Simplicity</label>
         <input type="range" id="consolaNormalSlider" min="0" max="100" value="0" step="1" disabled>
@@ -1710,20 +1732,6 @@
           <span class="consola-inst-toggle" title="Sortea entre 2 y 4 compases distintos (incluido el tipeado arriba) y los reparte al azar entre los 12 compases — algunos quedan en uno, otros en otro."><input type="checkbox" id="consolaMixTimeSigChk"><label for="consolaMixTimeSigChk">Mix time signatures</label></span>
         </div>
         <span class="consola-val" id="consolaTimeSigStatus"></span>
-      </div>
-      <div class="consola-field consola-loop">
-        <input type="checkbox" id="consolaLoopChk" checked>
-        <label for="consolaLoopChk">Loop</label>
-      </div>
-      <div class="consola-field consola-loop" style="flex-wrap:wrap;" title="Largo del segmento: 24 bars / 12 bars / Random 4–48 / campo manual (1–96). Duplica la duración del segmento a 24 compases en vez de los 12 de siempre — mismo motor, mismas reglas (Chromatism, Chords, Jazz, MelodicSpace/HarmonicSpace/RythmSpace, Swing Drums, etc.), el doble de largo. Se aplica en el próximo Reproducir/Regenerar/Simplicity.">
-        <input type="checkbox" id="consola24BarsChk" checked>
-        <label for="consola24BarsChk">24 bars</label>
-        <input type="checkbox" id="consola12BarsChk" title="12 compases (el largo de siempre)">
-        <label for="consola12BarsChk" title="12 compases (el largo de siempre)">12 bars</label>
-        <input type="checkbox" id="consolaRandBarsChk" title="Sortea un largo entre 4 y 48 compases en cada generación nueva (Regenerar, CreaturaRandom/Bella, CommonChords, Partimenti, RadioMode).">
-        <label for="consolaRandBarsChk" title="Sortea un largo entre 4 y 48 compases en cada generación nueva (Regenerar, CreaturaRandom/Bella, CommonChords, Partimenti, RadioMode).">Random 4–48</label>
-        <label for="consolaBarsNum" title="Cantidad de compases a mano (1–96). Si hay un número acá manda sobre los checkboxes; vacío = vale el checkbox tildado.">bars</label>
-        <input type="number" id="consolaBarsNum" min="1" max="96" step="1" placeholder="–" title="Cantidad de compases a mano (1–96). Si hay un número acá manda sobre los checkboxes; vacío = vale el checkbox tildado." style="width:58px;">
       </div>
         </div>
       </div>
@@ -22465,12 +22473,32 @@ function runAnalysis() {
     a.loop = true; a.setAttribute("playsinline", ""); a.volume = 0.01;
     return a;
   }
+  // Portada para CarPlay / pantalla de bloqueo: la MISMA imagen 8 bits que muestra el player
+  // (misma semilla = título|sets), dibujada en un canvas fuera de pantalla y pasada como PNG.
+  function coverFor(seedKey){
+    try {
+      if (!window.PixelArt) return [];
+      var c = document.createElement("canvas"); c.width = 512; c.height = 512;
+      window.PixelArt.render(c, { seed: seedKey, mode: "auto" });
+      var u = c.toDataURL("image/png");
+      return [{ src: u, sizes: "512x512", type: "image/png" }];
+    } catch(e){ return []; }
+  }
   function keepOn(){
     try { if (!keep) keep = makeKeep(); if (keep.paused) keep.play().catch(function(){}); } catch(e){}
     try {
       if ("mediaSession" in navigator) {
-        var tEl = document.getElementById("consolaSongTitle"), tt = (tEl && tEl.textContent.trim()) || "Stoikheion Composer";
-        if(tt !== lastMeta){ lastMeta = tt; navigator.mediaSession.metadata = new MediaMetadata({ title: tt, artist: "Stoikheion", album: "RADIO !" }); }
+        var tEl = document.getElementById("consolaSongTitle"), sEl = document.getElementById("consolaSongSets");
+        var tt = (tEl && tEl.textContent.trim()) || "Stoikheion Composer";
+        var ss = sEl ? sEl.textContent.trim() : "";
+        var mk = tt + "|" + ss;
+        if(mk !== lastMeta){
+          lastMeta = mk;
+          navigator.mediaSession.metadata = new MediaMetadata({
+            title: tt, artist: "Stoikheion", album: "RADIO !",
+            artwork: coverFor((tEl && tEl.textContent.trim()) ? mk : "RADIO")   // misma clave que rvSync()
+          });
+        }
         navigator.mediaSession.playbackState = "playing";
       }
     } catch(e){}
