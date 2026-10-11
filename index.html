@@ -232,6 +232,8 @@
   #radioVintage .rv-key .rv-ic{font-size:clamp(22px,6vw,34px);line-height:1;}
   #radioVintage .rv-key.rv-lit{background:linear-gradient(180deg,#ffeaa8,#f2b84b);box-shadow:0 6px 0 #6b4a1e,0 0 22px rgba(255,180,60,.6),inset 0 2px 0 rgba(255,255,255,.7);}
   #radioVintage.rv-busy .rv-key{opacity:.7;}
+  #radioVintage .rv-lamp{z-index:2;}
+  #radioVintage .rv-art{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);height:calc(100% - 20px);max-width:calc(100% - 20px);aspect-ratio:1/1;border-radius:6px;image-rendering:pixelated;box-shadow:0 0 0 2px #c9a45c,0 0 0 5px #2a1608,0 8px 22px rgba(0,0,0,.7);}
   @media (max-height:520px){#radioVintage .rv-brand{display:none}#radioVintage .rv-grille{min-height:34px}#radioVintage .rv-key{min-height:52px}}
 
   .toggle-btn{
@@ -21667,7 +21669,7 @@ function runAnalysis() {
             '<div class="rv-sets" id="rvSets"></div>' +
             '<div class="rv-scale">' + ticks + '<b class="rv-needle" id="rvNeedle"></b></div>' +
           '</div></div>' +
-          '<div class="rv-grille"><div class="rv-lamp"><em></em>ON AIR</div><div class="rv-eq">' + bars + '</div></div>' +
+          '<div class="rv-grille"><div class="rv-lamp"><em></em>ON AIR</div><canvas class="rv-art" id="rvArt" width="256" height="256" aria-hidden="true"></canvas></div>' +
           '<div class="rv-keys">' +
             key("prev", "&#9198;&#65038;", "Previous") + key("play", "&#9654;&#65038;", "Play") +
             key("stop", "&#9632;&#65038;", "Stop") + key("next", "&#9197;&#65038;", "Next") +
@@ -21702,6 +21704,11 @@ function runAnalysis() {
       var tt = tEl ? tEl.textContent.trim() : "";
       document.getElementById("rvTitle").textContent = tt || (on ? "sintonizando…" : "—");
       document.getElementById("rvSets").textContent = sEl ? sEl.textContent.trim() : "";
+      var art = document.getElementById("rvArt");
+      if(art && window.PixelArt){   // imagen 8 bits de la canción (paisaje o paisaje + personaje), siempre la misma para la misma canción
+        var ak = tt ? tt + "|" + (sEl ? sEl.textContent.trim() : "") : "RADIO";
+        if(art.__k !== ak){ art.__k = ak; try{ window.PixelArt.render(art, { seed: ak, mode: "auto" }); }catch(_e){} }
+      }
       document.getElementById("rvKind").textContent = on ? (RV_KINDS[window.__radioMixLast] || "RADIO !") : "RADIO OFF";
       var pk = rvEl.querySelector('[data-act="play"]');
       if(pk) pk.classList.toggle("rv-lit", on);
@@ -21730,6 +21737,142 @@ function runAnalysis() {
     if(btnBella) btnBella.addEventListener("click", function(){ runCreatura(true); });
     if(btnInterv) btnInterv.addEventListener("click", function(){ runCreatura("intervalic"); });
   })();
+</script>
+<script>
+/* pixelart.js - imagen 8 bits (32x32) por cancion: paisaje + personaje opcional.
+   API: PixelArt.render(canvas, {set:[0,4,7], seed:'titulo', mode:'auto'|'landscape'|'character'})
+   - Misma entrada => misma imagen (determinista).
+   - set: pitch classes de la cancion. Si no hay set se usa seed (texto o numero).
+   - mode: 'landscape' solo paisaje, 'character' paisaje + personaje, 'auto' lo decide la semilla. */
+(function (root) {
+  var N = 32;
+  function rng(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  function hsl(h, s, l) { return 'hsl(' + (((h % 360) + 360) % 360) + ',' + s + '%,' + l + '%)'; }
+  function hashStr(s) { var h = 2166136261; s = String(s); for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+
+  function build(opts) {
+    opts = opts || {};
+    var set = Array.isArray(opts.set) && opts.set.length ? opts.set : null;
+    var base = 0;
+    if (set) set.forEach(function (x) { base = base * 13 + x + 1; });
+    else base = typeof opts.seed === 'number' ? opts.seed : hashStr(opts.seed == null ? 'x' : opts.seed);
+    var R = rng(base * 7919), seed = Math.floor(R() * 4294967296);
+    var sum = set ? set.reduce(function (a, b) { return a + b; }, 0) : (seed % 360);
+    var h = (sum * 47 + (set ? set.length : 5) * 61) % 360;
+    var type = (seed >>> 11) % 5;
+    var mode = opts.mode || 'auto';
+    var withChar = mode === 'character' || (mode === 'auto' && ((seed >>> 16) & 1) === 1);
+
+    var P = [], S = [];
+    for (var y = 0; y < N; y++) { P[y] = []; S[y] = []; for (var x = 0; x < N; x++) { P[y][x] = '#000'; S[y][x] = null; } }
+    function pp(x, y, c) { x = Math.round(x); y = Math.round(y); if (x >= 0 && x < N && y >= 0 && y < N) P[y][x] = c; }
+    function ps(x, y, c) { if (x >= 0 && x < N && y >= 0 && y < N) S[y][x] = c; }
+    function rect(x0, y0, x1, y1, c) { for (var yy = y0; yy <= y1; yy++) for (var xx = x0; xx <= x1; xx++) pp(xx, yy, c); }
+    function disc(cx, cy, r, c) { for (var dy = -r; dy <= r; dy++) for (var dx = -r; dx <= r; dx++) if (dx * dx + dy * dy <= r * r + r * 0.6) pp(cx + dx, cy + dy, c); }
+
+    var night = type === 2 || type === 4 || (type === 0 && ((seed >>> 3) & 1) === 1);
+    var HZ = (type === 1 || type === 3) ? 18 : (type === 4 ? 24 : 20);
+    var L = night ? [10, 18, 28, 42] : [38, 50, 62, 76], hs = type === 4 ? 8 : h;
+    var sk = [0, 1, 2, 3].map(function (k) { return hsl(hs + k * 14, night ? 45 : 60, L[k]); });
+    var y1, x1;
+    for (y1 = 0; y1 < HZ; y1++) for (x1 = 0; x1 < N; x1++) { var f = y1 / HZ * 4, k = Math.min(3, Math.floor(f)), fr = f - k; if (fr > 0.7 && k < 3 && (x1 + y1) % 2 === 0) k++; pp(x1, y1, sk[k]); }
+    if (night) for (var i = 0; i < 22; i++) pp(Math.floor(R() * N), Math.floor(R() * (HZ - 4)), '#f8f9fa');
+    var sunC = hsl(h + 50, 95, night ? 85 : 72);
+    if (type === 0) disc(6 + Math.floor(R() * 20), 7, 3, sunC);
+    if (type === 1) disc(8 + Math.floor(R() * 16), HZ - 2, 5, sunC);
+    if (type === 2) disc(24, 7, 3, sunC);
+    if (type === 3) disc(16, HZ, 6, sunC);
+
+    if (type === 0) {
+      var a = R() * 6, b = R() * 6, a2 = R() * 6;
+      for (var x2 = 0; x2 < N; x2++) {
+        var ht = Math.round(5 + 3 * Math.sin(x2 * 0.25 + a) + 2 * Math.sin(x2 * 0.7 + b));
+        for (var y2 = HZ - ht; y2 < HZ; y2++) pp(x2, y2, hsl(h, 30, night ? 24 : 64));
+        var h2 = Math.round(8 + 5 * Math.abs(Math.sin(x2 * 0.18 + a2)) + 2 * Math.sin(x2 * 0.9));
+        for (var y3 = HZ - h2; y3 < HZ; y3++) pp(x2, y3, (h2 >= 11 && y3 < HZ - h2 + 2) ? '#f8f9fa' : hsl(h, 38, night ? 16 : 26));
+      }
+      for (var y4 = HZ; y4 < N; y4++) for (var x4 = 0; x4 < N; x4++) pp(x4, y4, (y4 % 2 === 0) ? P[2 * HZ - 1 - y4][x4] : hsl(h, 50, night ? 18 : 50));
+    }
+    if (type === 1) {
+      rect(0, HZ, 31, HZ + 3, sk[3]);
+      var ph = [R() * 6, R() * 6, R() * 6], by = [17, 21, 26], am = [2, 3, 3], tops = [];
+      var dc = [hsl(h + 40, 60, 55), hsl(h + 40, 55, 42), hsl(h + 40, 50, 30)];
+      for (var kk = 0; kk < 3; kk++) { tops[kk] = []; for (var x5 = 0; x5 < N; x5++) { var tp = Math.round(by[kk] + am[kk] * Math.sin(x5 * (0.18 + 0.07 * kk) + ph[kk])); tops[kk][x5] = tp; for (var y5 = tp; y5 < N; y5++) pp(x5, y5, y5 === tp ? hsl(h + 40, 65, 68 - kk * 8) : dc[kk]); } }
+      var cx = 4 + Math.floor(R() * 22), ty = tops[2][cx], gc = hsl(130, 50, 22);
+      rect(cx, ty - 6, cx, ty - 1, gc); rect(cx - 2, ty - 4, cx - 1, ty - 4, gc); pp(cx - 2, ty - 5, gc); rect(cx + 1, ty - 3, cx + 2, ty - 3, gc); pp(cx + 2, ty - 4, gc);
+      var bx = 6 + Math.floor(R() * 18); pp(bx, 5, '#14121a'); pp(bx + 1, 6, '#14121a'); pp(bx + 2, 5, '#14121a'); pp(bx + 4, 4, '#14121a'); pp(bx + 5, 5, '#14121a'); pp(bx + 6, 4, '#14121a');
+    }
+    function pine(x, by2, hh, c) { for (var i2 = 0; i2 < hh; i2++) { var half = i2 < hh - 2 ? Math.floor(i2 / 2) : 0; rect(x - half, by2 - hh + 1 + i2, x + half, by2 - hh + 1 + i2, c); } }
+    if (type === 2) {
+      var c1 = hsl(h, 30, 18), c2 = hsl(h, 35, 12), c3 = hsl(h, 40, 7);
+      rect(0, HZ, 31, HZ + 2, sk[3]);
+      rect(0, HZ + 3, 31, 31, c1); for (var x6 = 2; x6 < N + 3; x6 += 5) pine(x6 + Math.floor(R() * 2), HZ + 4, 9, c1);
+      rect(0, HZ + 7, 31, 31, c2); for (var x7 = 0; x7 < N + 4; x7 += 6) pine(x7 + Math.floor(R() * 3), HZ + 8, 12, c2);
+      rect(0, 29, 31, 31, c3); pine(3, 31, 16, c3); pine(9, 31, 13, c3); pine(26, 31, 17, c3); pine(30, 31, 12, c3);
+      for (var q = 0; q < 7; q++) pp(Math.floor(R() * N), 18 + Math.floor(R() * 10), hsl(h + 60, 95, 65));
+    }
+    if (type === 3) {
+      for (var y8 = HZ; y8 < N; y8++) {
+        for (var x8 = 0; x8 < N; x8++) { var dd = y8 - HZ; pp(x8, y8, y8 % 2 === 0 ? hsl(h + 10, 50, 28) : hsl(h + 10, 50, 22)); if ((x8 * 3 + y8 * 7) % 11 === 0 && dd > 1) pp(x8, y8, hsl(h + 20, 55, 40)); }
+        var w = Math.max(0, 5 - Math.floor((y8 - HZ) / 3)); if ((y8 - HZ) % 2 === 0) rect(16 - w, y8, 16 + w, y8, sunC);
+      }
+      var rx = R() < 0.5 ? 3 + Math.floor(R() * 4) : 22 + Math.floor(R() * 4), dk = '#14121a';
+      rect(rx + 2, HZ - 3, rx + 2, HZ + 2, dk); pp(rx + 3, HZ - 2, '#f8f9fa'); pp(rx + 3, HZ - 1, '#f8f9fa'); pp(rx + 4, HZ - 1, '#f8f9fa'); pp(rx + 3, HZ, '#f8f9fa'); pp(rx + 4, HZ, '#f8f9fa'); pp(rx + 5, HZ, '#f8f9fa');
+      rect(rx, HZ + 3, rx + 4, HZ + 3, dk); rect(rx + 1, HZ + 4, rx + 3, HZ + 4, dk);
+    }
+    if (type === 4) {
+      var cx2 = 16, lava = hsl(25, 100, 55);
+      rect(0, HZ, 31, HZ, hsl(h, 30, 8));
+      for (var y9 = 10; y9 <= HZ; y9++) { var half2 = Math.floor((y9 - 10) * 0.95) + 2; rect(cx2 - half2, y9, cx2 + half2, y9, hsl(h, 25, 16)); pp(cx2 - half2, y9, hsl(h, 25, 30)); pp(cx2 + half2, y9, hsl(h, 25, 9)); }
+      rect(cx2 - 2, 10, cx2 + 2, 10, lava);
+      for (var y10 = 11; y10 < HZ - 1; y10++) { pp(cx2 + Math.floor(Math.sin(y10 * 0.7) * 2), y10, lava); if (y10 > 14) pp(cx2 - 4 + Math.floor(Math.sin(y10 * 0.9 + 1) * 1.5), y10, lava); }
+      disc(17, 7, 2, hsl(h, 8, 42)); disc(19, 4, 2, hsl(h, 8, 50)); disc(23, 2, 2, hsl(h, 8, 56));
+      for (var s = 0; s < 7; s++) pp(cx2 - 7 + Math.floor(R() * 14), 5 + Math.floor(R() * 7), lava);
+      rect(0, HZ + 1, 31, 31, hsl(h, 30, 8)); for (var y11 = HZ + 1; y11 < N; y11 += 2) for (var x11 = 0; x11 < N; x11++) if ((x11 + y11) % 5 === 0) pp(x11, y11, hsl(h, 30, 14));
+      for (var y12 = HZ + 1; y12 < N; y12 += 2) rect(cx2 - 1, y12, cx2, y12, lava);
+    }
+
+    if (withChar) {
+      var C = { body: hsl(h + 150, 65, 52), lt: hsl(h + 150, 75, 72), dk: hsl(h + 150, 55, 34), acc: hsl(h + 60, 90, 62), ol: hsl(h, 55, 5), W: '#f8f9fa', D: '#14121a' };
+      var ox = 10, oy = 14, tf = seed % 4, wing = (seed >>> 2) % 2, ey = (seed >>> 3) % 3, mo = (seed >>> 5) % 3;
+      var g = []; for (var r = 0; r < 12; r++) { g[r] = []; for (var c = 0; c < 6; c++) { var p = 0.3 + 0.5 * (c / 5) - Math.abs(r - 5.5) * 0.03; g[r][c] = R() < p ? 1 : 0; } }
+      var gt = function (r, c) { if (r < 0 || r >= 12 || c < 0) return 0; if (c > 5) c = 11 - c; return g[r][c]; };
+      for (var pass = 0; pass < 2; pass++) { var ng = []; for (var r2 = 0; r2 < 12; r2++) { ng[r2] = []; for (var c2 = 0; c2 < 6; c2++) { var n = 0; for (var a1 = -1; a1 <= 1; a1++) for (var b1 = -1; b1 <= 1; b1++) if (a1 || b1) n += gt(r2 + a1, c2 + b1); ng[r2][c2] = n >= 4 ? 1 : (n <= 1 ? 0 : g[r2][c2]); } } g = ng; }
+      for (var r3 = 2; r3 < 10; r3++) g[r3][5] = 1; for (var r4 = 3; r4 < 9; r4++) g[r4][4] = 1;
+      g[11][2] = g[11][3] = g[10][2] = g[10][3] = 1; g[11][4] = 0;
+      if (tf === 1 || tf === 2) { g[0][2] = g[1][2] = g[0][1] = g[1][1] = 1; }
+      if (tf === 3) { g[0][5] = g[1][5] = 1; }
+      if (wing) { g[5][0] = g[6][0] = 1; }
+      for (var r5 = 0; r5 < 12; r5++) for (var c5 = 0; c5 < 6; c5++) if (g[r5][c5]) { ps(ox + c5, oy + r5, C.body); ps(ox + 11 - c5, oy + r5, C.body); }
+      for (var y6 = 0; y6 < N; y6++) for (var x6b = 0; x6b < N; x6b++) { if (S[y6][x6b] === C.body) { if (!S[y6 - 1] || !S[y6 - 1][x6b]) S[y6][x6b] = C.lt; else if (!S[y6 + 1] || !S[y6 + 1][x6b]) S[y6][x6b] = C.dk; } }
+      var pm = function (x, y, c) { ps(ox + x, y, c); ps(ox + 11 - x, y, c); };
+      if (tf === 1) { for (var t = 1; t <= 3; t++) pm(2, oy - t, C.dk); pm(2, oy - 4, C.acc); pm(1, oy - 4, C.acc); }
+      if (tf === 2) { pm(1, oy - 1, C.acc); pm(0, oy - 2, C.acc); pm(0, oy - 3, C.acc); }
+      if (tf === 3) { ps(ox + 5, oy - 1, C.acc); ps(ox + 6, oy - 1, C.acc); ps(ox + 5, oy - 2, C.acc); ps(ox + 6, oy - 2, C.acc); ps(ox + 5, oy - 3, C.lt); ps(ox + 6, oy - 3, C.lt); }
+      if (wing) { [[-1, 5], [-1, 6], [-2, 4], [-2, 5], [-3, 3], [-3, 4]].forEach(function (q2) { pm(q2[0], oy + q2[1], C.acc); }); pm(-3, oy + 2, C.lt); }
+      if (ey === 0) { pm(3, oy + 4, C.W); pm(3, oy + 5, C.D); }
+      if (ey === 1) { ps(ox + 5, oy + 4, C.W); ps(ox + 6, oy + 4, C.W); ps(ox + 5, oy + 5, C.acc); ps(ox + 6, oy + 5, C.D); }
+      if (ey === 2) { pm(2, oy + 3, C.W); pm(2, oy + 4, C.D); pm(4, oy + 5, C.W); pm(4, oy + 6, C.D); }
+      if (mo === 0) { pm(4, oy + 8, C.D); pm(5, oy + 8, C.D); }
+      if (mo === 1) { pm(3, oy + 8, C.D); pm(4, oy + 8, C.W); pm(5, oy + 8, C.D); }
+      if (mo === 2) { ps(ox + 5, oy + 7, C.D); ps(ox + 6, oy + 7, C.D); }
+      var cp = S.map(function (row) { return row.slice(); });
+      for (var y7 = 0; y7 < N; y7++) for (var x7b = 0; x7b < N; x7b++) { if (!cp[y7][x7b]) { var nb = [[0, -1], [0, 1], [-1, 0], [1, 0]].some(function (d) { var yy = y7 + d[1], xx = x7b + d[0]; return yy >= 0 && yy < N && xx >= 0 && xx < N && cp[yy][xx]; }); if (nb) S[y7][x7b] = C.ol; } }
+    }
+    var out = []; for (var yo = 0; yo < N; yo++) { out[yo] = []; for (var xo = 0; xo < N; xo++) out[yo][xo] = S[yo][xo] || P[yo][xo]; }
+    return { pixels: out, type: type, character: withChar };
+  }
+
+  function render(canvas, opts) {
+    var img = build(opts), ctx = canvas.getContext('2d'), px = canvas.width / N;
+    ctx.imageSmoothingEnabled = false;
+    for (var y = 0; y < N; y++) for (var x = 0; x < N; x++) { ctx.fillStyle = img.pixels[y][x]; ctx.fillRect(x * px, y * px, px, px); }
+    canvas.style.imageRendering = 'pixelated';
+    return { type: img.type, character: img.character };
+  }
+
+  root.PixelArt = { render: render, build: build, hash: hashStr };
+})(typeof window !== 'undefined' ? window : globalThis);
 </script>
 <script>
   // Shortcuts: A CommonChords, G regenerate, F stop, H creatura, J random fill, S limpiar, D play.
