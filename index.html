@@ -13964,6 +13964,20 @@ function runAnalysis() {
         return e;
       });
     }
+    // ---- Schemata: tu biblioteca de My_schemattas._v6.gp (Romanesca, Prinner, Fonte, Monte, Ut re mi, Fenaroli, Quiescenza). Mismo formato que MOD, en semitonos sobre la tónica de cada unidad:
+    // [sección, compases, menor(0/1), rol('b'), 0, acordes[bajo, raíz, sufijo, notas]]. Solo se usan los acordes (de las notas del .gp); los esqueletos de dos voces sin armonizar (Meyer, Jupiter, Pastorella, Aprile, Indugio, Cláusula) no están.
+    var SCHT = {"secs":["Romanesca · Tradicional","Romanesca · Variante galante (I6)","Romanesca · Leaping (4 abajo 1 arriba)","Romanesca · Descendiente por grado conjunto","Romanesca · Variante en Sol (a)","Romanesca · Variante en Sol (c)","Romanesca · Variante en Sol (d)","Romanesca · Tritto","Romanesca · Pachelbel (Canon, transpuesto)","Romanesca · Pachelbel con suspensiones","Romanesca · Mattei","Romanesca · Paisiello","Romanesca · Paisiello, variación","Romanesca · Siroshima","Romanesca · Modern Variation","Prinner · Tradicional (IV a I descendente)","Prinner · Variante con acorde de paso","Prinner · Variante con V","Fonte · Tradicional (V6-I descendiendo)","Fonte · Con suspensiones","Fonte · V7 I6 invertido descendente","Fonte · Invertido con suspensiones","Fonte · Invertido V7(dim) I6","Fonte · Bajo 5 1","Fonte · Bajo 2 1","Monte · V6-I ascendiendo","Ut re mi · Mayor (Do)","Ut re mi · Mayor (Sol)","Ut re mi · Menor (do)","Ut re mi · Menor (sol)","Ut re mi · Menor (la)","Fenaroli · Armonizado (1)","Fenaroli · Armonizado (2)","Quiescenza · Armonizada"],"u":[[0,"c1",0,"b",0,[[0,0,"",[0,4,7]],[11,7,"",[2,7,11]],[9,9,"m",[0,4,9]],[4,4,"m",[4,7,11]]]],[1,"c2",0,"b",0,[[0,0,"",[0,4,7]],[11,7,"",[2,7,11]],[9,9,"m",[0,4,9]],[4,0,"",[0,4,7]]]],[2,"c3",0,"b",0,[[0,0,"(no5)",[0,4]],[7,7,"",[2,7,11]],[9,9,"m",[0,4,9]],[4,0,"",[0,4,7]]]],[3,"c4",0,"b",0,[[0,0,"",[0,4,7]],[11,7,"",[2,7,11]],[9,9,"m",[0,4,9]],[7,4,"m",[4,7,11]]]],[4,"c5",0,"b",0,[[0,0,"",[0,4,7]],[11,7,"",[2,7,11]],[9,9,"madd11",[0,2,4,9]],[4,4,"m",[4,7,11]]]],[5,"c7",0,"b",0,[[0,0,"",[0,4,7]],[7,7,"",[2,7,11]],[9,9,"m",[0,4,9]],[4,0,"",[0,4,7]]]],[6,"c8",0,"b",0,[[0,0,"",[0,4,7]],[11,7,"",[2,7,11]],[9,9,"madd11",[0,2,4,9]],[7,4,"m",[4,7,11]]]],[7,"c9-10",0,"b",0,[[0,0,"",[0,4,7]],[7,7,"5",[2,7]],[9,9,"m",[0,4,9]],[4,0,"",[0,4,7]],[5,2,"m",[2,5,9]],[7,7,"",[2,7,11]],[0,0,"(no5)",[0,4]]]],[8,"c11-12",0,"b",0,[[0,0,"(no5)",[0,4]],[7,7,"",[2,7,11]],[9,9,"m",[0,4,9]],[4,4,"m",[4,7,11]],[5,5,"(no5)",[5,9]],[0,0,"",[0,4,7]],[5,5,"(no5)",[5,9]],[7,7,"",[2,7,11]]]],[9,"c13-14",0,"b",0,[[0,0,"add9",[0,2,4,7]],[7,7,"sus4",[0,2,7]],[9,9,"madd9(no5)",[0,9,11]],[4,4,"sus4",[4,9,11]],[5,5,"sus2(no5)",[5,7]],[0,0,"sus4",[0,5,7]],[5,5,"7M(no5)",[4,5,9]],[7,7,"sus4",[0,2,7]]]],[10,"c15-17",0,"b",0,[[0,5,"5",[0,5]],[7,2,"7sus4",[0,2,7,9]],[9,9,"m(no5)",[0,9,11]],[4,4,"sus4",[4,9,11]],[5,5,"add9",[0,5,7,9]],[0,0,"sus4",[0,5,7]],[2,9,"7sus4",[2,4,7,9]],[7,2,"7sus4",[0,2,7,9]],[0,0,"(no5)",[0,4]]]],[11,"c18-26",0,"b",0,[[0,0,"(no5)",[0,4]],[7,0,"",[0,4,7]],[7,7,"",[2,7,11]],[9,11,"m7",[2,9,11]],[9,9,"m(no5)",[0,9]],[4,9,"m",[0,4,9]],[4,4,"m",[4,7,11]],[5,7,"7(no5)",[5,7,11]],[5,5,"(no5)",[5,9]],[0,5,"",[0,5,9]],[0,0,"",[0,4,7]],[2,2,"m(no5)",[2,4,7]],[2,2,"m(no5)",[2,5]],[7,0,"",[0,4,7]],[7,7,"7Msus4",[0,6,7]],[7,7,"(no5)",[7,11]]]],[12,"c27-35",0,"b",0,[[0,0,"7M(no5)",[0,4,11]],[7,7,"sus4",[0,2,7]],[9,9,"m(no5)",[0,9]],[4,9,"m",[0,4,9]],[4,4,"madd9",[4,6,7,11]],[5,7,"7(no5)",[5,7,11]],[5,2,"m",[2,5,9]],[0,5,"5",[0,5]],[0,0,"sus2(no5)",[0,2]],[2,4,"m7",[2,4,7]],[2,2,"madd9(no5)",[2,4,5]],[7,2,"madd11(no5)",[2,5,7]],[7,7,"5",[2,7]],[7,0,"",[0,4,7]],[7,2,"7",[0,6,7]],[7,7,"(no5)",[7,11]]]],[13,"c36-39",0,"b",0,[[0,0,"7M",[0,11]],[11,7,"",[2,7,11]],[9,0,"6",[0,4,7,9]],[7,4,"m",[4,7,11]],[5,5,"",[0,5,9,11]],[9,5,"add9",[0,5,7,9]],[7,2,"madd11(no5)",[2,5,7]],[0,7,"7sus4",[0,2,5,7]],[0,0,"add9",[0,2,4,7]]]],[14,"c40-44",0,"b",0,[[0,0,"7M(no5)",[0,4,11]],[0,0,"",[0,6,7]],[7,0,"5",[0,7]],[7,9,"7sus2",[7,9,11]],[9,9,"sus4",[2,4,9]],[7,7,"m7",[5,7,10]],[5,5,"6",[0,2,5,9]],[7,7,"add11",[0,2,7,11]],[0,0,"7Msus4",[0,5,11]],[0,0,"(no5)",[0,4]]]],[15,"c45",0,"b",0,[[5,2,"m",[2,5,9]],[4,0,"",[0,4,7]],[2,2,"m7",[0,2,5]],[0,0,"",[0,4,7]]]],[16,"c46",0,"b",0,[[5,5,"",[0,5,9]],[4,0,"",[0,4,7]],[2,2,"m",[2,5,9]],[1,1,"",[1,5,8]],[0,0,"",[0,4,7]]]],[17,"c47",0,"b",0,[[5,5,"",[0,5,9]],[4,0,"",[0,4,7]],[2,2,"m7",[0,2,5]],[7,7,"",[2,7,11]],[0,0,"",[0,4,7]]]],[18,"c48-51",0,"b",0,[[1,9,"7",[1,4,7,9]],[2,2,"m",[2,5,9]],[11,7,"7",[2,5,7,11]],[0,0,"",[0,4,7]],[10,10,"dim7",[1,4,7,10]],[11,7,"",[2,7,11]],[8,4,"7",[2,4,8,11]],[9,9,"m",[0,4,9]],[6,2,"7",[0,2,6,9]],[7,7,"",[2,7,11]],[4,0,"7",[0,4,7,10]],[5,5,"",[0,5,9]],[3,11,"7",[3,6,9,11]],[4,4,"m",[4,7,11]]]],[19,"c52-55",0,"b",0,[[1,9,"7",[1,4,7,9]],[2,2,"madd11",[2,5,7,9]],[11,7,"7",[2,5,7,11]],[0,2,"m7",[0,2,5]],[10,6,"7",[1,4,6,10]],[11,11,"madd11",[2,4,6,11]],[8,4,"7",[2,4,8,11]],[9,9,"madd11",[0,2,4,9]],[6,2,"7",[0,2,6,9]],[7,7,"sus4",[0,2,7]],[4,0,"7",[0,4,7,10]],[5,0,"7sus4",[0,5,7,10]],[3,11,"7",[3,6,9,11]],[4,11,"7sus4",[4,6,9,11]],[1,9,"7",[1,4,7,9]],[2,2,"madd11",[2,5,7,9]]]],[20,"c56-59",0,"b",0,[[7,9,"7",[1,4,7,9]],[5,2,"m",[2,5,9]],[5,7,"7",[2,5,7,11]],[4,0,"",[0,4,7]],[4,6,"7",[1,4,6,10]],[2,11,"m",[2,6,11]],[2,4,"7",[2,4,8,11]],[0,9,"m",[0,4,9]],[0,2,"7",[0,2,6,9]],[11,7,"(no5)",[7,11]],[10,0,"7",[0,4,7,10]],[9,5,"",[0,5,9]],[9,11,"7",[3,6,9,11]],[7,4,"m",[4,7,11]]]],[21,"c60-63",0,"b",0,[[7,9,"7",[1,4,7,9]],[5,5,"aug",[1,5,9]],[5,7,"7",[2,5,7,11]],[4,4,"m",[4,7,11]],[4,6,"7",[1,4,6,10]],[2,11,"m7M",[2,6,10,11]],[2,4,"7",[2,4,8,11]],[0,9,"m7M",[0,4,8,9]],[0,2,"7",[0,2,6,9]],[11,7,"7M",[2,6,7,11]],[10,0,"7",[0,4,7,10]],[9,5,"7M",[0,4,5,9]],[9,11,"7",[3,6,9,11]],[7,7,"aug",[3,7,11]]]],[22,"c64",0,"b",0,[[7,7,"dim7",[1,4,7,10]],[5,2,"m",[2,5,9]],[5,5,"dim7",[2,5,8,11]],[4,0,"",[0,4,7]]]],[23,"c65",0,"b",0,[[9,4,"madd11(no5)",[4,7,9]],[2,2,"m",[2,5,9]],[7,2,"madd11(no5)",[2,5,7]],[0,0,"",[0,4,7]]]],[24,"c66",0,"b",0,[[4,9,"7",[1,4,7,9]],[2,2,"m",[2,5,9]],[2,7,"7",[2,5,7,11]],[0,0,"",[0,4,7]]]],[25,"c67-69",0,"b",0,[[1,9,"(no5)",[1,9]],[2,2,"m",[2,5,9]],[3,11,"",[3,6,11]],[4,4,"m",[4,7,11]],[4,0,"",[0,4,7]],[5,5,"",[0,5,9]],[6,2,"",[2,6,9]],[7,7,"",[2,7,11]],[8,4,"",[4,8,11]],[9,9,"m",[0,4,9]]]],[26,"c70",0,"b",0,[[0,0,"",[0,4,7]],[11,7,"",[2,7,11]],[0,0,"",[0,4,7]]]],[27,"c71",0,"b",0,[[0,0,"(no5)",[0,4]],[11,7,"7",[2,5,7,11]],[0,0,"",[0,4,7]]]],[28,"c73",1,"b",0,[[0,0,"m(no5)",[0,3]],[11,7,"",[2,7,11]],[0,0,"m",[0,3,7]]]],[29,"c74",1,"b",0,[[0,0,"m(no5)",[0,3]],[11,7,"7",[2,5,7,11]],[0,0,"m",[0,3,7]]]],[30,"c75",1,"b",0,[[0,0,"m",[0,3,7]],[11,7,"",[2,7,11]],[0,0,"m",[0,3,7]]]],[31,"c77",0,"b",0,[[11,7,"7",[2,5,7,11]],[0,0,"",[0,4,7]],[2,7,"",[2,7,11]],[4,0,"",[0,4,7]]]],[32,"c78",0,"b",0,[[7,7,"7(no5)",[5,7,11]],[0,0,"(no5)",[0,4]],[7,7,"",[2,7,11]],[0,0,"(no5)",[0,4]]]],[33,"c84",0,"b",0,[[0,0,"7(no5)",[0,4,10]],[0,5,"",[0,5,9]],[0,7,"7",[0,2,11]],[0,0,"(no5)",[0,4]]]]]};
+    function schtPool(maxLen, onI, minor){
+      return SCHT.u.filter(function(u){ return (u[2] === 1) === !!minor && u[5].length <= maxLen && (!onI || (u[5][0][1] === 0 && u[5][0][0] === 0)); });
+    }
+    function schtCell(u){
+      var title = "Schemata: " + SCHT.secs[u[0]], note = SCHT.secs[u[0]] + " (" + u[1] + ")";
+      return u[5].map(function(c){
+        var e = exItem([c[1], c[2], c[3]], c[0], null, "", false);
+        e.figText = "Schemata"; e.rofo = 0; e.my = 1; e.schemata = 1; e.cell = "schemata"; e.cellTitle = title; e.myText = note;
+        return e;
+      });
+    }
     function myPool(role, minor, maxLen, finalOnly){
       return MYCAD.u.filter(function(u){ return u[3] === role && (u[2] === 1) === !!minor && u[5].length <= maxLen && (!finalOnly || u[4]); });
     }
@@ -14048,7 +14062,7 @@ function runAnalysis() {
     };
     var CELL_NAME = {}, CELL_LONG = {};
     Object.keys(CELLS).forEach(function(k){ CELL_NAME[k] = CELLS[k].name; CELL_LONG[k] = CELLS[k].long; });
-    CELL_NAME.my = "MyCadences"; CELL_LONG.my = "MyCadences (tu biblioteca)"; CELL_NAME.cyc = "Ciclo"; CELL_LONG.cyc = "Ciclos diatónicos (tu biblioteca)"; CELL_NAME.mod = "Modulatoria"; CELL_LONG.mod = "Cadencias modulatorias (tu biblioteca)";   // "my" no está en CELLS: no se sortea como celda genérica
+    CELL_NAME.my = "MyCadences"; CELL_LONG.my = "MyCadences (tu biblioteca)"; CELL_NAME.cyc = "Ciclo"; CELL_LONG.cyc = "Ciclos diatónicos (tu biblioteca)"; CELL_NAME.mod = "Modulatoria"; CELL_LONG.mod = "Cadencias modulatorias (tu biblioteca)"; CELL_NAME.schemata = "Schemata"; CELL_LONG.schemata = "Schemata (tu biblioteca)";   // "my" no está en CELLS: no se sortea como celda genérica
 
     // Movimientos de tempo (BPM aproximados; Wikipedia "Tempo", marcados como "very rough approximations"). El slider del motor va de 25 a 200.
     var TEMPOS = [
@@ -14520,6 +14534,7 @@ function runAnalysis() {
       // Ciclos diatónicos (opts.cyc = { on, p (0–1) }): con probabilidad p, una celda del CUERPO es un ciclo de tu biblioteca (solo en mayor; la primera celda solo si empieza en I).
       var cyc = (opts.cyc && opts.cyc.on) ? { p: Math.max(0, Math.min(1, opts.cyc.p == null ? 0.5 : opts.cyc.p)) } : null;
       // Cadencias modulatorias (opts.mod = { on, p (0–1) }): con probabilidad p, una celda del CUERPO es una unidad de tu biblioteca (mayor en canciones mayores, menor en menores; la primera celda solo si empieza en I).
+      var sct0 = (opts.schemata && opts.schemata.on) ? { p: Math.max(0, Math.min(1, opts.schemata.p == null ? 0.3 : opts.schemata.p)) } : null;
       var mdl0 = (opts.mod && opts.mod.on) ? { p: Math.max(0, Math.min(1, opts.mod.p == null ? 0.3 : opts.mod.p)) } : null;
       var isMin = (mode === "minor");
       if(CTP) CTP.minor = isMin;
@@ -14543,10 +14558,10 @@ function runAnalysis() {
         if(!rest.length) rest = Object.keys(CELLS).filter(function(t){ return CELLS[t].group === "base" && (!restrictCells || t === "up" || t === "down"); });
         return rest.length ? rest : allowed;
       }
-      var stats = { fbParallel: 0, fbLT: 0, fbCover: 0, fbSop: 0, cells: [], rofoSteps: 0, rofoVar: 0, myCells: 0, cycCells: 0, modCells: 0 };
+      var stats = { fbParallel: 0, fbLT: 0, fbCover: 0, fbSop: 0, cells: [], rofoSteps: 0, rofoVar: 0, myCells: 0, cycCells: 0, modCells: 0, schtCells: 0 };
       var finalType, finalLen, finalMy, items, bodyN, lastType, guard, fin, lastIt, attempt = 0;
       do {                                                      // con MyCadences, si la unión se comió acordes y la canción queda más corta que N, se rearma (hasta 8 veces)
-        stats.cells = []; stats.myCells = 0; stats.cycCells = 0; stats.modCells = 0; attempt++;
+        stats.cells = []; stats.myCells = 0; stats.cycCells = 0; stats.modCells = 0; stats.schtCells = 0; attempt++;
         var cmCur = mixed ? (Math.random() < 0.5 ? "minor" : "major") : mode, fcm = cmCur;     // mixta: modo de la celda actual y de la final
         if(mixed) applySetup(fcm);
         finalType = pickFinal(allowed, N); finalLen = CELLS[finalType].len; finalMy = null;
@@ -14567,6 +14582,10 @@ function runAnalysis() {
             var mdp = modPool(bodyN - items.length, items.length === 0, isMin);
             if(mdp.length){ cell = modCell(mdp[rnd(mdp.length)]); type = "mod"; stats.modCells++; }
           }
+          if(!cell && sct0 && Math.random() < sct0.p){
+            var stp = schtPool(bodyN - items.length, items.length === 0, isMin);
+            if(stp.length){ cell = schtCell(stp[rnd(stp.length)]); type = "schemata"; stats.schtCells++; }
+          }
           var cellArr = cell || makeCell(type, ctx);
           cellArr.forEach(function(x){ x.minor = isMin; x.minz = minz; });
           appendCell(items, cellArr, key, base);
@@ -14581,7 +14600,7 @@ function runAnalysis() {
         if(lastIt && lastIt.deg === 4 && fin[0].deg === 4 && (fin[0].fig === "7" || fin[0].fig === "5/3") && fin[0].fig === lastIt.fig) fin[0].fig = fin[0].fig === "7" ? "5/3" : "7";
         appendCell(items, fin, key, base);
         stats.cells.push(finalType);
-      } while((my || cyc || mdl0) && items.length < N && attempt < 8);
+      } while((my || cyc || mdl0 || sct0) && items.length < N && attempt < 8);
       if(items.length > N) items.splice(0, items.length - N);        // N muy chico: queda solo el final
       items.forEach(function(it){
         if(rofo && (it.cell === "up" || it.cell === "down")){ stats.rofoSteps++; if(it.rofo === 2) stats.rofoVar++; }
@@ -14613,7 +14632,7 @@ function runAnalysis() {
           var v = voiceChord(it, prev, { key: key }, i === items.length - 1, tmp, items[i + 1] || null, i + 1 === items.length - 1);
           var ch = { bass: it.bass, t: v.t, a: v.a, s: v.s, tones: it.tones, sev: it.sev, root: it.root, label: it.label, fig: it.fig, deg: it.deg,
                      cell: it.cell, cellStart: it.cellStart, step: it.step, rootPc: it.rootPc, sus: it.sus, hold: !!(it.hold && prev), minorSec: mixed ? !!it.minor : undefined };
-          ch.cat = (it.myText ? (it.mod ? "Cadencias modulatorias · " : (it.cyc ? "Ciclos diatónicos · " : "MyCadences · ")) + it.myText : CELL_LONG[it.cell]) + (it.step ? " · " + it.step : "") + " · " + (it.figText || it.fig);
+          ch.cat = (it.myText ? (it.schemata ? "Schemata · " : it.mod ? "Cadencias modulatorias · " : (it.cyc ? "Ciclos diatónicos · " : "MyCadences · ")) + it.myText : CELL_LONG[it.cell]) + (it.step ? " · " + it.step : "") + " · " + (it.figText || it.fig);
           ch.cellTitle = it.cellTitle || null;
           if(CTP) ctpAnnotate(ch, prev);
           chords.push(ch); prev = ch;
@@ -14623,7 +14642,7 @@ function runAnalysis() {
         if(!fbn) break;
       }
       chords = bestChords;
-      return { key: key, base: base, chords: chords, stats: stats, cellName: CELL_NAME, finalType: finalType, mode: mixed ? (items.filter(function(x){ return x.minor; }).length * 2 > items.length ? "minor" : "major") : mode, mixed: mixed, rofo: !!rofo, mycad: !!my, cyc: !!cyc, mod: !!mdl0,
+      return { key: key, base: base, chords: chords, stats: stats, cellName: CELL_NAME, finalType: finalType, mode: mixed ? (items.filter(function(x){ return x.minor; }).length * 2 > items.length ? "minor" : "major") : mode, mixed: mixed, rofo: !!rofo, mycad: !!my, cyc: !!cyc, mod: !!mdl0, schemata: !!sct0,
                ctp: CTP, audit: CTP ? ctpAudit(chords, key, isMin, ctpRules) : null };
     }
 
@@ -14976,7 +14995,7 @@ function runAnalysis() {
 
     function ornFor(bpm){ return bpm < 66 ? 1.4 : (bpm < 108 ? 1 : (bpm < 156 ? 0.8 : 0.5)); }
 
-    return { compose: compose, melody: melody, mmFix: mmFix, diminish: diminish, innerMovement: innerMovement, DIM_FIGS: DIM_FIGS, analyze: analyze, FIG: FIG, RO_UP: RO_UP, RO_DOWN: RO_DOWN, MAJ: MAJ, ROFO: ROFO, MYCAD: MYCAD, CYC: CYC, OCM: OCM, FOX: FOX, MOD: MOD, MIN_UP: MIN_UP, MIN_DOWN: MIN_DOWN, hasParallel: hasParallel,
+    return { compose: compose, melody: melody, mmFix: mmFix, diminish: diminish, innerMovement: innerMovement, DIM_FIGS: DIM_FIGS, analyze: analyze, FIG: FIG, RO_UP: RO_UP, RO_DOWN: RO_DOWN, MAJ: MAJ, ROFO: ROFO, MYCAD: MYCAD, CYC: CYC, OCM: OCM, FOX: FOX, MOD: MOD, SCHT: SCHT, MIN_UP: MIN_UP, MIN_DOWN: MIN_DOWN, hasParallel: hasParallel,
              CELL_NAME: CELL_NAME, CELL_LONG: CELL_LONG, CELLS: CELLS, TEMPOS: TEMPOS, ornFor: ornFor, LOW: LOW, HIGH: HIGH, RT: RT, RA: RA, RS: RS,
              melodyCT: melodyCT, ctpAudit: ctpAudit, CTP_RULES: CTP_RULES, ctpLeapOK: ctpLeapOK, ctpDirOK: ctpDirOK };
   })();
@@ -15254,6 +15273,20 @@ function runAnalysis() {
       mdr.addEventListener("input", function(){ mdv.textContent = mdr.value + "%"; });
       mdl.appendChild(document.createTextNode("celdas ")); mdl.appendChild(mdr); mdl.appendChild(mdv); mdw.appendChild(mdl);
       mdb.appendChild(mdw); b.appendChild(mdb);
+      // Schemata: tu biblioteca de My_schemattas._v6.gp. Tildado: con probabilidad p cada celda del cuerpo es uno de tus esquemas (Romanesca, Prinner, Fonte, Monte, Ut re mi...).
+      var stb = mk("div", "padding:2px 0 6px;");
+      var sth = mk("div", "font-size:12px;font-weight:700;color:var(--ink-muted);margin-bottom:2px;", "Schemata");
+      sth.title = "Schemata: tu biblioteca de My_schemattas._v6.gp (" + core.SCHT.u.length + " unidades: Romanesca y sus variantes, Prinner, Fonte, Monte, Ut re mi, Fenaroli, Quiescenza). Con probabilidad p, cada celda del cuerpo de la canción es una de ellas. Algunas modulan: la celda siguiente vuelve a la tónica de la canción.";
+      stb.appendChild(sth);
+      var stw = mk("div", "display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;");
+      var stChk = label("Schemata", "Usa tus esquemas (Romanesca, Prinner, Fonte...) como celdas (valen desde la próxima canción: 🔀 / G).", "opt", "schemata", true);
+      stChk.firstChild.id = "partimentiSchemata"; stw.appendChild(stChk);
+      var stl = mk("label", LBL); stl.title = "Proporción de celdas que son esquemas tuyos en vez de la generada (0 = ninguna, 100 = siempre que haya uno que entre).";
+      var str_ = mk("input"); str_.type = "range"; str_.min = 0; str_.max = 100; str_.step = 5; str_.value = 30; str_.id = "partimentiSchemataPct"; str_.style.cssText = "width:90px;";
+      var stv = mk("span", "min-width:34px;text-align:right;", "30%");
+      str_.addEventListener("input", function(){ stv.textContent = str_.value + "%"; });
+      stl.appendChild(document.createTextNode("celdas ")); stl.appendChild(str_); stl.appendChild(stv); stw.appendChild(stl);
+      stb.appendChild(stw); b.appendChild(stb);
       // Movimientos de un acorde: tu biblioteca de One_chord_movement_v4.gp. Tildado: con probabilidad p, un acorde de tónica o de dominante (en posición fundamental, de 2 tiempos o más) se desarrolla con uno de tus movimientos.
       var ob = mk("div", "padding:2px 0 6px;");
       var oh = mk("div", "font-size:12px;font-weight:700;color:var(--ink-muted);margin-bottom:2px;", "Movimientos de un acorde");
@@ -15495,13 +15528,15 @@ function runAnalysis() {
       var cyc = (cyEl && cyEl.checked) ? { on: true, p: (cyPctEl ? parseInt(cyPctEl.value, 10) : 30) / 100 } : null;
       var mdEl = document.getElementById("partimentiMod"), mdPctEl = document.getElementById("partimentiModPct");
       var modOpt = (mdEl && mdEl.checked) ? { on: true, p: (mdPctEl ? parseInt(mdPctEl.value, 10) : 30) / 100 } : null;
+      var stEl = document.getElementById("partimentiSchemata"), stPctEl = document.getElementById("partimentiSchemataPct");
+      var schemataOpt = (stEl && stEl.checked) ? { on: true, p: (stPctEl ? parseInt(stPctEl.value, 10) : 30) / 100 } : null;
       var ctpEl = document.getElementById("partimentiCtp");
       var ctp = (ctpEl && ctpEl.checked) ? { on: true, rules: checkedKeys("ctp") } : null;     // TestContrapunctus (null = apagado: nada cambia)
       var schEl = document.getElementById("partimentiSchMix"), schPctEl = document.getElementById("partimentiSchMixPct");
       var cadEl = document.getElementById("partimentiCadMix"), cadPctEl = document.getElementById("partimentiCadMixPct");
       var groups = { sch: (schEl && schEl.checked) ? (schPctEl ? parseInt(schPctEl.value, 10) : 50) / 100 : null,
                      cad: (cadEl && cadEl.checked) ? (cadPctEl ? parseInt(cadPctEl.value, 10) : 50) / 100 : null };   // null = slider apagado
-      var cOpts = { cells: checkedKeys("cell"), rofo: rofo, modes: checkedKeys("rmode"), mixed: !!(document.getElementById("partimentiMixed") && document.getElementById("partimentiMixed").checked), minorized: !!(document.getElementById("partimentiMinorized") && document.getElementById("partimentiMinorized").checked), mycad: mycad, cyc: cyc, mod: modOpt, groups: groups, spell: spellPitchClass, ctp: ctp }, song, spLay = null;
+      var cOpts = { cells: checkedKeys("cell"), rofo: rofo, modes: checkedKeys("rmode"), mixed: !!(document.getElementById("partimentiMixed") && document.getElementById("partimentiMixed").checked), minorized: !!(document.getElementById("partimentiMinorized") && document.getElementById("partimentiMinorized").checked), mycad: mycad, cyc: cyc, mod: modOpt, schemata: schemataOpt, groups: groups, spell: spellPitchClass, ctp: ctp }, song, spLay = null;
       if(space){
         // Space: primero se arma la canción (cantidad de acordes ~1.3–2.2 por compás) y después se reparte en compases siguiendo las celdas:
         // cada celda ocupa compases enteros, el último compás de cada celda es final de frase (acorde largo) y dentro de la celda el patrón es parejo.
@@ -15726,7 +15761,7 @@ function runAnalysis() {
                  " [aflojó " + (song.stats.ctpL1 || 0) + " + sin reglas " + (song.stats.ctpL2 || 0) + " acordes; soprano liso " + song.ctp.stats.dimPlain + "]";
       }
       var sub = document.getElementById("consolaSongSets");
-      if(sub) sub.textContent = "(Partimenti · experimental · " + keyName + (space ? " · Space" : "") + (ocmN !== null ? " · Movimientos " + ocmN : "") + (foxN !== null ? " · Fouxbourdon " + foxN : "") + (song.mod && song.stats.modCells ? " · Modulatorias " + song.stats.modCells : "") + (song.cyc && song.mode !== "minor" ? " · Ciclos " + song.stats.cycCells + (song.stats.cycCells === 1 ? " ciclo" : " ciclos") : "") + (song.mycad ? " · MyCadences " + song.stats.myCells + (song.stats.myCells === 1 ? " celda" : " celdas") : "") + (song.rofo && song.stats.rofoSteps ? " · RofO " + Math.round(100 * song.stats.rofoVar / song.stats.rofoSteps) + "% variantes" : (song.rofo ? " · RofO" : "")) + " · " + (tempo.name ? tempo.name + " " : "") + "♩=" + tempo.bpm + " · dim " + dimPct + "%" + (tex ? " · textura " + tex.name + (texDblOn ? " + voces duplicadas" : "") : "") + (silPct !== 50 ? " · silences " + silPct + "%" : " · silences") + (innerN !== null ? " · internal_movement " + innerN + (innerN === 1 ? " figura" : " figuras") + " (" + innerDimN + " rápidas · dim interna " + innerDimPct + "%)" : "") + " · " + N + " acordes · " + dens + " por compás · " +
+      if(sub) sub.textContent = "(Partimenti · experimental · " + keyName + (space ? " · Space" : "") + (ocmN !== null ? " · Movimientos " + ocmN : "") + (foxN !== null ? " · Fouxbourdon " + foxN : "") + (song.mod && song.stats.modCells ? " · Modulatorias " + song.stats.modCells : "") + (song.schemata && song.stats.schtCells ? " · Schemata " + song.stats.schtCells : "") + (song.cyc && song.mode !== "minor" ? " · Ciclos " + song.stats.cycCells + (song.stats.cycCells === 1 ? " ciclo" : " ciclos") : "") + (song.mycad ? " · MyCadences " + song.stats.myCells + (song.stats.myCells === 1 ? " celda" : " celdas") : "") + (song.rofo && song.stats.rofoSteps ? " · RofO " + Math.round(100 * song.stats.rofoVar / song.stats.rofoSteps) + "% variantes" : (song.rofo ? " · RofO" : "")) + " · " + (tempo.name ? tempo.name + " " : "") + "♩=" + tempo.bpm + " · dim " + dimPct + "%" + (tex ? " · textura " + tex.name + (texDblOn ? " + voces duplicadas" : "") : "") + (silPct !== 50 ? " · silences " + silPct + "%" : " · silences") + (innerN !== null ? " · internal_movement " + innerN + (innerN === 1 ? " figura" : " figuras") + " (" + innerDimN + " rápidas · dim interna " + innerDimPct + "%)" : "") + " · " + N + " acordes · " + dens + " por compás · " +
         song.stats.cells.map(function(c){ return core.CELL_NAME[c]; }).join(" → ") + " · " + labels.join(" ") + ctpTxt + ")";
       ["consolaPlayBtn", "consolaRegenPlayBtn"].forEach(function(id){
         var bt2 = document.getElementById(id); if(bt2) bt2.disabled = false;
@@ -15762,6 +15797,9 @@ function runAnalysis() {
       var md = document.getElementById("partimentiMod"), mdOn = Math.random() < 0.5;
       if(md) md.checked = mdOn;
       if(mdOn) setRange("partimentiModPct", pick(10, 70));
+      var st = document.getElementById("partimentiSchemata"), stOn = Math.random() < 0.5;
+      if(st) st.checked = stOn;
+      if(stOn) setRange("partimentiSchemataPct", pick(10, 70));
       var oc = document.getElementById("partimentiOcm"), ocOn = Math.random() < 0.5;
       if(oc) oc.checked = ocOn;
       if(ocOn) setRange("partimentiOcmPct", pick(10, 70));
@@ -15777,7 +15815,7 @@ function runAnalysis() {
         var allBox = boxes[0].parentNode.parentNode.querySelector("input:not([data-g])");
         if(allBox) allBox.checked = boxes.every(function(c){ return c.checked; });
       }
-      return { dim: document.getElementById("partimentiDimPct").value, silences: document.getElementById("partimentiRestsPct").value, innerMove: document.getElementById("partimentiInnerMovePct").value, innerDim: document.getElementById("partimentiInnerDimPct").value, mycad: myOn ? document.getElementById("partimentiMyCadPct").value : null, cyc: cyOn ? document.getElementById("partimentiCycPct").value : null, mod: mdOn ? document.getElementById("partimentiModPct").value : null, ocm: ocOn ? document.getElementById("partimentiOcmPct").value : null, fox: fxOn ? document.getElementById("partimentiFoxPct").value : null, schemas: chosen };
+      return { dim: document.getElementById("partimentiDimPct").value, silences: document.getElementById("partimentiRestsPct").value, innerMove: document.getElementById("partimentiInnerMovePct").value, innerDim: document.getElementById("partimentiInnerDimPct").value, mycad: myOn ? document.getElementById("partimentiMyCadPct").value : null, cyc: cyOn ? document.getElementById("partimentiCycPct").value : null, mod: mdOn ? document.getElementById("partimentiModPct").value : null, schemata: stOn ? document.getElementById("partimentiSchemataPct").value : null, ocm: ocOn ? document.getElementById("partimentiOcmPct").value : null, fox: fxOn ? document.getElementById("partimentiFoxPct").value : null, schemas: chosen };
     };
     // Al entrar (no en cada 🔀): Clavecín en Armonía/Bajo/Melodía y Batería a 0% (set "partimenti" de PRESET_SETS); después se pueden cambiar a mano.
     api.start = function(){
