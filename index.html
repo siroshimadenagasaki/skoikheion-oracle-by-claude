@@ -2114,6 +2114,7 @@
         <button class="chip" id="presetBrassSoloBtn" type="button" title="Set de presets tipo SoloPiano pero con metales: Armonía → Metales (Brass Section), Melodía → French Horns, Bajo → Metales. Muda Batería, moreComping, bebopMelody, Doblar melodía y Doblar armonía (gain 0).">Brass solo</button>
         <button class="chip" type="button" id="consolaSoloPianoBtn" title="Modo solo: pone Armonía, Melodía y Bajo en preset Piano, y muda Batería/moreComping/bebopMelody/Doblar melodía/Doblar armonía — sin tocar ningún otro ajuste. Volvé a apretarlo para restaurar los presets y volúmenes que tenías antes.">🎹 SoloPiano</button>
         <button class="chip" type="button" id="presetShuffleBtn" title="Shuffle!: elige al azar uno de los sets de presets de Styles (Baroque, Jazz traditional, Jazz fusion o Brass solo) y lo aplica, igual que apretar ese botón. Cada click sortea de nuevo (evita repetir el último). No toca el volumen de Drums (aunque el set sorteado, como Baroque o Brass solo, lo pondría en 0%).">Shuffle!</button>
+        <label style="display:inline-flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="8bits: asigna a todos los instrumentos (Armonía, Melodía, Bajo, Drums y los demás) solo presets de la carpeta Soundfonts v2/Extra v2/8bits/. Al destildarlo vuelven los presets que había antes. En el random (CreaturaRandom/Bella, ChordS, Partimenti) se prende solo el 5% de las veces."><input type="checkbox" id="mix8bitsChk"> 8bits</label>
       </div>
       <div class="mix-presets">
         <div class="mix-preset-group" id="harmonyPresetGroup" data-mix-group="harmony">
@@ -20991,6 +20992,159 @@ function runAnalysis() {
       }
     }
     window.__applyPresetSet = applyPresetSet;   // lo usa 🎹 Partimenti para poner Clavecín y Batería muteada al entrar
+
+    // ================================================================
+    // RANDOM CHOOSE — sorteos que se aplican al apretar CreaturaRandom / CreaturaBella (e Intervalic) / ChordS / Partimenti
+    // (y a cada vuelta de RadioMode). Dos fases: window.__randomChoose.pre(kind) = deshace lo del sorteo anterior, largo del
+    // segmento y Melody n2/n3 (antes de generar); .post(kind) = presets especiales y reverb (después de que cada botón sorteó
+    // sus voces y sliders).
+    //  · Largo: 33% 24 bars, 33% 12 bars, el resto Random 4–48 (si el campo manual #consolaBarsNum tiene número, manda ese).
+    //  · Melodías: 40% solo n2, 25% n2+n3, 10% solo n3, 25% al azar (n2 y n3 cada una 50/50).
+    //  · 5% 8bits: todos los instrumentos con presets de Extra v2/8bits/ (mismo efecto que el checkbox "8bits").
+    //  · 5% Drums: kit ETHNIC u ORCHESTRA (carpeta Extra v2/Drums/) en una de 3 variantes al azar: (a) Drums suena con ese kit;
+    //    (b) Armonía y Melodía con ese preset y Drums mudo; (c) Drums y Armonía+Melodía con ese preset.
+    //  · Reverb 60–100% si la song tiene espacio (algún Space >= 50%) o silencios altos (Melody silences >= 20%).
+    // ================================================================
+    (function(){
+      var chk8 = document.getElementById("mix8bitsChk");
+      var SEL_ID = {};
+      SELECTS.forEach(function(c){ SEL_ID[c.key] = c.id; });
+      var st8 = { saved: {}, drumVol: null }, stDr = { saved: {}, drumVol: null };
+      var auto8 = false;   // el checkbox lo tildó el random (no el usuario): se destilda en el próximo sorteo
+      function rnd(n){ return Math.floor(Math.random() * n); }
+      function extraFiles(){ return (typeof sfExtraFiles !== "undefined" && sfExtraFiles) ? sfExtraFiles : []; }
+      function setPreset(mixKey, key, label){
+        var el = document.getElementById(SEL_ID[mixKey]);
+        if(el && !Array.prototype.some.call(el.options, function(o){ return o.value === key; })){
+          el.insertBefore(new Option(label || key, key), el.firstChild);   // la opción puede no estar en ese selector (p.ej. un kit en Melodía)
+        }
+        mixPresets[mixKey] = key;
+        if(el) el.value = key;
+      }
+      function remember(store, mixKey, key, label){
+        var prev = mixPresets[mixKey];
+        if(prev === key) return;
+        if(!store.saved[mixKey]) store.saved[mixKey] = { prev: prev };
+        store.saved[mixKey].set = key;
+        setPreset(mixKey, key, label);
+      }
+      function setDrumVol(pct){
+        var sl = document.getElementById("mixDrumVol");
+        if(!sl) return;
+        sl.value = pct;
+        sl.dispatchEvent(new Event("input", { bubbles: true }));   // actualiza la etiqueta y el gain
+      }
+      function restore(store){
+        Object.keys(store.saved).forEach(function(k){
+          var sv = store.saved[k];
+          if(mixPresets[k] === sv.set) setPreset(k, sv.prev);   // si el usuario (o el botón) ya lo cambió, no se pisa
+        });
+        store.saved = {};
+        if(store.drumVol){
+          var sl = document.getElementById("mixDrumVol");
+          if(sl && String(sl.value) === String(store.drumVol.set)) setDrumVol(store.drumVol.prev);
+          store.drumVol = null;
+        }
+      }
+      // key "sf:<id>:<banco>:<programa>" del primer preset del archivo (del phdr si ya cargó; si no, de los números del nombre "000-032 ...")
+      function keyOf(e){
+        var bank = 0, prog = 0, f = null;
+        try{ f = sfFontByUrl[e.url]; }catch(_){ f = null; }
+        if(f && f.phdr && f.phdr.length > 1){ bank = f.phdr[0].bank; prog = f.phdr[0].preset; }
+        else {
+          var m = /(\d{3})-(\d{3})/.exec(e.path.split("/").pop());
+          if(m){ bank = parseInt(m[1], 10); prog = parseInt(m[2], 10); }
+        }
+        return "sf:" + e.id + ":" + bank + ":" + prog;
+      }
+      // ---- 8bits ----
+      var H8 = /PIANO|ORGAN|HONKY|SQUARE/i, M8 = /FLUTE|SQUARE|STEEL/i;
+      var EIGHT = { drum: /DRUMS\.sf2$/i, bass: /BASS/i, bassDouble: /BASS/i,
+        harmony: H8, chordDouble: H8, comping2: H8, modalVamps: H8,
+        melody: M8, melodyDouble: M8, bebop: M8, melody2: M8, melody3: M8 };
+      function apply8bits(){
+        var all = extraFiles().filter(function(e){ return /\/8bits\//i.test(e.path); });
+        if(!all.length) return false;
+        Object.keys(EIGHT).forEach(function(k){
+          if((k === "chordDouble" || k === "melodyDouble" || k === "bassDouble") && mixPresets[k] === "mute") return;   // los dobles apagados siguen apagados
+          var c = all.filter(function(e){ return EIGHT[k].test(e.path.split("/").pop()); });
+          if(!c.length) return;
+          var e = c[rnd(c.length)];
+          remember(st8, k, keyOf(e), e.label);
+        });
+        return true;
+      }
+      if(chk8) chk8.addEventListener("change", function(){
+        auto8 = false;   // lo tocó el usuario
+        if(chk8.checked){
+          if(!apply8bits()) chk8.checked = false;   // la carpeta 8bits todavía no se descubrió
+        } else restore(st8);
+      });
+      // ---- Drums 5% (ETHNIC / ORCHESTRA) ----
+      function applyDrumSpecial(){
+        var all = extraFiles().filter(function(e){ return /\/Drums\//i.test(e.path) && /ETHNIC|ORCHESTRA/i.test(e.path); });
+        if(!all.length) return;
+        var e = all[rnd(all.length)], key = keyOf(e), v = rnd(3);
+        if(v !== 1) remember(stDr, "drum", key, e.label);                                   // (a) y (c): Drums con ese kit
+        if(v !== 0){ remember(stDr, "harmony", key, e.label); remember(stDr, "melody", key, e.label); }   // (b) y (c): Armonía y Melodía con ese preset
+        if(v === 1){                                                                          // (b): sin el patrón de Drums
+          var sl = document.getElementById("mixDrumVol");
+          if(sl && Number(sl.value) > 0){ stDr.drumVol = { prev: sl.value, set: 0 }; setDrumVol(0); }
+        }
+      }
+      // ---- largo del segmento ----
+      function rollBars(){
+        var num = document.getElementById("consolaBarsNum");
+        if(num && parseInt(num.value, 10) >= 1) return;   // el campo manual manda (desiredNumBars)
+        var r = Math.random();
+        var pick = r < 0.33 ? "consola24BarsChk" : (r < 0.66 ? "consola12BarsChk" : "consolaRandBarsChk");
+        ["consola24BarsChk", "consola12BarsChk", "consolaRandBarsChk"].forEach(function(id){
+          var c = document.getElementById(id);
+          if(c) c.checked = (id === pick);   // sin evento "change": la generación que sigue ya lee el largo
+        });
+      }
+      // ---- Melody n2 / n3 ----
+      function rollMelodies(){
+        var r = Math.random(), n2, n3;
+        if(r < 0.40){ n2 = true; n3 = false; }
+        else if(r < 0.65){ n2 = true; n3 = true; }
+        else if(r < 0.75){ n2 = false; n3 = true; }
+        else { n2 = Math.random() < 0.5; n3 = Math.random() < 0.5; }
+        var c2 = document.getElementById("consolaMelody2Chk"), c3 = document.getElementById("consolaMelody3Chk");
+        if(c2) c2.checked = n2;
+        if(c3) c3.checked = n3;
+      }
+      // ---- reverb ----
+      function hasSpaceAndSilence(kind){
+        function val(id){ var el = document.getElementById(id); return el ? Number(el.value) : 0; }
+        if(kind === "partimenti"){
+          var sp = document.getElementById("partimentiSpace");
+          return !!(sp && sp.checked) || val("partimentiRestsPct") >= 20;
+        }
+        return val("consolaMelodicSpaceSlider") >= 50 || val("consolaHarmonicSpaceSlider") >= 50 || val("consolaRhythmSpaceSlider") >= 50 || val("consolaMelSilSlider") >= 20;
+      }
+      window.__randomChoose = {
+        pre: function(kind){
+          restore(stDr);
+          if(auto8){ auto8 = false; if(chk8){ chk8.checked = false; } restore(st8); }
+          rollBars();
+          rollMelodies();
+        },
+        post: function(kind){
+          if(chk8 && !chk8.checked){
+            var r = Math.random();
+            if(r < 0.05){ if(apply8bits()){ chk8.checked = true; auto8 = true; } }
+            else if(r < 0.10) applyDrumSpecial();
+          } else if(chk8 && chk8.checked){
+            apply8bits();   // 8bits tildado (a mano o por el random): cada sorteo vuelve a asignar solo presets de esa carpeta
+          }
+          if(hasSpaceAndSilence(kind)){
+            var rv = document.getElementById("consolaReverbAmount");
+            if(rv){ rv.value = 60 + rnd(41); rv.dispatchEvent(new Event("input", { bubbles: true })); }
+          }
+        }
+      };
+    })();
     var baroqueBtn = document.getElementById("presetBaroqueBtn");
     if(baroqueBtn) baroqueBtn.addEventListener("click", function(){ applyPresetSet("baroque"); });
     var brassSoloBtn = document.getElementById("presetBrassSoloBtn");
@@ -21726,6 +21880,8 @@ function runAnalysis() {
   // controles existentes, así se reusa toda su lógica de habilitado/
   // refreshUI/regenerateConsola tal cual, sin duplicarla acá.
   (function(){
+    function rcPre(k){ if(window.__randomChoose) window.__randomChoose.pre(k); }    // RANDOM CHOOSE (ver mixer): largo, Melody n2/n3
+    function rcPost(k){ if(window.__randomChoose) window.__randomChoose.post(k); }  // RANDOM CHOOSE: 8bits / Drums 5% / reverb
     var btn = document.getElementById("creaturaBtn");
     var btnBella = document.getElementById("creaturaBellaBtn");
     var btnInterv = document.getElementById("creaturaIntervalicBtn");
@@ -21895,29 +22051,33 @@ function runAnalysis() {
         if(typeof window.__rollToFront === "function") window.__rollToFront(); // modo automático: piano roll al primer plano
         if(kind === "classical"){
           // RadioClassicalMode: la vuelta nueva es siempre una canción 🎹 Partimenti (controles sorteados de nuevo; presets/tempo como los deje Partimenti).
-          if(window.__partimenti){ window.__partimenti.randomize(); window.__partimenti.start(); }
+          if(window.__partimenti){ window.__partimenti.randomize(); rcPre("partimenti"); window.__partimenti.start(); rcPost("partimenti"); }
           return;
         }
         if(kind === "mix"){
           // RADIO!: cada vuelta nueva sortea entre CreaturaRandom, CreaturaBella, CommonChords y Partimenti.
           var pick = ["random", "bella", "common", "partimenti"][Math.floor(Math.random() * 4)];
           window.__radioMixLast = pick;
-          if(pick === "partimenti"){ window.__partimenti.randomize(); window.__partimenti.start(); return; }
+          if(pick === "partimenti"){ window.__partimenti.randomize(); rcPre("partimenti"); window.__partimenti.start(); rcPost("partimenti"); return; }
           if(window.__partimenti) window.__partimenti.off();
-          if(pick === "common"){ randomizeSlider("consolaTempo", 30, 120); window.__commonChords.start(); return; }
+          if(pick === "common"){ randomizeSlider("consolaTempo", 30, 120); rcPre("common"); window.__commonChords.start(); rcPost("common"); return; }
           if(window.__commonChords) window.__commonChords.off();
           randomizeAndFill(pick === "bella");
+          rcPre("creatura");
           randomizeVoices(true);
           randomizeExtras();
           randomizeSlider("consolaTempo", 30, 120);   // la vuelta anterior pudo ser Partimenti (tempo propio)
+          rcPost("creatura");
           setChecked("consolaMixTimeSigChk", true);
           if(typeof window.consolaRegenerate === "function") window.consolaRegenerate();
           return;
         }
         // RadioMode alterna: cada vuelta nueva sortea Random o Bella (50/50).
         randomizeAndFill(Math.random() < 0.5);
+        rcPre("creatura");
         randomizeVoices(true); // RadioMode: cada canción nueva baraja los presets de Armonía y Melodía (el tempo no se toca)
         randomizeExtras(); // RadioMode: Reverb general 40–70%, Melody silences 0–10%, moreComping on/off en cada canción nueva
+        rcPost("creatura");
         setChecked("consolaMixTimeSigChk", true);
         if(typeof window.consolaRegenerate === "function") window.consolaRegenerate();
       } finally { window.__radioBusy = false; }
@@ -21932,7 +22092,9 @@ function runAnalysis() {
       if(typeof window.__rollToFront === "function") window.__rollToFront(); // modo automático: piano roll al primer plano
       try {
         randomizeAndFill(bella);
+        rcPre("creatura");
         randomizeVoicesAndTempo();
+        rcPost("creatura");
 
         // 2) Compose: arma los 12 compases desde esos 5 o 2 sets y arranca
         // la reproducción (mismo botón 🎲 Compose de Multi Sets Input).
@@ -22014,7 +22176,9 @@ function runAnalysis() {
         clickIfEnabled("consolaStopBtn");
         await wait(300);
         randomizeSlider("consolaTempo", 30, 120); // tempo al azar con el mismo rango que CreaturaRandom/Bella (se sortea antes de generar: el motor lo lee al armar la canción)
+        rcPre("common");
         window.__commonChords.start();
+        rcPost("common");
         clickIfEnabled("consolaPlayBtn");
       } finally { running = false; }
     }
@@ -22030,7 +22194,9 @@ function runAnalysis() {
         clickIfEnabled("consolaStopBtn");
         await wait(300);
         window.__partimenti.randomize();                 // sortea disminución, MyCadences y esquemas galantes
+        rcPre("partimenti");
         window.__partimenti.start();
+        rcPost("partimenti");
         clickIfEnabled("consolaPlayBtn");
         if(radio === true){                                // RadioClassicalMode: al terminar la vuelta engancha otra Partimenti
           if(rcChk){ rcChk.checked = true; classicalPaint(); } // (el Detener de arriba lo había apagado)
