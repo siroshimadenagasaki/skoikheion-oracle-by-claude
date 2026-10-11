@@ -1733,6 +1733,13 @@
           <button type="button" class="subfield-toggle" aria-expanded="false" aria-controls="rhythmBody" onclick="toggleModule(this)" title="Mostrar/ocultar los controles de ritmo"></button>
         </div>
         <div class="collapsible-content collapsed" id="rhythmBody" style="display:flex;flex-wrap:wrap;gap:20px 30px;">
+      <div class="consola-field consola-instruments" title="Beats: la batería usa SOLO patrones de la biblioteca de beats (hip-hop, rock, funk, dance, latinos, brasileños, 60s/70s/80s, compases impares...) y los varía dentro de la canción: un beat A y un B de la misma familia por frase de 4 compases, fills de toms/caja, crash al final de frase y respiros. Mixbeats: mezcla esos beats con la batería de siempre por frases (empieza y termina en beat; el último compás de una frase de beat a veces es del motor, a modo de fill). Son excluyentes entre sí. Apagados los dos, la batería funciona exactamente como siempre. Los beats también están como .mid en Midi/Drum Beats/ — cualquier .mid nuevo que subas a esa carpeta se suma solo. Los beats solo suenan en compases donde su largo encaja (4/4 con patrones de 2 o 4 tiempos, 3/4 con los de 3...); el resto de los compases usa la batería de siempre.">
+        <label>Beats</label>
+        <div class="consola-inst-row">
+          <span class="consola-inst-toggle" title="Beats: la batería usa SOLO la biblioteca de beats y los varía dentro de la canción (beat A y B, fills, crash, respiros). Excluyente con Mixbeats."><input type="checkbox" id="consolaBeatsChk"><label for="consolaBeatsChk">Beats</label></span>
+          <span class="consola-inst-toggle" title="Mixbeats: mezcla beats con la batería de siempre por frases de 4 compases (empieza y termina en beat; en el medio sortea beat A / beat B / motor; el último compás de una frase de beat a veces es del motor). Excluyente con Beats."><input type="checkbox" id="consolaMixBeatsChk"><label for="consolaMixBeatsChk">Mixbeats</label></span>
+        </div>
+      </div>
       <div class="consola-field">
         <div class="consola-inst-row">
           <span class="consola-inst-toggle" title="Slider 0–100% (default 0%): mismo concepto que MelodicSpace pero aplicado a BATERÍA — durante el tramo de respiro sorteado, la batería queda en un solo golpe suave por compás en vez de su patrón de siempre. No afecta a Simplicity. 0% = nunca."><label for="consolaRhythmSpaceSlider">&#129345; RythmSpace</label><input type="range" class="consola-mini-range" id="consolaRhythmSpaceSlider" min="0" max="100" value="0" step="1"><span class="consola-val" id="consolaRhythmSpaceVal">0%</span></span>
@@ -18363,6 +18370,282 @@ function runAnalysis() {
     return events;
   }
 
+  // ---- BEATS / MIXBEATS (checkboxes #consolaBeatsChk y #consolaMixBeatsChk, dentro de Rhythm) ----------
+  // Biblioteca de patrones de batería (hip-hop, rock, funk, dance, latinos, brasileños, 60s/70s/80s, impares...).
+  // Cada patrón = [nombre, familia, bpm original, largo en NEGRAS, [[beat, notaGM, vel], ...]]. Van embebidos acá
+  // (como Swing Drums) y además existen como .mid en la carpeta Midi/Drum Beats/ — todo .mid NUEVO que se suba a esa carpeta
+  // se descubre solo (Midi/Drum Beats/catalog.json + API de GitHub) y se suma a la biblioteca.
+  //  · Beats (excluyente con Mixbeats): la batería usa SOLO estos patrones. Cada canción sortea un beat A (y un B de la
+  //    misma familia); frases de 4 compases: A casi siempre, B a veces (la última frase siempre A); al final de frase, fill
+  //    de toms/caja (más probable con Rhythm complexity alta), platillo crash tras el fill, y a veces un respiro (sin hi-hat
+  //    en la 2da mitad). El tempo de la app pesa en el sorteo (beats de tempo parecido, o mitad/doble, salen más).
+  //  · Mixbeats: mezcla Beats con la batería de siempre (la que esté activa: Jazz moderno / Swing Drums / aleatoria) por frases:
+  //    la 1ra frase y la última siempre son beat; en el medio sortea A / B / motor (nunca 3 frases seguidas del motor), y el
+  //    último compás de una frase de beat toma el compás del motor 50% de las veces (hace de fill).
+  //  · Un beat solo suena en un compás si su largo encaja (4/4 con patrones de 2 o 4 tiempos, 3/4 con los de 3, etc.);
+  //    compases que ningún beat cubre usan la batería de siempre. Apagados los dos checkboxes, todo queda exactamente igual.
+  var BEATS = (function(){
+    var LIB_RAW = [
+["01_boom_bap","hiphop",90,4.0,[[0.0,36,100],[0.0,42,80],[0.5,42,80],[1.0,38,100],[1.0,42,80],[1.5,42,80],[1.75,36,100],[2.0,42,80],[2.5,36,100],[2.5,42,80],[3.0,38,100],[3.0,42,80],[3.5,42,80],[3.5,46,85]]],
+["02_trap_halftime","hiphop",140,4.0,[[0.0,36,110],[0.0,42,80],[0.5,42,80],[1.0,42,80],[1.5,42,80],[1.5,46,85],[1.75,36,110],[2.0,38,115],[2.0,42,80],[2.5,36,110],[2.5,42,80],[2.75,36,110],[3.0,42,80],[3.25,42,70],[3.5,42,80],[3.5,42,70],[3.75,42,70]]],
+["03_lofi_swing","hiphop",80,4.0,[[0.0,36,100],[0.0,42,70],[0.5,42,70],[1.0,38,95],[1.0,42,70],[1.5,42,70],[2.0,42,70],[2.3333,36,100],[2.5,36,100],[2.5,42,70],[3.0,38,95],[3.0,42,70],[3.5,42,70],[3.8333,38,35]]],
+["04_gfunk_west","hiphop",95,4.0,[[0.0,36,105],[0.0,42,80],[0.5,42,80],[1.0,38,105],[1.0,39,70],[1.0,42,80],[1.5,36,105],[1.5,42,80],[2.0,42,80],[2.5,36,105],[2.5,42,80],[3.0,38,105],[3.0,39,70],[3.0,42,80],[3.5,42,80],[3.5,46,90]]],
+["05_rock_basico","rock",120,4.0,[[0.0,36,110],[0.0,42,90],[0.5,42,90],[1.0,38,110],[1.0,42,90],[1.5,42,90],[2.0,36,110],[2.0,42,90],[2.5,42,90],[3.0,38,110],[3.0,42,90],[3.5,42,90]]],
+["06_halftime_rock","rock",76,4.0,[[0.0,36,115],[0.0,42,85],[0.5,42,85],[1.0,42,85],[1.5,36,115],[1.5,42,85],[2.0,38,115],[2.0,42,85],[2.5,36,115],[2.5,42,85],[3.0,42,85],[3.5,42,85],[3.75,38,40]]],
+["07_funk_ghost","funk",100,4.0,[[0.0,36,105],[0.0,42,70],[0.25,42,70],[0.5,42,70],[0.75,42,70],[1.0,38,105],[1.0,42,70],[1.25,42,70],[1.5,42,70],[1.75,38,35],[1.75,42,70],[2.0,42,70],[2.25,38,35],[2.25,42,70],[2.5,36,105],[2.5,42,70],[2.75,42,70],[3.0,38,105],[3.0,42,70],[3.25,42,70],[3.5,42,70],[3.5,46,85],[3.75,38,35],[3.75,42,70]]],
+["08_punk_rock","rock",175,4.0,[[0.0,36,115],[0.0,42,100],[0.5,42,100],[1.0,38,115],[1.0,42,100],[1.5,36,115],[1.5,42,100],[2.0,36,115],[2.0,42,100],[2.5,42,100],[3.0,38,115],[3.0,42,100],[3.5,36,115],[3.5,42,100]]],
+["09_breakbeat","hiphop",135,4.0,[[0.0,36,110],[0.0,42,85],[0.5,42,85],[1.0,38,110],[1.0,42,85],[1.5,42,85],[1.75,38,45],[2.0,42,85],[2.5,36,110],[2.5,42,85],[2.75,36,110],[3.0,42,85],[3.25,38,110],[3.5,42,85],[3.75,38,45]]],
+["10_disco","dance",120,4.0,[[0.0,36,110],[0.0,42,70],[0.5,46,90],[1.0,36,110],[1.0,38,100],[1.0,39,80],[1.0,42,70],[1.5,46,90],[2.0,36,110],[2.0,42,70],[2.5,46,90],[3.0,36,110],[3.0,38,100],[3.0,39,80],[3.0,42,70],[3.5,46,90]]],
+["11_house","dance",124,4.0,[[0.0,36,115],[0.5,46,85],[1.0,36,115],[1.0,39,100],[1.5,46,85],[1.75,42,60],[2.0,36,115],[2.5,46,85],[3.0,36,115],[3.0,39,100],[3.5,46,85],[3.75,42,60]]],
+["12_techno","dance",130,4.0,[[0.0,36,120],[0.0,42,55],[0.25,42,55],[0.5,42,55],[0.5,46,80],[0.75,42,55],[1.0,36,120],[1.0,42,55],[1.25,42,55],[1.5,42,55],[1.5,46,80],[1.75,42,55],[2.0,36,120],[2.0,42,55],[2.25,42,55],[2.5,42,55],[2.5,46,80],[2.75,42,55],[3.0,36,120],[3.0,37,70],[3.0,42,55],[3.25,42,55],[3.5,42,55],[3.5,46,80],[3.75,42,55]]],
+["13_drum_and_bass","dance",174,4.0,[[0.0,36,115],[0.0,42,80],[0.5,42,80],[1.0,38,115],[1.0,42,80],[1.5,42,80],[2.0,42,80],[2.5,36,115],[2.5,42,80],[3.0,38,115],[3.0,42,80],[3.5,42,80],[3.75,38,40]]],
+["14_reggae_one_drop","reggae",75,4.0,[[0.0,42,75],[0.5,42,75],[1.0,42,75],[1.5,42,75],[2.0,36,110],[2.0,37,100],[2.0,42,75],[2.5,42,75],[3.0,42,75],[3.5,42,75]]],
+["15_dembow","latin",95,4.0,[[0.0,36,110],[0.0,42,65],[0.5,42,65],[0.75,38,100],[1.0,36,110],[1.0,42,65],[1.5,38,100],[1.5,42,65],[2.0,36,110],[2.0,42,65],[2.5,42,65],[2.75,38,100],[3.0,36,110],[3.0,42,65],[3.5,38,100],[3.5,42,65]]],
+["16_bossa_nova","brasil",130,4.0,[[0.0,36,90],[0.0,37,80],[0.0,42,60],[0.5,42,60],[0.75,37,80],[1.0,42,60],[1.5,36,90],[1.5,37,80],[1.5,42,60],[2.0,36,90],[2.0,42,60],[2.5,37,80],[2.5,42,60],[3.0,42,60],[3.25,37,80],[3.5,36,90],[3.5,42,60]]],
+["17_shuffle_blues","swing",100,4.0,[[0.0,36,100],[0.0,42,80],[0.6667,42,80],[1.0,38,100],[1.0,42,80],[1.6667,42,80],[2.0,36,100],[2.0,42,80],[2.6667,42,80],[3.0,38,100],[3.0,42,80],[3.6667,42,80]]],
+["18_jazz_swing","swing",140,4.0,[[0.0,36,60],[0.0,51,85],[1.0,42,70],[1.0,51,85],[1.6667,51,85],[2.0,51,85],[2.6667,38,40],[3.0,42,70],[3.0,51,85],[3.6667,51,85]]],
+["19_ska","reggae",160,4.0,[[0.0,36,100],[0.5,37,95],[0.5,42,85],[1.0,36,100],[1.5,37,95],[1.5,42,85],[2.0,36,100],[2.5,37,95],[2.5,42,85],[3.0,36,100],[3.5,37,95],[3.5,42,85]]],
+["20_metal_double_kick","heavy",200,4.0,[[0.0,36,105],[0.0,49,110],[0.0,51,85],[0.25,36,105],[0.5,36,105],[0.75,36,105],[1.0,36,105],[1.0,38,115],[1.0,51,85],[1.25,36,105],[1.5,36,105],[1.75,36,105],[2.0,36,105],[2.0,51,85],[2.25,36,105],[2.5,36,105],[2.75,36,105],[3.0,36,105],[3.0,38,115],[3.0,51,85],[3.25,36,105],[3.5,36,105],[3.75,36,105]]],
+["21_son_clave_3_2","latin",100,4.0,[[0.0,56,70],[0.0,70,40],[0.0,75,100],[0.25,70,40],[0.5,70,40],[0.75,70,40],[0.75,75,100],[1.0,56,70],[1.0,70,40],[1.25,70,40],[1.5,70,40],[1.5,75,100],[1.75,70,40],[2.0,56,70],[2.0,70,40],[2.25,70,40],[2.5,70,40],[2.5,75,100],[2.75,70,40],[3.0,56,70],[3.0,70,40],[3.0,75,100],[3.25,70,40],[3.5,70,40],[3.75,70,40]]],
+["22_rumba_clave","latin",100,4.0,[[0.0,56,70],[0.0,70,40],[0.0,75,100],[0.25,70,40],[0.5,70,40],[0.75,70,40],[0.75,75,100],[1.0,56,70],[1.0,70,40],[1.25,70,40],[1.5,70,40],[1.75,70,40],[1.75,75,100],[2.0,56,70],[2.0,70,40],[2.25,70,40],[2.5,70,40],[2.5,75,100],[2.75,70,40],[3.0,56,70],[3.0,70,40],[3.0,75,100],[3.25,70,40],[3.5,70,40],[3.75,70,40]]],
+["23_habanera_milonga","latin",66,4.0,[[0.0,36,95],[0.0,42,50],[0.75,36,95],[1.0,36,95],[1.0,42,50],[1.5,36,95],[2.0,36,95],[2.0,42,50],[2.75,36,95],[3.0,36,95],[3.0,42,50],[3.5,36,95]]],
+["24_bembe_6_8","world",110,4.0,[[0.0,56,95],[0.0,64,90],[0.0,70,45],[0.3333,70,45],[0.6667,56,95],[0.6667,70,45],[1.0,70,45],[1.3333,56,95],[1.3333,70,45],[1.6667,56,95],[1.6667,70,45],[2.0,64,90],[2.0,70,45],[2.3333,56,95],[2.3333,70,45],[2.6667,70,45],[3.0,56,95],[3.0,70,45],[3.3333,70,45],[3.6667,56,95],[3.6667,70,45]]],
+["25_maqsum_arabe","world",100,4.0,[[0.0,36,110],[0.5,37,90],[1.5,37,90],[2.0,36,110],[3.0,37,90]]],
+["26_saidi_arabe","world",100,4.0,[[0.0,36,110],[0.5,36,110],[1.5,37,90],[2.0,36,110],[3.0,37,90]]],
+["27_aksak_9_8","odd",150,4.5,[[0.0,36,110],[0.0,42,70],[0.5,42,70],[1.0,37,90],[1.0,42,70],[1.5,42,70],[2.0,36,110],[2.0,42,70],[2.5,42,70],[3.0,37,90],[3.0,42,70],[3.5,42,70],[4.0,42,70]]],
+["28_cinco_cuatro_3_2","odd",110,5.0,[[0.0,36,110],[0.0,42,80],[0.5,42,80],[1.0,42,80],[1.5,42,80],[2.0,38,105],[2.0,42,80],[2.5,42,80],[3.0,36,110],[3.0,42,80],[3.5,42,80],[4.0,38,105],[4.0,42,80],[4.5,42,80]]],
+["29_siete_octavos_2_2_3","odd",150,3.5,[[0.0,36,110],[0.0,42,80],[0.5,42,80],[1.0,38,105],[1.0,42,80],[1.5,42,80],[2.0,36,110],[2.0,42,80],[2.5,42,80],[3.0,38,105],[3.0,42,80]]],
+["30_poliritmo_4_contra_3","odd",90,4.0,[[0.0,36,105],[0.0,37,95],[1.0,36,105],[1.3333,37,95],[2.0,36,105],[2.6667,37,95],[3.0,36,105]]],
+["31_vals_jazz_3_4","swing",150,3.0,[[0.0,36,60],[0.0,51,85],[1.0,42,65],[1.0,51,85],[1.6667,51,85],[2.0,42,65],[2.0,51,85]]],
+["32_blues_lento_12_8","swing",55,4.0,[[0.0,36,105],[0.0,42,70],[0.3333,42,40],[0.6667,42,40],[1.0,38,105],[1.0,42,70],[1.3333,42,40],[1.6667,42,40],[2.0,36,105],[2.0,42,70],[2.3333,42,40],[2.6667,42,40],[3.0,38,105],[3.0,42,70],[3.3333,42,40],[3.6667,42,40]]],
+["33_doom_lento","heavy",55,4.0,[[0.0,36,115],[0.0,49,100],[0.0,51,70],[0.5,51,70],[1.0,51,70],[1.5,51,70],[2.0,38,115],[2.0,51,70],[2.5,36,115],[2.5,51,70],[3.0,51,70],[3.5,51,70]]],
+["34_blast_beat","heavy",210,4.0,[[0.0,36,105],[0.0,51,80],[0.25,38,105],[0.5,36,105],[0.5,51,80],[0.75,38,105],[1.0,36,105],[1.0,51,80],[1.25,38,105],[1.5,36,105],[1.5,51,80],[1.75,38,105],[2.0,36,105],[2.0,51,80],[2.25,38,105],[2.5,36,105],[2.5,51,80],[2.75,38,105],[3.0,36,105],[3.0,51,80],[3.25,38,105],[3.5,36,105],[3.5,51,80],[3.75,38,105]]],
+["35_glitch_quebrado","experimental",120,4.0,[[0.0,36,110],[0.5,42,65],[0.75,42,65],[1.25,36,110],[1.75,38,105],[2.0,42,65],[2.25,36,110],[2.5,39,50],[2.75,42,65],[3.0,38,105],[3.25,42,65],[3.5,36,110],[3.75,37,80]]],
+["36_dub_espacioso","reggae",70,4.0,[[0.0,36,110],[0.5,42,50],[1.5,46,70],[2.0,37,100],[2.5,42,50],[3.5,42,50]]],
+["37_pop80_cuatro_al_piso","pop80",117,4.0,[[0.0,36,110],[0.0,42,75],[0.5,42,75],[1.0,36,110],[1.0,38,105],[1.0,42,75],[1.5,42,75],[2.0,36,110],[2.0,42,75],[2.5,42,75],[3.0,36,110],[3.0,38,105],[3.0,42,75],[3.5,42,75]]],
+["38_pop80_power_ballad","pop80",72,4.0,[[0.0,36,105],[0.0,42,70],[0.0,49,90],[0.5,42,70],[1.0,38,115],[1.0,42,70],[1.5,42,70],[2.0,42,70],[2.5,36,105],[2.5,42,70],[3.0,38,115],[3.0,42,70],[3.5,42,70]]],
+["39_pop80_new_wave","pop80",108,4.0,[[0.0,36,105],[0.0,42,70],[0.5,42,70],[1.0,38,100],[1.0,39,80],[1.0,42,70],[1.5,36,105],[1.5,42,70],[2.0,36,105],[2.0,42,70],[2.5,42,70],[2.75,36,105],[3.0,38,100],[3.0,39,80],[3.0,42,70],[3.5,42,70],[3.75,37,60]]],
+["40_pop80_italo","pop80",118,4.0,[[0.0,36,110],[0.25,42,45],[0.5,46,85],[0.75,42,45],[1.0,36,110],[1.0,39,95],[1.25,42,45],[1.5,46,85],[1.75,42,45],[2.0,36,110],[2.25,42,45],[2.5,46,85],[2.75,42,45],[3.0,36,110],[3.0,39,95],[3.25,42,45],[3.5,46,85],[3.75,42,45]]],
+["41_pop80_rock_arena","pop80",100,4.0,[[0.0,36,115],[0.0,42,90],[0.0,49,100],[0.5,42,90],[1.0,38,120],[1.0,42,90],[1.5,42,90],[2.0,36,115],[2.0,42,90],[2.5,36,115],[2.5,42,90],[3.0,38,120],[3.0,42,90],[3.5,42,90]]],
+["42_chacarera_esqueleto","world",170,3.0,[[0.0,37,95],[1.0,36,105],[1.5,37,95],[2.0,36,105]]],
+["43_motown_soul_60s","soul60s",112,4.0,[[0.0,36,105],[0.0,54,80],[0.5,54,80],[1.0,38,110],[1.0,54,80],[1.5,54,80],[2.0,36,105],[2.0,54,80],[2.5,54,80],[3.0,38,110],[3.0,54,80],[3.5,54,80]]],
+["44_rocknroll_shuffle","soul60s",150,4.0,[[0.0,36,105],[0.0,51,80],[0.6667,51,80],[1.0,38,105],[1.0,51,80],[1.6667,51,80],[2.0,36,105],[2.0,51,80],[2.6667,51,80],[3.0,38,105],[3.0,51,80],[3.6667,51,80]]],
+["45_surf_rock_60s","rock",165,4.0,[[0.0,36,105],[0.0,51,85],[0.5,51,85],[1.0,38,110],[1.0,51,85],[1.5,51,85],[2.0,36,105],[2.0,51,85],[2.5,36,105],[2.5,51,85],[3.0,38,110],[3.0,51,85],[3.5,51,85]]],
+["46_beat_britanico_60s","soul60s",130,4.0,[[0.0,36,100],[0.0,42,85],[0.0,54,55],[0.5,54,55],[1.0,38,105],[1.0,42,85],[1.0,54,55],[1.5,36,100],[1.5,54,55],[2.0,36,100],[2.0,42,85],[2.0,54,55],[2.5,54,55],[3.0,38,105],[3.0,42,85],[3.0,54,55],[3.5,54,55]]],
+["47_northern_soul_60s","soul60s",125,4.0,[[0.0,36,105],[0.0,54,80],[0.5,54,80],[1.0,36,105],[1.0,38,110],[1.0,54,80],[1.5,54,80],[2.0,36,105],[2.0,54,80],[2.5,54,80],[3.0,36,105],[3.0,38,110],[3.0,54,80],[3.5,54,80]]],
+["48_funk_70s_fantasmas","funk",105,4.0,[[0.0,36,105],[0.0,42,75],[0.25,42,50],[0.5,42,50],[0.75,38,30],[0.75,42,50],[1.0,38,110],[1.0,42,75],[1.25,42,50],[1.5,42,50],[1.75,36,105],[1.75,42,50],[2.0,42,75],[2.25,38,30],[2.25,42,50],[2.5,36,105],[2.5,42,50],[2.75,42,50],[3.0,38,110],[3.0,42,75],[3.25,42,50],[3.5,42,50],[3.75,38,30],[3.75,42,50]]],
+["49_soft_rock_70s","rock",90,4.0,[[0.0,36,100],[0.0,42,65],[0.5,42,65],[1.0,38,100],[1.0,42,65],[1.5,42,65],[2.0,42,65],[2.5,36,100],[2.5,42,65],[3.0,38,100],[3.0,42,65],[3.5,42,65]]],
+["50_motorik_70s","rock",125,4.0,[[0.0,36,105],[0.0,42,85],[0.5,36,105],[0.5,42,85],[1.0,38,105],[1.0,42,85],[1.5,42,85],[2.0,36,105],[2.0,42,85],[2.5,42,85],[3.0,38,105],[3.0,42,85],[3.5,42,85],[3.5,46,80]]],
+["51_reggae_steppers_70s","reggae",80,4.0,[[0.0,36,100],[0.5,42,80],[1.0,36,100],[1.5,42,80],[2.0,36,100],[2.0,37,100],[2.5,42,80],[3.0,36,100],[3.5,42,80]]],
+["52_country_train_beat","rock",130,4.0,[[0.0,36,95],[0.0,38,35],[0.25,38,35],[0.5,38,35],[0.75,38,35],[1.0,38,110],[1.0,38,35],[1.25,38,35],[1.5,38,35],[1.75,38,35],[2.0,36,95],[2.0,38,35],[2.25,38,35],[2.5,38,35],[2.75,38,35],[3.0,38,110],[3.0,38,35],[3.25,38,35],[3.5,38,35],[3.75,38,35]]],
+["53_pop80_freestyle_tresillo","pop80",112,4.0,[[0.0,36,105],[0.0,42,70],[0.5,42,70],[0.75,36,105],[1.0,38,100],[1.0,39,80],[1.0,42,70],[1.5,36,105],[1.5,42,70],[2.0,36,105],[2.0,42,70],[2.5,42,70],[2.75,36,105],[3.0,38,100],[3.0,39,80],[3.0,42,70],[3.5,36,105],[3.5,42,70]]],
+["54_pop80_hair_metal","pop80",130,4.0,[[0.0,36,115],[0.0,42,100],[0.0,49,110],[0.5,42,100],[1.0,38,120],[1.0,42,100],[1.5,36,115],[1.5,42,100],[2.0,36,115],[2.0,42,100],[2.5,36,115],[2.5,42,100],[3.0,38,120],[3.0,42,100],[3.5,42,100]]],
+["55_pop80_synthpop_secuenciado","pop80",118,4.0,[[0.0,36,105],[0.0,42,50],[0.25,42,50],[0.5,42,50],[0.5,46,60],[0.75,42,50],[1.0,38,100],[1.0,39,70],[1.0,42,50],[1.25,42,50],[1.5,42,50],[1.5,46,60],[1.75,42,50],[2.0,36,105],[2.0,42,50],[2.25,42,50],[2.5,42,50],[2.5,46,60],[2.75,42,50],[3.0,38,100],[3.0,39,70],[3.0,42,50],[3.25,42,50],[3.5,42,50],[3.5,46,60],[3.75,42,50]]],
+["56_cumbia_colombiana","latin",92,4.0,[[0.0,36,100],[0.0,70,55],[0.5,70,55],[0.75,70,55],[1.0,64,90],[1.0,70,55],[1.5,70,55],[2.0,36,100],[2.0,70,55],[2.5,70,55],[2.75,70,55],[3.0,64,90],[3.0,70,55],[3.5,70,55]]],
+["57_merengue","latin",130,4.0,[[0.0,36,105],[0.0,70,55],[0.25,70,55],[0.5,38,80],[0.5,70,55],[0.75,70,55],[1.0,36,105],[1.0,70,55],[1.25,70,55],[1.5,38,80],[1.5,63,85],[1.5,70,55],[1.75,70,55],[2.0,36,105],[2.0,70,55],[2.25,70,55],[2.5,38,80],[2.5,70,55],[2.75,70,55],[3.0,36,105],[3.0,70,55],[3.25,70,55],[3.5,38,80],[3.5,63,85],[3.5,70,55],[3.75,70,55]]],
+["58_bachata","latin",130,4.0,[[0.0,36,100],[0.0,63,60],[0.25,70,45],[0.5,63,60],[0.75,70,45],[1.0,63,60],[1.0,64,90],[1.25,70,45],[1.5,63,60],[1.75,70,45],[2.0,36,100],[2.0,63,60],[2.25,70,45],[2.5,63,60],[2.75,70,45],[3.0,63,60],[3.0,64,90],[3.25,70,45],[3.5,63,60],[3.75,70,45]]],
+["59_cha_cha_cha","latin",120,4.0,[[0.0,36,95],[0.0,56,70],[0.0,70,45],[0.0,75,95],[0.5,70,45],[0.75,75,95],[1.0,56,70],[1.0,70,45],[1.5,70,45],[1.5,75,95],[2.0,36,95],[2.0,56,70],[2.0,70,45],[2.5,70,45],[2.5,75,95],[3.0,56,70],[3.0,70,45],[3.0,75,95],[3.5,70,45]]],
+["60_samba_batucada","brasil",100,4.0,[[0.0,36,70],[0.0,70,50],[0.25,70,50],[0.5,70,50],[0.75,63,80],[0.75,70,50],[1.0,36,115],[1.0,70,50],[1.25,70,50],[1.5,70,50],[1.75,63,80],[1.75,70,50],[2.0,36,70],[2.0,70,50],[2.25,70,50],[2.5,70,50],[2.75,63,80],[2.75,70,50],[3.0,36,115],[3.0,70,50],[3.25,70,50],[3.5,70,50],[3.75,63,80],[3.75,70,50]]],
+["61_bossa_violao_ritmico","brasil",110,2.0,[[0.0,36,70],[0.0,37,90],[0.5,37,90],[1.0,36,70],[1.25,37,90]]],
+["62_bossa_surdo_cabasa","brasil",110,2.0,[[0.0,36,75],[0.0,70,55],[0.25,70,55],[0.5,70,55],[0.75,36,70],[0.75,70,55],[1.0,36,105],[1.0,70,55],[1.25,70,55],[1.5,70,55],[1.75,36,70],[1.75,70,55]]],
+["63_bossa_kit_crossstick","brasil",110,4.0,[[0.0,36,65],[0.0,37,95],[0.0,42,70],[0.5,42,70],[1.0,36,65],[1.0,42,70],[1.5,37,95],[1.5,42,70],[2.0,36,65],[2.0,42,70],[2.5,42,70],[3.0,36,65],[3.0,37,95],[3.0,42,70],[3.5,42,70]]],
+["64_bossa_capas_combinadas","brasil",110,4.0,[[0.0,36,70],[0.0,37,80],[0.0,70,50],[0.25,70,50],[0.5,37,80],[0.5,70,50],[0.75,36,70],[0.75,70,50],[1.0,36,105],[1.0,70,50],[1.25,37,80],[1.25,70,50],[1.5,70,50],[1.75,36,70],[1.75,70,50],[2.0,36,70],[2.0,37,80],[2.0,70,50],[2.25,70,50],[2.5,37,80],[2.5,70,50],[2.75,36,70],[2.75,70,50],[3.0,36,105],[3.0,70,50],[3.25,37,80],[3.25,70,50],[3.5,70,50],[3.75,36,70],[3.75,70,50]]],
+["65_baiao_zabumba","brasil",90,2.0,[[0.0,36,105],[0.0,42,75],[0.25,42,50],[0.5,42,75],[0.75,37,90],[0.75,42,50],[1.0,36,105],[1.0,42,75],[1.25,42,50],[1.5,42,75],[1.75,42,50]]],
+["66_baiao_3_3_2","brasil",90,2.0,[[0.0,36,105],[0.0,42,75],[0.25,42,50],[0.5,42,75],[0.75,37,90],[0.75,42,50],[1.0,42,75],[1.25,42,50],[1.5,36,105],[1.5,42,75],[1.75,42,50]]],
+["67_samba_enredo_2_4","brasil",128,2.0,[[0.0,36,70],[0.0,38,40],[0.0,70,50],[0.25,38,40],[0.25,70,50],[0.5,38,40],[0.5,70,50],[0.75,38,40],[0.75,70,50],[1.0,36,115],[1.0,38,40],[1.0,70,50],[1.25,38,40],[1.25,70,50],[1.5,38,40],[1.5,70,50],[1.75,38,40],[1.75,70,50]]],
+["68_samba_en_dos_4_4","brasil",100,4.0,[[0.0,36,70],[0.0,38,35],[0.0,70,50],[0.25,38,35],[0.25,70,50],[0.5,38,35],[0.5,70,50],[0.75,38,35],[0.75,70,50],[1.0,38,35],[1.0,70,50],[1.25,38,35],[1.25,70,50],[1.5,38,35],[1.5,70,50],[1.75,38,35],[1.75,70,50],[2.0,36,115],[2.0,38,35],[2.0,70,50],[2.25,38,35],[2.25,70,50],[2.5,38,35],[2.5,70,50],[2.75,38,35],[2.75,70,50],[3.0,38,35],[3.0,70,50],[3.25,38,35],[3.25,70,50],[3.5,38,35],[3.5,70,50],[3.75,38,35],[3.75,70,50]]]
+  ];
+    var lib = LIB_RAW.map(function(r){ return { name: r[0], fam: r[1], bpm: r[2], L: r[3], comp: false, ev: r[4] }; });
+    var EXT_DIR = "Midi/Drum Beats";
+    var FILL_TOMS = [50, 47, 45, 41];
+    function rnd(a, b){ return a + Math.floor(Math.random()*(b-a+1)); }
+    function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+    function pickW(arr, wf){
+      var tot = 0, ws = arr.map(function(x){ var w = wf(x); tot += w; return w; }), r = Math.random()*tot;
+      for(var i=0; i<arr.length; i++){ r -= ws[i]; if(r <= 0) return arr[i]; }
+      return arr[arr.length-1];
+    }
+    function chk(id){ var c = document.getElementById(id); return !!(c && c.checked); }
+    function mode(){ return chk("consolaMixBeatsChk") ? "mix" : (chk("consolaBeatsChk") ? "beats" : "off"); }
+    function curBpm(){ var el = document.getElementById("consolaTempo"); var b = el ? parseInt(el.value, 10) : NaN; return b > 0 ? b : 100; }
+    function cp(e){ var o = {}; for(var k in e) o[k] = e[k]; return o; }
+    function typeOf(m){
+      if(m === 36 || m === 35) return { type: "kick" };
+      if(m === 38 || m === 39 || m === 40) return { type: "snare" };
+      if(m === 37) return { type: "rimshot" };
+      if(m === 46 || m === 49 || m === 51 || m === 52 || m === 53 || m === 55 || m === 57 || m === 59) return { type: "hihat", open: true };
+      if(m >= 41 && m <= 50 && m !== 42 && m !== 44 && m !== 46) return { type: m <= 45 ? "kick" : "snare" };   // toms
+      return { type: "hihat", open: false };
+    }
+    function mkEv(e, startBeat, hum){
+      var t = typeOf(e[1]), v = e[2];
+      if(hum) v = Math.max(1, Math.min(127, v + rnd(-6, 6)));
+      var o = { type: t.type, startBeat: startBeat, midi: e[1], vel: v };
+      if(t.type === "hihat") o.open = !!t.open;
+      return o;
+    }
+    // ¿el patrón p encaja en un compás de B negras? (largo igual, divisor, o múltiplo de varios compases)
+    function fits(p, B, comp){
+      if(!!p.comp !== !!comp || p.L <= 0 || B <= 0) return false;
+      var a = B / p.L, b = p.L / B;
+      return Math.abs(a - Math.round(a)) < 1e-6 || Math.abs(b - Math.round(b)) < 1e-6;
+    }
+    function tempoW(p, bpm){   // beats de tempo parecido (o mitad/doble) pesan más
+      var r = Math.log(bpm / p.bpm), d = Math.min(Math.abs(r), Math.abs(r + Math.LN2), Math.abs(r - Math.LN2));
+      return d < 0.25 ? 1 : (d < 0.5 ? 0.4 : 0.12);
+    }
+    // eventos del patrón p dentro de un compás de B negras que empieza en `base` (j = compás dentro de la frase de 4)
+    function barEvents(p, base, B, j, hum){
+      var out = [], L = p.L, longer = L > B + 1e-9, off = longer ? ((j*B) % L) : 0, reps = (L < B - 1e-9) ? Math.round(B/L) : 1;
+      for(var r=0; r<reps; r++){
+        p.ev.forEach(function(e){
+          var t = e[0];
+          if(longer){ if(t < off - 1e-9 || t >= off + B - 1e-9) return; t -= off; }
+          out.push(mkEv(e, base + r*L + t, hum));
+        });
+      }
+      return out;
+    }
+    function fillFor(base, B, cx){
+      var len = (cx < 0.35 || B < 2) ? 0.5 : 1, n = len === 1 ? 4 : 2, sl = len / n, kind = rnd(0, 2), out = [];
+      for(var i=0; i<n; i++){
+        var midi = kind === 0 ? 38 : (kind === 1 ? FILL_TOMS[i % 4] : (i % 2 === 0 ? 38 : FILL_TOMS[(i >> 1) % 4]));
+        out.push({ type: typeOf(midi).type, startBeat: base + B - len + i*sl, midi: midi, vel: Math.min(120, 66 + i*(len === 1 ? 12 : 20) + rnd(0, 8)) });
+      }
+      return { from: base + B - len, events: out };
+    }
+    function assemble(numBars, isMix, normalFn){
+      var bpm = curBpm(), cx = (typeof rhythmComplexity === "number") ? rhythmComplexity : 0.5, hum = chk("consolaVelocityHumanizeChk");
+      var picks = {}, nPh = Math.ceil(numBars/4), plan = [], i;
+      function picksFor(B, comp){
+        var key = B + (comp ? "c" : "");
+        if(picks[key] !== undefined) return picks[key];
+        var cands = lib.filter(function(p){ return fits(p, B, comp); });
+        if(!cands.length) return (picks[key] = null);
+        var A = pickW(cands, function(p){ return tempoW(p, bpm); });
+        var sibs = cands.filter(function(p){ return p !== A && p.fam === A.fam; });
+        return (picks[key] = { A: A, B: sibs.length ? pickW(sibs, function(p){ return tempoW(p, bpm); }) : null });
+      }
+      for(i=0; i<nPh; i++){
+        var s, prev = plan[i-1], prev2 = plan[i-2];
+        if(i === 0) s = "A";
+        else if(isMix){
+          if(i === nPh-1) s = "A";
+          else if(prev === "M") s = (prev2 === "M") ? "A" : (Math.random() < 0.7 ? (Math.random() < 0.6 ? "A" : "B") : "M");
+          else { var r = Math.random(); s = r < 0.40 ? "A" : (r < 0.65 ? "B" : "M"); }
+        } else s = (i === nPh-1) ? "A" : (Math.random() < 0.3 ? "B" : "A");
+        plan.push(s);
+      }
+      var outBeat = [], outEng = [], nEv = null, prevMark = false;
+      for(var bar=0; bar<numBars; bar++){
+        var base = RHYTHM.start(bar), B = RHYTHM.beats(bar), comp = RHYTHM.compound(bar), ph = bar >> 2, j = bar % 4;
+        var pk = picksFor(B, comp), useEngine = (plan[ph] === "M") || !pk;
+        if(!useEngine && isMix && j === 3 && ph < nPh-1 && Math.random() < 0.5) useEngine = true;   // compás puente: el del motor
+        if(!useEngine && RHYTHMSPACE.isPeaceBar(bar)){ outBeat.push({ type: "kick", startBeat: base, vel: 40 }); prevMark = false; continue; }
+        if(useEngine){
+          if(!nEv) nEv = normalFn();
+          (function(b0, b1){ nEv.forEach(function(e){ if(e.startBeat >= b0 - 1e-9 && e.startBeat < b1 - 1e-9) outEng.push(cp(e)); }); })(base, base + B);
+          prevMark = true; continue;
+        }
+        var p = (plan[ph] === "B" && pk.B) ? pk.B : pk.A, evs = barEvents(p, base, B, j, hum);
+        var doFill = !isMix && (j === 3 || bar === numBars-1) && Math.random() < (0.35 + 0.5*cx);
+        if(!isMix && !doFill && (j === 1 || j === 2) && Math.random() < (0.15 + 0.15*cx)){   // respiro: 2da mitad sin hi-hat/ride/percusión
+          evs = evs.filter(function(e){ return !(e.type === "hihat" && e.startBeat >= base + B/2 - 1e-9); });
+        }
+        if(doFill){
+          var f = fillFor(base, B, cx);
+          evs = evs.filter(function(e){ return e.startBeat < f.from - 1e-9; }).concat(f.events);
+        }
+        if(j === 0 && ((prevMark && Math.random() < 0.6) || (bar === 0 && Math.random() < 0.3))) evs.push({ type: "hihat", open: true, startBeat: base, midi: 49, vel: 100 });
+        evs.forEach(function(e){ outBeat.push(e); });
+        prevMark = doFill;
+      }
+      var res = TRIPLETS.applyDrums(outBeat).concat(outEng);
+      res.sort(function(a, b){ return a.startBeat - b.startBeat; });
+      try{
+        if(window.__songLog){
+          var keys = Object.keys(picks).filter(function(k){ return picks[k]; }), pk0 = keys.length ? picks[keys[0]] : null;
+          window.__songLog.add(isMix ? "Mixbeats" : "Beats", pk0 ? ("A: " + pk0.A.name + (pk0.B ? " · B: " + pk0.B.name : "") + " — frases: " + plan.join(" ") + (isMix ? " (M = motor de siempre)" : "")) : "ningún beat encaja en estos compases: batería de siempre");
+        }
+      }catch(_e){}
+      return res;
+    }
+    // ---- MIDIs nuevos de Midi/Drum Beats/ ----
+    function parseMidi(buf, name){
+      try{
+        var d = new DataView(buf), p = 0;
+        function u32(){ var v = d.getUint32(p); p += 4; return v; }
+        function u16(){ var v = d.getUint16(p); p += 2; return v; }
+        function vlq(){ var v = 0, b; do { b = d.getUint8(p++); v = (v << 7) | (b & 0x7F); } while(b & 0x80); return v; }
+        if(d.byteLength < 14 || u32() !== 0x4D546864) return null;
+        var hl = u32(); u16(); var nt = u16(), div = u16(); p = 8 + hl;
+        if(div & 0x8000) return null;
+        var ppq = div, evs = [], num = 4, den = 4, usq = 0, maxT = 0, eot = 0, ch9 = false;
+        for(var t=0; t<nt && p + 8 <= d.byteLength; t++){
+          if(u32() !== 0x4D54726B) break;
+          var len = u32(), end = p + len, tick = 0, run = 0;
+          while(p < end){
+            tick += vlq();
+            var st = d.getUint8(p);
+            if(st === 0xFF){
+              var ty = d.getUint8(p+1); p += 2; var ml = vlq();
+              if(ty === 0x58 && ml >= 2){ num = d.getUint8(p); den = Math.pow(2, d.getUint8(p+1)); }
+              else if(ty === 0x51 && ml === 3 && !usq){ usq = (d.getUint8(p) << 16) | (d.getUint8(p+1) << 8) | d.getUint8(p+2); }
+              else if(ty === 0x2F && tick > eot){ eot = tick; }
+              p += ml; continue;
+            }
+            if(st === 0xF0 || st === 0xF7){ p++; p += vlq(); continue; }
+            if(st & 0x80){ run = st; p++; }
+            var hi = run & 0xF0, ch = run & 0x0F;
+            if(hi === 0xC0 || hi === 0xD0){ p += 1; continue; }
+            var n1 = d.getUint8(p), n2 = d.getUint8(p+1); p += 2;
+            if(hi === 0x90 && n2 > 0){ evs.push({ t: tick, n: n1, v: n2, c: ch }); if(ch === 9) ch9 = true; if(tick > maxT) maxT = tick; }
+          }
+          p = end;
+        }
+        if(ch9) evs = evs.filter(function(e){ return e.c === 9; });
+        if(!evs.length || !(den > 0)) return null;
+        var barTicks = ppq * 4 * num / den, nBars = Math.max(1, Math.ceil((maxT + 1) / barTicks), Math.round(eot / barTicks));
+        evs.sort(function(a, b){ return a.t - b.t || a.n - b.n; });
+        return { name: name, fam: "custom", bpm: usq ? Math.round(60000000 / usq) : 100, L: nBars * barTicks / ppq,
+                 comp: den === 8 && num > 3 && num % 3 === 0,
+                 ev: evs.map(function(e){ return [Math.round(e.t / ppq * 10000) / 10000, e.n, e.v]; }) };
+      }catch(_e){ return null; }
+    }
+    function listExt(){
+      var paths = {};
+      var p1 = fetch(EXT_DIR + "/catalog.json", { cache: "no-cache" }).then(function(r){ if(!r.ok) throw 0; return r.json(); })
+        .then(function(j){ (j.files || []).forEach(function(f){ paths[f] = 1; }); }).catch(function(){});
+      var p2 = (function(){
+        var key = "beatsDiscoverV1", c = null;
+        try{ c = JSON.parse(localStorage.getItem(key) || "null"); }catch(_e){ c = null; }
+        if(c && Array.isArray(c.f) && Date.now() - c.t < 300000){ c.f.forEach(function(f){ paths[f] = 1; }); return Promise.resolve(); }
+        return fetch("https://api.github.com/repos/" + SF_GH_OWNER + "/" + SF_GH_REPO + "/git/trees/main?recursive=1", { headers: { Accept: "application/vnd.github+json" } })
+          .then(function(r){ if(!r.ok) throw 0; return r.json(); })
+          .then(function(j){
+            var f = (j.tree || []).filter(function(it){ return it.type === "blob" && it.path.indexOf(EXT_DIR + "/") === 0 && /\.mid$/i.test(it.path); }).map(function(it){ return it.path.slice(EXT_DIR.length + 1); });
+            f.forEach(function(x){ paths[x] = 1; });
+            try{ localStorage.setItem(key, JSON.stringify({ t: Date.now(), f: f })); }catch(_e){}
+          }).catch(function(){});
+      })();
+      return Promise.all([p1, p2]).then(function(){ return Object.keys(paths); });
+    }
+    function loadExternal(){
+      listExt().then(function(files){
+        var have = {}; lib.forEach(function(p){ have[p.name.toLowerCase()] = 1; });
+        files.filter(function(f){ return /\.mid$/i.test(f) && f.indexOf("/") === -1 && !have[f.replace(/\.mid$/i, "").toLowerCase()]; }).forEach(function(f){
+          have[f.replace(/\.mid$/i, "").toLowerCase()] = 1;
+          fetch(EXT_DIR + "/" + encodeURIComponent(f)).then(function(r){ if(!r.ok) throw 0; return r.arrayBuffer(); }).then(function(buf){
+            var pat = parseMidi(buf, f.replace(/\.mid$/i, ""));
+            if(pat) lib.push(pat);
+          }).catch(function(){});
+        });
+      }).catch(function(){});
+    }
+    try{ if(typeof fetch === "function" && typeof SF_GH_OWNER !== "undefined") loadExternal(); }catch(_e){}
+    return { mode: mode, assemble: assemble, lib: lib };
+  })();
+
   // ---- JAZZ MODERNO (botón #modernJazzBtn, apagado por defecto) ------
   // Batería de jazz moderno/experimental, generada compás a compás sobre
   // una grilla de tresillos (3 slots por negra, slot/3 = beat). Capas:
@@ -18837,6 +19120,11 @@ function runAnalysis() {
     return DYNAMICS.applyDrums(ev); // Dynamics (0% = no-op)
   }
   function buildDrumEventsRaw(numBars){
+    var bm = BEATS ? BEATS.mode() : "off";   // Beats / Mixbeats (checkboxes de Rhythm); apagados = la batería de siempre
+    if(bm !== "off") return BEATS.assemble(numBars, bm === "mix", function(){ return buildDrumEventsRawNormal(numBars); });
+    return buildDrumEventsRawNormal(numBars);
+  }
+  function buildDrumEventsRawNormal(numBars){
     if(swingDrumsEnabled) return TRIPLETS.applyDrums(buildSwingDrumEvents(numBars)); // Triplets: también sobre estos patrones fijos/generados (0% = no-op)
     if(modernJazzEnabled) return TRIPLETS.applyDrums(buildModernJazzEvents(numBars));
     // JAZZ: patrón de ride "spang-a-lang" en vez del hi-hat parejo —
@@ -21358,6 +21646,8 @@ function runAnalysis() {
     //  · 5% 8bits: todos los instrumentos con presets de Extra v2/8bits/ (mismo efecto que el checkbox "8bits").
     //  · 5% Drums: kit ETHNIC u ORCHESTRA (carpeta Extra v2/Drums/) en una de 3 variantes al azar: (a) Drums suena con ese kit;
     //    (b) Armonía y Melodía con ese preset y Drums mudo; (c) Drums y Armonía+Melodía con ese preset.
+    //  · Beats / Mixbeats (Rhythm): 45% de las canciones usan batería con beats — 22,5% Beats y 22,5% Mixbeats —;
+    //    55% queda la batería de siempre. Si el usuario tildó uno a mano, no se sortea. Los tildados por el random se destildan en el sorteo siguiente.
     //  · Reverb 60–100% si la song tiene espacio (algún Space >= 50%) o silencios altos (Melody silences >= 20%).
     // ================================================================
     (function(){
@@ -21366,6 +21656,18 @@ function runAnalysis() {
       SELECTS.forEach(function(c){ SEL_ID[c.key] = c.id; });
       var st8 = { saved: {}, drumVol: null }, stDr = { saved: {}, drumVol: null };
       var auto8 = false;   // el checkbox lo tildó el random (no el usuario): se destilda en el próximo sorteo
+      var chkBeats = document.getElementById("consolaBeatsChk"), chkMixBeats = document.getElementById("consolaMixBeatsChk");
+      var autoBeats = false;   // Beats / Mixbeats tildados por el random (no por el usuario)
+      [chkBeats, chkMixBeats].forEach(function(c){ if(c) c.addEventListener("change", function(){ autoBeats = false; }); });
+      function rollBeats(){
+        if(!chkBeats || !chkMixBeats) return;
+        if(autoBeats){ autoBeats = false; chkBeats.checked = false; chkMixBeats.checked = false; }
+        if(chkBeats.checked || chkMixBeats.checked){ SL("Beats / Mixbeats (RANDOM CHOOSE)", "tildado a mano: no se sortea"); return; }
+        var r = Math.random();
+        if(r < 0.225){ chkBeats.checked = true; autoBeats = true; SL("Beats / Mixbeats (RANDOM CHOOSE)", "Beats (22,5%)"); }
+        else if(r < 0.45){ chkMixBeats.checked = true; autoBeats = true; SL("Beats / Mixbeats (RANDOM CHOOSE)", "Mixbeats (22,5%)"); }
+        else SL("Beats / Mixbeats (RANDOM CHOOSE)", "apagados (55%): batería de siempre");
+      }
       function rnd(n){ return Math.floor(Math.random() * n); }
       function SL(l, v){ try{ if(window.__songLog) window.__songLog.add(l, v); }catch(_e){} }   // 📝 Log de la canción
       function extraFiles(){ return (typeof sfExtraFiles !== "undefined" && sfExtraFiles) ? sfExtraFiles : []; }
@@ -21488,6 +21790,7 @@ function runAnalysis() {
           if(auto8){ auto8 = false; if(chk8){ chk8.checked = false; } restore(st8); }
           rollBars();
           rollMelodies();
+          rollBeats();
         },
         post: function(kind){
           if(chk8 && !chk8.checked){
@@ -21550,6 +21853,16 @@ function runAnalysis() {
         drumEvents = buildDrumEvents(NUM_BARS);
       });
     }
+    // Beats / Mixbeats (Rhythm): excluyentes entre sí; reconstruyen la batería al toque, igual que Swing Drums / Jazz moderno.
+    var beatsChkEl = document.getElementById("consolaBeatsChk"), mixBeatsChkEl = document.getElementById("consolaMixBeatsChk");
+    function onBeatsToggle(self, other){
+      return function(){
+        if(self.checked && other) other.checked = false;
+        drumEvents = buildDrumEvents(NUM_BARS);
+      };
+    }
+    if(beatsChkEl) beatsChkEl.addEventListener("change", onBeatsToggle(beatsChkEl, mixBeatsChkEl));
+    if(mixBeatsChkEl) mixBeatsChkEl.addEventListener("change", onBeatsToggle(mixBeatsChkEl, beatsChkEl));
   })();
 
   regenerateConsola();
