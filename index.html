@@ -382,8 +382,10 @@
   #radioVintage[data-skin="portada"]{background:#111;}
   #radioVintage .sk.sk-portada{position:absolute;inset:0;width:auto;height:auto;transform:none !important;display:block;--ac:#fff;--acfg:#111;--acs:rgba(255,255,255,.3);--fg:#fff;--mut:rgba(255,255,255,.75);}
   #radioVintage.rv-portrait .sk.sk-portada{width:auto;height:auto;}
-  #radioVintage .sk-portada canvas.art{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#111;}
-  #radioVintage .sk-portada .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.25) 0%,rgba(0,0,0,0) 35%,rgba(0,0,0,.78) 100%);pointer-events:none;}
+  /* la imagen se ve ENTERA (cuadrada, centrada, con marco fino) en vez de recortarse para llenar la pantalla */
+  #radioVintage .sk-portada{--artS:min(92vw,calc(100vh - 300px));}
+  #radioVintage .sk-portada canvas.art{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:var(--artS);height:var(--artS);object-fit:contain;background:#111;border:2px solid rgba(255,255,255,.9);box-sizing:border-box;box-shadow:0 10px 40px rgba(0,0,0,.55);}
+  #radioVintage .sk-portada .shade{display:none;}
   #radioVintage .sk-portada .k{position:absolute;left:clamp(20px,5vw,40px);top:max(26px,calc(env(safe-area-inset-top) + 14px));color:rgba(255,255,255,.85);}
   #radioVintage .sk-portada .x{top:max(14px,env(safe-area-inset-top));right:max(14px,env(safe-area-inset-right));border-radius:50%;background:rgba(0,0,0,.35);color:#fff;}
   #radioVintage .sk-portada .bot{position:absolute;left:clamp(20px,5vw,40px);right:clamp(20px,5vw,40px);bottom:max(30px,calc(env(safe-area-inset-bottom) + 18px));}
@@ -392,6 +394,11 @@
   #radioVintage .sk-portada .keys{margin-top:24px;}
   #radioVintage .sk-portada .b{width:48px;height:48px;border-color:rgba(255,255,255,.9);color:#fff;}
   #radioVintage .sk-portada .b.p{background:#fff;color:#111;}
+  /* horizontal: imagen entera a la izquierda y título + botones a la derecha (no se pisan con la imagen) */
+  #radioVintage:not(.rv-portrait) .sk-portada{--artS:min(calc(100vh - 40px),52vw);}
+  #radioVintage:not(.rv-portrait) .sk-portada canvas.art{left:max(5vw,env(safe-area-inset-left));top:50%;transform:translateY(-50%);}
+  #radioVintage:not(.rv-portrait) .sk-portada .k{left:calc(max(5vw,env(safe-area-inset-left)) + var(--artS) + 28px);top:max(26px,calc(env(safe-area-inset-top) + 14px));}
+  #radioVintage:not(.rv-portrait) .sk-portada .bot{left:calc(max(5vw,env(safe-area-inset-left)) + var(--artS) + 28px);right:max(4vw,env(safe-area-inset-right));bottom:50%;transform:translateY(50%);}
   /* animaciones: solo mientras suena (rv-on); estas reglas van al final a propósito */
   #radioVintage .sk .sp{animation-play-state:paused;}
   #radioVintage.rv-on .sk .sp{animation-play-state:running;}
@@ -19739,6 +19746,13 @@ function runAnalysis() {
     return tracks.some(function(tr){ return prPresetLoading(mixPresets[PR_PRESET_OF_TRACK[tr]]); });
   }
 
+  // Reloj de la canción en curso (inicio en el reloj de audio + duración): lo lee el bloque de Media Session para el contador de CarPlay.
+  var SONGCLOCK = window.__songClock = {
+    ctx: null, q: [],
+    reset: function(ctx, a, d){ this.ctx = ctx; this.q = [{ a: a, d: d }]; },
+    push: function(a, d){ this.q.push({ a: a, d: d }); if(this.q.length > 4) this.q.shift(); },
+    get: function(t){ var q = this.q; while(q.length > 1 && t >= q[1].a) q.shift(); return q[0] || null; }
+  };
   function startPlaybackRendered(){
     var ctx = getAudioCtx(); // síncrono, dentro del gesto del usuario (iOS)
     if(!ctx) return;
@@ -19777,6 +19791,7 @@ function runAnalysis() {
         var gains = ensureInstrumentGains(ctx);
         voices = new Set();
         var t0 = ctx.currentTime + 0.1;
+        SONGCLOCK.reset(ctx, t0, loopDur);
         var srcs = [];
         tracks.forEach(function(tr){
           var node = ctx.createBufferSource();
@@ -19853,6 +19868,7 @@ function runAnalysis() {
     var snap = liveSnap();            // foto de la vuelta en curso (notas/presets/tempo&expression)
     var loopAnchor = ctx.currentTime + 0.1 - snap.tw.f(off)*spb;   // con off > 0 la grilla de la vuelta queda corrida hacia atrás: suena desde el compás elegido
     var schedLoopStart = loopAnchor;  // inicio (en el reloj de audio) de la vuelta en curso
+    SONGCLOCK.reset(ctx, loopAnchor, loopDur);
     var schedBeat = off;              // próximo beat sin programar dentro de esa vuelta
     try{ if(window.__songLog) window.__songLog.stamp(); }catch(errL){}   // 📝 Log de la canción
     try{ if(window.__radioHist) window.__radioHist.note(); }catch(errH){} // RADIO!: historial (Previous)
@@ -19904,6 +19920,7 @@ function runAnalysis() {
           if(bpmNew > 0) spb = 60/bpmNew;
           loopDur = TOTAL_BEATS*spb;
           LOOP_BEATS = TOTAL_BEATS;
+          SONGCLOCK.push(schedLoopStart, loopDur);   // contador de CarPlay: la canción nueva arranca en schedLoopStart
           clk.pend = { anchor: schedLoopStart, dur: loopDur, spb: spb };
         } else {
           if(!loopChk.checked){ ending = true; endAfterCurrentLoop(); return; }
@@ -22872,7 +22889,7 @@ function runAnalysis() {
   })();
 </script>
 <script>
-/* pixelart.js - imagen 8 bits (32x32) por cancion: paisaje + personaje opcional.
+/* pixelart.js - imagen 8 bits (se arma en 32x32 y se muestra a 64x64 con Scale2x) por cancion: paisaje + personaje opcional.
    API: PixelArt.render(canvas, {set:[0,4,7], seed:'titulo', mode:'auto'|'landscape'|'character'})
    - Misma entrada => misma imagen (determinista).
    - set: pitch classes de la cancion. Si no hay set se usa seed (texto o numero).
@@ -22996,10 +23013,24 @@ function runAnalysis() {
     return { pixels: out, type: type, character: withChar };
   }
 
+  // Scale2x (EPX): duplica la resolución (32 -> 64) suavizando los escalones de las diagonales sin inventar colores ni difuminar.
+  function scale2x(g) {
+    var n = g.length, o = [], y, x;
+    for (y = 0; y < n * 2; y++) o[y] = [];
+    for (y = 0; y < n; y++) for (x = 0; x < n; x++) {
+      var P = g[y][x], A = y > 0 ? g[y - 1][x] : P, B = x < n - 1 ? g[y][x + 1] : P, C = x > 0 ? g[y][x - 1] : P, D = y < n - 1 ? g[y + 1][x] : P;
+      o[2 * y][2 * x] = (C === A && C !== D && A !== B) ? A : P;
+      o[2 * y][2 * x + 1] = (A === B && A !== C && B !== D) ? B : P;
+      o[2 * y + 1][2 * x] = (D === C && D !== B && C !== A) ? C : P;
+      o[2 * y + 1][2 * x + 1] = (B === D && B !== A && D !== C) ? D : P;
+    }
+    return o;
+  }
+
   function render(canvas, opts) {
-    var img = build(opts), ctx = canvas.getContext('2d'), px = canvas.width / N;
+    var img = build(opts), ctx = canvas.getContext('2d'), g = scale2x(img.pixels), M = g.length, px = canvas.width / M;
     ctx.imageSmoothingEnabled = false;
-    for (var y = 0; y < N; y++) for (var x = 0; x < N; x++) { ctx.fillStyle = img.pixels[y][x]; ctx.fillRect(x * px, y * px, px, px); }
+    for (var y = 0; y < M; y++) for (var x = 0; x < M; x++) { ctx.fillStyle = g[y][x]; ctx.fillRect(x * px, y * px, Math.ceil(px), Math.ceil(px)); }
     canvas.style.imageRendering = 'pixelated';
     return { type: img.type, character: img.character };
   }
@@ -23168,8 +23199,15 @@ function runAnalysis() {
   function coverFor(seedKey){
     try {
       if (!window.PixelArt) return [];
+      // 512x512 con la imagen ENTERA (448x448, 32 px de aire alrededor y marco fino): si CarPlay / la pantalla de bloqueo
+      // recorta o redondea los bordes, no se corta nada de la imagen.
       var c = document.createElement("canvas"); c.width = 512; c.height = 512;
-      window.PixelArt.render(c, { seed: seedKey, mode: "auto" });
+      var a = document.createElement("canvas"); a.width = 448; a.height = 448;
+      window.PixelArt.render(a, { seed: seedKey, mode: "auto" });
+      var cx = c.getContext("2d");
+      cx.fillStyle = "#111"; cx.fillRect(0, 0, 512, 512);
+      cx.imageSmoothingEnabled = false; cx.drawImage(a, 32, 32);
+      cx.strokeStyle = "rgba(255,255,255,.9)"; cx.lineWidth = 2; cx.strokeRect(31, 31, 450, 450);
       var u = c.toDataURL("image/png");
       return [{ src: u, sizes: "512x512", type: "image/png" }];
     } catch(e){ return []; }
@@ -23190,12 +23228,31 @@ function runAnalysis() {
           });
         }
         navigator.mediaSession.playbackState = "playing";
+        posUpdate();
       }
+    } catch(e){}
+  }
+  // Contador de tiempo (CarPlay / pantalla de bloqueo): duración y posición de la canción en curso.
+  // El motor publica en window.__songClock el inicio (reloj de audio) y la duración de cada canción; acá se convierte a segundos.
+  var lastPos = null;
+  function posUpdate(){
+    try {
+      var SC = window.__songClock;
+      if (!SC || !SC.ctx || !navigator.mediaSession || !navigator.mediaSession.setPositionState) return;
+      var t = SC.ctx.currentTime, c = SC.get(t);
+      if (!c || !(c.d > 0)) return;
+      var pos = Math.max(0, Math.min(c.d, (t - c.a) % c.d));
+      var now = performance.now();
+      // Solo se reenvía si cambió la canción o si el contador de iOS se corrió más de 1 s (el resto lo avanza solo con playbackRate 1).
+      if (lastPos && lastPos.c === c && Math.abs(lastPos.pos + (now - lastPos.at) / 1000 - pos) < 1) return;
+      navigator.mediaSession.setPositionState({ duration: c.d, playbackRate: 1, position: pos });
+      lastPos = { c: c, pos: pos, at: now };
     } catch(e){}
   }
   function keepOff(){
     try { if (keep && !keep.paused) keep.pause(); } catch(e){}
-    try { if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "none"; } catch(e){}
+    try { if ("mediaSession" in navigator) { navigator.mediaSession.playbackState = "none"; if (navigator.mediaSession.setPositionState) navigator.mediaSession.setPositionState(); } } catch(e){}
+    lastPos = null;
   }
   function isPlaying(){ var b = document.getElementById("consolaPlayBtn"); return !!(b && b.disabled); }
 
