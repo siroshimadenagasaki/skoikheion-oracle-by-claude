@@ -1662,9 +1662,10 @@
         <input type="range" id="consolaDynamicsSlider" min="0" max="100" value="50" step="1">
         <span class="consola-val" id="consolaDynamicsVal">50%</span>
       </div>
-      <div class="consola-field" title="Tempo &amp; Expression: variaciones de tiempo y dinámica DENTRO de cada vuelta. Elegí un preset y la intensidad con el slider (0% = tempo estricto). Rubato = el tempo respira por frases; Accelerando / Ritardando (desacelerando) = el tempo sube o baja a lo largo de la vuelta; Rit. al final = frena en los últimos compases; Crescendo / Decrescendo = la velocity sube o baja; Stringendo = accel + cresc; Morendo = rit + dim; Ad libitum = tempo y dinámica libres con calderones al azar. El BPM elegido es el promedio: la duración de la vuelta no cambia, así el loop, la batería y el piano roll siguen alineados. En vivo cada vuelta sortea una variación nueva; con prerender se escucha al volver a dar Play. Se suma a Dynamics. El export MIDI no lo incluye.">
+      <div class="consola-field" title="Tempo &amp; Expression: variaciones de tiempo y dinámica DENTRO de cada vuelta. AUTO (default) = el 45% de las canciones va en tempo estricto; el resto combina con criterio musical 1-3 recursos (fermata en el primer y/o último acorde, ritardando al final, ad libitum en la introducción, rubato leve o agresivo, accelerando al cierre de sección) y lo mantiene durante toda la canción; ignora el slider. Si no, elegí un preset y la intensidad con el slider (0% = tempo estricto). Rubato = el tempo respira por frases; Accelerando / Ritardando (desacelerando) = el tempo sube o baja a lo largo de la vuelta; Rit. al final = frena en los últimos compases; Crescendo / Decrescendo = la velocity sube o baja; Stringendo = accel + cresc; Morendo = rit + dim; Ad libitum = tempo y dinámica libres con calderones al azar. El BPM elegido es el promedio: la duración de la vuelta no cambia, así el loop, la batería y el piano roll siguen alineados. En vivo cada vuelta sortea una variación nueva; con prerender se escucha al volver a dar Play. Se suma a Dynamics. El export MIDI no lo incluye.">
         <label for="consolaExprSelect">Tempo &amp; Expression</label>
         <select id="consolaExprSelect">
+          <option value="auto" selected>Auto (default)</option>
           <option value="none">None (strict tempo)</option>
           <option value="rubato">Rubato</option>
           <option value="accel">Accelerando</option>
@@ -18986,7 +18987,8 @@ function runAnalysis() {
     }
     function current(){
       var sel = document.getElementById("consolaExprSelect"), sl = document.getElementById("consolaExprSlider");
-      var key = sel ? sel.value : "none";
+      var key = sel ? sel.value : "auto";
+      if(key === "auto") return currentAuto();
       var a = sl ? Math.max(0, Math.min(100, parseInt(sl.value, 10) || 0))/100 : 0;
       if(key === "none" || a <= 0 || !PRESETS[key]) return IDENT;
       var T = TOTAL_BEATS, ck = key + "|" + a + "|" + T;
@@ -18994,8 +18996,133 @@ function runAnalysis() {
       cur = build(key, a, ck, T);
       return cur;
     }
+    /* ---------- AUTO: perfil por canción (45% strict, 55% combinación musical) ----------
+       El perfil (qué recursos usa) se sortea UNA vez por canción (firma = largo + acordes) y se mantiene
+       entre vueltas; las fases de rubato/ad libitum sí se re-sortean por vuelta. */
+    var autoProf = null, autoSig = "";
+    function chordOnsets(){
+      var ev = (typeof state !== "undefined" && state.chordEvents) ? state.chordEvents : [], a = [], i, o = [];
+      for(i = 0; i < ev.length; i++) if(ev[i] && ev[i].startBeat != null) a.push(ev[i]);
+      a.sort(function(x, y){ return x.startBeat - y.startBeat; });
+      for(i = 0; i < a.length; i++){
+        if(!o.length || a[i].startBeat - o[o.length-1].t > 0.3) o.push({ t:a[i].startBeat, e:a[i].startBeat + (a[i].durBeats || 0) });
+        else if(a[i].startBeat + (a[i].durBeats || 0) > o[o.length-1].e) o[o.length-1].e = a[i].startBeat + (a[i].durBeats || 0);
+      }
+      return o;
+    }
+    function autoSigOf(T){
+      var ev = (typeof state !== "undefined" && state.chordEvents) ? state.chordEvents : [], h = 0, i;
+      for(i = 0; i < ev.length; i++) h = (h*31 + Math.round((ev[i].startBeat || 0)*8)*7 + (ev[i].midi | 0)) % 1000003;
+      return T + "|" + ev.length + "|" + h;
+    }
+    function pick(p){ return Math.random() < p; }
+    function decideAuto(T){
+      var P = { strict:false, parts:[] };
+      if(pick(0.45)){ P.strict = true; return P; }
+      var parts = [];
+      if(pick(0.55)) parts.push("ritEnd");                 // frena al final
+      if(pick(0.50)) parts.push("fermEnd");                // fermata en el último acorde
+      if(pick(0.35)) parts.push("fermStart");              // fermata en el primer acorde / primeros 2 o 4
+      if(pick(0.30)) parts.push("adlibIntro");             // ad libitum en la introducción
+      var rr = Math.random(); if(rr < 0.16) parts.push("rubatoLight"); else if(rr < 0.26) parts.push("rubatoHard");   // rubato leve (16%) o agresivo (10%) de toda la pieza
+      if(pick(0.15)) parts.push("accelClose");             // un poco más de empuje antes del final
+      if(!parts.length) parts.push(pick(0.5) ? "ritEnd" : "fermEnd");
+      // coherencia: ad libitum de intro y rubato general no se mezclan; accelClose no va con ritEnd
+      ["rubatoLight", "rubatoHard"].forEach(function(k){ if(parts.indexOf("adlibIntro") >= 0 && parts.indexOf(k) >= 0) parts.splice(parts.indexOf(k), 1); });
+      if(!parts.length) parts.push("ritEnd");
+      if(parts.indexOf("accelClose") >= 0 && parts.indexOf("ritEnd") >= 0) parts.splice(parts.indexOf("accelClose"), 1);
+      if(parts.length > 3) parts = parts.slice(0, 3);
+      P.parts = parts;
+      P.startN = [1, 2, 4][Math.floor(Math.random()*3)];  // cuántos acordes iniciales cubre la fermata
+      P.amt = rnd(0.45, 0.9);                              // intensidad de la canción
+      P.fermF = rnd(0.9, 1.6);                             // cuánto se estira la fermata (tiempo local 1.9x-2.6x)
+      return P;
+    }
+    function ramp(b, a0, a1, e){            // 1 dentro de [a0,a1], bordes suaves de e beats
+      if(b <= a0 - e || b >= a1 + e) return 0;
+      if(b >= a0 && b <= a1) return 1;
+      var u = b < a0 ? (b - (a0 - e))/e : ((a1 + e) - b)/e;
+      return 0.5 - 0.5*Math.cos(Math.PI*u);
+    }
+    function autoTempoCurve(P, T, BPB, on){
+      var comps = [], a = P.amt;
+      var has = function(k){ return P.parts.indexOf(k) >= 0; };
+      var nOn = on.length;
+      if(has("ritEnd")) comps.push(tempoCurve("ritEnd", a, T, BPB));
+      if(has("rubatoLight")) comps.push(tempoCurve("rubato", a*0.55, T, BPB));
+      if(has("rubatoHard")) comps.push(tempoCurve("rubato", 2.0 + a, T, BPB));
+      if(has("adlibIntro")){
+        var Lint = Math.min(T*0.34, Math.max(2*BPB, 4*BPB)), ad = tempoCurve("adlib", a, T, BPB);
+        comps.push(function(b){ var w = ramp(b, 0, Lint, BPB); return w > 0 ? Math.pow(ad(b), w) : 1; });
+      }
+      if(has("accelClose")){
+        var c0 = T*0.55, c1 = T - Math.max(BPB, 0.1*T);
+        comps.push(function(b){ var w = ramp(b, c0, c1, BPB); return 1/(1 + 0.22*a*w); });
+      }
+      if(has("fermStart") && nOn){
+        var n = Math.min(P.startN, nOn), f0 = on[0].t, f1 = on[n-1].e > on[n-1].t ? on[n-1].e : (n < nOn ? on[n].t : on[n-1].t + BPB);
+        if(f1 > f0 + 4*BPB) f1 = f0 + 4*BPB;                         // tope: 4 compases
+        var fF = n > 1 ? P.fermF*0.45 : P.fermF;                      // 2 o 4 acordes: ritmo libre más suave que una fermata sola
+        comps.push(function(b){ return 1 + fF*ramp(b, f0, f1, 0.5); });
+      }
+      if(has("fermEnd") && nOn){
+        var l0 = on[nOn-1].t, l1 = T;
+        comps.push(function(b){ return 1 + P.fermF*ramp(b, l0, l1, 0.5)*(b >= l0 - 0.5 ? 1 : 0); });
+      }
+      return function(b){ var r = 1, i; for(i = 0; i < comps.length; i++) r *= comps[i](b); return r; };
+    }
+    function buildAuto(P, ck, T){
+      var tw = { on:true, ck:ck, f:idf, inv:idf, mul:one, auto:P }, on = chordOnsets();
+      var s = autoTempoCurve(P, T, BEATS_PER_BAR, on);
+      tw = installMap(tw, s, T);
+      // dinámica: si frena al final, también se apaga un poco (morendo); si empuja, crece un poco
+      var dimEnd = P.parts.indexOf("ritEnd") >= 0 || P.parts.indexOf("fermEnd") >= 0, push = P.parts.indexOf("accelClose") >= 0;
+      if(dimEnd || push){
+        var x0 = 0.8;
+        tw.mul = function(b){ var x = b/T; if(x <= x0) return 1; var u = Math.min(1, (x - x0)/(1 - x0)); return dimEnd ? 1 - 0.35*P.amt*u : 1 + 0.2*P.amt*Math.sin(Math.PI*u); };
+      }
+      return tw;
+    }
+    function installMap(tw, s, T){
+      var N = Math.max(8, Math.round(T*K)), h = T/N, cum = new Float64Array(N + 1), i;
+      for(i = 1; i <= N; i++) cum[i] = cum[i-1] + s((i - 0.5)*h)*h;
+      var sc = T/cum[N];
+      for(i = 1; i <= N; i++) cum[i] *= sc;
+      cum[N] = T;
+      tw.f = function(b){
+        if(!(b > 0) || b >= T) return b;
+        var p = b/h, j = p|0;
+        if(j >= N) return b;
+        return cum[j] + (cum[j+1] - cum[j])*(p - j);
+      };
+      tw.inv = function(x){
+        if(!(x > 0) || x >= T) return x;
+        var lo = 0, hi = N, mid, d;
+        while(hi - lo > 1){ mid = (lo + hi) >> 1; if(cum[mid] <= x) lo = mid; else hi = mid; }
+        d = cum[hi] - cum[lo];
+        return (lo + (d > 0 ? (x - cum[lo])/d : 0))*h;
+      };
+      return tw;
+    }
+    function autoDesc(P){
+      if(P.strict) return "Auto → tempo estricto (45%)";
+      var nm = { ritEnd:"ritardando final", fermEnd:"fermata último acorde", fermStart:"fermata primeros " + P.startN + " acorde(s)", adlibIntro:"ad libitum en intro", rubatoLight:"rubato leve", rubatoHard:"rubato agresivo", accelClose:"empuje al cierre" };
+      return "Auto → " + P.parts.map(function(k){ return nm[k]; }).join(" + ") + " (int " + Math.round(P.amt*100) + "%)";
+    }
+    function currentAuto(){
+      var T = TOTAL_BEATS, sig = autoSigOf(T);
+      if(!autoProf || sig !== autoSig){
+        autoProf = decideAuto(T); autoSig = sig;
+        try{ if(window.__songLog) window.__songLog.add("Tempo & Expression", autoDesc(autoProf)); }catch(e){}
+      }
+      if(autoProf.strict || !(T > 0)) return IDENT;
+      var ck = "auto|" + sig + "|" + autoProf.parts.join(",");
+      if(cur && cur.ck === ck && !cur.rr) return cur;
+      cur = buildAuto(autoProf, ck, T);
+      return cur;
+    }
     function reroll(){ cur = null; }   // próxima foto = variación nueva (rubato / ad libitum sortean fase)
-    return { current:current, reroll:reroll, ident:IDENT, build:build, presets:PRESETS };
+    return { current:current, reroll:reroll, autoProfile:function(){ return autoProf; }, autoReset:function(){ autoProf = null; autoSig = ""; }, ident:IDENT, build:build, presets:PRESETS };
   })();
   // Dynamics: ev.vel (0-127, neutra 96) escala la ganancia y elige la capa de velocity del .sf2; sin ev.vel, igual que siempre.
   function velK(ev){ return ev.vel != null ? ev.vel/96 : 1; }
@@ -20687,6 +20814,12 @@ function runAnalysis() {
   document.getElementById("consolaExprSlider").addEventListener("input", function(){
     document.getElementById("consolaExprVal").textContent = this.value + "%";
   });
+  (function(){
+    var sel = document.getElementById("consolaExprSelect"), sl = document.getElementById("consolaExprSlider"), vl = document.getElementById("consolaExprVal");
+    function sync(){ var auto = sel.value === "auto"; sl.disabled = auto; sl.style.opacity = auto ? "0.35" : ""; vl.style.opacity = auto ? "0.35" : ""; }
+    sel.addEventListener("change", function(){ if(sel.value === "auto" && EXPR.autoReset) EXPR.autoReset(); EXPR.reroll(); sync(); });
+    sync();
+  })();
   document.getElementById("consolaTripletsSlider").addEventListener("input", function(){
     document.getElementById("consolaTripletsVal").textContent = this.value + "%";
   });
