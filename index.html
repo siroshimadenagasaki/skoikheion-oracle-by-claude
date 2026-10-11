@@ -1733,11 +1733,12 @@
           <button type="button" class="subfield-toggle" aria-expanded="false" aria-controls="rhythmBody" onclick="toggleModule(this)" title="Mostrar/ocultar los controles de ritmo"></button>
         </div>
         <div class="collapsible-content collapsed" id="rhythmBody" style="display:flex;flex-wrap:wrap;gap:20px 30px;">
-      <div class="consola-field consola-instruments" title="Beats: la batería usa SOLO patrones de la biblioteca de beats (hip-hop, rock, funk, dance, latinos, brasileños, 60s/70s/80s, compases impares...) y los varía dentro de la canción: un beat A y un B de la misma familia por frase de 4 compases, fills de toms/caja, crash al final de frase y respiros. Mixbeats: mezcla esos beats con la batería de siempre por frases (empieza y termina en beat; el último compás de una frase de beat a veces es del motor, a modo de fill). Son excluyentes entre sí. Apagados los dos, la batería funciona exactamente como siempre. Los beats también están como .mid en Midi/Drum Beats/ — cualquier .mid nuevo que subas a esa carpeta se suma solo. Los beats solo suenan en compases donde su largo encaja (4/4 con patrones de 2 o 4 tiempos, 3/4 con los de 3...); el resto de los compases usa la batería de siempre.">
+      <div class="consola-field consola-instruments" title="Beats: la batería usa SOLO patrones de la biblioteca de beats (hip-hop, rock, funk, dance, latinos, brasileños, 60s/70s/80s, compases impares...) y los varía dentro de la canción: un beat A y un B de la misma familia por frase de 4 compases, fills de toms/caja, crash al final de frase y respiros. Beatswithspice: toma UN beat de referencia y lo condimenta compás a compás (golpes fantasma de caja, bombos sincopados, hi-hats que se omiten o se abren, acentos, backbeat adelantado, fills) para que no suene repetitivo. Son excluyentes entre sí. Apagados los dos, la batería funciona exactamente como siempre. El desplegable muestra el beat que está montado en la canción; si elegís otro, la canción se reconstruye con ese como referencia (Auto = lo sortea la app). Los beats también están como .mid en Midi/Drum Beats/ — cualquier .mid nuevo que subas a esa carpeta se suma solo. Los beats solo suenan en compases donde su largo encaja (4/4 con patrones de 2 o 4 tiempos, 3/4 con los de 3...); el resto de los compases usa la batería de siempre.">
         <label>Beats</label>
         <div class="consola-inst-row">
-          <span class="consola-inst-toggle" title="Beats: la batería usa SOLO la biblioteca de beats y los varía dentro de la canción (beat A y B, fills, crash, respiros). Excluyente con Mixbeats."><input type="checkbox" id="consolaBeatsChk"><label for="consolaBeatsChk">Beats</label></span>
-          <span class="consola-inst-toggle" title="Mixbeats: mezcla beats con la batería de siempre por frases de 4 compases (empieza y termina en beat; en el medio sortea beat A / beat B / motor; el último compás de una frase de beat a veces es del motor). Excluyente con Beats."><input type="checkbox" id="consolaMixBeatsChk"><label for="consolaMixBeatsChk">Mixbeats</label></span>
+          <span class="consola-inst-toggle" title="Beats: la batería usa SOLO la biblioteca de beats y los varía dentro de la canción (beat A y B, fills, crash, respiros). Excluyente con Beatswithspice."><input type="checkbox" id="consolaBeatsChk"><label for="consolaBeatsChk">Beats</label></span>
+          <span class="consola-inst-toggle" title="Beatswithspice: usa un beat de referencia y lo modifica compás a compás (fantasmas, bombos sincopados, hi-hats omitidos/abiertos, acentos, backbeat adelantado, fills) para que no suene repetitivo. Excluyente con Beats."><input type="checkbox" id="consolaSpiceBeatsChk"><label for="consolaSpiceBeatsChk">Beatswithspice</label></span>
+          <select id="consolaBeatsSel" title="Beat montado en la canción. Elegí otro para reconstruir la batería con ese beat de referencia (si Beats y Beatswithspice están apagados, tilda Beatswithspice). Auto = lo sortea la app." style="max-width:210px;"><option value="">Auto · apagado</option></select>
         </div>
       </div>
       <div class="consola-field">
@@ -18370,18 +18371,22 @@ function runAnalysis() {
     return events;
   }
 
-  // ---- BEATS / MIXBEATS (checkboxes #consolaBeatsChk y #consolaMixBeatsChk, dentro de Rhythm) ----------
+  // ---- BEATS / BEATSWITHSPICE (checkboxes #consolaBeatsChk y #consolaSpiceBeatsChk + desplegable #consolaBeatsSel, dentro de Rhythm) ----------
   // Biblioteca de patrones de batería (hip-hop, rock, funk, dance, latinos, brasileños, 60s/70s/80s, impares...).
   // Cada patrón = [nombre, familia, bpm original, largo en NEGRAS, [[beat, notaGM, vel], ...]]. Van embebidos acá
   // (como Swing Drums) y además existen como .mid en la carpeta Midi/Drum Beats/ — todo .mid NUEVO que se suba a esa carpeta
   // se descubre solo (Midi/Drum Beats/catalog.json + API de GitHub) y se suma a la biblioteca.
-  //  · Beats (excluyente con Mixbeats): la batería usa SOLO estos patrones. Cada canción sortea un beat A (y un B de la
+  //  · Beats (excluyente con Beatswithspice): la batería usa SOLO estos patrones. Cada canción sortea un beat A (y un B de la
   //    misma familia); frases de 4 compases: A casi siempre, B a veces (la última frase siempre A); al final de frase, fill
   //    de toms/caja (más probable con Rhythm complexity alta), platillo crash tras el fill, y a veces un respiro (sin hi-hat
   //    en la 2da mitad). El tempo de la app pesa en el sorteo (beats de tempo parecido, o mitad/doble, salen más).
-  //  · Mixbeats: mezcla Beats con la batería de siempre (la que esté activa: Jazz moderno / Swing Drums / aleatoria) por frases:
-  //    la 1ra frase y la última siempre son beat; en el medio sortea A / B / motor (nunca 3 frases seguidas del motor), y el
-  //    último compás de una frase de beat toma el compás del motor 50% de las veces (hace de fill).
+  //  · Beatswithspice: usa UN beat de referencia (sin B) y lo condimenta compás a compás. El 1er compás de la canción suena
+  //    tal cual el beat; en los demás se aplican 1–3 "condimentos" (más probables con Rhythm complexity alta, y evitando repetir
+  //    los del compás anterior): fantasmas de caja, bombo sincopado extra (o se quita uno), hi-hats que se omiten, un hi-hat de
+  //    contratiempo que se abre, un rim/clap sobre el backbeat, backbeat adelantado una subdivisión, acentos de velocidad.
+  //    Además conserva los respiros, fills y crash de Beats.
+  //  · Desplegable (#consolaBeatsSel): muestra el beat de referencia MONTADO en la canción. Si el usuario elige otro, queda
+  //    "forzado" (pegajoso) hasta que vuelva a "Auto"; si no encaja en ningún compás de la canción, vuelve a Auto solo.
   //  · Un beat solo suena en un compás si su largo encaja (4/4 con patrones de 2 o 4 tiempos, 3/4 con los de 3, etc.);
   //    compases que ningún beat cubre usan la batería de siempre. Apagados los dos checkboxes, todo queda exactamente igual.
   var BEATS = (function(){
@@ -18466,7 +18471,8 @@ function runAnalysis() {
       return arr[arr.length-1];
     }
     function chk(id){ var c = document.getElementById(id); return !!(c && c.checked); }
-    function mode(){ return chk("consolaMixBeatsChk") ? "mix" : (chk("consolaBeatsChk") ? "beats" : "off"); }
+    function mode(){ return chk("consolaSpiceBeatsChk") ? "spice" : (chk("consolaBeatsChk") ? "beats" : "off"); }
+    var forced = null, cur = null, hooks = { pick: null, lib: null };   // forced: beat elegido a mano en el desplegable; cur: beat montado en la canción
     function curBpm(){ var el = document.getElementById("consolaTempo"); var b = el ? parseInt(el.value, 10) : NaN; return b > 0 ? b : 100; }
     function cp(e){ var o = {}; for(var k in e) o[k] = e[k]; return o; }
     function typeOf(m){
@@ -18514,42 +18520,111 @@ function runAnalysis() {
       }
       return { from: base + B - len, events: out };
     }
-    function assemble(numBars, isMix, normalFn){
+    // ---- Beatswithspice: condimentos sobre un compás ya armado (evs = eventos con startBeat absoluto) ----
+    function hasTri(p){
+      return p.ev.some(function(e){ var f = e[0]*3, g = e[0]*4; return Math.abs(f - Math.round(f)) < 0.02 && Math.abs(g - Math.round(g)) > 0.02; });
+    }
+    var SPICE_OPS = ["ghost", "kick", "hats", "open", "rim", "shift", "accent"];
+    function spiceBar(evs, base, B, grid, cx, prevOps, count){
+      function at(t){ return base + t; }
+      function offbeat(e){ var t = e.startBeat - base; return Math.abs(t - Math.round(t)) > 0.02; }
+      function has(t, types){ return evs.some(function(e){ return Math.abs(e.startBeat - at(t)) < 0.02 && types.indexOf(e.type) >= 0; }); }
+      function slots(){ var o = [], n = Math.round(B/grid); for(var k=0; k<n; k++) o.push(k*grid); return o; }
+      function drop(e){ evs.splice(evs.indexOf(e), 1); }
+      var ops = {
+        ghost: function(){   // golpes fantasma de caja en subdivisiones débiles
+          var c = slots().filter(function(t){ return Math.abs(t - Math.round(t)) > 0.02 && !has(t, ["snare", "kick", "rimshot"]); });
+          if(!c.length) return false;
+          var n = rnd(1, Math.min(3, c.length));
+          for(var i=0; i<n; i++){ var t = c.splice(rnd(0, c.length-1), 1)[0]; evs.push({ type: "snare", startBeat: at(t), midi: 38, vel: rnd(24, 42) }); }
+          return true;
+        },
+        kick: function(){   // bombo extra sincopado; si no hay lugar (o a veces) se quita uno que no sea el del 1
+          var c = slots().filter(function(t){ return t > 0.02 && !has(t, ["kick", "snare", "rimshot"]); });
+          if(c.length && Math.random() < 0.7){ evs.push({ type: "kick", startBeat: at(pick(c)), midi: 36, vel: rnd(68, 96) }); return true; }
+          var ks = evs.filter(function(e){ return e.type === "kick" && e.startBeat - base > 0.02; });
+          if(ks.length < 2) return false;
+          drop(pick(ks)); return true;
+        },
+        hats: function(){   // se omiten 1–2 golpes de hi-hat/ride de subdivisión
+          var hs = evs.filter(function(e){ return e.type === "hihat" && offbeat(e); });
+          if(hs.length < 2) return false;
+          var n = Math.min(rnd(1, 2), hs.length - 1);
+          for(var i=0; i<n; i++){ var h = pick(hs); hs.splice(hs.indexOf(h), 1); drop(h); }
+          return true;
+        },
+        open: function(){   // un hi-hat cerrado de contratiempo pasa a abierto
+          var hs = evs.filter(function(e){ return e.type === "hihat" && e.midi === 42 && offbeat(e); });
+          if(!hs.length) return false;
+          var h = pick(hs); h.midi = 46; h.open = true; h.vel = Math.min(120, h.vel + 8); return true;
+        },
+        rim: function(){   // rim/clap sumado sobre un golpe de backbeat
+          var sn = evs.filter(function(e){ return e.type === "snare" && e.vel >= 90; });
+          if(!sn.length) return false;
+          evs.push({ type: "rimshot", startBeat: pick(sn).startBeat, midi: pick([37, 39]), vel: rnd(60, 84) }); return true;
+        },
+        shift: function(){   // un backbeat se adelanta una subdivisión (síncopa)
+          var sn = evs.filter(function(e){ return e.type === "snare" && e.vel >= 90 && e.startBeat - grid >= base - 1e-9 && !has(e.startBeat - base - grid, ["snare", "rimshot"]); });
+          if(!sn.length) return false;
+          pick(sn).startBeat -= grid; return true;
+        },
+        accent: function(){   // acentos de velocidad en 1–3 golpes de hi-hat/ride
+          var hs = evs.filter(function(e){ return e.type === "hihat"; });
+          if(!hs.length) return false;
+          var n = rnd(1, Math.min(3, hs.length));
+          for(var i=0; i<n; i++){ var h = pick(hs); h.vel = Math.max(1, Math.min(127, h.vel + (Math.random() < 0.6 ? rnd(12, 22) : -rnd(12, 22)))); }
+          return true;
+        }
+      };
+      var pool = SPICE_OPS.filter(function(k){ return prevOps.indexOf(k) < 0; });   // no repite los condimentos del compás anterior
+      var done = [], tries = 0;
+      while(done.length < count && tries++ < 12){
+        if(!pool.length) pool = SPICE_OPS.filter(function(k){ return done.indexOf(k) < 0; });
+        if(!pool.length) break;
+        var k = pool.splice(rnd(0, pool.length-1), 1)[0];
+        if(ops[k]()) done.push(k);
+      }
+      return done;
+    }
+    function assemble(numBars, isSpice, normalFn){
       var bpm = curBpm(), cx = (typeof rhythmComplexity === "number") ? rhythmComplexity : 0.5, hum = chk("consolaVelocityHumanizeChk");
-      var picks = {}, nPh = Math.ceil(numBars/4), plan = [], i;
+      var picks = {}, nPh = Math.ceil(numBars/4), plan = [], i, firstPk = null, usedForced = false;
       function picksFor(B, comp){
         var key = B + (comp ? "c" : "");
         if(picks[key] !== undefined) return picks[key];
         var cands = lib.filter(function(p){ return fits(p, B, comp); });
         if(!cands.length) return (picks[key] = null);
-        var A = pickW(cands, function(p){ return tempoW(p, bpm); });
-        var sibs = cands.filter(function(p){ return p !== A && p.fam === A.fam; });
-        return (picks[key] = { A: A, B: sibs.length ? pickW(sibs, function(p){ return tempoW(p, bpm); }) : null });
+        var A = null;
+        if(forced){ A = cands.filter(function(p){ return p.name === forced; })[0] || null; if(A) usedForced = true; }
+        if(!A) A = pickW(cands, function(p){ return tempoW(p, bpm); });
+        var sibs = isSpice ? [] : cands.filter(function(p){ return p !== A && p.fam === A.fam; });
+        var res = picks[key] = { A: A, B: sibs.length ? pickW(sibs, function(p){ return tempoW(p, bpm); }) : null };
+        if(!firstPk) firstPk = res;
+        return res;
       }
       for(i=0; i<nPh; i++){
-        var s, prev = plan[i-1], prev2 = plan[i-2];
-        if(i === 0) s = "A";
-        else if(isMix){
-          if(i === nPh-1) s = "A";
-          else if(prev === "M") s = (prev2 === "M") ? "A" : (Math.random() < 0.7 ? (Math.random() < 0.6 ? "A" : "B") : "M");
-          else { var r = Math.random(); s = r < 0.40 ? "A" : (r < 0.65 ? "B" : "M"); }
-        } else s = (i === nPh-1) ? "A" : (Math.random() < 0.3 ? "B" : "A");
-        plan.push(s);
+        if(isSpice || i === 0 || i === nPh-1) plan.push("A");
+        else plan.push(Math.random() < 0.3 ? "B" : "A");
       }
-      var outBeat = [], outEng = [], nEv = null, prevMark = false;
+      var outBeat = [], outEng = [], nEv = null, prevMark = false, prevOps = [], spiceCount = {}, spiced = 0;
       for(var bar=0; bar<numBars; bar++){
         var base = RHYTHM.start(bar), B = RHYTHM.beats(bar), comp = RHYTHM.compound(bar), ph = bar >> 2, j = bar % 4;
-        var pk = picksFor(B, comp), useEngine = (plan[ph] === "M") || !pk;
-        if(!useEngine && isMix && j === 3 && ph < nPh-1 && Math.random() < 0.5) useEngine = true;   // compás puente: el del motor
-        if(!useEngine && RHYTHMSPACE.isPeaceBar(bar)){ outBeat.push({ type: "kick", startBeat: base, vel: 40 }); prevMark = false; continue; }
-        if(useEngine){
+        var pk = picksFor(B, comp);
+        if(pk && RHYTHMSPACE.isPeaceBar(bar)){ outBeat.push({ type: "kick", startBeat: base, vel: 40 }); prevMark = false; continue; }
+        if(!pk){
           if(!nEv) nEv = normalFn();
           (function(b0, b1){ nEv.forEach(function(e){ if(e.startBeat >= b0 - 1e-9 && e.startBeat < b1 - 1e-9) outEng.push(cp(e)); }); })(base, base + B);
           prevMark = true; continue;
         }
         var p = (plan[ph] === "B" && pk.B) ? pk.B : pk.A, evs = barEvents(p, base, B, j, hum);
-        var doFill = !isMix && (j === 3 || bar === numBars-1) && Math.random() < (0.35 + 0.5*cx);
-        if(!isMix && !doFill && (j === 1 || j === 2) && Math.random() < (0.15 + 0.15*cx)){   // respiro: 2da mitad sin hi-hat/ride/percusión
+        if(isSpice && bar > 0 && Math.random() < (j === 0 ? 0.35 + 0.3*cx : 0.55 + 0.4*cx)){
+          var cnt = 1 + (Math.random() < 0.3 + 0.4*cx ? 1 : 0) + (Math.random() < 0.3*cx ? 1 : 0);
+          prevOps = spiceBar(evs, base, B, hasTri(p) ? 1/3 : 0.25, cx, prevOps, cnt);
+          prevOps.forEach(function(k){ spiceCount[k] = (spiceCount[k] || 0) + 1; });
+          spiced++;
+        } else if(isSpice) prevOps = [];
+        var doFill = (j === 3 || bar === numBars-1) && Math.random() < (0.35 + 0.5*cx);
+        if(!doFill && (j === 1 || j === 2) && Math.random() < (0.15 + 0.15*cx)){   // respiro: 2da mitad sin hi-hat/ride/percusión
           evs = evs.filter(function(e){ return !(e.type === "hihat" && e.startBeat >= base + B/2 - 1e-9); });
         }
         if(doFill){
@@ -18562,12 +18637,21 @@ function runAnalysis() {
       }
       var res = TRIPLETS.applyDrums(outBeat).concat(outEng);
       res.sort(function(a, b){ return a.startBeat - b.startBeat; });
+      var shown = (forced && usedForced) ? forced : (firstPk ? firstPk.A.name : null);
+      var notFit = !!(forced && !usedForced);
+      if(notFit) forced = null;   // el beat elegido no encaja en ningún compás de esta canción: vuelve a Auto
+      cur = shown;
       try{
         if(window.__songLog){
-          var keys = Object.keys(picks).filter(function(k){ return picks[k]; }), pk0 = keys.length ? picks[keys[0]] : null;
-          window.__songLog.add(isMix ? "Mixbeats" : "Beats", pk0 ? ("A: " + pk0.A.name + (pk0.B ? " · B: " + pk0.B.name : "") + " — frases: " + plan.join(" ") + (isMix ? " (M = motor de siempre)" : "")) : "ningún beat encaja en estos compases: batería de siempre");
+          var sp = Object.keys(spiceCount).map(function(k){ return k + "×" + spiceCount[k]; }).join(" ");
+          window.__songLog.add(isSpice ? "Beatswithspice" : "Beats", firstPk
+            ? (isSpice ? ("referencia: " + firstPk.A.name + " — compases condimentados: " + spiced + (sp ? " (" + sp + ")" : ""))
+                       : ("A: " + firstPk.A.name + (firstPk.B ? " · B: " + firstPk.B.name : "") + " — frases: " + plan.join(" ")))
+            : "ningún beat encaja en estos compases: batería de siempre");
+          if(notFit) window.__songLog.add("Beats (elegido a mano)", "no encaja en los compases de esta canción: vuelve a Auto");
         }
       }catch(_e){}
+      try{ if(hooks.pick) hooks.pick(shown); }catch(_e){}
       return res;
     }
     // ---- MIDIs nuevos de Midi/Drum Beats/ ----
@@ -18637,13 +18721,15 @@ function runAnalysis() {
           have[f.replace(/\.mid$/i, "").toLowerCase()] = 1;
           fetch(EXT_DIR + "/" + encodeURIComponent(f)).then(function(r){ if(!r.ok) throw 0; return r.arrayBuffer(); }).then(function(buf){
             var pat = parseMidi(buf, f.replace(/\.mid$/i, ""));
-            if(pat) lib.push(pat);
+            if(pat){ lib.push(pat); try{ if(hooks.lib) hooks.lib(); }catch(_e){} }
           }).catch(function(){});
         });
       }).catch(function(){});
     }
     try{ if(typeof fetch === "function" && typeof SF_GH_OWNER !== "undefined") loadExternal(); }catch(_e){}
-    return { mode: mode, assemble: assemble, lib: lib };
+    return { mode: mode, assemble: assemble, lib: lib, hooks: hooks,
+             current: function(){ return cur; }, getForced: function(){ return forced; },
+             setForced: function(n){ forced = n || null; } };
   })();
 
   // ---- JAZZ MODERNO (botón #modernJazzBtn, apagado por defecto) ------
@@ -19120,8 +19206,8 @@ function runAnalysis() {
     return DYNAMICS.applyDrums(ev); // Dynamics (0% = no-op)
   }
   function buildDrumEventsRaw(numBars){
-    var bm = BEATS ? BEATS.mode() : "off";   // Beats / Mixbeats (checkboxes de Rhythm); apagados = la batería de siempre
-    if(bm !== "off") return BEATS.assemble(numBars, bm === "mix", function(){ return buildDrumEventsRawNormal(numBars); });
+    var bm = BEATS ? BEATS.mode() : "off";   // Beats / Beatswithspice (checkboxes de Rhythm); apagados = la batería de siempre
+    if(bm !== "off") return BEATS.assemble(numBars, bm === "spice", function(){ return buildDrumEventsRawNormal(numBars); });
     return buildDrumEventsRawNormal(numBars);
   }
   function buildDrumEventsRawNormal(numBars){
@@ -21646,7 +21732,7 @@ function runAnalysis() {
     //  · 5% 8bits: todos los instrumentos con presets de Extra v2/8bits/ (mismo efecto que el checkbox "8bits").
     //  · 5% Drums: kit ETHNIC u ORCHESTRA (carpeta Extra v2/Drums/) en una de 3 variantes al azar: (a) Drums suena con ese kit;
     //    (b) Armonía y Melodía con ese preset y Drums mudo; (c) Drums y Armonía+Melodía con ese preset.
-    //  · Beats / Mixbeats (Rhythm): 45% de las canciones usan batería con beats — 22,5% Beats y 22,5% Mixbeats —;
+    //  · Beats / Beatswithspice (Rhythm): 45% de las canciones usan batería con beats — 22,5% Beats y 22,5% Beatswithspice —;
     //    55% queda la batería de siempre. Si el usuario tildó uno a mano, no se sortea. Los tildados por el random se destildan en el sorteo siguiente.
     //  · Reverb 60–100% si la song tiene espacio (algún Space >= 50%) o silencios altos (Melody silences >= 20%).
     // ================================================================
@@ -21656,17 +21742,18 @@ function runAnalysis() {
       SELECTS.forEach(function(c){ SEL_ID[c.key] = c.id; });
       var st8 = { saved: {}, drumVol: null }, stDr = { saved: {}, drumVol: null };
       var auto8 = false;   // el checkbox lo tildó el random (no el usuario): se destilda en el próximo sorteo
-      var chkBeats = document.getElementById("consolaBeatsChk"), chkMixBeats = document.getElementById("consolaMixBeatsChk");
-      var autoBeats = false;   // Beats / Mixbeats tildados por el random (no por el usuario)
-      [chkBeats, chkMixBeats].forEach(function(c){ if(c) c.addEventListener("change", function(){ autoBeats = false; }); });
+      var chkBeats = document.getElementById("consolaBeatsChk"), chkSpiceBeats = document.getElementById("consolaSpiceBeatsChk");
+      var autoBeats = false;   // Beats / Beatswithspice tildados por el random (no por el usuario)
+      [chkBeats, chkSpiceBeats].forEach(function(c){ if(c) c.addEventListener("change", function(){ autoBeats = false; }); });
       function rollBeats(){
-        if(!chkBeats || !chkMixBeats) return;
-        if(autoBeats){ autoBeats = false; chkBeats.checked = false; chkMixBeats.checked = false; }
-        if(chkBeats.checked || chkMixBeats.checked){ SL("Beats / Mixbeats (RANDOM CHOOSE)", "tildado a mano: no se sortea"); return; }
+        if(!chkBeats || !chkSpiceBeats) return;
+        if(autoBeats){ autoBeats = false; chkBeats.checked = false; chkSpiceBeats.checked = false; }
+        if(chkBeats.checked || chkSpiceBeats.checked){ SL("Beats / Beatswithspice (RANDOM CHOOSE)", "tildado a mano: no se sortea"); return; }
         var r = Math.random();
-        if(r < 0.225){ chkBeats.checked = true; autoBeats = true; SL("Beats / Mixbeats (RANDOM CHOOSE)", "Beats (22,5%)"); }
-        else if(r < 0.45){ chkMixBeats.checked = true; autoBeats = true; SL("Beats / Mixbeats (RANDOM CHOOSE)", "Mixbeats (22,5%)"); }
-        else SL("Beats / Mixbeats (RANDOM CHOOSE)", "apagados (55%): batería de siempre");
+        if(r < 0.225){ chkBeats.checked = true; autoBeats = true; SL("Beats / Beatswithspice (RANDOM CHOOSE)", "Beats (22,5%)"); }
+        else if(r < 0.45){ chkSpiceBeats.checked = true; autoBeats = true; SL("Beats / Beatswithspice (RANDOM CHOOSE)", "Beatswithspice (22,5%)"); }
+        else SL("Beats / Beatswithspice (RANDOM CHOOSE)", "apagados (55%): batería de siempre");
+        try{ if(BEATS && BEATS.hooks.lib) BEATS.hooks.lib(); }catch(_e){}   // refresca el desplegable (Auto · apagado / nombre)
       }
       function rnd(n){ return Math.floor(Math.random() * n); }
       function SL(l, v){ try{ if(window.__songLog) window.__songLog.add(l, v); }catch(_e){} }   // 📝 Log de la canción
@@ -21853,16 +21940,48 @@ function runAnalysis() {
         drumEvents = buildDrumEvents(NUM_BARS);
       });
     }
-    // Beats / Mixbeats (Rhythm): excluyentes entre sí; reconstruyen la batería al toque, igual que Swing Drums / Jazz moderno.
-    var beatsChkEl = document.getElementById("consolaBeatsChk"), mixBeatsChkEl = document.getElementById("consolaMixBeatsChk");
+    // Beats / Beatswithspice (Rhythm): excluyentes entre sí; reconstruyen la batería al toque, igual que Swing Drums / Jazz moderno.
+    var beatsChkEl = document.getElementById("consolaBeatsChk"), spiceChkEl = document.getElementById("consolaSpiceBeatsChk");
+    var beatsSelEl = document.getElementById("consolaBeatsSel");
+    // Desplegable: la 1ra opción es "Auto · <beat montado>"; con un beat forzado queda seleccionado ese. Apagados los dos checkboxes: "Auto · apagado".
+    function refreshBeatsSel(){
+      if(!beatsSelEl || !BEATS) return;
+      var m = BEATS.mode(), fo = BEATS.getForced(), cu = BEATS.current();
+      var names = BEATS.lib.map(function(p){ return p.name; }).sort(), sig = names.join("|");
+      if(beatsSelEl.getAttribute("data-sig") !== sig){
+        beatsSelEl.innerHTML = "";
+        var o0 = document.createElement("option"); o0.value = ""; beatsSelEl.appendChild(o0);
+        names.forEach(function(n){ var o = document.createElement("option"); o.value = n; o.textContent = n; beatsSelEl.appendChild(o); });
+        beatsSelEl.setAttribute("data-sig", sig);
+      }
+      beatsSelEl.options[0].textContent = "Auto · " + (m === "off" ? "apagado" : (fo ? "sortear" : (cu || "—")));
+      beatsSelEl.value = (m !== "off" && fo) ? fo : "";
+    }
     function onBeatsToggle(self, other){
       return function(){
         if(self.checked && other) other.checked = false;
         drumEvents = buildDrumEvents(NUM_BARS);
+        refreshBeatsSel();
       };
     }
-    if(beatsChkEl) beatsChkEl.addEventListener("change", onBeatsToggle(beatsChkEl, mixBeatsChkEl));
-    if(mixBeatsChkEl) mixBeatsChkEl.addEventListener("change", onBeatsToggle(mixBeatsChkEl, beatsChkEl));
+    if(beatsChkEl) beatsChkEl.addEventListener("change", onBeatsToggle(beatsChkEl, spiceChkEl));
+    if(spiceChkEl) spiceChkEl.addEventListener("change", onBeatsToggle(spiceChkEl, beatsChkEl));
+    if(beatsSelEl && BEATS){
+      BEATS.hooks.pick = refreshBeatsSel;
+      BEATS.hooks.lib = refreshBeatsSel;
+      beatsSelEl.addEventListener("change", function(){
+        var v = beatsSelEl.value || null;
+        BEATS.setForced(v);
+        if(v && beatsChkEl && spiceChkEl && !beatsChkEl.checked && !spiceChkEl.checked){
+          spiceChkEl.checked = true;
+          spiceChkEl.dispatchEvent(new Event("change"));   // dispara el reconstruir de la batería (y apaga el "auto" del random)
+        } else if(BEATS.mode() !== "off"){
+          drumEvents = buildDrumEvents(NUM_BARS);
+        }
+        refreshBeatsSel();
+      });
+      refreshBeatsSel();
+    }
   })();
 
   regenerateConsola();
