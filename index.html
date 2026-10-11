@@ -1368,7 +1368,7 @@
     <div><kbd>F</kbd>&#9632;</div>
     <div><kbd>D</kbd>&#9658;</div>
     <div><kbd>H</kbd>CreaturaRandom</div>
-    <div><kbd>J</kbd>CreaturaBella</div>
+    <div><kbd>J</kbd>CreaturA</div>
     <div><kbd>A</kbd>ChordS</div>
     <div><kbd>K</kbd>Partimenti</div>
     <div><kbd>C</kbd>Random fill</div>
@@ -1424,12 +1424,12 @@
   <div class="stage">
     <div class="clock-col">
     <div class="clock-card">
-      <span class="radio-mode-wrap radio-top radio-top0" title="RADIO! (botón ON/OFF): mix random. Al pasar a ON arranca una canción de un tipo al azar y en cada vuelta nueva sortea de nuevo entre CreaturaBella, CreaturaRandom, ChordS y Partimenti, sin cortar el audio. Se corta con Detener o con OFF. Usa el modo en vivo (no Prerender).">
+      <span class="radio-mode-wrap radio-top radio-top0" title="RADIO! (botón ON/OFF): mix random. Al pasar a ON arranca una canción de un tipo al azar y en cada vuelta nueva sortea de nuevo entre CreaturA, CreaturaRandom, ChordS y Partimenti, sin cortar el audio. Se corta con Detener o con OFF. Usa el modo en vivo (no Prerender).">
         <input type="checkbox" id="consolaRadioMixChk" hidden>
         <button type="button" class="chip" id="consolaRadioMixBtn" aria-pressed="false">&#128251; RADIO!: OFF</button>
       </span>
       <button type="button" class="chip" id="radioVintageOpenBtn" title="Abrir el reproductor de radio vintage (Previous / Play / Stop / Next)">&#9654;&#65038; Player</button>
-      <span class="radio-mode-wrap radio-top" title="RadioCreaturaMode (botón ON/OFF): al pasar a ON arranca solo (CreaturaRandom o CreaturaBella al azar); con ON, después de 🪄 CreaturaRandom o 🪄 CreaturaBella, cuando termina la vuelta engancha otra vuelta nueva, alternando al azar Random/Bella (sets y sliders nuevos) y barajando los presets de Armonía y Melodía en cada canción nueva, sin cortar el audio. Se corta con Detener o con OFF. Usa el modo en vivo (no Prerender).">
+      <span class="radio-mode-wrap radio-top" title="RadioCreaturaMode (botón ON/OFF): al pasar a ON arranca solo (CreaturaRandom o CreaturA al azar); con ON, después de 🪄 CreaturaRandom o 🪄 CreaturA, cuando termina la vuelta engancha otra vuelta nueva, alternando al azar Random/Bella (sets y sliders nuevos) y barajando los presets de Armonía y Melodía en cada canción nueva, sin cortar el audio. Se corta con Detener o con OFF. Usa el modo en vivo (no Prerender).">
         <input type="checkbox" id="consolaRadioChk" hidden>
         <button type="button" class="chip" id="consolaRadioBtn" aria-pressed="false">&#128251; RadioCreaturaMode: OFF</button>
       </span>
@@ -1461,13 +1461,13 @@
       <div class="clock-actions">
         <div style="display:flex;flex-direction:column;align-items:stretch;gap:6px;">
           <button class="chip primary" id="creaturaBtn" type="button" title="Corre sola la secuencia: sortea Chromatism (2–40%), Chords (20–60%), Triplets (0–100%), Melodic/Harmonic/RythmSpace (0–100%) y Rapid runs (0–30%), Simplicity (0–50%), Melody n2 (on/off al azar) y una combinación totalmente al azar de Cycles (intervalos + Chromatism; prende Cycles) → Random Fill (5 o 2 sets al azar; 2–3/2–4/2–5 notas, modo Mezcla) → Compose → tilda Mix time signatures → Detener → espera 2s → 🔀 Regenerar. Una sola pasada por click.">🪄 CreaturaRandom</button>
-          <button class="chip primary" id="creaturaBellaBtn" type="button" title="Igual que CreaturaRandom (mismos sliders, incluidos Simplicity 0–50%, Melody n2 on/off y Cycles al azar; Compose, Mix time signatures, Detener, espera 2s y Regenerar), pero los 5 o 2 sets salen SOLO del índice del libro (jerarquías de sets) y con más probabilidad cuanto mayor es su jerarquía: dentro de cada cardinalidad (3 hasta el máximo del slider, el índice no tiene sets de 2 notas) el set 1 del índice es el más probable y el último el menos probable. Cada set sale transportado a una tónica al azar.">🪄 CreaturaBella</button>
+          <button class="chip primary" id="creaturaBellaBtn" type="button" title="Igual que CreaturaRandom (mismos sliders, incluidos Simplicity 0–50%, Melody n2 on/off y Cycles al azar; Compose, Mix time signatures, Detener, espera 2s y Regenerar), pero los 5 o 2 sets salen SOLO del índice del libro (jerarquías de sets) y con más probabilidad cuanto mayor es su jerarquía: dentro de cada cardinalidad (3 hasta el máximo del slider, el índice no tiene sets de 2 notas) el set 1 del índice es el más probable y el último el menos probable. Cada set sale transportado a una tónica al azar.">🪄 CreaturA</button>
           <div style="display:flex;align-items:center;gap:8px;"><button class="chip primary" id="commonChordsBtn" type="button" style="flex:1;" title="ChordS: en vez de sets, compone una canción con acordes de la base de acordes (tríadas, sextas, séptimas, add, extendidos, alterados), en cualquier tónica y siempre en inversión: el bajo toca la tónica, la tercera, la quinta o la séptima. Cantidad de acordes al azar (1, 2 o 4 por compás; se pueden repetir o no). La melodía toca solo notas del modo del acorde en curso (Cmaj7 sin #11 = Jónico o Lidio). 🔀 / tecla G sortean otra canción ChordS.">🎼 ChordS</button></div><details style="margin-top:4px;"><summary style="font-size:12px;color:var(--ink-muted);cursor:pointer;" title="Test (ChordS): ModeTestHarmony, ModeTestMelody y narrowregister.">🧪 Test</summary><div style="display:flex;flex-wrap:wrap;gap:4px 10px;padding:4px 0;"><label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="ModeTestHarmony: la armonía del ModeTest — un solo acorde cada 2 compases, con todas las notas atacando juntas (simultáneo) y sonando los 2 compases completos. La melodía queda normal. Con ModeTestMelody también tildado = ModeTest completo."><input type="checkbox" id="commonChordsModeTestH"> ModeTestHarmony</label><label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="ModeTestMelody: la melodía del ModeTest — toca únicamente la escala (el modo) de cada acorde, de la tónica hacia arriba o abajo, 1–3 octavas. La armonía queda normal (1, 2 o 4 acordes por compás). Con ModeTestHarmony también tildado = ModeTest completo."><input type="checkbox" id="commonChordsModeTestM"> ModeTestMelody</label><label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="narrowregister: el registro de un acorde al siguiente no se aleja más de una octava (la nota más grave y la más aguda de cada acorde quedan a no más de 12 semitonos de las del acorde anterior)."> <input type="checkbox" id="commonChordsNarrow"> narrowregister</label></div></details><details style="margin-top:4px;"><summary style="font-size:12px;color:var(--ink-muted);cursor:pointer;" title="Categoría: limita los acordes que se sortean a las familias tildadas. Sin tildar ninguna = todas.">🧬 Familias de acordes</summary><div id="commonChordsFamilies" style="display:flex;flex-wrap:wrap;gap:4px 10px;padding:4px 0;"><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;font-weight:700;" title="All: tilda o destilda todas las familias."><input type="checkbox" id="commonChordsFamiliesAll"> All</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Maj7"> Maj7</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="m7"> m7</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="7"> 7</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="7Alt"> 7Alt</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Sus 2b"> Sus 2b</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Semidisminuido"> Semidisminuido</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Disminuida"> Disminuida</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Aumentada"> Aumentada</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Díada"> Díada</label></div></details><details style="margin-top:4px;"><summary style="font-size:12px;color:var(--ink-muted);cursor:pointer;" title="Escalas: con una o más tildadas, la melodía de cada acorde toca solo modos de esas escalas (solo se sortean acordes que tengan algún modo en esas escalas; si la combinación con las familias no deja ninguno, usa cualquier modo y se marca con * en el subtítulo). Sin tildar = todas (menos las 4 de Barry Harris, que solo entran si se tildan y cuyas corridas de escala siempre bajan).">🎼 Escalas de la melodía</summary><div id="commonChordsScales" style="display:flex;flex-wrap:wrap;gap:4px 10px;padding:4px 0;"><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;font-weight:700;" title="All: tilda o destilda todas las escalas."><input type="checkbox" id="commonChordsScalesAll"> All</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Diatónica"> Diatónica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Menor melódica"> Menor melódica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Menor armónica"> Menor armónica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Mayor armónica"> Mayor armónica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Enigmática"> Enigmática</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Aumentada"> Aumentada</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Octatónica"> Octatónica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-35"> Pent. 5-35 (tradicional)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-34"> Pent. 5-34 (Prometeo)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-29B"> Pent. 5-29B (Kumoi I)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-29"> Pent. 5-29 (Kumoi II)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-30"> Pent. 5-30 (Enigmática)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-30B"> Pent. 5-30B (Enigmática II)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="Barry Harris: sexta mayor + disminuido (C D E F G Ab A B). Solo entra si la tildás; la corrida de escala (ModeTestMelody / Semis) siempre baja."><input type="checkbox" value="Harris Major 6th dim"> Harris Major 6th dim (8-26)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="Barry Harris: sexta menor + disminuido (C D Eb F G Ab A B). Solo entra si la tildás; la corrida de escala siempre baja."><input type="checkbox" value="Harris Minor 6th dim"> Harris Minor 6th dim (8-27)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="Barry Harris: séptima dominante + disminuido (C D E F G Ab Bb B). Solo entra si la tildás; la corrida de escala siempre baja."><input type="checkbox" value="Harris Dominant dim"> Harris Dominant dim (8-27B)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="Barry Harris: séptima dominante b5 + disminuido (C D E F Gb Ab Bb B). Solo entra si la tildás; la corrida de escala siempre baja."><input type="checkbox" value="Harris Dominant b5 dim"> Harris Dominant b5 dim (8-25)</label></div><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;padding-bottom:4px;" title="Semis: la melodía toca la escala del modo de cada acorde, de la tónica hacia arriba, al doble de velocidad que ModeTest (cada nota dura la mitad y la escala se repite desde la tónica hasta llenar el acorde). Funciona con o sin ModeTestMelody."><input type="checkbox" id="commonChordsSemis"> Semis (escalas al doble de velocidad)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;padding-bottom:4px;" title="MelodicPatternsV2: la melodía recorre las notas del modo del acorde con patrones del tester (1 a 8 pasos diatónicos, 2 a 4 movimientos, hacia arriba o abajo; ej. 2↑ 1↓ = C E D). Cada patrón se usa una sola vez y le sigue otro nuevo. No aplica con ModeTestMelody ni Semis (corridas de escala)."><input type="checkbox" id="commonChordsPatV2"> MelodicPatternsV2 (patrones del tester)</label></details>
           <button class="chip primary" id="partimentiBtn" type="button" title="Partimenti (experimental): el motor inventa un bajo (Regla de la octava ascendente/descendente, quintas descendentes, I–IV–V–I, esquemas galantes y cadencias simple/compuesta/doble) en una tonalidad mayor al azar y lo completa a 4 voces con conducción de voces (sin quintas ni octavas paralelas, la 7ª baja, la sensible sube): bajo en Bass, tenor y alto en Harmony, soprano con diminuciones en Melody. Al entrar pone Clavecín en los tres y Batería a 0%. Cada canción sortea un movimiento de tempo (Grave…Prestissimo). En el piano roll: cifra romana e inversión (V4/3, V6/4, I6...). Las opciones están en el desplegable de abajo. 🔀 / tecla G sortean otra canción.">🎹 Partimenti</button>
           <details id="partimentiOpts" style="margin-top:2px;"><summary style="font-size:12px;color:var(--ink-muted);cursor:pointer;" title="Partimenti: elegí qué celdas de bajo, esquemas galantes (Romanesca, Prinner, Meyer, Do-Re-Mi, Sol-Fa-Mi, Aprile, Jupiter, Pastorella, Fenaroli, Ponte, Passo Indietro, Quiescenza), cadencias (simple, compuesta, doble) y movimientos de tempo (Grave…Prestissimo) puede sortear. Sin tildar nada = todo.">🎹 Partimenti: esquemas, cadencias, tempo</summary><div id="partimentiOptsBody" style="padding:4px 0;"></div></details>
           <button class="chip primary" id="creaturaIntervalicBtn" type="button" title="Igual que CreaturaRandom (mismos sliders, Compose, Mix time signatures, Detener, espera 2s y Regenerar, con 5 o 2 sets), pero antes sortea una combinación de clases de intervalo (1, 2 o 3 de ic1..ic6) y los sets salen SOLO de los que tienen todas esas clases en su vector de intervalos, con más probabilidad cuanto mayor parte del vector ocupan esas clases.">🪄 CreaturaIntervalic</button>
         </div>
-        <button class="chip" id="composeBtn" type="button" title="Como CreaturaBella pero con TU set y TU compás: con el set elegido en el reloj/piano (2+ notas) y el time signature que dejaste escrito, sortea los sliders, el tempo y los presets al azar (como CreaturaBella), no cambia el set, no mezcla compases, y toca una variación nueva en primer plano. Sin set elegido, sortea uno con la misma regla de CreaturaBella (sets del índice por jerarquía); cada vez que lo apretás de nuevo, sortea otro set distinto (un set que elegiste vos a mano se respeta).">🎹 Compose</button>
+        <button class="chip" id="composeBtn" type="button" title="Como CreaturA pero con TU set y TU compás: con el set elegido en el reloj/piano (2+ notas) y el time signature que dejaste escrito, sortea los sliders, el tempo y los presets al azar (como CreaturA), no cambia el set, no mezcla compases, y toca una variación nueva en primer plano. Sin set elegido, sortea uno con la misma regla de CreaturA (sets del índice por jerarquía); cada vez que lo apretás de nuevo, sortea otro set distinto (un set que elegiste vos a mano se respeta).">🎹 Compose</button>
         <button class="chip" id="clearBtn">Clear</button>
         <button class="chip" id="multiSetsMemBtn2" type="button" disabled title="Mismo botón que To Memory de Multi Sets Input (copia acá para no tener que abrir esa tarjeta): guarda el set actual del reloj/piano en el próximo casillero libre y resetea el reloj. Entre paréntesis, cuántos sets van guardados.">To Memory (0/5)</button>
         <div class="sounds-group">
@@ -1589,6 +1589,7 @@
         <label for="consolaTempo">Tempo</label>
         <input type="range" id="consolaTempo" min="25" max="200" value="84" step="1">
         <span class="consola-val" id="consolaTempoVal">84 BPM</span>
+        <span class="consola-val" id="consolaBarsVal" title="Cantidad de compases de la canción actual" style="margin-left:8px;">12Bars</span>
       </div>
       <div class="consola-field consola-loop">
         <input type="checkbox" id="consolaLoopChk" checked>
@@ -1657,6 +1658,7 @@
         <input type="range" id="consolaSyncopationSlider" min="0" max="100" value="50" step="1">
         <span class="consola-val" id="consolaSyncopationVal">50%</span>
       </div>
+      <div class="consola-field" title="Norepetitions: no deja que la melodía repita la misma nota más de 2 veces seguidas (la 3ª se cambia por otra nota que el set permite en ese momento, la más cercana: C C C C C C pasa a C C D C C D) y que la armonía repita el mismo acorde más de 2 reataques seguidos (en el 3º se cambia una nota por su octava, así sigue siendo del set pero no suena a máquina). Vale para Melody principal, Melody n2 y Armonía del motor libre. Tildado por defecto; apagado = como siempre."><span class="consola-inst-toggle"><input type="checkbox" id="consolaNoRepChk" checked><label for="consolaNoRepChk">Norepetitions</label></span></div>
       <div class="consola-field" title="Dynamics: aplica dinámicas de volumen (pp, p, mp, mf, f, ff) a cada evento MIDI con lógica musical: crescendos/diminuendos y terrazas de 2-4 compases que vuelven al nivel inicial del loop, acento en el tiempo 1, melodía por encima del acompañamiento y nota aguda un poco más fuerte que la grave. 0% = como siempre (velocity original). 100% = pp a ff. Mover el slider no regenera: re-aplica sobre las mismas notas. Ver el resultado en Mini mixer > Velocity por track.">
         <label for="consolaDynamicsSlider">Dynamics</label>
         <input type="range" id="consolaDynamicsSlider" min="0" max="100" value="50" step="1">
@@ -6762,8 +6764,8 @@ document.getElementById("composeBtn").addEventListener("click", function(){
     if (toggleBtn && toggleBtn.getAttribute("aria-expanded") === "false") toggleBtn.click();
     consolaCard.scrollIntoView({ behavior: "smooth", block: "start" });
   }
-  // Compose con un set elegido (2+ notas en el reloj/piano): corre la secuencia tipo CreaturaBella sobre ESE set y el compás elegido.
-  // Sin set elegido: sortea uno con la regla de CreaturaBella y lo pone en el reloj/piano; luego corre igual que con set elegido.
+  // Compose con un set elegido (2+ notas en el reloj/piano): corre la secuencia tipo CreaturA sobre ESE set y el compás elegido.
+  // Sin set elegido: sortea uno con la regla de CreaturA y lo pone en el reloj/piano; luego corre igual que con set elegido.
   // Cada Compose sortea un set NUEVO si el set del reloj/piano lo puso Compose la vez anterior (composePickedKey): se re-sortea
   // (distinto del anterior). Si el set lo elegiste vos a mano (no coincide con el que puso Compose), se respeta.
   var selKey = function(){ return Array.from(selected).sort(function(a, b){ return a - b; }).join(","); };
@@ -10449,7 +10451,7 @@ function runAnalysis() {
       el("multiSetsClearBtn").addEventListener("click", clearMemory);
       if(el("multiSetsRandomFillBtn")) el("multiSetsRandomFillBtn").addEventListener("click", function(){ randomFill(); });
       window.__multiSetsRandomFillCount = randomFill; // creatura: llena solo N casilleros (1-5)
-      // Compose sin set elegido: UN set al azar con la misma regla de CreaturaBella (solo sets del índice, más probable cuanto mayor jerarquía, 3..máx notas del slider, tónica al azar). No toca las memorias.
+      // Compose sin set elegido: UN set al azar con la misma regla de CreaturA (solo sets del índice, más probable cuanto mayor jerarquía, 3..máx notas del slider, tónica al azar). No toca las memorias.
       window.__multiSetsBellaPickOne = function(){
         var maxN = randomMaxNotes();
         for(var g = 0; g < 200; g++){
@@ -10459,7 +10461,7 @@ function runAnalysis() {
         }
         return null;
       };
-      window.__multiSetsBellaFillCount = randomFillBella; // CreaturaBella: igual, pero solo sets del índice por jerarquía
+      window.__multiSetsBellaFillCount = randomFillBella; // CreaturA: igual, pero solo sets del índice por jerarquía
       window.__multiSetsIntervalicFillCount = randomFillIntervalic; // CreaturaIntervalic: igual, pero sets elegidos por combinación de clases de intervalo (vector interválico)
       if(el("multiSetsRandomMax")) el("multiSetsRandomMax").addEventListener("input", function(){
         var lab = el("multiSetsRandomMaxVal");
@@ -13400,7 +13402,7 @@ function runAnalysis() {
     return { progression: progression, roles: roles };
   }
   // Generador de títulos de canción: uno nuevo en cada generación de música (todo lo que pasa por
-  // regenerateConsola(): 🔀 Regenerar, CreaturaRandom, CreaturaBella, RadioMode, sliders...). Mezcla al azar
+  // regenerateConsola(): 🔀 Regenerar, CreaturaRandom, CreaturA, RadioMode, sliders...). Mezcla al azar
   // inglés y español (50/50) y se muestra arriba del piano roll (#consolaSongTitle).
   var SONGTITLE = (function(){
     var EN = {
@@ -13560,6 +13562,88 @@ function runAnalysis() {
       }
     };
   })();
+  // NOREPEAT — casilla "Norepetitions" (How to play: #consolaNoRepChk; Partimenti: #partimentiNoRep). Cada una vale solo en su modo. Apagada = no cambia nada.
+  //  - Melodía: nunca más de NOREP_MAXRUN notas iguales seguidas. La que sobra se cambia por la nota más cercana que el set permite en ese reataque
+  //    (motor libre: el set transportado de ese reataque; Partimenti: las notas del acorde). Las notas fuera de lo permitido (adornos, notas de paso) no se tocan y cortan la racha.
+  //  - Armonía: el mismo acorde (mismo conjunto de notas en el mismo reataque) no se repite más de NOREP_MAXRUN veces seguidas; en la repetición de más se cambia UNA nota
+  //    por su octava (misma clase de altura, así no sale del set ni del acorde).
+  var NOREP_MAXRUN = 2;
+  var NOREPEAT = (function(){
+    var LO = 36, HI = 96;
+    function on(id){ var c = document.getElementById(id); return !!(c && c.checked); }
+    function barOf(beat){
+      for(var b = NUM_BARS - 1; b >= 0; b--) if(beat >= RHYTHM.start(b) - 1e-6) return b;
+      return 0;
+    }
+    function allowedAt(e){
+      var b = barOf(e.startBeat), sl = state.slotChords[b];
+      if(!sl || !sl.length) return null;
+      var s = currentSlotAt(sl, e.startBeat - RHYTHM.start(b)), notes = (s && ((s.setNotes && s.setNotes.length) ? s.setNotes : s.chord)) || [], o = {};
+      notes.forEach(function(m){ o[((m % 12) + 12) % 12] = true; });
+      return o;
+    }
+    var scale = null;   // Partimenti: clases de altura de la escala de la canción (para cambiar notas de paso que no son del acorde)
+    function melody(events, id){
+      if(!on(id) || !events || events.length < 3) return events;
+      var ord = events.slice().sort(function(a, b2){ return a.startBeat - b2.startBeat; });
+      var prev = null, run = 0, i, k;
+      for(i = 0; i < ord.length; i++){
+        var e = ord[i], al = allowedAt(e) || {}, pc = ((e.midi % 12) + 12) % 12;
+        run = (prev !== null && e.midi === prev) ? run + 1 : 1;
+        if(run > NOREP_MAXRUN){
+          var nx = i + 1 < ord.length ? ord[i + 1].midi : null, best = null, bestSc = 1e9;
+          for(k = -12; k <= 12; k++){
+            var m = e.midi + k, mpc = ((m % 12) + 12) % 12;
+            if(k === 0 || m < 24 || m > 108) continue;
+            if(!al[mpc] && !(!al[pc] && scale && scale[mpc])) continue;           // solo notas del set/acorde (o, si la nota ya era de paso, de la escala)
+            var sc = Math.abs(k) + (m === nx ? 2 : 0) + Math.random() * 0.9;       // la más cercana; evita igualar a la siguiente; desempata al azar (arriba/abajo)
+            if(sc < bestSc){ bestSc = sc; best = m; }
+          }
+          if(best !== null){ e.midi = best; run = 1; }
+        }
+        prev = e.midi;
+      }
+      return events;
+    }
+    function harmony(events, id){
+      if(!on(id) || !events || !events.length) return events;
+      var groups = {}, keys, prevSig = null, run = 0;
+      events.forEach(function(ev){ var k = Math.round(ev.startBeat * 1000); (groups[k] = groups[k] || []).push(ev); });
+      keys = Object.keys(groups).map(Number).sort(function(x, y){ return x - y; });
+      function sigOf(evs){ var v = {}; evs.forEach(function(ev){ v[ev.midi] = true; }); return Object.keys(v).map(Number).sort(function(x, y){ return x - y; }); }
+      keys.forEach(function(key){
+        var evs = groups[key], ms = sigOf(evs), sig = ms.join(",");
+        run = (sig === prevSig) ? run + 1 : 1;
+        if(run > NOREP_MAXRUN){
+          var cand = [], has = {}, j;
+          ms.forEach(function(m){ has[m] = true; });
+          ms.forEach(function(m){
+            if(m + 12 <= HI && !has[m + 12]) cand.push({ from: m, to: m + 12, w: m === ms[0] ? 3 : 1 });                    // preferencia: subir la nota más grave
+            if(m - 12 >= LO && !has[m - 12]) cand.push({ from: m, to: m - 12, w: m === ms[ms.length - 1] ? 2 : 1 });       // o bajar la más aguda
+          });
+          if(cand.length){
+            var tot = 0, r, pick = cand[0];
+            cand.forEach(function(c){ tot += c.w; });
+            r = Math.random() * tot;
+            for(j = 0; j < cand.length; j++){ r -= cand[j].w; if(r <= 0){ pick = cand[j]; break; } }
+            evs.forEach(function(ev){ if(ev.midi === pick.from) ev.midi = pick.to; });
+            sig = sigOf(evs).join(",");
+            run = 1;
+          }
+        }
+        prevSig = sig;
+      });
+      return events;
+    }
+    function setScale(key, minor){
+      var base = minor ? [0, 2, 3, 5, 7, 8, 10, 11] : [0, 2, 4, 5, 7, 9, 11], o = {};
+      base.forEach(function(d){ o[(((key + d) % 12) + 12) % 12] = true; });
+      scale = o;
+    }
+    function clearScale(){ scale = null; }
+    return { on: on, melody: melody, harmony: harmony, setScale: setScale, clearScale: clearScale };
+  })();
+
   function regenerateConsola(){
     NUM_BARS = desiredNumBars(true);
     RHYTHM.recompute();
@@ -13697,14 +13781,18 @@ function runAnalysis() {
     }
     state.chordEvents = SYNCOPATION.apply(state.chordEvents, state.slotChords, simpBars); // Syncopation (How to play): el primer ataque de armonía de cada compás puede anticiparse o retrasarse (slotChords no se toca)
     applyMelodySilences(); // Melody silences (slider): recorta compases de la melodía principal
+    NOREPEAT.melody(state.melodyEvents, "consolaNoRepChk"); // Norepetitions (How to play): ninguna nota más de 2 veces seguida
     BLOCKWITHMELODY.apply(); // BlockwithMelody (Harmony): la armonía toca en bloque la rítmica de la melodía en los tramos elegidos
     BASSBLOCKMELODY.apply(true); // BlockwithMelody (Bass): el bajo toca la rítmica de la melodía en los tramos elegidos
     state.chordEvents = TEMPODENSITY.apply(state.chordEvents); // Armonía según el tempo: no más ataques de los tocables
+    NOREPEAT.harmony(state.chordEvents, "consolaNoRepChk"); // Norepetitions: el mismo acorde no se repite más de 2 veces seguidas
     SPEEDLIMIT.apply(state); // límite de velocidad de Melody / Bass / Melody n2 / bebop / moreComping según el tempo
+    NOREPEAT.melody(state.melodyEvents, "consolaNoRepChk"); // Norepetitions (otra vez: el límite de velocidad puede juntar notas iguales)
     applyMelody3(); // Melody n3: notas largas o la melodía principal una octava abajo (parte de la melodía ya recortada)
     state.chordEvents = WIDERANGE.apply(state.chordEvents); // wide.range (Harmony): acordes largos duplicados en varias octavas, capas escalonadas
     state.chordEvents = staggerBigChordAttacks(state.chordEvents); // Armonía: 6+ notas nunca atacan simultáneas
     applyMelody2Follows(); // melody_2follows: Melody n2 copia la melodía principal en ~50% de los compases
+    NOREPEAT.melody(state.melody2Events, "consolaNoRepChk"); // Norepetitions: también en Melody n2
     PITCHFX.mark(state.melodyEvents); PITCHFX.mark(state.melody2Events); // glissando / bend↓ (Ornaments): marcas para el audio
     DYNAMICS.applyPitched(state); // Dynamics (0% = no-op)
     drumEvents = buildDrumEvents(NUM_BARS);
@@ -13751,10 +13839,13 @@ function runAnalysis() {
       : [];
     state.melody2Events = []; // Melody n2 solo en el motor libre (Simplicity no tiene sorteo independiente)
     applyMelodySilences(); // Melody silences (slider): recorta compases de la melodía principal
+    NOREPEAT.melody(state.melodyEvents, "consolaNoRepChk"); // Norepetitions (How to play): ninguna nota más de 2 veces seguida
     BLOCKWITHMELODY.apply(); // BlockwithMelody (Harmony)
     BASSBLOCKMELODY.apply(false); // BlockwithMelody (Bass)
     state.chordEvents = TEMPODENSITY.apply(state.chordEvents); // Armonía según el tempo: no más ataques de los tocables
+    NOREPEAT.harmony(state.chordEvents, "consolaNoRepChk"); // Norepetitions: el mismo acorde no se repite más de 2 veces seguidas
     SPEEDLIMIT.apply(state); // límite de velocidad de Melody / Bass / Melody n2 / bebop / moreComping según el tempo
+    NOREPEAT.melody(state.melodyEvents, "consolaNoRepChk"); // Norepetitions (otra vez: el límite de velocidad puede juntar notas iguales)
     applyMelody3(); // Melody n3: notas largas o la melodía principal una octava abajo (parte de la melodía ya recortada)
     state.chordEvents = WIDERANGE.apply(state.chordEvents); // wide.range (Harmony): acordes largos duplicados en varias octavas, capas escalonadas
     state.chordEvents = staggerBigChordAttacks(state.chordEvents); // Armonía: 6+ notas nunca atacan simultáneas
@@ -13766,7 +13857,7 @@ function runAnalysis() {
   window.regenerateConsola = regenerateConsola;
 
   /* ================================================================
-     COMMONCHORDS — botón "🎼 CommonChords" (debajo de CreaturaBella) + checkboxes "ModeTestHarmony" / "ModeTestMelody" (juntos = el antiguo ModeTest).
+     COMMONCHORDS — botón "🎼 CommonChords" (debajo de CreaturA) + checkboxes "ModeTestHarmony" / "ModeTestMelody" (juntos = el antiguo ModeTest).
      En vez de sets, la canción se arma con acordes de la base CHORDS_SRC (copia de Chords_other_categorie.txt:
      tríadas, sextas, séptimas, add, extendidos, dominantes alterados, mayores/menores alterados), en cualquier
      tónica (0–11), siempre en INVERSIÓN: el bajo toca la tónica, la tercera, la quinta o la séptima del acorde
@@ -15529,6 +15620,8 @@ function runAnalysis() {
       spk.firstChild.id = "partimentiSpace"; spk.style.fontWeight = "700"; spw.appendChild(spk);
       var mmk = label("MelodicMinor", "MelodicMinor (general, solo Partimenti): en tonalidades menores agrega la escala menor MELÓDICA donde corresponde: subiendo por grado hacia la tónica el 6° y el 7° naturales (5 6 7 8) y bajando el 7° y el 6° bajados (8 b7 b6 5), en las notas de paso de la melodía (soprano y Melody n2). Solo en una parte de los acordes (no todo el tiempo), así convive con la menor armónica. Las notas del acorde no se tocan. En tonalidades mayores no cambia nada. Vale desde la próxima canción (🔀 / G).", "opt", "melodicMinor", true);
       mmk.firstChild.id = "partimentiMelodicMinor"; mmk.style.fontWeight = "700"; spw.appendChild(mmk);
+      var nrk = label("Norepetitions", "Norepetitions (general, solo Partimenti): la melodía (soprano y Melody n2) no repite la misma nota más de 2 veces seguidas: la 3ª se cambia por la nota del acorde más cercana (C C C C C C pasa a C C E C C E). La armonía (tenor y alto) no repite el mismo acorde más de 2 reataques seguidos: en el 3º una nota sube o baja una octava (misma clase de altura, sigue siendo el mismo acorde). Vale desde la próxima canción. Con TestContrapunctus, la auditoría se calculó antes de este cambio.");
+      nrk.firstChild.id = "partimentiNoRep"; nrk.firstChild.checked = true; nrk.style.fontWeight = "700"; spw.appendChild(nrk);
       var tsw = mk("div", "display:flex;align-items:center;gap:6px;padding:4px 0 2px;font-weight:700;");
       tsw.appendChild(mk("span", null, "Time signature"));
       var tsn = mk("input"); tsn.id = "partimentiTSNum"; tsn.type = "text"; tsn.value = "4"; tsn.maxLength = 2; tsn.title = "Numerador (1-32)"; tsn.style.cssText = "width:40px;text-align:center;";
@@ -16105,6 +16198,9 @@ function runAnalysis() {
       api.lastChordEvents = chordEvents; api.lastMelodyEvents = melodyEvents; api.lastBassEvents = bassEvents;   // (para pruebas)
       state.chordEvents = TEMPODENSITY.apply(state.chordEvents);
       SPEEDLIMIT.apply(state); // límite de velocidad de Melody / Bass / Melody n2 / bebop / moreComping según el tempo
+      NOREPEAT.setScale(song.key % 12, song.mode === "minor" || !!song.mixed);
+      NOREPEAT.melody(state.melodyEvents, "partimentiNoRep"); NOREPEAT.melody(state.melody2Events, "partimentiNoRep"); NOREPEAT.harmony(state.chordEvents, "partimentiNoRep");   // Norepetitions (Partimenti)
+      NOREPEAT.clearScale();
       applyMelody3(); // Melody n3: notas largas o la melodía principal una octava abajo (parte de la melodía ya recortada)
       state.chordEvents = WIDERANGE.apply(state.chordEvents);
       DYNAMICS.applyPitched(state);
@@ -16358,6 +16454,7 @@ function runAnalysis() {
     host._kbSync();
   }
   function renderRoll(){
+    var barsLbl = document.getElementById("consolaBarsVal"); if(barsLbl) barsLbl.textContent = NUM_BARS + "Bars"; // cantidad de compases, junto al Tempo
     var host = document.getElementById("consolaRollHost");
     if(!host) return;
     host.innerHTML = "";
@@ -20708,6 +20805,9 @@ function runAnalysis() {
   document.getElementById("consolaCommonNotesChk").addEventListener("change", function(){
     if(state.rootChord.length) regenerateConsola();
   });
+  document.getElementById("consolaNoRepChk").addEventListener("change", function(){
+    if(state.rootChord.length) regenerateConsola();
+  });
   document.getElementById("consolaRhythmBwmSlider").addEventListener("input", function(){
     document.getElementById("consolaRhythmBwmVal").textContent = this.value + "%";
   });
@@ -21096,7 +21196,7 @@ function runAnalysis() {
     window.__applyPresetSet = applyPresetSet;   // lo usa 🎹 Partimenti para poner Clavecín y Batería muteada al entrar
 
     // ================================================================
-    // RANDOM CHOOSE — sorteos que se aplican al apretar CreaturaRandom / CreaturaBella (e Intervalic) / ChordS / Partimenti
+    // RANDOM CHOOSE — sorteos que se aplican al apretar CreaturaRandom / CreaturA (e Intervalic) / ChordS / Partimenti
     // (y a cada vuelta de RadioMode). Dos fases: window.__randomChoose.pre(kind) = deshace lo del sorteo anterior, largo del
     // segmento y Melody n2/n3 (antes de generar); .post(kind) = presets especiales y reverb (después de que cada botón sorteó
     // sus voces y sliders).
@@ -22050,7 +22150,7 @@ function runAnalysis() {
     function sfKey(file, bank, program){
       return (typeof sfKeyForFile === "function") ? sfKeyForFile(file, bank, program) : null;
     }
-    // Seteos al azar extra de CreaturaRandom / CreaturaBella / RadioMode (los mueve randomizeVoicesAndTempo y __radioNext):
+    // Seteos al azar extra de CreaturaRandom / CreaturA / RadioMode (los mueve randomizeVoicesAndTempo y __radioNext):
     // Reverb general 40–70%, Melody silences 0–10% y moreComping prendido/apagado (50/50). moreComping se cambia
     // sin click (el click regenera por su cuenta): el Regenerar que sigue ya usa el estado nuevo.
     function randomizeExtras(){
@@ -22120,7 +22220,7 @@ function runAnalysis() {
       setChecked("consolaCyclesChk", true);
     }
 
-    // bella=false: CreaturaRandom (sets al azar). bella=true: CreaturaBella (misma
+    // bella=false: CreaturaRandom (sets al azar). bella=true: CreaturA (misma
     // secuencia, pero los sets salen del índice del libro ponderados por jerarquía).
     // Pasos 0 y 1 (sliders al azar + Random Fill); compartidos con RadioMode.
     function randomizeSliders(){
@@ -22160,7 +22260,7 @@ function runAnalysis() {
         // Cantidad de sets al azar: 5 o 2 (multi set).
         var nSets = Math.random() < 0.5 ? 5 : 2;
         SL("Sets al azar", nSets + " sets · máx " + maxN + " notas");
-        // bella: false = CreaturaRandom, true = CreaturaBella, "intervalic" = CreaturaIntervalic.
+        // bella: false = CreaturaRandom, true = CreaturA, "intervalic" = CreaturaIntervalic.
         var fillFn = bella === "intervalic" ? window.__multiSetsIntervalicFillCount
           : (bella ? window.__multiSetsBellaFillCount : window.__multiSetsRandomFillCount);
         if(typeof fillFn === "function") fillFn(nSets, true);
@@ -22179,10 +22279,10 @@ function runAnalysis() {
           return;
         }
         if(kind === "mix"){
-          // RADIO!: cada vuelta nueva sortea entre CreaturaRandom, CreaturaBella, CommonChords y Partimenti.
+          // RADIO!: cada vuelta nueva sortea entre CreaturaRandom, CreaturA, CommonChords y Partimenti.
           var pick = ["random", "bella", "common", "partimenti"][Math.floor(Math.random() * 4)];
           window.__radioMixLast = pick;
-          SLbegin({ random: "CreaturaRandom", bella: "CreaturaBella", common: "ChordS", partimenti: "Partimenti" }[pick]);
+          SLbegin({ random: "CreaturaRandom", bella: "CreaturA", common: "ChordS", partimenti: "Partimenti" }[pick]);
           if(pick === "partimenti"){ SLpartimenti(window.__partimenti.randomize()); rcPre("partimenti"); window.__partimenti.start(); rcPost("partimenti"); return; }
           if(window.__partimenti) window.__partimenti.off();
           if(pick === "common"){ randomizeSlider("consolaTempo", 30, 120); rcPre("common"); window.__commonChords.start(); rcPost("common"); return; }
@@ -22199,7 +22299,7 @@ function runAnalysis() {
         }
         // RadioMode alterna: cada vuelta nueva sortea Random o Bella (50/50).
         var blRM = Math.random() < 0.5;
-        SLbegin(blRM ? "CreaturaBella" : "CreaturaRandom");
+        SLbegin(blRM ? "CreaturA" : "CreaturaRandom");
         randomizeAndFill(blRM);
         rcPre("creatura");
         randomizeVoices(true); // RadioMode: cada canción nueva baraja los presets de Armonía y Melodía (el tempo no se toca)
@@ -22218,7 +22318,7 @@ function runAnalysis() {
       if(btnInterv) btnInterv.disabled = true;
       if(typeof window.__rollToFront === "function") window.__rollToFront(); // modo automático: piano roll al primer plano
       try {
-        SLbegin(bella === "intervalic" ? "CreaturaIntervalic" : (bella ? "CreaturaBella" : "CreaturaRandom"));
+        SLbegin(bella === "intervalic" ? "CreaturaIntervalic" : (bella ? "CreaturA" : "CreaturaRandom"));
         randomizeAndFill(bella);
         rcPre("creatura");
         randomizeVoicesAndTempo();
@@ -22251,7 +22351,7 @@ function runAnalysis() {
       }
     }
 
-    // 🎹 Compose (botón del reloj/piano): como CreaturaBella pero con el SET que el usuario eligió en el reloj/piano y el
+    // 🎹 Compose (botón del reloj/piano): como CreaturA pero con el SET que el usuario eligió en el reloj/piano y el
     // COMPÁS (time signature) que dejó escrito: mismos sliders al azar (Chromatism, Chords, Triplets, Spaces, Rapid runs,
     // Simplicity, Melody n2, Cycles), tempo y presets al azar, Detener, espera 2s y Regenerar. NO hace Random Fill (no cambia
     // el set) y destilda Mix time signatures (respeta el compás elegido).
@@ -22362,7 +22462,7 @@ function runAnalysis() {
       classicalSet(true);
       runPartimenti(true);
     });
-    // 📻 RADIO!: mix random de CreaturaBella, CreaturaRandom, CommonChords y Partimenti. Excluyente con los otros dos radios.
+    // 📻 RADIO!: mix random de CreaturA, CreaturaRandom, CommonChords y Partimenti. Excluyente con los otros dos radios.
     var rmChk = document.getElementById("consolaRadioMixChk"), rmBtn = document.getElementById("consolaRadioMixBtn");
     function mixPaint(){
       if(!rmBtn || !rmChk) return;
@@ -22392,7 +22492,7 @@ function runAnalysis() {
     if(stopBtnRM) stopBtnRM.addEventListener("click", function(){ mixSet(false); });
     // 📻 Reproductor vintage (RADIO!): Previous / Play / Stop / Next. Los mismos controles los usa Media Session (auricular / CarPlay).
     var rvBusy = false, rvEl = null, rvTimer = null, rvSkin = "classic", RV_CLASSIC = "";
-    var RV_KINDS = { random: "CreaturaRandom", bella: "CreaturaBella", common: "ChordS", partimenti: "Partimenti" };
+    var RV_KINDS = { random: "CreaturaRandom", bella: "CreaturA", common: "ChordS", partimenti: "Partimenti" };
     var RP = window.__radioPlayer = { resumable: false };
     RP.isOn = function(){ return !!(rmChk && rmChk.checked); };
     function rpFlags(){ // la radio sigue enganchando vueltas (los Detener internos la habían apagado)
@@ -22821,7 +22921,7 @@ function runAnalysis() {
 })();
 </script>
 <script>
-  // Shortcuts: G shuffle (handler aparte), F stop, D play, H CreaturaRandom, J CreaturaBella, A CommonChords, K Partimenti, C Random fill, V Clear.
+  // Shortcuts: G shuffle (handler aparte), F stop, D play, H CreaturaRandom, J CreaturA, A CommonChords, K Partimenti, C Random fill, V Clear.
   (function(){
     var panel=document.getElementById("shortcutsPanel"), tg=document.getElementById("shortcutsToggle");
     if(tg) tg.addEventListener("click", function(){
