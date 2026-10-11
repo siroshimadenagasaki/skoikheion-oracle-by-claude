@@ -1658,7 +1658,7 @@
         <input type="range" id="consolaSyncopationSlider" min="0" max="100" value="50" step="1">
         <span class="consola-val" id="consolaSyncopationVal">50%</span>
       </div>
-      <div class="consola-field" title="Norepetitions: no deja que la melodía repita la misma nota más de 2 veces seguidas (la 3ª se cambia por otra nota que el set permite en ese momento, la más cercana: C C C C C C pasa a C C D C C D) y que la armonía repita el mismo acorde más de 2 reataques seguidos (en el 3º se cambia una nota por su octava, así sigue siendo del set pero no suena a máquina). Vale para Melody principal, Melody n2 y Armonía del motor libre. Tildado por defecto; apagado = como siempre."><span class="consola-inst-toggle"><input type="checkbox" id="consolaNoRepChk" checked><label for="consolaNoRepChk">Norepetitions</label></span></div>
+      <div class="consola-field" title="Norepetitions: la melodía nunca repite la misma nota dos veces seguidas (la repetida se cambia por otra nota que el set permite en ese momento, la más cercana: C C C C pasa a C D C D) y la armonía nunca repite el mismo acorde dos reataques seguidos (en la repetición se cambia una nota por su octava, así sigue siendo del set pero no suena a máquina). Vale para Melody principal, Melody n2 y Armonía del motor libre. Tildado por defecto; apagado = como siempre."><span class="consola-inst-toggle"><input type="checkbox" id="consolaNoRepChk" checked><label for="consolaNoRepChk">Norepetitions</label></span></div>
       <div class="consola-field" title="Dynamics: aplica dinámicas de volumen (pp, p, mp, mf, f, ff) a cada evento MIDI con lógica musical: crescendos/diminuendos y terrazas de 2-4 compases que vuelven al nivel inicial del loop, acento en el tiempo 1, melodía por encima del acompañamiento y nota aguda un poco más fuerte que la grave. 0% = como siempre (velocity original). 100% = pp a ff. Mover el slider no regenera: re-aplica sobre las mismas notas. Ver el resultado en Mini mixer > Velocity por track.">
         <label for="consolaDynamicsSlider">Dynamics</label>
         <input type="range" id="consolaDynamicsSlider" min="0" max="100" value="50" step="1">
@@ -13563,11 +13563,11 @@ function runAnalysis() {
     };
   })();
   // NOREPEAT — casilla "Norepetitions" (How to play: #consolaNoRepChk; Partimenti: #partimentiNoRep). Cada una vale solo en su modo. Apagada = no cambia nada.
-  //  - Melodía: nunca más de NOREP_MAXRUN notas iguales seguidas. La que sobra se cambia por la nota más cercana que el set permite en ese reataque
+  //  - Melodía: nunca más de NOREP_MAXRUN (1 = ninguna repetida) notas iguales seguidas. La que sobra se cambia por la nota más cercana que el set permite en ese reataque
   //    (motor libre: el set transportado de ese reataque; Partimenti: las notas del acorde). Las notas fuera de lo permitido (adornos, notas de paso) no se tocan y cortan la racha.
   //  - Armonía: el mismo acorde (mismo conjunto de notas en el mismo reataque) no se repite más de NOREP_MAXRUN veces seguidas; en la repetición de más se cambia UNA nota
   //    por su octava (misma clase de altura, así no sale del set ni del acorde).
-  var NOREP_MAXRUN = 2;
+  var NOREP_MAXRUN = 1;
   var NOREPEAT = (function(){
     var LO = 36, HI = 96;
     function on(id){ var c = document.getElementById(id); return !!(c && c.checked); }
@@ -15620,7 +15620,7 @@ function runAnalysis() {
       spk.firstChild.id = "partimentiSpace"; spk.style.fontWeight = "700"; spw.appendChild(spk);
       var mmk = label("MelodicMinor", "MelodicMinor (general, solo Partimenti): en tonalidades menores agrega la escala menor MELÓDICA donde corresponde: subiendo por grado hacia la tónica el 6° y el 7° naturales (5 6 7 8) y bajando el 7° y el 6° bajados (8 b7 b6 5), en las notas de paso de la melodía (soprano y Melody n2). Solo en una parte de los acordes (no todo el tiempo), así convive con la menor armónica. Las notas del acorde no se tocan. En tonalidades mayores no cambia nada. Vale desde la próxima canción (🔀 / G).", "opt", "melodicMinor", true);
       mmk.firstChild.id = "partimentiMelodicMinor"; mmk.style.fontWeight = "700"; spw.appendChild(mmk);
-      var nrk = label("Norepetitions", "Norepetitions (general, solo Partimenti): la melodía (soprano y Melody n2) no repite la misma nota más de 2 veces seguidas: la 3ª se cambia por la nota del acorde más cercana (C C C C C C pasa a C C E C C E). La armonía (tenor y alto) no repite el mismo acorde más de 2 reataques seguidos: en el 3º una nota sube o baja una octava (misma clase de altura, sigue siendo el mismo acorde). Vale desde la próxima canción. Con TestContrapunctus, la auditoría se calculó antes de este cambio.");
+      var nrk = label("Norepetitions", "Norepetitions (general, solo Partimenti): la melodía (soprano y Melody n2) nunca repite la misma nota dos veces seguidas: la repetida se cambia por la nota del acorde (o de la escala, si era de paso) más cercana (C C C C pasa a C E C E). La armonía (tenor y alto) nunca repite el mismo acorde dos reataques seguidos: en la repetición una nota sube o baja una octava (misma clase de altura, sigue siendo el mismo acorde). Vale desde la próxima canción. Con TestContrapunctus, la auditoría se calculó antes de este cambio.");
       nrk.firstChild.id = "partimentiNoRep"; nrk.firstChild.checked = true; nrk.style.fontWeight = "700"; spw.appendChild(nrk);
       var tsw = mk("div", "display:flex;align-items:center;gap:6px;padding:4px 0 2px;font-weight:700;");
       tsw.appendChild(mk("span", null, "Time signature"));
