@@ -3693,7 +3693,9 @@ var MGU = (function () {
     // v-1 = 18*intervalo + (raiz-1); intervalo 0 = acorde sin slash.
     // Ajustada con C/E=73, Db/F=74, E/F=23 (E/F confirmado también con MIDI de All Of Me).
     var iv = Math.floor((v - 1) / 18), r = ((v - 1) % 18) + 1;
-    if (r < 1 || r > 12) throw new MguError('raíz no decodificable: ' + v);
+    // r = 13 -> C# (verificado con 't Ain't Nobody's Business: dim sobre C#). Los demás r > 12 NO están verificados.
+    if (r === 13) return { root: 1, rootName: 'C#', bass: iv ? (1 + iv) % 12 : null };
+    if (r < 1 || r > 12) throw new MguError('raíz no decodificable: ' + v + ' (r=' + r + '; solo 1..12 y 13=C# verificados)');
     return { root: r - 1, bass: iv ? (r - 1 + iv) % 12 : null };
   }
 
@@ -3736,22 +3738,27 @@ var MGU = (function () {
   }
 
   function validRec(b, i) {
-    return i + 12 <= b.length && b[i + 4] === 0x90 && b[i + 5] >= 20 && b[i + 5] <= 110 && b[i + 6] > 0 && b[i + 6] < 128;
+    return i + 12 <= b.length && (b[i + 4] & 0xf0) === 0x90 && // 0x90|canal (canal 3 en 't Ain't Nobody's)
+       b[i + 5] >= 20 && b[i + 5] <= 110 && b[i + 6] > 0 && b[i + 6] < 128;
   }
 
-  function findMelody(b, from) {
-    var best = null;
+  // Tandas de registros de nota: la 1.ª = pista Melody, la 2.ª = pista Soloist (verificado con Tune Up y 't Ain't Nobody's contra el MIDI).
+  // El byte de estado es 0x90|canal y cambia según la canción (0x90 o 0x93), por eso se agrupa por "mismo byte de estado".
+  function readRuns(b, from) {
+    var runs = [];
     for (var i = from; i < b.length - 12; i++) {
       if (!validRec(b, i)) continue;
       var n = 0, j = i;
-      while (validRec(b, j) && u32(b, j) < 4000000) { n++; j += 12; }
-      if (n >= 4 && (!best || n > best.n)) { best = { i: i, n: n }; }
-      i += n ? n * 12 - 1 : 0;
+      while (validRec(b, j) && b[j + 4] === b[i + 4] && u32(b, j) < 4000000) { n++; j += 12; }
+      if (n >= 4) { runs.push({ i: i, n: n }); i = j - 1; }
     }
-    if (!best) return [];
+    return runs;
+  }
+
+  function decodeRun(b, run) {
     var out = [], seen = {};
-    for (var k = 0; k < best.n; k++) {
-      var o = best.i + k * 12;
+    for (var k = 0; k < run.n; k++) {
+      var o = run.i + k * 12;
       var tick = u32(b, o), pitch = b[o + 5], vel = b[o + 6], dur = u32(b, o + 8) & 0xffff;
       var key = tick + ':' + pitch + ':' + vel + ':' + dur;
       if (seen[key]) continue; // All Of Me: registros duplicados exactos al final
@@ -3762,7 +3769,7 @@ var MGU = (function () {
   }
 
   function nameOf(c) {
-    var s = ROOTS[c.root] + c.suffix;
+    var s = (c.rootName || ROOTS[c.root]) + c.suffix;
     return c.bass !== null ? s + '/' + ROOTS[c.bass] : s;
   }
 
@@ -3799,7 +3806,7 @@ var MGU = (function () {
       var rr = decodeRoot(ch.roots[k][0]);
       var code = types[k][0];
       if (!(code in TYPES) && !opts.learn) throw new MguError('tipo de acorde desconocido 0x' + code.toString(16) + ' (acorde ' + k + ')');
-      var c = { pos: pos, dur: dur, root: rr.root, bass: rr.bass, type: code, suffix: (code in TYPES) ? TYPES[code] : '?0x' + code.toString(16) };
+      var c = { rootName: rr.rootName, pos: pos, dur: dur, root: rr.root, bass: rr.bass, type: code, suffix: (code in TYPES) ? TYPES[code] : '?0x' + code.toString(16) };
       c.name = nameOf(c);
       chords.push(c);
       pos += dur;
@@ -3828,13 +3835,17 @@ var MGU = (function () {
     if (introBars) { addSeg(0, introEnd, 0); cur = introBars * ts.bpb; }
     for (var r = 0; r < blk.reps; r++) { addSeg(introEnd, total, cur); cur += chorusBars * ts.bpb; }
 
-    var melody = findMelody(b, ch.end);
+    var runs = readRuns(b, ch.end);
+    var melody = runs.length ? decodeRun(b, runs[0]) : [];
+    var soloist = runs.length > 1 ? decodeRun(b, runs[1]) : [];
+    if (runs.length === 1) warnings.push('hay una sola pista de notas: se toma como melodía, pero no se puede distinguir de la pista Soloist');
+    if (runs.length > 2) warnings.push('hay ' + runs.length + ' tandas de notas; solo se leen las dos primeras (melodía y solista)');
     var songEnd = LEAD_IN + (introBars + chorusBars * blk.reps) * ts.bpb;
     var melEnd = melody.length ? Math.max.apply(null, melody.map(function (n) { return n.beat + n.dur / 120; })) : 0;
     if (melEnd > songEnd + 1) warnings.push('la melodía termina ' + Math.round(melEnd - songEnd) + ' tiempos después del último acorde (visto en All Of Me; sin explicar)');
     return {
       format: 'byte0=73', title: title, tempo: tempo, startBar: blk.start, endBar: blk.end, reps: blk.reps,
-      beatsPerBar: ts.bpb, leadInBeats: LEAD_IN, chords: chords, timeline: tl, melody: melody, warnings: warnings
+      beatsPerBar: ts.bpb, leadInBeats: LEAD_IN, chords: chords, timeline: tl, melody: melody, soloist: soloist, warnings: warnings
     };
   }
 
