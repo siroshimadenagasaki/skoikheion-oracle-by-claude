@@ -22251,7 +22251,8 @@ function runAnalysis() {
     //  · Melodías: 40% solo n2, 25% n2+n3, 10% solo n3, 25% al azar (n2 y n3 cada una 50/50).
     //  · 5% 8bits: todos los instrumentos con presets de Extra v2/8bits/ (mismo efecto que el checkbox "8bits").
     //  · 5% Drums: kit ETHNIC u ORCHESTRA (carpeta Extra v2/Drums/) en una de 3 variantes al azar: (a) Drums suena con ese kit;
-    //    (b) Armonía y Melodía con ese preset y Drums mudo; (c) Drums y Armonía+Melodía con ese preset.
+    //    (b) Armonía y Melodía con presets melódicos percusivos (Percusive melodic/ o ethnic/orchestra percusivos, NO el kit) y Drums mudo;
+    //    (c) Drums con el kit + Armonía y Melodía con presets melódicos percusivos.
     //  · Beats / Beatswithspice (Rhythm): 45% de las canciones usan batería con beats — 22,5% Beats y 22,5% Beatswithspice —;
     //    55% queda la batería de siempre. Si el usuario tildó uno a mano, no se sortea. Los tildados por el random se destildan en el sorteo siguiente.
     //  · Reverb 60–100% si la song tiene espacio (algún Space >= 50%) o silencios altos (Melody silences >= 20%).
@@ -22346,14 +22347,31 @@ function runAnalysis() {
         } else restore(st8);
       });
       // ---- Drums 5% (ETHNIC / ORCHESTRA) ----
+      // Drums: kit ETHNIC/ORCHESTRA de Extra v2/Drums/. Armonía y Melodía: NO el kit, sino presets melódicos percusivos
+      // (carpeta Extra v2/Percusive melodic/ + instrumentos ethnic/orchestra de ataque percusivo en otras carpetas), cada uno el suyo.
+      var PERC_NAME = /marimba|xylo|vibra|glock|kalimba|mbira|celesta|music ?box|steel ?drum|tubular|bell|harp|pizz|timpani|kora|sitar|koto|shamisen|banjo|dulcimer|santur|gamelan|handpan|agogo|woodblock|kantele|oud|lute|pluck/i;
+      function percMelodicPool(){
+        return extraFiles().filter(function(e){
+          if(e.kind === "drum" || /\/Drums\//i.test(e.path) || /\/8bits\//i.test(e.path)) return false;
+          if(/\/Percusive melodic\//i.test(e.path)) return true;
+          return /ETHNIC|ORCHESTRA/i.test(e.path) && PERC_NAME.test(e.path.split("/").pop());
+        });
+      }
       function applyDrumSpecial(){
-        var all = extraFiles().filter(function(e){ return /\/Drums\//i.test(e.path) && /ETHNIC|ORCHESTRA/i.test(e.path); });
-        if(!all.length){ SL("Drums especial (5%)", "salió, pero no hay kits ETHNIC/ORCHESTRA cargados"); return; }
-        var e = all[rnd(all.length)], key = keyOf(e), v = rnd(3);
-        SL("Drums especial (5%)", ["(a) Drums con ", "(b) Armonía y Melodía con ", "(c) Drums, Armonía y Melodía con "][v] + e.label + (v === 1 ? " · Drums mudo" : ""));
-        if(v !== 1) remember(stDr, "drum", key, e.label);                                   // (a) y (c): Drums con ese kit
-        if(v !== 0){ remember(stDr, "harmony", key, e.label); remember(stDr, "melody", key, e.label); }   // (b) y (c): Armonía y Melodía con ese preset
-        if(v === 1){                                                                          // (b): sin el patrón de Drums
+        var kits = extraFiles().filter(function(e){ return /\/Drums\//i.test(e.path) && /ETHNIC|ORCHESTRA/i.test(e.path); });
+        var pool = percMelodicPool(), v = rnd(3);
+        if(v !== 0 && !pool.length) v = 0;   // sin presets melódicos percusivos cargados: queda solo el kit en Drums
+        if(v !== 1 && !kits.length){ SL("Drums especial (5%)", "salió, pero no hay kits ETHNIC/ORCHESTRA cargados"); return; }
+        var kit = kits.length ? kits[rnd(kits.length)] : null;
+        var eh = v !== 0 ? pool[rnd(pool.length)] : null, em = v !== 0 ? pool[rnd(pool.length)] : null;
+        SL("Drums especial (5%)", [
+          "(a) Drums con kit " + (kit && kit.label),
+          "(b) Armonía con " + (eh && eh.label) + " y Melodía con " + (em && em.label) + " · Drums mudo",
+          "(c) Drums con kit " + (kit && kit.label) + " + Armonía con " + (eh && eh.label) + " y Melodía con " + (em && em.label)
+        ][v]);
+        if(v !== 1) remember(stDr, "drum", keyOf(kit), kit.label);                              // (a) y (c): Drums con el kit
+        if(v !== 0){ remember(stDr, "harmony", keyOf(eh), eh.label); remember(stDr, "melody", keyOf(em), em.label); }   // (b) y (c): presets melódicos percusivos
+        if(v === 1){                                                                              // (b): sin el patrón de Drums
           var sl = document.getElementById("mixDrumVol");
           if(sl && Number(sl.value) > 0){ stDr.drumVol = { prev: sl.value, set: 0 }; setDrumVol(0); }
         }
@@ -24159,6 +24177,38 @@ function runAnalysis() {
       try { document.getElementById(lastId).click(); } finally { sh.dataset.running = ""; }
     });
   })();
+</script>
+<script>
+// Avatar junto al título: una imagen al azar de la carpeta de avatares del repo (cualquier carpeta de primer nivel llamada Avatar / Avatars / Avatares,
+// sin distinguir mayúsculas). La lista se descubre sola con la API de GitHub (sin nombres a mano; caché 10 min en localStorage).
+// Si no hay carpeta, no hay conexión o la imagen no carga, queda el avatar incrustado de siempre.
+(function(){
+  var box = document.querySelector(".site-avatar img");
+  if(!box) return;
+  var KEY = "stoikheion_avatar_files_v1", TTL = 10 * 60 * 1000;
+  function pick(files){
+    if(!files || !files.length) return;
+    var f = files[Math.floor(Math.random() * files.length)];
+    var url = f.split("/").map(encodeURIComponent).join("/");
+    var im = new Image();
+    im.onload = function(){ box.src = url; };   // solo se reemplaza si la imagen cargó bien
+    im.src = url;
+  }
+  try {
+    var c = JSON.parse(localStorage.getItem(KEY) || "null");
+    if(c && Array.isArray(c.files) && Date.now() - c.t < TTL){ pick(c.files); return; }
+  } catch(_e){}
+  fetch("https://api.github.com/repos/" + SF_GH_OWNER + "/" + SF_GH_REPO + "/git/trees/main?recursive=1", { headers: { Accept: "application/vnd.github+json" } })
+    .then(function(r){ if(!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+    .then(function(t){
+      var files = (t.tree || []).filter(function(x){
+        return x.type === "blob" && /^avatar(e?s)?\//i.test(x.path) && /\.(jpe?g|png|webp|gif|avif)$/i.test(x.path);
+      }).map(function(x){ return x.path; });
+      try { localStorage.setItem(KEY, JSON.stringify({ t: Date.now(), files: files })); } catch(_e){}
+      pick(files);
+    })
+    .catch(function(){});
+})();
 </script>
 <script>
 // Fondo de pantalla de la página: una imagen al azar de la carpeta BAckgrounds (el nombre lleva B y A mayúsculas: GitHub Pages distingue mayúsculas).
