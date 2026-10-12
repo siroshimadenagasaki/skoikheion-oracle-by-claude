@@ -239,6 +239,11 @@
   #radioVintage .rv-art{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);height:calc(100% - 20px);max-width:calc(100% - 20px);aspect-ratio:1/1;border-radius:6px;image-rendering:pixelated;box-shadow:0 0 0 2px #c9a45c,0 0 0 5px #2a1608,0 8px 22px rgba(0,0,0,.7);}
   @media (max-height:520px){#radioVintage .rv-brand{display:none}#radioVintage .rv-grille{min-height:34px}#radioVintage .rv-key{min-height:52px}}
   /* ===== 📝 Log de la canción (panel plegable del Player: qué sorteó el random en cada canción; comprimido por defecto) ===== */
+  #radioVintage #rvBgLog{position:absolute;inset:0;z-index:0;overflow:hidden;pointer-events:none;user-select:none;-webkit-user-select:none;padding:64px 28px 56px;box-sizing:border-box;column-width:300px;column-gap:28px;--bgl:236,226,205;font:11px/1.45 "Courier New",monospace;color:rgba(var(--bgl),.34);-webkit-mask-image:linear-gradient(180deg,transparent 0,#000 12%,#000 88%,transparent 100%);mask-image:linear-gradient(180deg,transparent 0,#000 12%,#000 88%,transparent 100%);}
+  #radioVintage #rvBgLog .bgl-e{break-inside:avoid;margin:0 0 14px;}
+  #radioVintage #rvBgLog .bgl-t{font-weight:700;letter-spacing:.06em;color:rgba(var(--bgl),.55);margin-bottom:3px;}
+  #radioVintage #rvBgLog .bgl-r{display:flex;gap:8px;justify-content:space-between;border-bottom:1px dotted rgba(var(--bgl),.16);padding:1px 0;}
+  #radioVintage #rvBgLog .bgl-r i{font-style:normal;text-align:right;}
   #radioVintage #rvLogBox{position:absolute;top:10px;left:10px;z-index:7;max-width:calc(100% - 20px);}
   #radioVintage #rvLogBtn{appearance:none;-webkit-appearance:none;cursor:pointer;border:1px solid #b08a45;border-radius:999px;padding:6px 14px;background:rgba(18,13,8,.88);color:#f3e6c4;font:700 12px/1 Georgia,"Times New Roman",serif;letter-spacing:.06em;box-shadow:0 2px 8px rgba(0,0,0,.35);}
   #radioVintage #rvLogBtn[aria-expanded="true"]{background:#b08a45;color:#1a1208;}
@@ -23670,10 +23675,32 @@ function runAnalysis() {
         if(c) rvLogCopy(c);
       });
       rvEl.appendChild(box);
+      var old = document.getElementById("rvBgLog"); if(old) old.parentNode.removeChild(old);
+      var bg = document.createElement("div"); bg.id = "rvBgLog"; bg.setAttribute("aria-hidden", "true");
+      rvEl.insertBefore(bg, rvEl.firstChild);
       rvLogUpdate();
+    }
+    // 📝 Copia del log (solo los sorteos del RANDOM CHOOSE) como texto tenue detrás del Player: solo lectura, no recibe clics, se adapta a skins claros u oscuros.
+    function rvBgUpdate(){
+      var L = window.__songLog, bg = document.getElementById("rvBgLog");
+      if(!bg || !L) return;
+      var m = (rvEl ? getComputedStyle(rvEl).backgroundColor : "").match(/[\d.]+/g) || [], dark = true;
+      if(m.length >= 3 && (m.length < 4 || parseFloat(m[3]) > 0.5)) dark = (0.299 * m[0] + 0.587 * m[1] + 0.114 * m[2]) < 130;
+      var v = L.view(), key = L.ver + "|" + (v.cur ? v.cur.id : 0) + "|" + (dark ? 1 : 0);
+      if(bg.__k === key) return;
+      bg.__k = key;
+      bg.style.setProperty("--bgl", dark ? "236,226,205" : "40,34,28");
+      var h = "";
+      v.items.forEach(function(e){
+        h += '<div class="bgl-e"><div class="bgl-t">#' + e.id + ' · ' + rvLogEsc(e.kind || "—") + (e.title ? ' · ' + rvLogEsc(e.title) : '') + (e === v.cur ? '  ▶ EN CURSO' : '') + '</div>';
+        e.events.forEach(function(r){ h += '<div class="bgl-r"><span>' + rvLogEsc(r[0]) + '</span><i>' + rvLogEsc(r[1]) + '</i></div>'; });
+        h += '</div>';
+      });
+      bg.innerHTML = h + h;   // repetido para llenar la pantalla; el CSS lo corta por la altura
     }
     function rvLogUpdate(){
       var L = window.__songLog, btn = document.getElementById("rvLogBtn"), pn = document.getElementById("rvLogPanel");
+      rvBgUpdate();
       if(!btn || !pn) return;
       btn.setAttribute("aria-expanded", rvLogOpen ? "true" : "false");
       pn.hidden = !rvLogOpen;
