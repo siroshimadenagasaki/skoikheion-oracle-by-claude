@@ -3638,7 +3638,7 @@ var MGU = (function () {
   var ROOTS = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
   // código de tipo -> sufijo (aprendido y verificado contra MIDI, ver test.js)
   var TYPES = {
-    0x01: '', 0x05: '6', 0x06: 'Maj7', 0x07: 'Maj9', 0x0a: 'Maj13', 0x0e: '69', 0x14: 'm9', 0x10: 'm', 0x13: 'm7',
+    0x01: '', 0x05: '6', 0x06: 'Maj7', 0x07: 'Maj9', 0x0a: 'Maj13', 0x0e: '69', 0x12: 'mMaj7', 0x14: 'm9', 0x15: 'm11', 0x10: 'm', 0x13: 'm7',
     0x17: 'm6', 0x20: 'm7b5', 0x21: 'dim', 0x38: '7+', 0x40: '7', 0x41: '13', 0x43: '7#11',
     0x46: '9', 0x49: '9#11', 0x4c: '7b9', 0x4d: '13b9', 0x52: '7#9', 0x55: '9#11', 0x58: '7b5', 0x59: '13b5', 0x63: '7#5', 0x71: '7alt', 0x80: '7sus', 0xb8: 'sus'
   };
@@ -3752,19 +3752,35 @@ var MGU = (function () {
       while (validRec(b, j) && b[j + 4] === b[i + 4] && u32(b, j) < 4000000) { n++; j += 12; }
       if (n >= 4) { runs.push({ i: i, n: n }); i = j - 1; }
     }
-    return runs;
+    // una pista puede venir partida en dos tandas con un registro de 12 bytes en el medio (visto en 1 For My Baby: Soloist = 35 + 1335 notas)
+    var merged = [];
+    runs.forEach(function (r) {
+      var p = merged[merged.length - 1];
+      if (p && r.i - (p.parts[p.parts.length - 1].i + p.parts[p.parts.length - 1].n * 12) <= 12) p.parts.push(r);
+      else merged.push({ parts: [r] });
+    });
+    return merged;
   }
 
   function decodeRun(b, run) {
-    var out = [], seen = {};
+    if (run.parts) { var all = []; run.parts.forEach(function (p) { all = all.concat(decodeRun(b, p)); }); return dedupeNotes(all); }
+    var out = [];
     for (var k = 0; k < run.n; k++) {
       var o = run.i + k * 12;
       var tick = u32(b, o), pitch = b[o + 5], vel = b[o + 6], dur = u32(b, o + 8) & 0xffff;
-      var key = tick + ':' + pitch + ':' + vel + ':' + dur;
-      if (seen[key]) continue; // All Of Me: registros duplicados exactos al final
-      seen[key] = 1;
       out.push({ tick: tick, beat: tick / 120, pitch: pitch, vel: vel, dur: dur });
     }
+    return dedupeNotes(out);
+  }
+
+  function dedupeNotes(list) {
+    var out = [], seen = {};
+    list.forEach(function (n) {
+      var key = n.tick + ':' + n.pitch + ':' + n.vel + ':' + n.dur;
+      if (seen[key]) return; // All Of Me: registros duplicados exactos al final
+      seen[key] = 1;
+      out.push(n);
+    });
     return out;
   }
 
@@ -3852,7 +3868,7 @@ var MGU = (function () {
   return { parseMgu: parseMgu, MguError: MguError, ROOTS: ROOTS, TYPES: TYPES, LEAD_IN: LEAD_IN };
 })();
     /* ===== módulo ===== */
-    var INT={'':[0,4,7],m:[0,3,7],'6':[0,4,7,9],Maj7:[0,4,7,11],Maj9:[0,4,7,11,14],'69':[0,4,7,9,14],m7:[0,3,7,10],m6:[0,3,7,9],m7b5:[0,3,6,10],dim:[0,3,6,9],'7+':[0,4,8,10],'7':[0,4,7,10],'13':[0,4,7,10,14,21],'7#11':[0,4,7,10,18],'9':[0,4,7,10,14],'9#11':[0,4,7,10,14,18],'7b9':[0,4,7,10,13],'13b9':[0,4,7,10,13,21],'7#5':[0,4,8,10],'7alt':[0,4,8,10,13],sus:[0,5,7],'7sus':[0,5,7,10],'7b5':[0,4,6,10],'13b5':[0,4,6,10,14,21],Maj13:[0,4,7,11,14,21],m9:[0,3,7,10,14],'7#9':[0,4,7,10,15]};
+    var INT={'':[0,4,7],m:[0,3,7],'6':[0,4,7,9],Maj7:[0,4,7,11],Maj9:[0,4,7,11,14],'69':[0,4,7,9,14],m7:[0,3,7,10],m6:[0,3,7,9],m7b5:[0,3,6,10],dim:[0,3,6,9],'7+':[0,4,8,10],'7':[0,4,7,10],'13':[0,4,7,10,14,21],'7#11':[0,4,7,10,18],'9':[0,4,7,10,14],'9#11':[0,4,7,10,14,18],'7b9':[0,4,7,10,13],'13b9':[0,4,7,10,13,21],'7#5':[0,4,8,10],'7alt':[0,4,8,10,13],sus:[0,5,7],'7sus':[0,5,7,10],'7b5':[0,4,6,10],'13b5':[0,4,6,10,14,21],Maj13:[0,4,7,11,14,21],m9:[0,3,7,10,14],'7#9':[0,4,7,10,15],mMaj7:[0,3,7,11],m11:[0,3,7,10,14,17]};
     var DIR="Band in a box SONGS/", KEY="mguListCache", TTL=6*3600*1000;
     var $=function(id){return document.getElementById(id)};
     var files=[], S=null, ac=null, stopT=null, raf=null;
