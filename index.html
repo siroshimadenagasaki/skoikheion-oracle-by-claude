@@ -1703,6 +1703,7 @@
         <span class="consola-val" id="consolaSyncopationVal">50%</span>
       </div>
       <div class="consola-field" title="Norepetitions: la melodía evita repetir la misma nota seguida (solo el 30% de las veces deja pasar 2 iguales; 3 nunca; la repetida se cambia por otra nota que el set permite en ese momento, la más cercana: C C C C pasa a C D C D) y la armonía evita repetir el mismo acorde seguido (idem: 30% deja pasar 2, 3 nunca; en la repetición se cambia una nota por su octava, así sigue siendo del set pero no suena a máquina). Vale para Melody principal, Melody n2 y Armonía del motor libre. Tildado por defecto; apagado = como siempre."><span class="consola-inst-toggle"><input type="checkbox" id="consolaNoRepChk" checked><label for="consolaNoRepChk">Norepetitions</label></span></div>
+      <div class="consola-field" title="Intro: apagado por defecto. Antes de la canción suena UNA vez una introducción de 2 a 12 compases (el largo se sortea en cada Play, nunca mayor que la canción) hecha con los primeros compases de la propia canción pero más tranquila: solo algunas de las pistas (solo armonía, solo batería, bajo + batería, armonía + melodía…) y aligeradas (un acorde y una nota de bajo por compás, menos notas de melodía, batería solo sobre el pulso), un poco más suave y en tempo estricto. Es el mismo interruptor que el Intro de Partimenti. Los sorteos RANDOM CHOOSE (CreaturaRandom / CreaturA / Intervalic / ChordS / Partimenti / Radio) lo pueden prender o apagar. No entra en el export MIDI/MP3."><span class="consola-inst-toggle"><input type="checkbox" id="consolaIntroChk"><label for="consolaIntroChk">Intro</label></span></div>
       <div class="consola-field" title="Dynamics: aplica dinámicas de volumen (pp, p, mp, mf, f, ff) a cada evento MIDI con lógica musical: crescendos/diminuendos y terrazas de 2-4 compases que vuelven al nivel inicial del loop, acento en el tiempo 1, melodía por encima del acompañamiento y nota aguda un poco más fuerte que la grave. 0% = como siempre (velocity original). 100% = pp a ff. Mover el slider no regenera: re-aplica sobre las mismas notas. Ver el resultado en Mini mixer > Velocity por track.">
         <label for="consolaDynamicsSlider">Dynamics</label>
         <input type="range" id="consolaDynamicsSlider" min="0" max="100" value="50" step="1">
@@ -2034,6 +2035,11 @@
         <label for="consolaReverbAmount">Reverb</label>
         <input type="range" id="consolaReverbAmount" min="0" max="100" value="50" step="1">
         <span class="consola-val" id="consolaReverbAmountVal">50%</span>
+      </div>
+      <div class="consola-field" style="background-color:transparent !important;" title="Duración de la cola del reverb (≈ lo que tarda en apagarse). 2.4 s = el sonido de siempre. Al soltar el slider se regenera el impulso sintético; mientras lo arrastrás solo cambia el número, para no gastar CPU.">
+        <label for="consolaReverbDecay">Reverb decay</label>
+        <input type="range" id="consolaReverbDecay" min="0.3" max="6" value="2.4" step="0.1">
+        <span class="consola-val" id="consolaReverbDecayVal">2.4 s</span>
       </div>
       <div class="consola-field" style="background-color:transparent !important;" title="Nivel general del delay (eco) — envío compartido, un solo DelayNode con realimentación y filtro pasabajos, sincronizado con el Tempo. 0% = apagado (default). Cada pista tiene además su propio nivel de envío más abajo (&quot;Delay (per-track send)&quot;); este slider escala a todas juntas.">
         <label for="consolaDelayAmount">Delay</label>
@@ -15798,6 +15804,12 @@ function runAnalysis() {
       mmk.firstChild.id = "partimentiMelodicMinor"; mmk.style.fontWeight = "700"; spw.appendChild(mmk);
       var nrk = label("Norepetitions", "Norepetitions (general, solo Partimenti): la melodía (soprano y Melody n2) evita repetir la misma nota seguida (solo el 30% de las veces deja pasar 2 iguales; 3 nunca): la repetida se cambia por la nota del acorde (o de la escala, si era de paso) más cercana (C C C C pasa a C E C E). La armonía (tenor y alto) evita repetir el mismo acorde seguido (idem: 30% deja pasar 2, 3 nunca): en la repetición una nota sube o baja una octava (misma clase de altura, sigue siendo el mismo acorde). Vale desde la próxima canción. Con TestContrapunctus, la auditoría se calculó antes de este cambio.");
       nrk.firstChild.id = "partimentiNoRep"; nrk.firstChild.checked = true; nrk.style.fontWeight = "700"; spw.appendChild(nrk);
+      // Intro: mismo interruptor que el "Intro" de How to play (se sincronizan solos). Apagado por defecto.
+      var itk = mk("label", LBL + "font-weight:700;");
+      itk.title = "Intro (general): apagado por defecto. Antes de la canción suena UNA vez una introducción de 2 a 12 compases hecha con los primeros compases de la propia canción pero más tranquila: solo algunas de las pistas (solo armonía, solo batería, alguna combinación) y aligeradas, un poco más suave. Es el mismo interruptor que Intro en How to play. Los sorteos RANDOM CHOOSE (incluido 🎹 Partimenti) lo pueden prender o apagar. Vale desde el próximo Play.";
+      var itc = mk("input"); itc.type = "checkbox"; itc.id = "partimentiIntroChk";
+      var itc0 = document.getElementById("consolaIntroChk"); itc.checked = !!(itc0 && itc0.checked);
+      itk.appendChild(itc); itk.appendChild(document.createTextNode(" Intro")); spw.appendChild(itk);
       var tsw = mk("div", "display:flex;align-items:center;gap:6px;padding:4px 0 2px;font-weight:700;");
       tsw.appendChild(mk("span", null, "Time signature"));
       var tsn = mk("input"); tsn.id = "partimentiTSNum"; tsn.type = "text"; tsn.value = "4"; tsn.maxLength = 2; tsn.title = "Numerador (1-32)"; tsn.style.cssText = "width:40px;text-align:center;";
@@ -17301,6 +17313,26 @@ function runAnalysis() {
   // abajo) sin alterar su canal seco de siempre; el retorno pasa por
   // masterGain como cualquier otra pista, así el volumen general
   // también escala el reverb.
+  // Decay del reverb: reverbDuration (segundos, slider "Reverb decay") es el
+  // largo del impulso; con exponente 2.2 la cola cae 60 dB casi al final,
+  // así que la duración ≈ el tiempo de decay. 2.4 s = el valor de siempre.
+  // La regeneración se hace al SOLTAR el slider (evento change), no en cada
+  // movimiento: llenar el buffer y recalcular el convolver es lo pesado.
+  var reverbDuration = 2.4, REVERB_DECAY_EXP = 2.2;
+  function setReverbDecay(seconds){
+    reverbDuration = seconds;
+    // Sin convolver vivo todavía: ensureReverbBus ya usa reverbDuration al crearlo.
+    if(!reverbConvolver || !reverbReturnGain) return;
+    var cv = reverbConvolver, rg = reverbReturnGain, ctx = cv.context;
+    // Bajar el retorno un instante, cambiar el buffer y subirlo: evita el click
+    // de cortar la cola vieja de golpe.
+    rg.gain.setTargetAtTime(0, ctx.currentTime, 0.01);
+    setTimeout(function(){
+      if(cv !== reverbConvolver) return;   // el grafo se rearmó mientras tanto
+      cv.buffer = createReverbImpulse(ctx, reverbDuration, REVERB_DECAY_EXP);
+      rg.gain.setTargetAtTime(1, ctx.currentTime, 0.03);
+    }, 60);
+  }
   function ensureReverbBus(ctx){
     var master = ensureMasterGain(ctx);
     if(!reverbBusGain){
@@ -17310,7 +17342,7 @@ function runAnalysis() {
       reverbBusGain = ctx.createGain();
       reverbBusGain.gain.value = 1;
       reverbConvolver = ctx.createConvolver();
-      reverbConvolver.buffer = createReverbImpulse(ctx, 2.4, 2.2);
+      reverbConvolver.buffer = createReverbImpulse(ctx, reverbDuration, REVERB_DECAY_EXP);
       reverbReturnGain = ctx.createGain();
       reverbReturnGain.gain.value = 1;
       reverbBusGain.connect(reverbConvolver);
@@ -20164,6 +20196,131 @@ function runAnalysis() {
     }
   }
 
+  /* ================================================================
+     INTRO — checkbox "Intro" (How to play y Partimenti: son el mismo interruptor, apagado por defecto; el RANDOM CHOOSE
+     lo puede prender o apagar). Antes del primer loop suena una introducción de 2 a 12 compases (largo sorteado en cada
+     Play, nunca mayor que la canción) hecha con el MATERIAL DE LA PROPIA CANCIÓN — sus primeros compases —, pero más tranquila:
+       · solo un subconjunto al azar de las pistas activas (solo armonía, solo batería, bajo + batería, armonía + melodía…);
+         con 2 o más pistas disponibles siempre quedan menos que en la canción (como mucho 3);
+       · cada pista aligerada: armonía = un acorde sostenido por compás; bajo = una nota por compás; melodías (principal, n2,
+         n3, bebop, moreComping) = una parte de las notas, con más chance las largas; batería = solo golpes sobre el pulso
+         (sin tomás, platillos ni hi-hat abierto, hi-hat cada dos pulsos, redoblante a veces);
+       · un poco más suave (velocity x0.8) y en tempo estricto (sin Tempo & Expression).
+     Mismos instrumentos y mini mixer que la canción (scheduleLoopAt con una "foto" recortada); no toca los arrays de eventos.
+     Suena UNA vez antes de la canción (no se repite en cada vuelta del loop); en RadioMode, antes de cada canción nueva.
+     No entra en el export MIDI/MP3 (esos exportan el loop de la canción).
+     ================================================================ */
+  var INTRO = (function(){
+    var NAMES = { chord:"armonía", bass:"bajo", melody:"melodía", drum:"batería", comping2:"moreComping", bebop:"bebopMelody", melody2:"melodía n2", melody3:"melodía n3" };
+    var ORDER = ["chord", "bass", "melody", "drum", "comping2", "bebop", "melody2", "melody3"];
+    var IDS = ["consolaIntroChk", "partimentiIntroChk"];
+    var FILL = { 41:1, 43:1, 45:1, 47:1, 48:1, 50:1, 49:1, 55:1, 57:1, 53:1, 59:1 };   // tomás, crash, campana
+    function on(){ var c = document.getElementById("consolaIntroChk"); return !!(c && c.checked); }
+    function set(v){ IDS.forEach(function(id){ var c = document.getElementById(id); if(c) c.checked = !!v; }); }
+    // Las dos casillas son el mismo interruptor: tocar una (a mano o al abrir un favorito) mueve la otra.
+    document.addEventListener("change", function(e){
+      var t = e.target;
+      if(t && t.id && IDS.indexOf(t.id) >= 0) set(t.checked);
+    });
+    function trackOk(t){
+      if(t === "chord") return instEnabled("consolaChordChk");
+      if(t === "bass") return instEnabled("consolaBassChk");
+      if(t === "melody") return instEnabled("consolaMelodyChk");
+      if(t === "drum") return instEnabled("consolaDrumChk");
+      return true;
+    }
+    function shuffle(a){ for(var i = a.length - 1; i > 0; i--){ var j = Math.floor(Math.random() * (i + 1)), x = a[i]; a[i] = a[j]; a[j] = x; } return a; }
+    // Copia más suave de un evento (nunca se muta el original: los arrays de la canción se comparten).
+    function soft(ev, dur){
+      var c = Object.assign({}, ev);
+      c.vel = Math.max(1, Math.round((ev.vel != null ? ev.vel : 96) * 0.8));
+      if(dur != null) c.durBeats = dur;
+      return c;
+    }
+    function byBar(evs, starts, end){
+      var out = [], i;
+      for(i = 0; i < starts.length - 1; i++) out.push([]);
+      evs.forEach(function(ev){
+        if(ev.startBeat < -1e-6 || ev.startBeat >= end - 1e-6) return;
+        var b = starts.length - 2;
+        while(b > 0 && ev.startBeat < starts[b] - 1e-6) b--;
+        out[b].push(ev);
+      });
+      out.forEach(function(a){ a.sort(function(x, y){ return x.startBeat - y.startBeat; }); });
+      return out;
+    }
+    function clip(ev, end){ return Math.max(0.1, Math.min(ev.durBeats, end - ev.startBeat)); }
+    // Aligera una pista: devuelve eventos nuevos (solo de los primeros compases) con menos actividad que la canción.
+    function thin(track, evs, starts, end){
+      var bars = byBar(evs, starts, end), out = [];
+      if(track === "chord"){
+        bars.forEach(function(a, b){
+          if(!a.length) return;
+          var t0 = a[0].startBeat, barEnd = starts[b + 1];
+          a.forEach(function(ev){                         // primer ataque del compás (sus notas, aunque estén quebradas), sostenido hasta el fin del compás
+            if(ev.startBeat <= t0 + 1 + 1e-6) out.push(soft(ev, Math.max(0.5, Math.min(barEnd, end) - ev.startBeat)));
+          });
+        });
+      } else if(track === "bass"){
+        bars.forEach(function(a, b){ if(a.length) out.push(soft(a[0], Math.max(0.5, Math.min(starts[b + 1], end) - a[0].startBeat))); });
+      } else if(track === "drum"){
+        bars.forEach(function(a, b){
+          a.forEach(function(ev){
+            if(Math.abs(ev.startBeat - Math.round(ev.startBeat)) > 0.01) return;               // solo sobre el pulso
+            if(ev.open || (ev.midi != null && FILL[ev.midi])) return;                          // sin hi-hat abierto, tomás ni platillos
+            if(ev.type === "snare" && Math.random() < 0.5) return;
+            if(ev.type === "hihat" && Math.round(ev.startBeat - starts[b]) % 2) return;        // hi-hat cada dos pulsos
+            out.push(soft(ev));
+          });
+        });
+        if(!out.length){ var all = [].concat.apply([], bars); all.filter(function(ev){ return ev.type === "kick"; }).slice(0, 4).forEach(function(ev){ out.push(soft(ev)); }); }
+      } else {
+        bars.forEach(function(a){
+          a.forEach(function(ev){
+            if(Math.random() < (ev.durBeats >= 1 ? 0.55 : 0.2)) out.push(soft(ev, clip(ev, end)));
+          });
+        });
+        if(!out.length){ [].concat.apply([], bars).slice(0, 2).forEach(function(ev){ out.push(soft(ev, clip(ev, end))); }); }
+      }
+      return out;
+    }
+    // Arma el plan de la intro de esta Play a partir de la foto de la canción (liveSnap). null = sin intro.
+    function plan(snap){
+      if(!on() || !snap || NUM_BARS < 2) return null;
+      var nb = 2 + Math.floor(Math.random() * (Math.min(12, NUM_BARS) - 1));     // 2..12 compases (máx. el largo de la canción)
+      var starts = [], b;
+      for(b = 0; b <= nb; b++) starts.push(RHYTHM.start(b));
+      var end = starts[nb];
+      if(!(end > 0)) return null;
+      var avail = ORDER.filter(function(t){
+        var evs = snap[t];
+        return !!(evs && evs.length && trackOk(t) && evs.some(function(ev){ return ev.startBeat < end - 1e-6; }));
+      });
+      if(!avail.length) return null;
+      var k = 1;
+      if(avail.length >= 2){
+        var r = Math.random();
+        k = Math.min(r < 0.45 ? 1 : (r < 0.8 ? 2 : 3), avail.length - 1);          // siempre menos pistas que la canción
+      }
+      var isnap = Object.assign({}, snap, { chord:[], bass:[], melody:[], drum:[], comping2:[], bebop:[], melody2:[], melody3:[], tw: EXPR.ident });
+      var used = [];
+      shuffle(avail.slice()).slice(0, k).forEach(function(t){
+        var ev = thin(t, snap[t], starts, end);
+        if(ev.length){ isnap[t] = ev; used.push(t); }
+      });
+      if(!used.length) return null;
+      try{ if(window.__songLog) window.__songLog.add("Intro", nb + " compases · " + used.map(function(t){ return NAMES[t]; }).join(" + ") + " (más tranquila que la canción)"); }catch(_e){}
+      return { bars: nb, beats: end, snap: isnap, tracks: used };
+    }
+    // Programa la intro desde startTime (reloj de audio) y devuelve su duración en segundos.
+    function schedule(ctx, startTime, spb, p){
+      scheduleLoopAt(ctx, null, startTime, spb, null, { from: 0, to: p.beats, snap: p.snap });
+      return p.beats * spb;
+    }
+    return { on: on, set: set, plan: plan, schedule: schedule };
+  })();
+  window.__intro = INTRO;   // (para pruebas)
+
   function tickPlayhead(ctx, loopAnchor, spb, loopDur, clk, tw0){
     // Optimizado: los elementos se buscan una vez y el ancho scrolleable
     // (scrollWidth/clientWidth, que fuerzan layout) se mide cada ~0.5 s en
@@ -20294,7 +20451,7 @@ function runAnalysis() {
   // grafo de módulo que renderLoopOffline (todo sincrónico antes del await).
   function renderTrackDry(track, sr, spb, loopDur, snapIn){
     var OCtx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
-    var off = new OCtx(1, Math.ceil((loopDur + EXPORT_TAIL_SEC) * sr), sr);
+    var off = new OCtx(1, Math.ceil((loopDur + exportTailSec()) * sr), sr);
     var saved = {
       masterGain:masterGain, masterBoost:masterBoost, masterLimiter:masterLimiter,
       chordGainNode:chordGainNode, bassGainNode:bassGainNode, melodyGainNode:melodyGainNode, drumGainNode:drumGainNode,
@@ -20418,6 +20575,10 @@ function runAnalysis() {
         var gains = ensureInstrumentGains(ctx);
         voices = new Set();
         var t0 = ctx.currentTime + 0.1;
+        // Intro (checkbox "Intro"): se programa en vivo (son pocas notas) y el loop prerenderizado entra al terminar.
+        var introPR = INTRO.plan(rsnap);
+        var introSecPR = introPR ? INTRO.schedule(ctx, t0, spb, introPR) : 0;
+        t0 += introSecPR;
         SONGCLOCK.reset(ctx, t0, loopDur);
         var srcs = [];
         tracks.forEach(function(tr){
@@ -20441,7 +20602,7 @@ function runAnalysis() {
             window._consolaStopTimer = setTimeout(stopPlayback, (rem + 0.3) * 1000);
           }, 150);
         } else {
-          window._consolaStopTimer = setTimeout(stopPlayback, (loopDur + 0.3) * 1000);
+          window._consolaStopTimer = setTimeout(stopPlayback, (loopDur + introSecPR + 0.3) * 1000);
         }
         CLICK.runRendered(ctx, t0, spb, loopDur, rsnap.tw);   // click de tempo (las pistas ya vienen congeladas)
         tickPlayhead(ctx, t0, spb, loopDur, null, rsnap.tw);
@@ -20494,7 +20655,11 @@ function runAnalysis() {
     var LOOP_BEATS = TOTAL_BEATS; // fijo durante la reproducción (salvo RadioMode: cambia al enganchar una vuelta nueva), igual que loopDur
     EXPR.reroll();                    // Tempo & Expression: variación nueva en cada Play
     var snap = liveSnap();            // foto de la vuelta en curso (notas/presets/tempo&expression)
-    var loopAnchor = ctx.currentTime + 0.1 - snap.tw.f(off)*spb;   // con off > 0 la grilla de la vuelta queda corrida hacia atrás: suena desde el compás elegido
+    // Intro (checkbox "Intro"): suena UNA vez antes de la primera vuelta; no hay intro si se arranca desde un compás elegido en el piano roll.
+    var introT0 = ctx.currentTime + 0.1;
+    var introP = (off === 0) ? INTRO.plan(snap) : null;
+    var introSec = introP ? INTRO.schedule(ctx, introT0, spb, introP) : 0;
+    var loopAnchor = introT0 + introSec - snap.tw.f(off)*spb;   // con off > 0 la grilla de la vuelta queda corrida hacia atrás: suena desde el compás elegido
     var schedLoopStart = loopAnchor;  // inicio (en el reloj de audio) de la vuelta en curso
     SONGCLOCK.reset(ctx, loopAnchor, loopDur);
     var schedBeat = off;              // próximo beat sin programar dentro de esa vuelta
@@ -20548,6 +20713,9 @@ function runAnalysis() {
           if(bpmNew > 0) spb = 60/bpmNew;
           loopDur = TOTAL_BEATS*spb;
           LOOP_BEATS = TOTAL_BEATS;
+          // Intro de la canción nueva (checkbox "Intro", que el RANDOM CHOOSE acaba de sortear): después de los 3 s de silencio, antes de la canción
+          var introRadio = INTRO.plan(liveSnap());
+          if(introRadio) schedLoopStart += INTRO.schedule(ctx, schedLoopStart, spb, introRadio);
           SONGCLOCK.push(schedLoopStart, loopDur);   // contador de CarPlay: la canción nueva arranca en schedLoopStart
           clk.pend = { anchor: schedLoopStart, dur: loopDur, spb: spb };
         } else {
@@ -20606,11 +20774,13 @@ function runAnalysis() {
       st.push(["Compases", String(NUM_BARS)]);
       var tp = val("consolaTempo"); if(tp != null) st.push(["Tempo", tp + " BPM"]);
       var rv = val("consolaReverbAmount"); if(rv != null) st.push(["Reverb general", rv + "%"]);
+      var rd = val("consolaReverbDecay"); if(rd != null) st.push(["Reverb decay", parseFloat(rd).toFixed(1) + " s"]);
       var dl = val("consolaDelayAmount"); if(dl != null && dl !== "0") st.push(["Delay general", dl + "%"]);
       var ms = val("consolaMelSilSlider"); if(ms != null) st.push(["Melody silences", ms + "%"]);
       st.push(["Melody n2 / n3", (chk("consolaMelody2Chk") ? "n2 sí" : "n2 no") + " · " + (chk("consolaMelody3Chk") ? "n3 sí" : "n3 no")]);
       var mc = document.getElementById("consolaMoreCompingBtn"); if(mc) st.push(["moreComping", mc.classList.contains("primary") ? "sí" : "no"]);
       if(chk("mix8bitsChk")) st.push(["8bits", "tildado"]);
+      st.push(["Intro", chk("consolaIntroChk") ? "sí" : "no"]);
       var dv = val("mixDrumVol"); if(dv != null) st.push(["Volumen Drums", dv + "%"]);
       PRESETS.forEach(function(p){
         var k = mixPresets[p[1]];
@@ -21014,6 +21184,8 @@ function runAnalysis() {
      ================================================================ */
   var EXPORT_PPQ = 480;
   var EXPORT_TAIL_SEC = 3;     // cola después del último compás (reverb + release de las notas)
+  // La cola del export crece si el "Reverb decay" supera lo que cubre EXPORT_TAIL_SEC.
+  function exportTailSec(){ return Math.max(EXPORT_TAIL_SEC, reverbDuration + 0.6); }
   var EXPORT_MP3_KBPS = 192;
   var EXPORT_LAME_URLS = [
     "https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js",
@@ -21226,7 +21398,7 @@ function runAnalysis() {
     var spb = 60 / exportBpm();
     var loopDur = TOTAL_BEATS * spb;
     var sr = 44100;
-    var off = new OCtx(2, Math.ceil((loopDur + EXPORT_TAIL_SEC) * sr), sr);
+    var off = new OCtx(2, Math.ceil((loopDur + exportTailSec()) * sr), sr);
     var saved = {
       masterGain:masterGain, masterBoost:masterBoost, masterLimiter:masterLimiter,
       chordGainNode:chordGainNode, bassGainNode:bassGainNode, melodyGainNode:melodyGainNode, drumGainNode:drumGainNode,
@@ -22049,6 +22221,12 @@ function runAnalysis() {
     document.getElementById("consolaReverbAmountVal").textContent = this.value + "%";
     setReverbAmount(this.value/100);
   });
+  document.getElementById("consolaReverbDecay").addEventListener("input", function(){
+    document.getElementById("consolaReverbDecayVal").textContent = parseFloat(this.value).toFixed(1) + " s";
+  });
+  document.getElementById("consolaReverbDecay").addEventListener("change", function(){
+    setReverbDecay(parseFloat(this.value));
+  });
   document.getElementById("consolaDelayAmount").addEventListener("input", function(){
     document.getElementById("consolaDelayAmountVal").textContent = this.value + "%";
     setDelayAmount(this.value/100);
@@ -22416,6 +22594,17 @@ function runAnalysis() {
         if(c2) c2.checked = n2;
         if(c3) c3.checked = n3;
       }
+      // ---- Intro ----
+      // Checkbox "Intro" (How to play / Partimenti): 50% de las canciones llevan intro (2–12 compases al empezar). Si el usuario lo tildó a mano no se sortea;
+      // si lo tildó el random, se destilda en el sorteo siguiente (como Beats).
+      var autoIntro = false;
+      document.addEventListener("change", function(e){ var t = e.target; if(t && (t.id === "consolaIntroChk" || t.id === "partimentiIntroChk")) autoIntro = false; });   // lo tocó el usuario
+      function rollIntro(){
+        if(autoIntro){ autoIntro = false; INTRO.set(false); }
+        if(INTRO.on()){ SL("Intro (RANDOM CHOOSE)", "tildado a mano: no se sortea"); return; }
+        if(Math.random() < 0.5){ INTRO.set(true); autoIntro = true; SL("Intro (RANDOM CHOOSE)", "sí (50%): 2–12 compases antes de la canción"); }
+        else SL("Intro (RANDOM CHOOSE)", "no (50%)");
+      }
       // ---- reverb ----
       function hasSpaceAndSilence(kind){
         function val(id){ var el = document.getElementById(id); return el ? Number(el.value) : 0; }
@@ -22432,6 +22621,7 @@ function runAnalysis() {
           rollBars();
           rollMelodies();
           rollBeats();
+          rollIntro();
         },
         post: function(kind){
           if(chk8 && !chk8.checked){
