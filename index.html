@@ -2555,6 +2555,40 @@
     })();
   </script>
 
+  <div class="overlay-card" id="irealCard">
+    <div style="display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;">
+      <h2 style="margin:0;">iReal Pro</h2>
+      <button type="button" class="chip" id="irealToggleBtn" aria-expanded="false" aria-controls="irealCollapse">+ Expand</button>
+      <button type="button" class="chip fullscreen-btn" data-fs-card="irealCard" title="Pantalla completa">⛶ Full screen</button>
+    </div>
+    <div id="irealCollapse" hidden>
+      <p class="overlay-sub">Separate module (its own page, embedded here) to import iReal Pro charts (<code>irealb://</code> link or a whole playlist) and play their chords exactly as written, to check them against the iReal app. Chords only — no generated accompaniment.</p>
+      <div id="irealFrameWrap" style="border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#eef1ee;">
+        <iframe id="irealFrame" title="iReal Pro" style="display:block;width:100%;height:1500px;border:0;" loading="lazy"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      var toggleBtn = document.getElementById("irealToggleBtn");
+      var collapse = document.getElementById("irealCollapse");
+      var frame = document.getElementById("irealFrame");
+      if(toggleBtn && collapse){
+        toggleBtn.addEventListener("click", function(){
+          var willExpand = collapse.hidden;
+          collapse.hidden = !willExpand;
+          toggleBtn.textContent = willExpand ? "− Collapse" : "+ Expand";
+          toggleBtn.setAttribute("aria-expanded", String(willExpand));
+          // El iframe se carga recién al expandir por primera vez.
+          if(willExpand && frame && !frame.getAttribute("src")){
+            frame.setAttribute("src", "Tools%20and%20docs/ireal.html");
+          }
+        });
+      }
+    })();
+  </script>
+
   <div class="status" id="status">Ready · 344 Forte-Solomon classes loaded · pick notes on the clock</div>
 
   <footer>Logic translated to JavaScript from the public source code of Stoikheion Oracle · full table of 344 Forte-Solomon classes embedded (no internet connection needed)</footer>
