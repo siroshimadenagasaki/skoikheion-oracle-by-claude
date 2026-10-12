@@ -3793,6 +3793,7 @@ var MGU = (function () {
     var L = b[1];
     var title = String.fromCharCode.apply(null, Array.prototype.slice.call(b, 2, 2 + L)).replace(/\s+$/, '');
     var tempo = b[L + 6];
+    var key = b[L + 5]; // tonalidad 1..12 (C,Db,...,B). Verificado SOLO en pares transportados: 81 (11=Bb) -> 81 en Eb (4=Eb), todo +5 semitonos
 
     var ch = findChords(b, L);
     var blk = findBlock(b, ch.end);
@@ -3857,7 +3858,7 @@ var MGU = (function () {
     var melEnd = melody.length ? Math.max.apply(null, melody.map(function (n) { return n.beat + n.dur / 120; })) : 0;
     if (melEnd > songEnd + 1) warnings.push('la melodía termina ' + Math.round(melEnd - songEnd) + ' tiempos después del último acorde (visto en All Of Me; sin explicar)');
     return {
-      format: 'byte0=73', title: title, tempo: tempo, startBar: blk.start, endBar: blk.end, reps: blk.reps,
+      format: 'byte0=73', title: title, tempo: tempo, key: key, startBar: blk.start, endBar: blk.end, reps: blk.reps,
       beatsPerBar: ts.bpb, leadInBeats: LEAD_IN, chords: chords, timeline: tl, melody: melody, soloist: soloist, warnings: warnings
     };
   }
