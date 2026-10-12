@@ -1504,6 +1504,7 @@
           <div style="display:flex;align-items:center;gap:8px;"><button class="chip primary" id="commonChordsBtn" type="button" style="flex:1;" title="ChordS: en vez de sets, compone una canción con acordes de la base de acordes (tríadas, sextas, séptimas, add, extendidos, alterados), en cualquier tónica y siempre en inversión: el bajo toca la tónica, la tercera, la quinta o la séptima. Cantidad de acordes al azar (1, 2 o 4 por compás; se pueden repetir o no). La melodía toca solo notas del modo del acorde en curso (Cmaj7 sin #11 = Jónico o Lidio). 🔀 / tecla G sortean otra canción ChordS.">🎼 ChordS</button></div><details id="chordsConfig" style="margin-top:4px;"><summary style="font-size:12px;color:var(--ink-muted);cursor:pointer;font-weight:700;" title="Config: opciones de ChordS (Test, Familias de acordes y Escalas de la melodía). Cerrado por defecto.">⚙️ Config</summary><div style="padding:2px 0 2px 8px;"><details style="margin-top:4px;"><summary style="font-size:12px;color:var(--ink-muted);cursor:pointer;" title="Test (ChordS): ModeTestHarmony, ModeTestMelody y narrowregister.">🧪 Test</summary><div style="display:flex;flex-wrap:wrap;gap:4px 10px;padding:4px 0;"><label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="ModeTestHarmony: la armonía del ModeTest — un solo acorde cada 2 compases, con todas las notas atacando juntas (simultáneo) y sonando los 2 compases completos. La melodía queda normal. Con ModeTestMelody también tildado = ModeTest completo."><input type="checkbox" id="commonChordsModeTestH"> ModeTestHarmony</label><label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="ModeTestMelody: la melodía del ModeTest — toca únicamente la escala (el modo) de cada acorde, de la tónica hacia arriba o abajo, 1–3 octavas. La armonía queda normal (1, 2 o 4 acordes por compás). Con ModeTestHarmony también tildado = ModeTest completo."><input type="checkbox" id="commonChordsModeTestM"> ModeTestMelody</label><label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="narrowregister: el registro de un acorde al siguiente no se aleja más de una octava (la nota más grave y la más aguda de cada acorde quedan a no más de 12 semitonos de las del acorde anterior)."> <input type="checkbox" id="commonChordsNarrow"> narrowregister</label></div></details><details style="margin-top:4px;"><summary style="font-size:12px;color:var(--ink-muted);cursor:pointer;" title="Categoría: limita los acordes que se sortean a las familias tildadas. Sin tildar ninguna = todas.">🧬 Familias de acordes</summary><div id="commonChordsFamilies" style="display:flex;flex-wrap:wrap;gap:4px 10px;padding:4px 0;"><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;font-weight:700;" title="All: tilda o destilda todas las familias."><input type="checkbox" id="commonChordsFamiliesAll"> All</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Maj7"> Maj7</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="m7"> m7</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="7"> 7</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="7Alt"> 7Alt</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Sus 2b"> Sus 2b</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Semidisminuido"> Semidisminuido</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Disminuida"> Disminuida</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Aumentada"> Aumentada</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Díada"> Díada</label></div></details><details style="margin-top:4px;"><summary style="font-size:12px;color:var(--ink-muted);cursor:pointer;" title="Escalas: con una o más tildadas, la melodía de cada acorde toca solo modos de esas escalas (solo se sortean acordes que tengan algún modo en esas escalas; si la combinación con las familias no deja ninguno, usa cualquier modo y se marca con * en el subtítulo). Sin tildar = todas (menos las 4 de Barry Harris, que solo entran si se tildan y cuyas corridas de escala siempre bajan).">🎼 Escalas de la melodía</summary><div id="commonChordsScales" style="display:flex;flex-wrap:wrap;gap:4px 10px;padding:4px 0;"><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;font-weight:700;" title="All: tilda o destilda todas las escalas."><input type="checkbox" id="commonChordsScalesAll"> All</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Diatónica"> Diatónica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Menor melódica"> Menor melódica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Menor armónica"> Menor armónica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Mayor armónica"> Mayor armónica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Enigmática"> Enigmática</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Aumentada"> Aumentada</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Octatónica"> Octatónica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-35"> Pent. 5-35 (tradicional)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-34"> Pent. 5-34 (Prometeo)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-29B"> Pent. 5-29B (Kumoi I)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-29"> Pent. 5-29 (Kumoi II)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-30"> Pent. 5-30 (Enigmática)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-30B"> Pent. 5-30B (Enigmática II)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="Barry Harris: sexta mayor + disminuido (C D E F G Ab A B). Solo entra si la tildás; la corrida de escala (ModeTestMelody / Semis) siempre baja."><input type="checkbox" value="Harris Major 6th dim"> Harris Major 6th dim (8-26)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="Barry Harris: sexta menor + disminuido (C D Eb F G Ab A B). Solo entra si la tildás; la corrida de escala siempre baja."><input type="checkbox" value="Harris Minor 6th dim"> Harris Minor 6th dim (8-27)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="Barry Harris: séptima dominante + disminuido (C D E F G Ab Bb B). Solo entra si la tildás; la corrida de escala siempre baja."><input type="checkbox" value="Harris Dominant dim"> Harris Dominant dim (8-27B)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="Barry Harris: séptima dominante b5 + disminuido (C D E F Gb Ab Bb B). Solo entra si la tildás; la corrida de escala siempre baja."><input type="checkbox" value="Harris Dominant b5 dim"> Harris Dominant b5 dim (8-25)</label></div><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;padding-bottom:4px;" title="Semis: la melodía toca la escala del modo de cada acorde, de la tónica hacia arriba, al doble de velocidad que ModeTest (cada nota dura la mitad y la escala se repite desde la tónica hasta llenar el acorde). Funciona con o sin ModeTestMelody."><input type="checkbox" id="commonChordsSemis"> Semis (escalas al doble de velocidad)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;padding-bottom:4px;" title="MelodicPatternsV2: la melodía recorre las notas del modo del acorde con patrones del tester (1 a 8 pasos diatónicos, 2 a 4 movimientos, hacia arriba o abajo; ej. 2↑ 1↓ = C E D). Cada patrón se usa una sola vez y le sigue otro nuevo. No aplica con ModeTestMelody ni Semis (corridas de escala)."><input type="checkbox" id="commonChordsPatV2"> MelodicPatternsV2 (patrones del tester)</label></details></div></details>
           <button class="chip primary" id="partimentiBtn" type="button" title="Partimenti (experimental): el motor inventa un bajo (Regla de la octava ascendente/descendente, quintas descendentes, I–IV–V–I, esquemas galantes y cadencias simple/compuesta/doble) en una tonalidad mayor al azar y lo completa a 4 voces con conducción de voces (sin quintas ni octavas paralelas, la 7ª baja, la sensible sube): bajo en Bass, tenor y alto en Harmony, soprano con diminuciones en Melody. Al entrar pone Clavecín en los tres y Batería a 0%. Cada canción sortea un movimiento de tempo (Grave…Prestissimo). En el piano roll: cifra romana e inversión (V4/3, V6/4, I6...). Las opciones están en el desplegable de abajo. 🔀 / tecla G sortean otra canción.">🎹 Partimenti</button>
           <details id="partimentiOpts" style="margin-top:2px;"><summary style="font-size:12px;color:var(--ink-muted);cursor:pointer;" title="Partimenti: elegí qué celdas de bajo, esquemas galantes (Romanesca, Prinner, Meyer, Do-Re-Mi, Sol-Fa-Mi, Aprile, Jupiter, Pastorella, Fenaroli, Ponte, Passo Indietro, Quiescenza), cadencias (simple, compuesta, doble) y movimientos de tempo (Grave…Prestissimo) puede sortear. Sin tildar nada = todo.">🎹 Partimenti: esquemas, cadencias, tempo</summary><div id="partimentiOptsBody" style="padding:4px 0;"></div></details>
+          <button class="chip primary" id="jazzTunesBtn" type="button" title="JazzTunes (random choose): sortea una canción de la carpeta Band in a box SONGS (archivo MGU), toma sus acordes y su melodía y la arma con el motor: la melodía es la de la canción nota por nota, la armonía sale del motor siguiendo los acordes de la canción (tonos guía llevados por la voz más cercana; respeta Chord simultaneity, BlockwithMelody, wide.range), el bajo toca la raíz de cada acorde y la batería es la del motor con tus controles. Tempo y compás (4/4 o 3/4) = los de la canción; una canción = un coro. moreComping y bebopMelody, si los tenés prendidos, tocan sobre los acordes de la canción. 🔀 / tecla G rearman el acompañamiento de la misma canción; este botón sortea otra.">🎷 JazzTunes</button>
           <button class="chip primary" id="creaturaIntervalicBtn" type="button" title="Igual que CreaturaRandom (mismos sliders, Compose, Mix time signatures, Detener, espera 2s y Regenerar, con 5 o 2 sets), pero antes sortea una combinación de clases de intervalo (1, 2 o 3 de ic1..ic6) y los sets salen SOLO de los que tienen todas esas clases en su vector de intervalos, con más probabilidad cuanto mayor parte del vector ocupan esas clases.">Intervalic.Creature</button>
         </div>
         <button class="chip" id="composeBtn" type="button" title="Como CreaturA pero con TU set y TU compás: con el set elegido en el reloj/piano (2+ notas) y el time signature que dejaste escrito, sortea los sliders, el tempo y los presets al azar (como CreaturA), no cambia el set, no mezcla compases, y toca una variación nueva en primer plano. Sin set elegido, sortea uno con la misma regla de CreaturA (sets del índice por jerarquía); cada vez que lo apretás de nuevo, sortea otro set distinto (un set que elegiste vos a mano se respeta).">🎹 Compose</button>
@@ -3868,6 +3869,7 @@ var MGU = (function () {
 })();
     /* ===== módulo ===== */
     var INT={'':[0,4,7],m:[0,3,7],'6':[0,4,7,9],Maj7:[0,4,7,11],Maj9:[0,4,7,11,14],'69':[0,4,7,9,14],m7:[0,3,7,10],m6:[0,3,7,9],m7b5:[0,3,6,10],dim:[0,3,6,9],'7+':[0,4,8,10],'7':[0,4,7,10],'13':[0,4,7,10,14,21],'7#11':[0,4,7,10,18],'9':[0,4,7,10,14],'9#11':[0,4,7,10,14,18],'7b9':[0,4,7,10,13],'13b9':[0,4,7,10,13,21],'7#5':[0,4,8,10],'7alt':[0,4,8,10,13],sus:[0,5,7],'7sus':[0,5,7,10],'7b5':[0,4,6,10],'13b5':[0,4,6,10,14,21],Maj13:[0,4,7,11,14,21],m9:[0,3,7,10,14],'7#9':[0,4,7,10,15],mMaj7:[0,3,7,11],m11:[0,3,7,10,14,17],'9sus':[0,5,7,10,14],'9#5':[0,4,8,10,14],'m#5':[0,3,8],'7#5#9':[0,4,8,10,15],'5':[0,7],'+':[0,4,8],'7#5b9':[0,4,8,10,13],'13sus':[0,5,7,10,14,21]};
+    window.__MGU = MGU; window.__MGU_INT = INT;   // lo usa 🎷 JazzTunes
     var DIR="Band in a box SONGS/", KEY="mguListCache", TTL=6*3600*1000;
     var $=function(id){return document.getElementById(id)};
     var files=[], S=null, ac=null, stopT=null, raf=null;
@@ -6937,6 +6939,7 @@ for (let pc = 0; pc < 12; pc++) pcElements[pc] = [];
 function toggleNote(pc) {
   if (window.__commonChords) window.__commonChords.off(); // salir de 🎼 CommonChords
   if (window.__partimenti) window.__partimenti.off(); // salir de 🎹 Partimenti
+  if (window.__jazzTunes) window.__jazzTunes.off(); // salir de 🎷 JazzTunes
   if (selected.has(pc)) selected.delete(pc);
   else selected.add(pc);
   const isSelected = selected.has(pc);
@@ -6948,6 +6951,7 @@ function toggleNote(pc) {
 function clearNotes() {
   if (window.__commonChords) window.__commonChords.off(); // salir de 🎼 CommonChords
   if (window.__partimenti) window.__partimenti.off(); // salir de 🎹 Partimenti
+  if (window.__jazzTunes) window.__jazzTunes.off(); // salir de 🎷 JazzTunes
   // Antes de limpiar la selección: si SetMusicBox está reproduciendo,
   // cortar el loop (setInterval + voces) — regenerateConsola() (vía
   // runAnalysis) vacía state.chordEvents pero eso solo afecta lo que se
@@ -6963,6 +6967,7 @@ function clearNotes() {
 function setNotes(pcs) {
   if (window.__commonChords) window.__commonChords.off(); // salir de 🎼 CommonChords
   if (window.__partimenti) window.__partimenti.off(); // salir de 🎹 Partimenti
+  if (window.__jazzTunes) window.__jazzTunes.off(); // salir de 🎷 JazzTunes
   selected.clear();
   Object.values(pcElements).flat().forEach(el => el.classList.remove("selected"));
   pcs.forEach(pc => {
@@ -14152,6 +14157,7 @@ function runAnalysis() {
     if(!playBtn) return; // sección todavía no está en el DOM
     if(typeof COMMONCHORDS !== "undefined" && COMMONCHORDS && COMMONCHORDS.active){ COMMONCHORDS.build(); return; } // 🎼 CommonChords: acordes de la base + melodía en su modo (no usa el set del reloj)
     if(typeof PARTIMENTI !== "undefined" && PARTIMENTI && PARTIMENTI.active){ PARTIMENTI.build(); return; } // 🎹 Partimenti: bajo inventado + realización a 4 voces (no usa el set del reloj)
+    if(typeof JAZZTUNES !== "undefined" && JAZZTUNES && JAZZTUNES.active){ JAZZTUNES.build(); return; } // 🎷 JazzTunes: acordes y melodía de una canción de Band in a Box + motor (no usa el set del reloj)
     var readout = document.getElementById("consolaNotesReadout");
     var solomonReadout = document.getElementById("consolaSolomonReadout");
     var multi = MULTISETS.isActive(); // MULTI SETS INPUT: componer desde la memoria en vez de desde `selected`
@@ -14816,7 +14822,7 @@ function runAnalysis() {
     }
 
     api.build = build;
-    api.start = function(){ api.active = true; regenerateConsola(); };
+    api.start = function(){ if(window.__jazzTunes) window.__jazzTunes.off(); api.active = true; regenerateConsola(); };
     api.off = function(){ api.active = false; };
     // Cualquier otra Creatura / Compose / Clear / cambio de set sale de CommonChords.
     document.addEventListener("click", function(e){
@@ -16856,6 +16862,7 @@ function runAnalysis() {
     // Al entrar (no en cada 🔀): Clavecín en Armonía/Bajo/Melodía y Batería a 0% (set "partimenti" de PRESET_SETS); después se pueden cambiar a mano.
     api.start = function(){
       if(window.__commonChords) window.__commonChords.off();
+      if(window.__jazzTunes) window.__jazzTunes.off();
       var entering = !api.active;
       api.active = true;
       if(entering && typeof window.__applyPresetSet === "function") window.__applyPresetSet("partimenti");
@@ -16872,6 +16879,255 @@ function runAnalysis() {
     return api;
   })();
   window.__partimenti = PARTIMENTI;
+
+  /* ================================================================
+     JAZZTUNES — botón "🎷 JazzTunes" (debajo de Partimenti). Un random choose más, como CreaturaRandom / Partimenti / ChordS.
+     Sortea UNA canción de la carpeta "Band in a box SONGS" (archivos MGU que el parser MGU de la tarjeta Band in a Box abre sin error),
+     toma sus ACORDES y su MELODÍA (primera pista de notas) y la arma con el motor de la página:
+       · Melodía = la de la canción, nota por nota (alturas, inicios y duraciones del MGU; nada se inventa ni se recorta salvo lo que cae
+         fuera del coro). Las notas anteriores al primer acorde del coro (anacrusas / intro) no entran.
+       · Acordes = los de la canción, en su tonalidad real, con su duración y su compás (4/4 o 3/4). Una canción = UN coro (de START a END;
+         la intro y las repeticiones no se tocan); el largo de la canción manda sobre 12 / 24 / Random bars.
+       · Armonía = voicing del motor: tonos guía (3ª, 7ª, extensiones) llevados por la voz más cercana al acorde anterior; las notas salen
+         SOLO del acorde en curso. Respeta Chord simultaneity (BROKENCHORD), BlockwithMelody, wide.range y Armonía según el tempo.
+       · Bajo = la raíz de cada acorde (o el bajo del slash chord). Batería = la del motor con los controles que tengas (Beats, swing, etc.).
+       · moreComping y bebopMelody, si están prendidos, tocan siguiendo los acordes de la canción.
+     Tempo = el de la canción (el slider lo recorta a 25–200). Presets e instrumentos: los que tengas puestos.
+     Se engancha en regenerateConsola (flag active): 🔀 / tecla G rearman el acompañamiento de la MISMA canción (otras voces, otro
+     bajo/batería); el botón sortea canción nueva. Sale al usar otra Creatura, Partimenti, CommonChords, Compose, Clear, RadioMode o al
+     tocar el reloj/piano (JAZZTUNES.off()). Expone window.__jazzTunes (active, song, last, pick, start, off).
+     ================================================================ */
+  var JAZZTUNES = (function(){
+    var DIR = "Band in a box SONGS/", KEY = "mguListCache", TTL = 6 * 3600 * 1000, MAX_TRIES = 80;
+    var api = { active: false, song: null, file: null, last: null, lastSong: null };
+    var listP = null;
+
+    function listFiles(){
+      if(listP) return listP;
+      var p = null;
+      try {
+        var c = JSON.parse(localStorage.getItem(KEY) || "null");
+        if(c && Array.isArray(c.files) && c.files.length && Date.now() - c.t < TTL) p = Promise.resolve(c.files);
+      } catch(_e){}
+      if(!p){
+        var owner = typeof SF_GH_OWNER !== "undefined" ? SF_GH_OWNER : "siroshimadenagasaki";
+        var repo = typeof SF_GH_REPO !== "undefined" ? SF_GH_REPO : "skoikheion-oracle-by-claude";
+        p = fetch("https://api.github.com/repos/" + owner + "/" + repo + "/git/trees/main?recursive=1", { headers: { Accept: "application/vnd.github+json" } })
+          .then(function(r){ if(!r.ok) throw new Error("GitHub API " + r.status); return r.json(); })
+          .then(function(d){
+            var f = (d.tree || []).filter(function(it){ return it.type === "blob" && it.path.indexOf(DIR) === 0 && /\.(mgu|mg1|sg1|sgu)$/i.test(it.path); })
+              .map(function(it){ return it.path.slice(DIR.length); })
+              .sort(function(a, b){ return a.localeCompare(b, "es", { sensitivity: "base" }); });
+            try { localStorage.setItem(KEY, JSON.stringify({ t: Date.now(), files: f })); } catch(_e){}
+            return f;
+          });
+      }
+      listP = p.catch(function(e){ listP = null; throw e; });
+      return listP;
+    }
+
+    // Canción parseada (MGU.parseMgu) -> lo que usa el motor: UN coro (primera repetición), acordes continuos y melodía recortada al coro.
+    function prepare(S){
+      var bpb = S.beatsPerBar, c0 = (S.startBar - 1) * bpb, bars = S.endBar - S.startBar + 1, total = bars * bpb;
+      if(bpb !== 3 && bpb !== 4) return null;
+      if(!(bars >= 4 && bars <= 96)) return null;
+      var tl = S.timeline.filter(function(c){ return c.beat >= c0 - 1e-6 && c.beat < c0 + total - 1e-6; })
+        .sort(function(a, b){ return a.beat - b.beat; });
+      if(tl.length < 2) return null;
+      var chords = [];
+      tl.forEach(function(c, i){
+        var s = c.beat - c0, e = i + 1 < tl.length ? tl[i + 1].beat - c0 : total;
+        if(i === 0) s = 0;                                   // el primer acorde cubre desde el compás 1
+        if(e - s > 1e-6) chords.push({ s: s, e: e, root: c.root, bass: c.bass, suffix: c.suffix, name: c.name });
+      });
+      if(chords.length < 2) return null;
+      var lead = S.leadInBeats, notes = [];
+      S.melody.forEach(function(n){
+        var s = n.beat - lead - c0, d = n.dur / 120;
+        if(s < -1e-6 || s >= total - 1e-6 || !(d > 0)) return;       // anacrusas, intro y repeticiones: afuera
+        if(s + d > total) d = total - s;
+        notes.push({ midi: n.pitch, startBeat: Math.max(0, s), durBeats: d });
+      });
+      notes.sort(function(a, b){ return a.startBeat - b.startBeat || a.midi - b.midi; });
+      if(notes.length < 8) return null;
+      return { title: S.title, tempo: S.tempo, key: S.key, bpb: bpb, bars: bars, total: total, chords: chords, melody: notes, warnings: S.warnings || [] };
+    }
+
+    // Sortea una canción que el parser abra y tenga coro + melodía. Devuelve una promesa de la canción preparada (con .file).
+    api.pick = function(){
+      var MG = window.__MGU;
+      if(!MG) return Promise.reject(new Error("el parser MGU no está cargado"));
+      return listFiles().then(function(list){
+        var mgu = list.filter(function(f){ return /\.mgu$/i.test(f); });
+        if(!mgu.length) mgu = list.slice();
+        if(!mgu.length) throw new Error("la carpeta Band in a box SONGS no tiene canciones");
+        var tries = 0;
+        function next(){
+          if(tries++ >= MAX_TRIES) return Promise.reject(new Error("no encontré una canción usable en " + MAX_TRIES + " intentos"));
+          var f = mgu[Math.floor(Math.random() * mgu.length)];
+          return fetch((DIR + f).split("/").map(encodeURIComponent).join("/"))
+            .then(function(r){ if(!r.ok) throw new Error("no se pudo leer (" + r.status + ")"); return r.arrayBuffer(); })
+            .then(function(buf){
+              var P = prepare(MG.parseMgu(new Uint8Array(buf)));
+              if(!P) throw new Error("sin forma o sin melodía usable");
+              P.file = f; P.tries = tries;
+              return P;
+            })
+            .catch(function(){ return next(); });
+        }
+        return next();
+      });
+    };
+
+    // ---- voicing: tonos guía + voz más cercana ----
+    function pcsOf(iv){ var out = []; iv.forEach(function(x){ var p = x % 12; if(out.indexOf(p) < 0) out.push(p); }); return out; }
+    // Notas que suenan en la armonía (en semitonos sobre la raíz). Con 7ª/6ª (4+ notas): 3ª, 7ª y extensiones (la 5ª solo si quedan menos de 3 notas;
+    // la raíz la toca el bajo). Sin 7ª (tríadas, sus, 5, aumentado): el acorde entero.
+    function voicePcs(iv){
+      var pcs = pcsOf(iv);
+      function has(p){ return pcs.indexOf(p) >= 0; }
+      var third = has(4) ? 4 : (has(3) ? 3 : (has(5) ? 5 : -1));
+      var sev = has(11) ? 11 : (has(10) ? 10 : (has(9) ? 9 : -1));
+      var fifth = has(7) ? 7 : (has(6) ? 6 : (has(8) ? 8 : -1));
+      if(sev < 0 || pcs.length < 4 || third < 0) return pcs.slice();
+      var exts = pcs.filter(function(p){ return p !== 0 && p !== third && p !== sev && p !== fifth; });
+      var v = [third, sev].concat(exts.slice(0, 2));
+      if(v.length < 3 && fifth >= 0) v.push(fifth);
+      return v;
+    }
+    function voicing(root, iv, prev){
+      var abs = voicePcs(iv).map(function(p){ return (root + p) % 12; });
+      var cands = [], r, oct, j;
+      for(r = 0; r < abs.length; r++){
+        var seq = abs.slice(r).concat(abs.slice(0, r));
+        for(oct = 0; oct < 2; oct++){
+          var low = 48 + (((seq[0] - 48) % 12) + 12) % 12 + 12 * oct, notes = [low], cur = low;
+          for(j = 1; j < seq.length; j++){ var v = cur - (cur % 12) + seq[j]; while(v <= cur) v += 12; notes.push(v); cur = v; }
+          cands.push(notes);
+        }
+      }
+      var ok = cands.filter(function(n){ return n[n.length - 1] <= 76; });
+      if(ok.length) cands = ok;
+      var best = null, bestC = 1e9;
+      cands.forEach(function(n){
+        var cen = n.reduce(function(a, b){ return a + b; }, 0) / n.length, cost = 0.3 * Math.abs(cen - 58) + Math.random() * 0.5;
+        if(prev) n.forEach(function(x){ cost += Math.min.apply(null, prev.map(function(y){ return Math.abs(x - y); })); });
+        if(cost < bestC){ bestC = cost; best = n; }
+      });
+      return best;
+    }
+    // Todo el acorde (raíz, 3ª, 5ª, 7ª y extensiones) en orden ascendente desde la raíz: es el "set" que ven bebopMelody, moreComping y los demás módulos.
+    function fullStack(root, iv){ var base = 48 + root; return iv.map(function(x){ return base + x; }).sort(function(a, b){ return a - b; }); }
+
+    function build(){
+      var P = api.song;
+      if(!P){ api.active = false; regenerateConsola(); return; }
+      var bpb = P.bpb, INT = window.__MGU_INT || {};
+      NUM_BARS = P.bars;
+      RHYTHM.recompute(RHYTHM.parse(bpb + "/4"));      // el compás de la canción (4/4 o 3/4) manda sobre Time signature / Mix
+      TOTAL_BEATS = RHYTHM.total();
+      var chordEvents = [], bassEvents = [], melodyEvents = [], slotChords = [], progression = [], roles = [], names = [], prevV = null, b;
+      for(b = 0; b < NUM_BARS; b++) slotChords.push([]);
+      P.chords.forEach(function(c){
+        var iv = INT[c.suffix] || [0, 4, 7], full = fullStack(c.root, iv), vo = voicing(c.root, iv, prevV), dur = c.e - c.s;
+        prevV = vo;
+        var barC = Math.min(NUM_BARS - 1, Math.floor(c.s / bpb + 1e-9));
+        var bo = BROKENCHORD.offsetsFor(vo, dur);
+        vo.forEach(function(note, ni){ chordEvents.push({ midi: note, startBeat: c.s + bo[ni], durBeats: Math.max(0.05, dur - bo[ni]), bar: barC }); });
+        var bassPc = (c.bass !== null && c.bass !== undefined) ? c.bass : c.root;
+        bassEvents.push({ midi: 36 + bassPc, startBeat: c.s, durBeats: dur, bar: barC });
+        for(var bb = barC; bb < NUM_BARS && bb * bpb < c.e - 1e-9; bb++){      // un acorde puede cruzar compases: un reataque por compás (los siguientes "held")
+          var bs = bb * bpb, a = Math.max(c.s, bs), z = Math.min(c.e, bs + bpb);
+          slotChords[bb].push({ chord: full, startBeat: a - bs, durBeats: z - a, setNotes: full, tonic: c.root, ccLabel: c.name, ccCat: "JazzTunes", held: c.s < bs - 1e-9 });
+        }
+        names.push(c.name);
+      });
+      for(b = 0; b < NUM_BARS; b++){
+        if(!slotChords[b].length){ var pv = slotChords[b - 1]; var cp = pv && pv.length ? pv[pv.length - 1] : null; if(cp) slotChords[b].push({ chord: cp.chord, startBeat: 0, durBeats: bpb, setNotes: cp.setNotes, tonic: cp.tonic, ccLabel: cp.ccLabel, ccCat: cp.ccCat, held: true }); }
+        progression.push(slotChords[b].length ? slotChords[b][0].chord.slice() : [60]);
+        roles.push(slotChords[b].map(function(s){ return s.ccLabel; }).join(" "));
+      }
+      P.melody.forEach(function(n){ melodyEvents.push({ midi: n.midi, startBeat: n.startBeat, durBeats: n.durBeats, bar: Math.min(NUM_BARS - 1, Math.floor(n.startBeat / bpb + 1e-9)) }); });
+
+      state.rootChord = progression[0].slice();
+      state.progression = progression;
+      state.roles = roles;
+      state.slotChords = slotChords;
+      state.chordEvents = chordEvents;
+      state.bassEvents = bassEvents;
+      state.melodyEvents = melodyEvents;
+      state.comping2Events = []; state.bebopEvents = []; state.melody2Events = []; state.melody3Events = [];
+      var chordAt = function(bar, offset){ return currentChordAt(state.slotChords[bar], offset); };
+      if(MORECOMPING.enabled()) state.comping2Events = MORECOMPING.buildEvents(melodyEvents, chordAt);   // moreComping: cuerdas sobre la melodía de la canción, con notas del acorde en curso
+      if(BEBOPMELODY.enabled()){                                                                          // bebopMelody: línea de escala/arpegio sobre los acordes de la canción
+        var bz = BEBOPMELODY.buildEvents(NUM_BARS, chordAt);
+        if(bpb !== 4){                                   // bebopMelody arma compases de 4 tiempos fijos: en 3/4 se queda con los primeros 3 tiempos de cada compás (así no se sale de la canción)
+          var bz3 = [];
+          bz.forEach(function(e){
+            var b4 = Math.floor(e.startBeat / 4 + 1e-9), off = e.startBeat - b4 * 4;
+            if(off >= bpb - 1e-9) return;
+            bz3.push(Object.assign({}, e, { startBeat: b4 * bpb + off, durBeats: Math.min(e.durBeats, bpb - off), bar: b4 }));
+          });
+          bz = bz3;
+        }
+        state.bebopEvents = bz;
+      }
+      BLOCKWITHMELODY.apply();                       // BlockwithMelody (Harmony): la armonía toca la rítmica de la melodía en los tramos elegidos
+      BASSBLOCKMELODY.apply(true);                   // BlockwithMelody (Bass)
+      state.chordEvents = TEMPODENSITY.apply(state.chordEvents);
+      var keepMel = state.melodyEvents; state.melodyEvents = [];   // el límite de velocidad no toca la melodía de la canción
+      SPEEDLIMIT.apply(state);
+      state.melodyEvents = keepMel;
+      applyMelody3();
+      state.chordEvents = WIDERANGE.apply(state.chordEvents);
+      state.chordEvents = staggerBigChordAttacks(state.chordEvents);
+      DYNAMICS.applyPitched(state);
+      RHYTHMSPACE.reset(0);          // batería compartida, sin tramos de respiro ni tresillos (igual que CommonChords y Partimenti)
+      TRIPLETS.setActive(false);
+      drumEvents = buildDrumEvents(NUM_BARS);
+      api.last = { chordEvents: state.chordEvents, bassEvents: state.bassEvents, melodyEvents: state.melodyEvents, comping2Events: state.comping2Events, bebopEvents: state.bebopEvents, slotChords: state.slotChords, numBars: NUM_BARS, bpb: bpb };   // (para pruebas)
+      api.lastSong = P;
+
+      var rd = document.getElementById("consolaNotesReadout");
+      if(rd) rd.textContent = names.join("  ");
+      var sol = document.getElementById("consolaSolomonReadout");
+      if(sol) sol.innerHTML = "";
+      var sub = "(JazzTunes · " + P.file + " · ♩=" + P.tempo + " · " + bpb + "/4 · " + P.bars + " compases · " + P.chords.length + " acordes · " + P.melody.length + " notas de melodía" +
+        (P.tempo > 200 || P.tempo < 25 ? " · tempo recortado a 25–200" : "") + (P.warnings.length ? " · ⚠ " + P.warnings.length + " aviso(s) del parser" : "") + ")";
+      SONGTITLE.set(P.title, sub, "");
+      ["consolaPlayBtn", "consolaRegenPlayBtn"].forEach(function(id){
+        var bt = document.getElementById(id); if(bt) bt.disabled = false;
+      });
+      renderRoll();
+      renderBebopRoll();
+    }
+    api.build = build;
+    // start(P): entra al modo con la canción P (la que devolvió pick) o con la última. El tempo se pone al entrar, no en cada 🔀 (así un cambio a mano se respeta).
+    api.start = function(P){
+      if(P) api.song = P;
+      if(!api.song) return false;
+      api.file = api.song.file;
+      if(window.__commonChords) window.__commonChords.off();
+      if(window.__partimenti) window.__partimenti.off();
+      api.active = true;
+      var sl = document.getElementById("consolaTempo");
+      if(sl){
+        var mn = parseInt(sl.min, 10) || 25, mx = parseInt(sl.max, 10) || 200;
+        sl.value = Math.max(mn, Math.min(mx, api.song.tempo || 100));
+        sl.dispatchEvent(new Event("input", { bubbles: true }));      // antes de generar: TEMPODENSITY mira el tempo vigente
+      }
+      regenerateConsola();
+      return true;
+    };
+    api.off = function(){ api.active = false; };
+    // Otra Creatura, Partimenti, CommonChords, Compose, Clear o RadioMode sacan de JazzTunes.
+    document.addEventListener("click", function(e){
+      var t = e.target;
+      if(t && t.closest && t.closest("#commonChordsBtn,#creaturaBtn,#creaturaBellaBtn,#creaturaIntervalicBtn,#partimentiBtn,#composeBtn,#clearBtn,#multiSetsRandomFillBtn,#multiSetsComposeBtn,#multiSetsMemBtn2,#consolaRadioBtn,#consolaRadioClassicalBtn")) api.off();
+    }, true);
+    return api;
+  })();
+  window.__jazzTunes = JAZZTUNES;
   // "All" de los desplegables de escalas y de familias: tilda/destilda todas; si se destilda alguna, "All" se destilda solo.
   document.addEventListener("change", function(e){
     var t = e.target;
@@ -23982,6 +24238,7 @@ function runAnalysis() {
           SLbegin({ random: "CreaturaRandom", bella: "CreaturA", intervalic: "Intervalic.Creature", common: "ChordS", partimenti: "Partimenti" }[pick]);
           if(pick === "partimenti"){ SLpartimenti(window.__partimenti.randomize()); rcPre("partimenti"); window.__partimenti.start(); rcPost("partimenti"); return; }
           if(window.__partimenti) window.__partimenti.off();
+          if(window.__jazzTunes) window.__jazzTunes.off();
           if(pick === "common"){ randomizeSlider("consolaTempo", 30, 120); rcPre("common"); window.__commonChords.start(); rcPost("common"); return; }
           if(window.__commonChords) window.__commonChords.off();
           randomizeAndFill(pick === "intervalic" ? "intervalic" : pick === "bella");
@@ -24135,6 +24392,41 @@ function runAnalysis() {
       classicalSet(false);                              // 🎹 Partimenti a mano apaga RadioClassicalMode
       runPartimenti(false);
     });
+    // 🎷 JazzTunes (ver módulo JAZZTUNES): sortea una canción de Band in a box SONGS (acordes + melodía del MGU), detiene lo que suene, la arma con el motor y la reproduce.
+    var btnJT = document.getElementById("jazzTunesBtn");
+    async function runJazzTunes(){
+      if(running) return;
+      running = true;
+      var lbl = btnJT ? btnJT.textContent : "";
+      try {
+        window.__radioKind = null;
+        classicalSet(false);                                   // 🎷 JazzTunes a mano apaga RadioClassicalMode
+        if(typeof window.__rollToFront === "function") window.__rollToFront();
+        clickIfEnabled("consolaStopBtn");
+        if(btnJT){ btnJT.disabled = true; btnJT.textContent = "🎷 JazzTunes…"; }
+        var pr = window.__jazzTunes.pick();                    // lee la lista y la canción mientras el Detener se asienta
+        await wait(300);
+        var P;
+        try { P = await pr; }
+        catch(err){
+          SLbegin("JazzTunes");
+          SL("JazzTunes", "no se pudo sortear una canción: " + (err && err.message ? err.message : err));
+          var se = document.getElementById("consolaSongSets");
+          if(se) se.textContent = "(JazzTunes: " + (err && err.message ? err.message : "error") + ")";
+          return;
+        }
+        SLbegin("JazzTunes");
+        SL("JazzTunes sorteo", P.file + " · \"" + P.title + "\" · ♩=" + P.tempo + " · " + P.bpb + "/4 · " + P.bars + " compases · " + P.chords.length + " acordes · " + P.melody.length + " notas de melodía (intento " + P.tries + ")");
+        rcPre("jazz");
+        window.__jazzTunes.start(P);
+        rcPost("jazz");
+        clickIfEnabled("consolaPlayBtn");
+      } finally {
+        if(btnJT){ btnJT.disabled = false; btnJT.textContent = lbl; }
+        running = false;
+      }
+    }
+    if(btnJT) btnJT.addEventListener("click", runJazzTunes);
     // 📻 RadioClassicalMode: como RadioCreaturaMode pero solo Partimenti. Excluyente con RadioCreaturaMode.
     var rcChk = document.getElementById("consolaRadioClassicalChk"), rcBtn = document.getElementById("consolaRadioClassicalBtn");
     function classicalPaint(){
@@ -24472,7 +24764,7 @@ function runAnalysis() {
     });
     document.addEventListener("click", function(e){
       var t = e.target;
-      if(!window.__radioBusy && t && t.closest && t.closest("#commonChordsBtn,#creaturaBtn,#creaturaBellaBtn,#creaturaIntervalicBtn,#partimentiBtn,#composeBtn,#clearBtn,#multiSetsRandomFillBtn,#multiSetsComposeBtn,#multiSetsMemBtn2,#consolaRadioBtn,#consolaRadioClassicalBtn")) mixSet(false);
+      if(!window.__radioBusy && t && t.closest && t.closest("#commonChordsBtn,#creaturaBtn,#creaturaBellaBtn,#creaturaIntervalicBtn,#partimentiBtn,#jazzTunesBtn,#composeBtn,#clearBtn,#multiSetsRandomFillBtn,#multiSetsComposeBtn,#multiSetsMemBtn2,#consolaRadioBtn,#consolaRadioClassicalBtn")) mixSet(false);
     }, true);
     // Cualquier otro modo automático (Creaturas, Compose, Clear, CommonChords, RadioCreaturaMode) saca de RadioClassicalMode.
     document.addEventListener("click", function(e){
