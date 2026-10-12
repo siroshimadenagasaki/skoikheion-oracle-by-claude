@@ -1733,9 +1733,6 @@
         <div class="consola-inst-row">
           <span class="consola-inst-toggle" title="Además del subset de siempre (el set completo o casi completo), a veces usa un subconjunto MÁS CHICO del mismo set elegido — más variedad de tamaños de acorde por compás, sin salir nunca del set."><input type="checkbox" id="consolaSubsetsChk"><label for="consolaSubsetsChk">&#8681; Subsets (variety)</label></span>
           <span class="consola-inst-toggle" title="Además del subset de siempre, a veces usa el COMPLEMENTO del set elegido (las notas que el set deja afuera dentro de la octava) — más variedad armónica, siempre derivada del mismo set."><input type="checkbox" id="consolaSupersetsChk"><label for="consolaSupersetsChk">&#8679; Supersets (variety)</label></span>
-          <span class="consola-inst-toggle" title="More repetition · Harmony: cada compás (salvo el primero) tiene ~50% de repetir al anterior, sorteando UNO de tres modos: el MISMO ACORDE (mismo voicing, ritmo nuevo), el mismo PATRÓN RÍTMICO (acordes nuevos) o LOS DOS a la vez (compás idéntico). El bajo repite su ritmo junto con la armonía cuando toca patrón rítmico. No cambia cómo se toca: solo repite lo que ya sorteó el motor, siempre dentro del set."><input type="checkbox" id="consolaMoreRepHarmChk"><label for="consolaMoreRepHarmChk">&#128257; More repetition · Harmony</label></span>
-          <span class="consola-inst-toggle" title="More repetition · Melody: cada compás (salvo el primero) tiene ~50% de repetir al anterior, sorteando UNO de tres modos: el mismo MOTIVO MELÓDICO (mismas posiciones/contorno de notas, adaptado al acorde vigente; ritmo nuevo), el mismo MOTIVO RÍTMICO (notas nuevas) o LAS DOS cosas a la vez. Solo notas del acorde en curso (el set no se traiciona)."><input type="checkbox" id="consolaMoreRepMelChk"><label for="consolaMoreRepMelChk">&#128257; More repetition · Melody</label></span>
-          <span class="consola-inst-toggle" title="More repetition · Rhythm (batería): en vez de tirar una moneda compás a compás, repite en FRASES — un compás se toca 2, 3 o 4 veces seguidas y después cambia (el último compás de la frase a veces queda libre). Los compases repetidos llevan un poco de variación de velocity y algún hi-hat suave que falta, para que no suene maquinal."><input type="checkbox" id="consolaMoreRepRhyChk"><label for="consolaMoreRepRhyChk">&#128257; More repetition · Rhythm</label></span>
           <span class="consola-inst-toggle" title="En cada reataque de armonía se sortean varias combinaciones válidas de subconjunto/transposición/inversión dentro del MISMO acorde/grado elegido (nunca de otro) y se elige la que comparte más notas con el acorde anterior — el doble de notas comunes en promedio que al azar puro, con la misma restricción de conjunto de siempre."><input type="checkbox" id="consolaCommonNotesChk"><label for="consolaCommonNotesChk">&#128279; Common notes</label></span>
         </div>
       </div>
@@ -1771,6 +1768,9 @@
           <button type="button" class="subfield-toggle" aria-expanded="false" aria-controls="rhythmBody" onclick="toggleModule(this)" title="Mostrar/ocultar los controles de ritmo"></button>
         </div>
         <div class="collapsible-content collapsed" id="rhythmBody" style="display:flex;flex-wrap:wrap;gap:20px 30px;">
+      <div class="consola-field"><div class="consola-inst-row">
+          <span class="consola-inst-toggle" title="More repetition · Rhythm (batería): en vez de tirar una moneda compás a compás, repite en FRASES — un compás se toca 2, 3 o 4 veces seguidas y después cambia (el último compás de la frase a veces queda libre). Los compases repetidos llevan un poco de variación de velocity y algún hi-hat suave que falta, para que no suene maquinal."><input type="checkbox" id="consolaMoreRepRhyChk"><label for="consolaMoreRepRhyChk">&#128257; More repetition · Rhythm</label></span>
+      </div></div>
       <div class="consola-field consola-instruments" title="Beats: la batería usa SOLO patrones de la biblioteca de beats (hip-hop, rock, funk, dance, latinos, brasileños, 60s/70s/80s, compases impares...) y los varía dentro de la canción: un beat A y un B de la misma familia por frase de 4 compases, fills de toms/caja, crash al final de frase y respiros. Beatswithspice: toma UN beat de referencia y lo condimenta compás a compás (golpes fantasma de caja, bombos sincopados, hi-hats que se omiten o se abren, acentos, backbeat adelantado, fills) para que no suene repetitivo. Son excluyentes entre sí. Apagados los dos, la batería funciona exactamente como siempre. El desplegable muestra el beat que está montado en la canción; si elegís otro, la canción se reconstruye con ese como referencia (Auto = lo sortea la app). Los beats también están como .mid en Midi/Drum Beats/ — cualquier .mid nuevo que subas a esa carpeta se suma solo. Los beats solo suenan en compases donde su largo encaja (4/4 con patrones de 2 o 4 tiempos, 3/4 con los de 3...); el resto de los compases usa la batería de siempre.">
         <label>Beats</label>
         <div class="consola-inst-row">
@@ -1820,6 +1820,7 @@
         </div>
         <div class="collapsible-content collapsed" id="harmTestBody">
         <div class="consola-inst-row">
+          <span class="consola-inst-toggle" title="More repetition · Harmony: cada compás (salvo el primero) tiene ~50% de repetir al anterior, sorteando UNO de tres modos: el MISMO ACORDE (mismo voicing, ritmo nuevo), el mismo PATRÓN RÍTMICO (acordes nuevos) o LOS DOS a la vez (compás idéntico). El bajo repite su ritmo junto con la armonía cuando toca patrón rítmico. No cambia cómo se toca: solo repite lo que ya sorteó el motor, siempre dentro del set."><input type="checkbox" id="consolaMoreRepHarmChk"><label for="consolaMoreRepHarmChk">&#128257; More repetition · Harmony</label></span>
           <span class="consola-inst-toggle" title="Sustain (pedal de la Armonía, motor libre y Simplicity): 0% = apagado. En cada cambio de acorde se tira un dado con probabilidad = el slider; si sale, el pedal se pisa antes de que termine el acorde y las notas siguen sonando por encima del ataque siguiente (legato; una nota que se repite igual en el acorde siguiente se vuelve a atacar, no se estira). Hasta 50% es el sustain de siempre (50% = el default de antes: pedal que se suelta un instante después del próximo ataque). De 50% a 100% se vuelve RADICAL: el pedal se mantiene apretado a lo largo de 1 a 4 acordes seguidos (más acordes y más cola de resonancia a mayor %), así las armonías se acumulan y se mezclan. 100% = uso radical del pedal en todos los cambios de acorde. No cambia QUÉ notas suenan, solo cuánto duran. Vale también con las casillas de Harmony tildadas."><label for="consolaSustainSlider">&#127929; Sustain</label><input type="range" class="consola-mini-range" id="consolaSustainSlider" min="0" max="100" value="50" step="1"><span class="consola-val" id="consolaSustainVal">50%</span></span>
         </div>
         <div class="consola-inst-row">
@@ -1863,6 +1864,7 @@
         </div>
         <div class="collapsible-content collapsed" id="melodyBody">
         <div class="consola-inst-row">
+          <span class="consola-inst-toggle" title="More repetition · Melody: cada compás (salvo el primero) tiene ~50% de repetir al anterior, sorteando UNO de tres modos: el mismo MOTIVO MELÓDICO (mismas posiciones/contorno de notas, adaptado al acorde vigente; ritmo nuevo), el mismo MOTIVO RÍTMICO (notas nuevas) o LAS DOS cosas a la vez. Solo notas del acorde en curso (el set no se traiciona)."><input type="checkbox" id="consolaMoreRepMelChk"><label for="consolaMoreRepMelChk">&#128257; More repetition · Melody</label></span>
           <span class="consola-inst-toggle" title="Mezcla figuras largas y cortas DENTRO del mismo compás de melodía, en vez del comportamiento de siempre (un compás entero de figuras largas y, cada tanto, un compás entero de fill de notas cortas). No cambia qué nota suena, solo el ritmo."><input type="checkbox" id="consolaMixDurChk" checked><label for="consolaMixDurChk">&#127925; Mix melody duration</label></span>
           <span class="consola-inst-toggle" title="melodicPatterns: 0% = apagado. 100% = SOLO patrones melódicos. Reemplaza la selección de nota de la melodía (y de bebopMelody, si está prendido) por un CONTORNO fijo — un patrón de saltos tipo '2 arriba, 1 abajo' repetido, en vez de arpegio lineal en los compases densos o nota al azar en el resto. El patrón se sortea de un pool variado (ciclos de 2 a 4 movimientos) una vez por cada Reproducir/Regenerar, y siempre indexa dentro del acorde vigente (nunca una nota ajena al set) — si el salto se pasa del tamaño del acorde, sigue contando en la octava de al lado, igual que una 9na es un 2 una octava arriba. Con valores intermedios, cada nota tiene ese % de probabilidad de elegirse con el contorno; en el resto usa el método de siempre (arpegio lineal o nota al azar). Default 30%."><label for="consolaMelodicPatternsSlider">&#127925; melodicPatterns</label><input type="range" class="consola-mini-range" id="consolaMelodicPatternsSlider" min="0" max="100" value="30" step="1"><span class="consola-val" id="consolaMelodicPatternsVal">30%</span></span>
           <span class="consola-inst-toggle" title="MelodicPatternsV2: 0% = apagado. Basado en el melodicPatterns tester: cada patrón es una lista de 2 a 4 movimientos de 1 a 8 PASOS DIATÓNICOS (grados conjuntos) sobre las notas del acorde vigente, hacia arriba o abajo (ej. 2↑ 1↓ = C E D; 2↑ 2↑ 3↓ = C E G D; 4↑ = C a G; 8↑ = más de una octava). Cada patrón se usa UNA SOLA VEZ y le sigue otro nuevo (sin repetir en bucle ni repetir los últimos). Si es mayor que 0 reemplaza a melodicPatterns: el % es la probabilidad por nota de elegirse con el contorno V2 (100% = solo V2). Mismo contorno para la melodía principal y bebopMelody. Default 0%."><label for="consolaMelodicPatternsV2Slider">&#127925; MelodicPatternsV2</label><input type="range" class="consola-mini-range" id="consolaMelodicPatternsV2Slider" min="0" max="100" value="0" step="1"><span class="consola-val" id="consolaMelodicPatternsV2Val">0%</span></span>
@@ -5297,7 +5299,8 @@ function getAudioCtx() {
     audioCtx = new Ctx();
     // iOS puede dejar el contexto en "interrupted" (llamada, otra app, bloqueo).
     audioCtx.onstatechange = function () {
-      if (audioCtx.state === "interrupted") { try { audioCtx.resume().catch(function(){}); } catch (e) {} }
+      var b = document.getElementById("consolaPlayBtn");
+      if (audioCtx.state === "interrupted" || (audioCtx.state === "suspended" && b && b.disabled)) { try { audioCtx.resume().catch(function(){}); } catch (e) {} }
     };
   }
   if (audioCtx.state === "suspended") audioCtx.resume();
@@ -11934,7 +11937,10 @@ function runAnalysis() {
     // Intensidad del slider #consolaChordSimulSlider, 0..1 — probabilidad
     // de que un reataque dado salga quebrado (1-intensidad = probabilidad
     // de que salga en bloque).
+    var forced = null;   // Partimenti: su propio slider "Chord simultaneity" fija la intensidad mientras arma sus acordes
+    function setForced(v){ forced = (v == null) ? null : Math.max(0, Math.min(1, v)); }
     function intensity(){
+      if(forced != null) return forced;
       var sl = document.getElementById("consolaChordSimulSlider");
       var v = sl ? Number(sl.value) : 50;
       if (isNaN(v)) v = 50;
@@ -11996,6 +12002,7 @@ function runAnalysis() {
     return {
       offsetsFor: offsetsFor,
       intensity: intensity,
+      setForced: setForced,
       roll: roll
     };
   })();
@@ -15584,6 +15591,35 @@ function runAnalysis() {
       cadC: "Cadencia compuesta: bajo ①–⑤–①, el ⑤ dura 2 acordes: 6/4 o 5/4, luego 5/3 (la 4ª baja a 3ª, la 6ª a 5ª) → I.",
       cadD: "Cadencia doble: bajo ①–⑤–①, el ⑤ dura 4 acordes: 5/3 (o 7), 6/4, 5/4, 5/3 (o 7) → I."
     };
+    // Chord simultaneity para Partimenti: agrupa los eventos de armonía que atacan juntos (mismo inicio y misma duración) y, según el dado
+    // de BROKENCHORD con la intensidad del slider, los deja en bloque o los escalona (mismas notas, mismo instante final).
+    function partChordSimul(evs, pct){
+      var groups = {}, order = [];
+      evs.forEach(function(ev, i){
+        var k = Math.round(ev.startBeat * 10000) + "|" + Math.round(ev.durBeats * 10000);
+        if(!groups[k]){ groups[k] = []; order.push(k); }
+        groups[k].push(i);
+      });
+      var out = evs.map(function(ev){ return ev; });
+      BROKENCHORD.setForced(pct / 100);
+      try {
+        order.forEach(function(k){
+          var idxs = groups[k];
+          if(idxs.length < 2) return;
+          var dur = evs[idxs[0]].durBeats;
+          var offs = BROKENCHORD.offsetsFor(idxs.map(function(i){ return evs[i].midi; }), dur);
+          idxs.forEach(function(i, j){
+            var off = offs[j] || 0;
+            if(off > 1e-6 && dur - off > 0.05){
+              var c = {}; for(var q in evs[i]) c[q] = evs[i][q];
+              c.startBeat = evs[i].startBeat + off; c.durBeats = dur - off;
+              out[i] = c;
+            }
+          });
+        });
+      } finally { BROKENCHORD.setForced(null); }
+      return out.sort(function(a, b2){ return a.startBeat - b2.startBeat; });
+    }
     function body(){ return document.getElementById("partimentiOptsBody"); }
     function checkedKeys(g){
       var b = body(); if(!b) return [];
@@ -15897,6 +15933,11 @@ function runAnalysis() {
       var msv = mk("span", "min-width:34px;text-align:right;", "0%");
       msr.addEventListener("input", function(){ msv.textContent = msr.value + "%"; });
       ms2.appendChild(document.createTextNode("musicSilence ")); ms2.appendChild(msr); ms2.appendChild(msv); db.appendChild(ms2);
+      var cs2 = mk("label", LBL); cs2.title = "Chord simultaneity (igual que en How to play): qué porcentaje de los reataques de armonía (tenor + alto, 2+ notas) atacan quebrados (escalonados) en vez de en bloque. Cada reataque tira su propio dado: 0% = todos en bloque (como siempre en Partimenti, default); 100% = todos quebrados; en el medio, una mezcla al azar. Nunca cambia QUÉ notas suenan, solo CUÁNDO entra cada una; todas terminan en el mismo instante.";
+      var csr = mk("input"); csr.type = "range"; csr.min = 0; csr.max = 100; csr.step = 5; csr.value = 0; csr.id = "partimentiChordSimul"; csr.style.cssText = "width:110px;";
+      var csv = mk("span", "min-width:34px;text-align:right;", "0%");
+      csr.addEventListener("input", function(){ csv.textContent = csr.value + "%"; });
+      cs2.appendChild(document.createTextNode("Chord simultaneity ")); cs2.appendChild(csr); cs2.appendChild(csv); db.appendChild(cs2);
       var DIM_TIP = { passing: "Notas de paso: la melodía llena por grados conjuntos el salto hacia el soprano del acorde siguiente.",
                       neighbor: "Bordaduras: sube o baja un grado y vuelve a la nota del acorde.",
                       turn: "Giros: nota superior, nota, nota inferior, nota (solo con subdivisión rápida).",
@@ -16313,6 +16354,9 @@ function runAnalysis() {
       NOREPEAT.clearScale();
       applyMelody3(); // Melody n3: notas largas o la melodía principal una octava abajo (parte de la melodía ya recortada)
       state.chordEvents = WIDERANGE.apply(state.chordEvents);
+      // Chord simultaneity (slider #partimentiChordSimul): mismo mecanismo que How to play (BROKENCHORD), sobre los reataques de armonía (tenor + alto); 0 % = no cambia nada
+      var csEl = document.getElementById("partimentiChordSimul"), csPct = csEl ? parseInt(csEl.value, 10) : 0;
+      if(csPct > 0) state.chordEvents = partChordSimul(state.chordEvents, csPct);
       DYNAMICS.applyPitched(state);
       RHYTHMSPACE.reset(0);          // batería compartida, sin tramos de respiro ni tresillos (igual que CommonChords)
       TRIPLETS.setActive(false);
@@ -20132,7 +20176,7 @@ function runAnalysis() {
       var elapsed = ctx.currentTime - loopAnchor;
       if(elapsed >= 0){
         if(ts - lastMeasure > 500){ measure(); lastMeasure = ts; }
-        var inLoop = elapsed % loopDur;
+        var inLoop = (clk && clk.pend && elapsed >= loopDur) ? loopDur : elapsed % loopDur;   // RADIO: en los 3 s de silencio el playhead espera al final
         var beats = tw.inv(inLoop/spb);
         var x = MARGIN_L + beats*PPB;
         var xs = x.toFixed(1);
@@ -20414,7 +20458,8 @@ function runAnalysis() {
     // en el hilo de audio. Ahora hay pocos nodos vivos a la vez.
     // Pestaña en segundo plano: el navegador frena setInterval a ~1 s, así
     // que ahí la ventana se agranda para no dejar huecos.
-    var TICK_MS = 50, AHEAD_FG = 0.8, AHEAD_BG = 6; // BG: iOS con pantalla bloqueada frena los timers; 6 s de colchón
+    var RADIO_GAP_SEC = 3;   // silencio entre canciones en el Player (RADIO)
+    var TICK_MS = 50, AHEAD_FG = 0.8, AHEAD_BG = 20; // BG: iOS/Android con pantalla bloqueada frenan los timers; 20 s de colchón
     var LOOP_BEATS = TOTAL_BEATS; // fijo durante la reproducción (salvo RadioMode: cambia al enganchar una vuelta nueva), igual que loopDur
     EXPR.reroll();                    // Tempo & Expression: variación nueva en cada Play
     var snap = liveSnap();            // foto de la vuelta en curso (notas/presets/tempo&expression)
@@ -20467,7 +20512,7 @@ function runAnalysis() {
           // RadioMode: arma una vuelta nueva (mismos sliders/sets al azar que CreaturaRandom/Bella)
           // ~0.8 s antes de que termine la actual y la programa pegada, en el mismo reloj de audio.
           try{ window.__radioNext(rk); }catch(err){ console.error("RadioMode:", err); }
-          schedLoopStart += loopDur;
+          schedLoopStart += loopDur + RADIO_GAP_SEC;   // Player/RADIO: 3 s de silencio entre canción y canción
           var bpmNew = parseInt(tempoEl.value, 10);          // la canción nueva puede traer su propio tempo (RadioClassicalMode: movimiento de Partimenti)
           if(bpmNew > 0) spb = 60/bpmNew;
           loopDur = TOTAL_BEATS*spb;
@@ -24109,15 +24154,19 @@ function runAnalysis() {
   // WAV silencioso de 1 s (8 kHz, 8-bit mono) generado en runtime.
   var keep = null, lastMeta = "";
   function makeKeep(){
-    var n = 8000, buf = new ArrayBuffer(44 + n), v = new DataView(buf);
+    // 1 s, 8 kHz, 16-bit mono con ruido de ~-70 dBFS: inaudible, pero no es silencio digital puro
+    // (Chrome de Android no cuenta el silencio puro como audio y con la pantalla apagada puede frenar/silenciar la página).
+    var n = 8000, buf = new ArrayBuffer(44 + n*2), v = new DataView(buf);
     function s(o, t){ for (var i = 0; i < t.length; i++) v.setUint8(o + i, t.charCodeAt(i)); }
-    s(0,"RIFF"); v.setUint32(4, 36 + n, true); s(8,"WAVE"); s(12,"fmt ");
+    s(0,"RIFF"); v.setUint32(4, 36 + n*2, true); s(8,"WAVE"); s(12,"fmt ");
     v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,1,true);
-    v.setUint32(24,8000,true); v.setUint32(28,8000,true); v.setUint16(32,1,true); v.setUint16(34,8,true);
-    s(36,"data"); v.setUint32(40,n,true);
-    for (var i = 0; i < n; i++) v.setUint8(44 + i, 128);
+    v.setUint32(24,8000,true); v.setUint32(28,16000,true); v.setUint16(32,2,true); v.setUint16(34,16,true);
+    s(36,"data"); v.setUint32(40,n*2,true);
+    for (var i = 0; i < n; i++) v.setInt16(44 + i*2, Math.round((Math.random()*2 - 1) * 10), true);
     var a = new Audio(URL.createObjectURL(new Blob([buf], {type:"audio/wav"})));
-    a.loop = true; a.setAttribute("playsinline", ""); a.volume = 0.01;
+    a.loop = true; a.setAttribute("playsinline", ""); a.volume = 0.05;
+    // Si el sistema la pausa (pantalla apagada, foco de audio), se retoma sola mientras suena la música.
+    a.addEventListener("pause", function(){ if (isPlaying()) { try { a.play().catch(function(){}); } catch(e){} } });
     return a;
   }
   // Portada para CarPlay / pantalla de bloqueo: la MISMA imagen 8 bits que muestra el player
@@ -24167,7 +24216,7 @@ function runAnalysis() {
       if (!SC || !SC.ctx || !navigator.mediaSession || !navigator.mediaSession.setPositionState) return;
       var t = SC.ctx.currentTime, c = SC.get(t);
       if (!c || !(c.d > 0)) return;
-      var pos = Math.max(0, Math.min(c.d, (t - c.a) % c.d));
+      var pos = Math.max(0, Math.min(c.d, window.__radioKind ? (t - c.a) : (t - c.a) % c.d));   // RADIO: no se repite la canción, en el silencio entre canciones el contador queda al final
       var now = performance.now();
       // Solo se reenvía si cambió la canción o si el contador de iOS se corrió más de 1 s (el resto lo avanza solo con playbackRate 1).
       if (lastPos && lastPos.c === c && Math.abs(lastPos.pos + (now - lastPos.at) / 1000 - pos) < 1) return;
@@ -24212,6 +24261,10 @@ function runAnalysis() {
 
   // Al volver a primer plano / tras interrupciones: reanudar el contexto.
   document.addEventListener("visibilitychange", function(){
+    if (document.hidden && isPlaying()) {   // pantalla apagada / app en segundo plano: reforzar la sesión de audio
+      try { if (typeof audioCtx !== "undefined" && audioCtx && audioCtx.state !== "running") audioCtx.resume(); } catch(e){}
+      keepOn();
+    }
     if (!document.hidden && isPlaying()) {
       try { if (typeof audioCtx !== "undefined" && audioCtx && audioCtx.state !== "running") audioCtx.resume(); } catch(e){}
       keepOn();
