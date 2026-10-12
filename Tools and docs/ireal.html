@@ -87,7 +87,7 @@ summary{cursor:pointer}
     <div class="row" style="margin-top:8px">
       <button class="primary" id="btnLink" type="button">Cargar enlace</button>
       <label class="lbl" for="file" style="display:inline-flex;gap:8px;align-items:center">o archivo/lista <input id="file" type="file" accept=".txt,.html,.htm,text/*"></label>
-      <button id="btnSample" type="button">Ejemplo: Zhivago</button>
+      <button id="btnDefault" type="button">Lista por defecto (Jazz 1460)</button>
       <span class="stat" id="libInfo">Sin lista cargada</span>
     </div>
   </section>
@@ -428,7 +428,7 @@ var IR = (function(){
 <script>
 (function(){
   var $ = function(id){ return document.getElementById(id); };
-  var SAMPLE = "irealb://Zhivago=Rosenwinkel%20Kurt==Up%20Tempo%20Swing=Eb%2D==1r34LbKcu7bAZLC4Bb%2D77%5EbDZL7%2DbEZLF%2FDbZL7%5EbGZL7%2DbAZLLZAb%2F3Ti%2A%7B6bGZL%7BEbsu7%5E%2DEZLsusbEZL6GbZL7%2DFZL7%5E%2DEZLsLZF%2D7%7D%20B%2F%2D7CZL7AGb%5E79%2DbEZL7%5EbGZL9%2DEbZL7%5EbGZL9%2DbEZLLZGb%5E%2A%5BY%7D%20bG%2CA%2AAb%2D7LX%5D%2011%2DbAZL7%5EDZ7L%2D%23CZL7%2DBZL7%5EAZyQ%20%5B%2CZLsusL11%239b%2D9LZFZL7%2DCZL9%2DbEZL%5E7bGZL9%2DbEZL7%5EbG7LZEbEZL7%5EDZL7%5EusLZB%207%5EAZL7%5EbDZL7%5EZFL7%2DDZL9%2DGZL7%5Eb%5D%5B%2ABFs7bBZCZLbC%5E7LZDLsus7bBZL7EZL7B%2DZL9%2DDZL7%5EFZL9%2DZAb%2D%2FFZL9%2DBZL7%5EEb%2D7LbEZL7%2D%23CZLbC%2F%2DAbZLsus7bBZL7%5EEZ%2D7LZEZL7%2D%23AZL7%2DLZAb%2D%5D%20sus7bBZL7%5EEZ7L%2DbEZL7%2D%23CZLbC%2F%7B%2ACBbsus7bsbE%2CDGb%5E7LB%2F%2DbAZLC%2FbAZL7b%5EDZL7%2DbEZLF%2FbDZ%20%7D%7B%2C%2AZL7%2DbusLZE%2D%5E7LZF%2D7LZGb6LZEbsusLZE%2D%5E7LZF%2D7LZGb6%20%7D%20==0=0===";
+  var DEFAULT_URL = "ireal-default.txt";
   var lib = [], libName = '', song = null, parsed = null, order = [], tl = null, curIdx = -1;
 
   /* ---------- almacenamiento (solo comodidad; la página funciona sin él) ---------- */
@@ -629,7 +629,13 @@ var IR = (function(){
 
   /* ---------- eventos ---------- */
   $('btnLink').addEventListener('click', function(){ var t = $('link').value; if (setLibrary(t)) store('ireal.lib.v1', t.length < 4000000 ? t : ''); });
-  $('btnSample').addEventListener('click', function(){ $('link').value = SAMPLE; setLibrary(SAMPLE, 'Ejemplo'); });
+  function loadDefault(){
+    $('libInfo').textContent = 'Cargando lista por defecto…';
+    fetch(DEFAULT_URL).then(function(r){ if (!r.ok) throw new Error(r.status); return r.text(); })
+      .then(function(t){ if (!setLibrary(t, 'Jazz 1460')) $('libInfo').textContent = 'La lista por defecto no se pudo leer'; })
+      .catch(function(){ $('libInfo').textContent = 'No pude cargar la lista por defecto (¿abierto como archivo local?). Pegá un enlace o elegí el archivo.'; });
+  }
+  $('btnDefault').addEventListener('click', loadDefault);
   $('file').addEventListener('change', function(e){
     var f = e.target.files[0]; if (!f) return;
     var rd = new FileReader();
@@ -660,6 +666,7 @@ var IR = (function(){
   window.IReal = { core: IR, getSong: function(){ return parsed; }, getOrder: function(){ return order; }, load: setLibrary };
   var saved = fetchStored('ireal.lib.v1');
   if (saved) { $('link').value = saved.length > 3000 ? '' : saved; setLibrary(saved); }
+  else loadDefault();
 })();
 </script>
 </body>
