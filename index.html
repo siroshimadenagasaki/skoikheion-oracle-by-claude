@@ -3789,7 +3789,8 @@ var MGU = (function () {
   function parseMgu(b, opts) {
     opts = opts || {};
     var warnings = [];
-    if (b[0] !== 73) throw new MguError('byte0=' + b[0] + ': versión de archivo no verificada (solo 73)');
+    if (b[0] !== 73 && b[0] !== 71 && b[0] !== 72) throw new MguError('byte0=' + b[0] + ': versión de archivo no verificada (solo 71, 72 y 73)');
+    if (b[0] !== 73) warnings.push('versión ' + b[0] + ': acordes y melodía verificados solo en 4/4 (Chick\'s Tango, Night Flight, Calcutta). Un vals 3/4 de esta versión NO se detecta y sus acordes sonarían desfasados (June Brought The Roses, Little Waltz)');
     var L = b[1];
     var title = String.fromCharCode.apply(null, Array.prototype.slice.call(b, 2, 2 + L)).replace(/\s+$/, '');
     var tempo = b[L + 6];
