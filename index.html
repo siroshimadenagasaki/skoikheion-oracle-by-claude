@@ -2034,6 +2034,20 @@
         <input type="range" id="consolaReverbAmount" min="0" max="100" value="50" step="1">
         <span class="consola-val" id="consolaReverbAmountVal">50%</span>
       </div>
+      <div class="consola-field" style="background-color:transparent !important;" title="Nivel general del delay (eco) — envío compartido, un solo DelayNode con realimentación y filtro pasabajos, sincronizado con el Tempo. 0% = apagado (default). Cada pista tiene además su propio nivel de envío más abajo (&quot;Delay (per-track send)&quot;); este slider escala a todas juntas.">
+        <label for="consolaDelayAmount">Delay</label>
+        <input type="range" id="consolaDelayAmount" min="0" max="100" value="0" step="1">
+        <span class="consola-val" id="consolaDelayAmountVal">0%</span>
+      </div>
+      <div class="consola-field" style="background-color:transparent !important;" title="Tiempo del delay, como fracción del pulso: sigue al slider Tempo. Corchea con puntillo (3/16) es el clásico.">
+        <label for="consolaDelayTime">Delay time</label>
+        <select id="consolaDelayTime">
+          <option value="1">1/4</option>
+          <option value="0.75" selected>1/8 dotted</option>
+          <option value="0.5">1/8</option>
+          <option value="0.25">1/16</option>
+        </select>
+      </div>
       <div class="consola-field" style="background-color:transparent !important;">
         <label for="consolaVolume">Volume master</label>
         <input type="range" id="consolaVolume" min="0" max="100" value="80" step="1">
@@ -2177,6 +2191,49 @@
           <label for="mixMelodyDoubleRev">Double melody</label>
           <input type="range" id="mixMelodyDoubleRev" min="0" max="150" value="100" step="1">
           <span class="mix-val" id="mixMelodyDoubleRevVal">100%</span>
+        </div>
+      </div>
+      <div class="mix-preset-label" style="width:100%;text-align:center;margin:2px 0 -6px;">Delay (per-track send)</div>
+      <div class="mix-grid" title="Multiplicador de esta pista sobre el slider maestro Delay (arriba, junto a Reverb). 100% = usa el nivel general tal cual; 0% = esta pista nunca llega al delay.">
+        <div class="mix-channel">
+          <label for="mixDrumDly">&#129345; Drums</label>
+          <input type="range" id="mixDrumDly" min="0" max="150" value="100" step="1">
+          <span class="mix-val" id="mixDrumDlyVal">100%</span>
+        </div>
+        <div class="mix-channel">
+          <label for="mixBassDly">Bass</label>
+          <input type="range" id="mixBassDly" min="0" max="150" value="100" step="1">
+          <span class="mix-val" id="mixBassDlyVal">100%</span>
+        </div>
+        <div class="mix-channel">
+          <label for="mixChordDly">Harmony</label>
+          <input type="range" id="mixChordDly" min="0" max="150" value="100" step="1">
+          <span class="mix-val" id="mixChordDlyVal">100%</span>
+        </div>
+        <div class="mix-channel">
+          <label for="mixMelodyDly">Melody</label>
+          <input type="range" id="mixMelodyDly" min="0" max="150" value="100" step="1">
+          <span class="mix-val" id="mixMelodyDlyVal">100%</span>
+        </div>
+        <div class="mix-channel">
+          <label for="mixMelody2Dly">&#127925; Melody n2</label>
+          <input type="range" id="mixMelody2Dly" min="0" max="150" value="100" step="1">
+          <span class="mix-val" id="mixMelody2DlyVal">100%</span>
+        </div>
+        <div class="mix-channel">
+          <label for="mixMelody3Dly">&#127925; Melody n3</label>
+          <input type="range" id="mixMelody3Dly" min="0" max="150" value="100" step="1">
+          <span class="mix-val" id="mixMelody3DlyVal">100%</span>
+        </div>
+        <div class="mix-channel">
+          <label for="mixBebopDly">&#127929; Bebop</label>
+          <input type="range" id="mixBebopDly" min="0" max="150" value="100" step="1">
+          <span class="mix-val" id="mixBebopDlyVal">100%</span>
+        </div>
+        <div class="mix-channel">
+          <label for="mixMelodyDoubleDly">Double melody</label>
+          <input type="range" id="mixMelodyDoubleDly" min="0" max="150" value="100" step="1">
+          <span class="mix-val" id="mixMelodyDoubleDlyVal">100%</span>
         </div>
       </div>
       <div class="mix-styles">
@@ -17259,6 +17316,17 @@ function runAnalysis() {
         reverbSendGains[track] = send;
       }
     });
+    // Envíos de delay: igual que los de reverb, otra copia en paralelo.
+    var delayBus = ensureDelayBus(ctx);
+    Object.keys(dryNodes).forEach(function(track){
+      if(!delaySendGains[track]){
+        var dsend = ctx.createGain();
+        dsend.gain.value = delaySendLevel * delayMix[track];
+        dryNodes[track].connect(dsend);
+        dsend.connect(delayBus);
+        delaySendGains[track] = dsend;
+      }
+    });
     return { chord: chordGainNode, bass: bassGainNode, bassDouble: bassDoubleGainNode, melody: melodyGainNode, melodyDouble: melodyDoubleGainNode, chordDouble: chordDoubleGainNode, drum: drumGainNode, comping2: comping2GainNode, bebop: bebopGainNode, melody2: melody2GainNode, melody3: melody3GainNode };
   }
   // Cambia el nivel de un canal en caliente (mientras suena o no) — usa
@@ -17301,6 +17369,72 @@ function runAnalysis() {
   function setReverbMix(track, value){
     reverbMix[track] = value;
     applyReverbSend(track);
+  }
+
+  // ---------- Delay: bus de envío compartido (mismo patrón que el reverb) ----------
+  // delaySendLevel = slider general "Delay" (0% por defecto = apagado, el sonido
+  // no cambia hasta que se sube). delayMix[track] = multiplicador por pista.
+  // Envío real = delaySendLevel * delayMix[track]. Un solo DelayNode compartido:
+  // delay -> pasabajos -> (realimentación al delay) y -> retorno -> masterGain.
+  // El tiempo = delayDivision (en pulsos) * 60/BPM, con el BPM del slider Tempo.
+  var delaySendLevel = 0;
+  var delayDivision = 0.75;   // 1/8 con puntillo
+  var DELAY_FEEDBACK = 0.35, DELAY_TONE_HZ = 3500;
+  var delayMix = { chord: 1, bass: 1, bassDouble: 1, melody: 1, melodyDouble: 1, chordDouble: 1, drum: 1, comping2: 1, bebop: 1, melody2: 1, melody3: 1 };
+  var delayBusGain = null, delayNode = null, delayFbGain = null, delayToneFilter = null, delayReturnGain = null;
+  var delaySendGains = { chord: null, bass: null, bassDouble: null, melody: null, melodyDouble: null, chordDouble: null, drum: null, comping2: null, bebop: null, melody2: null, melody3: null };
+  function delayTimeSec(){
+    var el = document.getElementById("consolaTempo");
+    var bpm = el ? parseInt(el.value, 10) : NaN;
+    if(!(bpm > 0)) bpm = 100;
+    return Math.min(3.9, Math.max(0.01, delayDivision * 60 / bpm));
+  }
+  function ensureDelayBus(ctx){
+    var master = ensureMasterGain(ctx);
+    if(!delayBusGain){
+      delayBusGain = ctx.createGain();
+      // Render seco (prerender): bus sin salida — el delay vive en el contexto en vivo.
+      if(dryRenderMode) return delayBusGain;
+      delayNode = ctx.createDelay(4);
+      delayNode.delayTime.value = delayTimeSec();
+      delayFbGain = ctx.createGain();
+      delayFbGain.gain.value = DELAY_FEEDBACK;
+      delayToneFilter = ctx.createBiquadFilter();
+      delayToneFilter.type = "lowpass";
+      delayToneFilter.frequency.value = DELAY_TONE_HZ;
+      delayReturnGain = ctx.createGain();
+      delayReturnGain.gain.value = 1;
+      delayBusGain.connect(delayNode);
+      delayNode.connect(delayToneFilter);
+      delayToneFilter.connect(delayFbGain);
+      delayFbGain.connect(delayNode);
+      delayToneFilter.connect(delayReturnGain);
+      delayReturnGain.connect(master);
+    }
+    return delayBusGain;
+  }
+  function applyDelaySend(track){
+    var node = delaySendGains[track];
+    if(!node) return;
+    var ctx = getAudioCtx();
+    node.gain.setTargetAtTime(delaySendLevel * delayMix[track], ctx ? ctx.currentTime : 0, 0.01);
+  }
+  function setDelayAmount(value){
+    delaySendLevel = value;
+    Object.keys(delaySendGains).forEach(applyDelaySend);
+  }
+  function setDelayMix(track, value){
+    delayMix[track] = value;
+    applyDelaySend(track);
+  }
+  function applyDelayTime(){
+    if(!delayNode) return;
+    var ctx = getAudioCtx();
+    delayNode.delayTime.setTargetAtTime(delayTimeSec(), ctx ? ctx.currentTime : 0, 0.05);
+  }
+  function setDelayDivision(value){
+    delayDivision = value;
+    applyDelayTime();
   }
 
   /* ================================================================
@@ -20090,12 +20224,15 @@ function runAnalysis() {
       masterGain:masterGain, masterBoost:masterBoost, masterLimiter:masterLimiter,
       chordGainNode:chordGainNode, bassGainNode:bassGainNode, melodyGainNode:melodyGainNode, drumGainNode:drumGainNode,
       melodyDoubleGainNode:melodyDoubleGainNode, chordDoubleGainNode:chordDoubleGainNode, bassDoubleGainNode:bassDoubleGainNode, comping2GainNode:comping2GainNode, bebopGainNode:bebopGainNode, melody2GainNode:melody2GainNode, melody3GainNode:melody3GainNode,
-      reverbBusGain:reverbBusGain, reverbConvolver:reverbConvolver, reverbReturnGain:reverbReturnGain, reverbSendGains:reverbSendGains, voices:voices
+      reverbBusGain:reverbBusGain, reverbConvolver:reverbConvolver, reverbReturnGain:reverbReturnGain, reverbSendGains:reverbSendGains,
+      delayBusGain:delayBusGain, delayNode:delayNode, delayFbGain:delayFbGain, delayToneFilter:delayToneFilter, delayReturnGain:delayReturnGain, delaySendGains:delaySendGains, voices:voices
     };
     masterGain = masterBoost = masterLimiter = null;
     chordGainNode = bassGainNode = melodyGainNode = drumGainNode = null;
     melodyDoubleGainNode = chordDoubleGainNode = bassDoubleGainNode = comping2GainNode = bebopGainNode = melody2GainNode = melody3GainNode = null;
     reverbBusGain = reverbConvolver = reverbReturnGain = null;
+    delayBusGain = delayNode = delayFbGain = delayToneFilter = delayReturnGain = null;
+    delaySendGains = { chord:null, bass:null, bassDouble:null, melody:null, melodyDouble:null, chordDouble:null, drum:null, comping2:null, bebop:null, melody2:null, melody3:null };
     reverbSendGains = { chord:null, bass:null, bassDouble:null, melody:null, melodyDouble:null, chordDouble:null, drum:null, comping2:null, bebop:null, melody2:null, melody3:null };
     voices = new Set();
     dryRenderMode = true;
@@ -20114,6 +20251,7 @@ function runAnalysis() {
       chordGainNode = saved.chordGainNode; bassGainNode = saved.bassGainNode; melodyGainNode = saved.melodyGainNode; drumGainNode = saved.drumGainNode;
       melodyDoubleGainNode = saved.melodyDoubleGainNode; chordDoubleGainNode = saved.chordDoubleGainNode; bassDoubleGainNode = saved.bassDoubleGainNode; comping2GainNode = saved.comping2GainNode; bebopGainNode = saved.bebopGainNode; melody2GainNode = saved.melody2GainNode; melody3GainNode = saved.melody3GainNode;
       reverbBusGain = saved.reverbBusGain; reverbConvolver = saved.reverbConvolver; reverbReturnGain = saved.reverbReturnGain; reverbSendGains = saved.reverbSendGains;
+      delayBusGain = saved.delayBusGain; delayNode = saved.delayNode; delayFbGain = saved.delayFbGain; delayToneFilter = saved.delayToneFilter; delayReturnGain = saved.delayReturnGain; delaySendGains = saved.delaySendGains;
       voices = saved.voices;
     }
     return off.startRendering();
@@ -20392,6 +20530,7 @@ function runAnalysis() {
       st.push(["Compases", String(NUM_BARS)]);
       var tp = val("consolaTempo"); if(tp != null) st.push(["Tempo", tp + " BPM"]);
       var rv = val("consolaReverbAmount"); if(rv != null) st.push(["Reverb general", rv + "%"]);
+      var dl = val("consolaDelayAmount"); if(dl != null && dl !== "0") st.push(["Delay general", dl + "%"]);
       var ms = val("consolaMelSilSlider"); if(ms != null) st.push(["Melody silences", ms + "%"]);
       st.push(["Melody n2 / n3", (chk("consolaMelody2Chk") ? "n2 sí" : "n2 no") + " · " + (chk("consolaMelody3Chk") ? "n3 sí" : "n3 no")]);
       var mc = document.getElementById("consolaMoreCompingBtn"); if(mc) st.push(["moreComping", mc.classList.contains("primary") ? "sí" : "no"]);
@@ -21016,12 +21155,15 @@ function runAnalysis() {
       masterGain:masterGain, masterBoost:masterBoost, masterLimiter:masterLimiter,
       chordGainNode:chordGainNode, bassGainNode:bassGainNode, melodyGainNode:melodyGainNode, drumGainNode:drumGainNode,
       melodyDoubleGainNode:melodyDoubleGainNode, chordDoubleGainNode:chordDoubleGainNode, bassDoubleGainNode:bassDoubleGainNode, comping2GainNode:comping2GainNode, bebopGainNode:bebopGainNode, melody2GainNode:melody2GainNode, melody3GainNode:melody3GainNode,
-      reverbBusGain:reverbBusGain, reverbConvolver:reverbConvolver, reverbReturnGain:reverbReturnGain, reverbSendGains:reverbSendGains, voices:voices
+      reverbBusGain:reverbBusGain, reverbConvolver:reverbConvolver, reverbReturnGain:reverbReturnGain, reverbSendGains:reverbSendGains,
+      delayBusGain:delayBusGain, delayNode:delayNode, delayFbGain:delayFbGain, delayToneFilter:delayToneFilter, delayReturnGain:delayReturnGain, delaySendGains:delaySendGains, voices:voices
     };
     masterGain = masterBoost = masterLimiter = null;
     chordGainNode = bassGainNode = melodyGainNode = drumGainNode = null;
     melodyDoubleGainNode = chordDoubleGainNode = bassDoubleGainNode = comping2GainNode = bebopGainNode = melody2GainNode = melody3GainNode = null;
     reverbBusGain = reverbConvolver = reverbReturnGain = null;
+    delayBusGain = delayNode = delayFbGain = delayToneFilter = delayReturnGain = null;
+    delaySendGains = { chord:null, bass:null, bassDouble:null, melody:null, melodyDouble:null, chordDouble:null, drum:null, comping2:null, bebop:null, melody2:null, melody3:null };
     reverbSendGains = { chord:null, bass:null, bassDouble:null, melody:null, melodyDouble:null, chordDouble:null, drum:null, comping2:null, bebop:null, melody2:null, melody3:null };
     voices = new Set();
     try{
@@ -21031,6 +21173,7 @@ function runAnalysis() {
       chordGainNode = saved.chordGainNode; bassGainNode = saved.bassGainNode; melodyGainNode = saved.melodyGainNode; drumGainNode = saved.drumGainNode;
       melodyDoubleGainNode = saved.melodyDoubleGainNode; chordDoubleGainNode = saved.chordDoubleGainNode; bassDoubleGainNode = saved.bassDoubleGainNode; comping2GainNode = saved.comping2GainNode; bebopGainNode = saved.bebopGainNode; melody2GainNode = saved.melody2GainNode; melody3GainNode = saved.melody3GainNode;
       reverbBusGain = saved.reverbBusGain; reverbConvolver = saved.reverbConvolver; reverbReturnGain = saved.reverbReturnGain; reverbSendGains = saved.reverbSendGains;
+      delayBusGain = saved.delayBusGain; delayNode = saved.delayNode; delayFbGain = saved.delayFbGain; delayToneFilter = saved.delayToneFilter; delayReturnGain = saved.delayReturnGain; delaySendGains = saved.delaySendGains;
       voices = saved.voices;
     }
     return off.startRendering();
@@ -21830,6 +21973,25 @@ function runAnalysis() {
     document.getElementById("consolaReverbAmountVal").textContent = this.value + "%";
     setReverbAmount(this.value/100);
   });
+  document.getElementById("consolaDelayAmount").addEventListener("input", function(){
+    document.getElementById("consolaDelayAmountVal").textContent = this.value + "%";
+    setDelayAmount(this.value/100);
+  });
+  document.getElementById("consolaDelayTime").addEventListener("change", function(){
+    setDelayDivision(parseFloat(this.value));
+  });
+  document.getElementById("consolaTempo").addEventListener("input", applyDelayTime);
+  (function(){
+    [["mixDrumDly","drum"],["mixBassDly","bass"],["mixChordDly","chord"],["mixMelodyDly","melody"],["mixBebopDly","bebop"],
+     ["mixMelody2Dly","melody2"],["mixMelody3Dly","melody3"],["mixMelodyDoubleDly","melodyDouble"]].forEach(function(p){
+      var el = document.getElementById(p[0]);
+      if(!el) return;
+      el.addEventListener("input", function(){
+        document.getElementById(p[0] + "Val").textContent = this.value + "%";
+        setDelayMix(p[1], this.value/100);
+      });
+    });
+  })();
 
   // ---- Mini mixer: volúmenes independientes por pista ----
   (function(){
