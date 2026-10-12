@@ -1505,6 +1505,11 @@
           <button class="chip primary" id="partimentiBtn" type="button" title="Partimenti (experimental): el motor inventa un bajo (Regla de la octava ascendente/descendente, quintas descendentes, I–IV–V–I, esquemas galantes y cadencias simple/compuesta/doble) en una tonalidad mayor al azar y lo completa a 4 voces con conducción de voces (sin quintas ni octavas paralelas, la 7ª baja, la sensible sube): bajo en Bass, tenor y alto en Harmony, soprano con diminuciones en Melody. Al entrar pone Clavecín en los tres y Batería a 0%. Cada canción sortea un movimiento de tempo (Grave…Prestissimo). En el piano roll: cifra romana e inversión (V4/3, V6/4, I6...). Las opciones están en el desplegable de abajo. 🔀 / tecla G sortean otra canción.">🎹 Partimenti</button>
           <details id="partimentiOpts" style="margin-top:2px;"><summary style="font-size:12px;color:var(--ink-muted);cursor:pointer;" title="Partimenti: elegí qué celdas de bajo, esquemas galantes (Romanesca, Prinner, Meyer, Do-Re-Mi, Sol-Fa-Mi, Aprile, Jupiter, Pastorella, Fenaroli, Ponte, Passo Indietro, Quiescenza), cadencias (simple, compuesta, doble) y movimientos de tempo (Grave…Prestissimo) puede sortear. Sin tildar nada = todo.">🎹 Partimenti: esquemas, cadencias, tempo</summary><div id="partimentiOptsBody" style="padding:4px 0;"></div></details>
           <button class="chip primary" id="jazzTunesBtn" type="button" title="JazzTunes (random choose): sortea una canción de la carpeta Band in a box SONGS (archivo MGU), toma sus acordes y su melodía y la arma con el motor: la melodía es la de la canción nota por nota, la armonía sale del motor siguiendo los acordes de la canción (tonos guía llevados por la voz más cercana; respeta Chord simultaneity, BlockwithMelody, wide.range), el bajo toca la raíz de cada acorde y la batería es la del motor con tus controles. Tempo y compás (4/4 o 3/4) = los de la canción; una canción = un coro. moreComping y bebopMelody, si los tenés prendidos, tocan sobre los acordes de la canción. 🔀 / tecla G rearman el acompañamiento de la misma canción; este botón sortea otra.">🎷 JazzTunes</button>
+          <div id="jazzReharmRow" style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-muted);" title="Reharmonization (solo JazzTunes): reharmoniza los acordes de la canción con conocimiento de sets (Forte-Solomon, vector de intervalos, pares Z) y la base de acordes de CommonChords, sin tocar la melodía: cada acorde nuevo tiene que calzar con las notas que suenan sobre él. Cuanto más grande el slider, más complejo: 1–25% colores y relativos (maj7→maj9, Cmaj7→Em7); 30–50% sustitutos tritonales, dominantes secundarios y ii–V insertados; 45%+ dominantes alterados; 55%+ clases de set iguales o pares Z, disminuidos de paso; 70%+ medíantes cromáticas y backdoor. Se aplica en el próximo JazzTunes y en cada 🔀 / tecla G (re-sortea). El detalle de lo cambiado (con el número de Forte de cada acorde) queda en el log de la canción.">
+            <label style="display:flex;align-items:center;gap:4px;white-space:nowrap;cursor:pointer;"><input type="checkbox" id="jazzReharmChk">Reharmonization</label>
+            <input type="range" id="jazzReharmSlider" min="0" max="100" step="1" value="40" style="flex:1;min-width:60px;" aria-label="Complejidad de la Reharmonization">
+            <span id="jazzReharmVal" style="min-width:34px;text-align:right;font-family:'JetBrains Mono',monospace;">40%</span>
+          </div>
           <button class="chip primary" id="creaturaIntervalicBtn" type="button" title="Igual que CreaturaRandom (mismos sliders, Compose, Mix time signatures, Detener, espera 2s y Regenerar, con 5 o 2 sets), pero antes sortea una combinación de clases de intervalo (1, 2 o 3 de ic1..ic6) y los sets salen SOLO de los que tienen todas esas clases en su vector de intervalos, con más probabilidad cuanto mayor parte del vector ocupan esas clases.">Intervalic.Creature</button>
         </div>
         <button class="chip" id="composeBtn" type="button" title="Como CreaturA pero con TU set y TU compás: con el set elegido en el reloj/piano (2+ notas) y el time signature que dejaste escrito, sortea los sliders, el tempo y los presets al azar (como CreaturA), no cambia el set, no mezcla compases, y toca una variación nueva en primer plano. Sin set elegido, sortea uno con la misma regla de CreaturA (sets del índice por jerarquía); cada vez que lo apretás de nuevo, sortea otro set distinto (un set que elegiste vos a mano se respeta).">🎹 Compose</button>
@@ -14821,6 +14826,7 @@ function runAnalysis() {
       renderBebopRoll();
     }
 
+    api.src = CHORDS_SRC; api.fused = FUSED;     // los usa REHARMONIZATION (JazzTunes)
     api.build = build;
     api.start = function(){ if(window.__jazzTunes) window.__jazzTunes.off(); api.active = true; regenerateConsola(); };
     api.off = function(){ api.active = false; };
@@ -16881,6 +16887,241 @@ function runAnalysis() {
   window.__partimenti = PARTIMENTI;
 
   /* ================================================================
+     REHARMONIZATION — checkbox "Reharmonization" + slider (debajo de 🎷 JazzTunes). Solo actúa sobre JazzTunes.
+     Reharmoniza los acordes de la canción con CONOCIMIENTO DE SETS y de la base de CommonChords (COMMONCHORDS.src = CHORDS_SRC, 54 acordes
+     en las 12 tónicas; sin "5" ni "sus2"). La melodía NO se toca: cada sustituto tiene que "calzar" con las notas que suenan sobre él.
+     Slider 0–100 (t = slider/100); 0 o checkbox apagado = acordes originales. Se re-sortea en cada JazzTunes y en cada 🔀 / tecla G.
+       · Probabilidad de que un acorde se sustituya: 0.1 + 0.8·t. Se ordenan las opciones por costo (distancia de vector de intervalos ICV,
+         ajuste a la melodía, rango de la relación); con t bajo gana la opción más cercana, con t alto se elige casi al azar entre todas.
+       · Relaciones de set permitidas (cada una se habilita a partir de cierto t):
+           color (siempre)        misma raíz y función, conserva 3ª y 7ª del original: 7→9/13, maj7→maj9/6/9/#11, m7→m9/m11/m6…
+           subconjunto/superconjunto (t≥0.15)  el sustituto está contenido en el original o lo contiene, con ≥3 notas comunes (Cmaj7→Em7, C7→Em7b5, C6↔Am7)
+           set relacionado (t≥0.3)  ≥3 notas comunes y distancia ICV ≤ 5 (suma de diferencias de las 6 clases de intervalo)
+           tritono (t≥0.3)        dominante → dominante a 6 semitonos (comparte el tritono 3ª–7ª): G7→Db7
+           alterado (t≥0.45)      dominante → 7alt de la misma raíz (7b9, 7#9, 7b13, 7#5, 13b9…)
+           misma clase T/I y Z-mate (t≥0.55)  mismo número de Forte (otra raíz) o par Z (mismo ICV, otra clase), tetracordios en adelante
+           mediante cromática (t≥0.7)  mayor/menor a ±3/±4 semitonos con ≥1 nota común
+       · Inserciones (t≥0.25, prob. (t−0.25)·0.9): en la cola del acorde (1, 2 o 4 tiempos) se mete un acorde de aproximación al SIGUIENTE: V7 (con o sin
+         alteraciones), sustituto tritonal bII7 (t≥0.4), ii–V (t≥0.35), disminuido de paso (t≥0.55), backdoor bVII7 (t≥0.7), ii–bII7 (t≥0.75).
+       · Ajuste a la melodía: nota del acorde = 1, nota de una escala (diatónica, menor melódica/armónica, mayor armónica, octatónicas, tonos enteros) que contiene
+         al acorde = 0.75 (0.35 si queda a semitono sobre una nota del acorde), fuera = 0. El sustituto tiene que sacar ≥ max(0.5, ajuste del original − (0.03+0.35·t)).
+       · El primer y el último acorde solo admiten "color". La cantidad de tiempos de la canción y la melodía no cambian.
+     Expone window.__reharm (apply, last). El resultado de la última corrida (cambios, set de Forte de cada uno) va al log y a "consolaSolomonReadout".
+     ================================================================ */
+  var REHARM = (function(){
+    var NN = ["C","Db","D","Eb","E","F","Gb","G","Ab","A","Bb","B"], PCN = {C:0, D:2, E:4, F:5, G:7, A:9, B:11};
+    var api = { last: null };
+    function pcName(n){ var v = PCN[n.charAt(0)]; for(var i = 1; i < n.length; i++) v += (n.charAt(i) === "#") ? 1 : -1; return ((v % 12) + 12) % 12; }
+    function mask(a){ var m = 0; a.forEach(function(p){ m |= 1 << (((p % 12) + 12) % 12); }); return m; }
+    function has(m, p){ return ((m >> (((p % 12) + 12) % 12)) & 1) === 1; }
+    function pop(m){ var c = 0; while(m){ c += m & 1; m >>= 1; } return c; }
+    function rot(m, r){ r = ((r % 12) + 12) % 12; return ((m << r) | (m >> (12 - r))) & 4095; }
+    function pcsList(m){ var a = []; for(var p = 0; p < 12; p++) if(has(m, p)) a.push(p); return a; }
+    function rnd(){ return Math.random(); }
+    function pick(a){ return a[Math.floor(rnd() * a.length)]; }
+    function shuffle(a){ a = a.slice(); for(var i = a.length - 1; i > 0; i--){ var j = Math.floor(rnd() * (i + 1)), x = a[i]; a[i] = a[j]; a[j] = x; } return a; }
+
+    // ---- sets: número de Forte, par Z e ICV (funciones de la tabla Forte-Solomon de la página) ----
+    function fcode(m){ try { var f = getByPitchClasses(CHORDS_DATA, getPrimeForm(pcsList(m))); return f ? f["forte-code"] : null; } catch(_e){ return null; } }
+    function zbase(m){ try { var z = getZMate(CHORDS_DATA, pcsList(m)); return z ? String(z).replace(/B$/, "") : null; } catch(_e){ return null; } }
+    function icvOf(m){ try { return getIntervalVector(pcsList(m)); } catch(_e){ return [0,0,0,0,0,0]; } }
+    function icvDist(a, b){ var d = 0; for(var i = 0; i < 6; i++) d += Math.abs(a[i] - b[i]); return d; }
+    function clsOf(rm){
+      var M3 = has(rm, 4), m3 = has(rm, 3), s7 = has(rm, 10);
+      if(M3 && s7) return "dom";
+      if(!M3 && !m3 && has(rm, 5) && s7) return "dom";            // 7sus
+      if(m3 && has(rm, 6) && !has(rm, 7)) return "dim";           // dim7, m7b5, m9b5
+      if(M3) return "maj";
+      if(m3) return "min";
+      return "other";
+    }
+
+    // ---- base de acordes (CommonChords), raíz C ----
+    var DB = null;
+    function db(){
+      if(DB) return DB;
+      DB = [];
+      var cc = window.__commonChords, src = cc && cc.src, fu = (cc && cc.fused) || {};
+      if(!src) return DB;
+      src.forEach(function(r){
+        var sym = r[0]; if(sym === "5" || sym === "sus2") return;
+        var iv = [], prev = -1;
+        r[1].split(" ").forEach(function(n){ var x = pcName(n); while(x <= prev) x += 12; iv.push(x); prev = x; });
+        var rm = mask(iv);
+        DB.push({ sym: sym, iv: iv, rm: rm, size: pop(rm), cls: clsOf(rm), fam: (fu[sym] || [])[0] || "", icv: icvOf(rm), fc: fcode(rm), z: zbase(rm) });
+      });
+      return DB;
+    }
+    function dbBySym(sym){ var d = db(); for(var i = 0; i < d.length; i++) if(d[i].sym === sym) return d[i]; return null; }
+
+    // ---- escalas que contienen al acorde (para el ajuste con la melodía) ----
+    var SCM = null;
+    function scales(){
+      if(SCM) return SCM;
+      var seen = {}; SCM = [];
+      [[0,2,4,5,7,9,11],[0,2,3,5,7,9,11],[0,2,3,5,7,8,11],[0,2,4,5,7,8,11],[0,2,3,5,6,8,9,11],[0,1,3,4,6,7,9,10],[0,2,4,6,8,10]].forEach(function(b){
+        for(var r = 0; r < 12; r++){ var m = rot(mask(b), r); if(!seen[m]){ seen[m] = 1; SCM.push(m); } }
+      });
+      return SCM;
+    }
+    var ALW = {};
+    function allowed(am){
+      if(ALW[am] !== undefined) return ALW[am];
+      var u = 0; scales().forEach(function(s){ if((am & ~s) === 0) u |= s; });
+      return (ALW[am] = u);
+    }
+    function fit(am, mel){
+      if(!mel.length) return 1;
+      var al = allowed(am), sw = 0, sc = 0;
+      mel.forEach(function(n){
+        var s = has(am, n.pc) ? 1 : (has(al, n.pc) ? (has(am, n.pc - 1) ? 0.35 : 0.75) : 0);
+        sw += n.w; sc += s * n.w;
+      });
+      return sc / sw;
+    }
+    function melOf(P, s, e){
+      var out = [];
+      P.melody.forEach(function(n){
+        var a = Math.max(n.startBeat, s), z = Math.min(n.startBeat + n.durBeats, e);
+        if(z - a > 1e-6) out.push({ pc: ((n.midi % 12) + 12) % 12, w: (z - a) * (n.startBeat >= s - 1e-6 ? 1.5 : 1) });
+      });
+      return out;
+    }
+    function level(){
+      var c = document.getElementById("jazzReharmChk"), s = document.getElementById("jazzReharmSlider");
+      if(!c || !c.checked || !s) return 0;
+      return Math.max(0, Math.min(100, parseInt(s.value, 10) || 0));
+    }
+    function nameOf(root, sym){ return NN[root] + sym; }
+
+    // Candidatos para sustituir el acorde o (raíz, máscara absoluta am, cls, notas guía) según t y la melodía.
+    function candidates(o, mel, t, onlyColor){
+      var res = [], F0 = fit(o.am, mel), need = Math.max(0.5, F0 - (0.03 + 0.35 * t));
+      db().forEach(function(D){
+        for(var r = 0; r < 12; r++){
+          var am = rot(D.rm, r);
+          if(r === o.root && am === o.am) continue;
+          if(D.size > o.size + (t < 0.5 ? 1 : 2)) continue;                    // el sustituto no crece demasiado respecto del original
+          if(D.fam === "7Alt" && t < 0.45) continue;                            // los dominantes alterados entran recién con t>=0.45
+          var sh = pop(am & o.am), rel = (r - o.root + 12) % 12, tag = null, rank = 0;
+          var sub = (am & ~o.am) === 0, sup = (o.am & ~am) === 0, dist = icvDist(D.icv, o.icv);
+          if(rel === 0){
+            if(D.cls === o.cls && (o.third < 0 || has(D.rm, o.third)) && (o.seventh < 0 || has(D.rm, o.seventh)) && sh >= 2){ tag = "color"; rank = 0; }
+            else if(o.cls === "dom" && t >= 0.45 && D.cls === "dom" && (D.fam === "7Alt" || D.sym === "7#5" || D.sym === "9#5")){ tag = "alterado"; rank = 1.5; }
+          } else if(!onlyColor){
+            if(o.cls === "dom" && rel === 6 && D.cls === "dom" && t >= 0.3){ tag = "tritono"; rank = 1.5; }
+            else if(t >= 0.15 && (sub || sup) && sh >= 3 && D.cls !== "other"){ tag = sub ? "subconjunto" : "superconjunto"; rank = 1; }
+            else if(t >= 0.3 && sh >= 3 && dist <= 5 && D.cls !== "other"){ tag = "set relacionado"; rank = 1.5; }
+            else if(t >= 0.55 && D.size === o.size && o.size >= 4 && sh >= 2 && D.cls !== "other" && D.fc && o.fc && (D.fc.replace(/B$/, "") === o.fcBase || D.fc.replace(/B$/, "") === o.z)){ tag = (D.fc.replace(/B$/, "") === o.fcBase) ? "misma clase T/I" : "Z-mate"; rank = 2.5; }
+            else if(t >= 0.7 && (rel === 3 || rel === 4 || rel === 8 || rel === 9) && (o.cls === "maj" || o.cls === "min") && (D.cls === "maj" || D.cls === "min") && D.size <= 5 && sh >= 1){ tag = "mediante cromática"; rank = 3; }
+          }
+          if(!tag) continue;
+          var F = fit(am, mel); if(F < need) continue;
+          res.push({ D: D, root: r, am: am, tag: tag, cost: 0.5 * dist + 3 * (F0 - F) + 0.3 * rank, F: F });
+        }
+      });
+      return res;
+    }
+    var TAGW = { "color": 1, "subconjunto": 2, "superconjunto": 1.5, "set relacionado": 1.5, "tritono": 3, "alterado": 2.5, "misma clase T/I": 1, "Z-mate": 1, "mediante cromática": 0.8 };
+    function choose(cands, t){
+      if(!cands.length) return null;
+      var groups = {}, keys = [];
+      cands.forEach(function(c){ (groups[c.tag] = groups[c.tag] || (keys.push(c.tag), [])).push(c); });
+      var w = keys.map(function(k){
+        var x = TAGW[k] || 1;
+        if(k === "color") x *= 3 * (1 - t) + 0.4; else if(k !== "tritono" && k !== "subconjunto") x *= 0.3 + t;
+        return x;
+      });
+      var tot = w.reduce(function(a, b){ return a + b; }, 0), u = rnd() * tot, gi = 0;
+      while(gi < w.length - 1 && u > w[gi]){ u -= w[gi]; gi++; }
+      var g = groups[keys[gi]].sort(function(a, b){ return a.cost - b.cost; });
+      return g[Math.min(g.length - 1, Math.floor(g.length * Math.pow(rnd(), 1 + 3 * (1 - t))))];
+    }
+    function origInfo(c, INT){
+      var iv = INT[c.suffix] || [0, 4, 7], rm = mask(iv), am = rot(rm, c.root);
+      var third = has(rm, 4) ? 4 : (has(rm, 3) ? 3 : -1), seventh = has(rm, 10) ? 10 : (has(rm, 11) ? 11 : -1);
+      var fc = fcode(am);
+      return { root: c.root, am: am, rm: rm, cls: clsOf(rm), third: third, seventh: seventh, size: pop(am), icv: icvOf(am), fc: fc, fcBase: fc ? fc.replace(/B$/, "") : null, z: zbase(am) };
+    }
+    function esc(s){ return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
+
+    api.apply = function(P){
+      api.last = null;
+      var L = level();
+      if(!L || !db().length) return { chords: P.chords, html: "", summary: "" };
+      var t = L / 100, INT = window.__MGU_INT || {}, n = P.chords.length, items = [], ins = 0;
+      var out = P.chords.map(function(c){ return { s: c.s, e: c.e, root: c.root, bass: c.bass, suffix: c.suffix, name: c.name, iv: null, cls: null, am: null }; });
+      // 1) sustituciones
+      out.forEach(function(c, i){
+        var o = origInfo(c, INT); c.cls = o.cls; c.am = o.am;
+        if(rnd() >= 0.1 + 0.8 * t) return;
+        var pick1 = choose(candidates(o, melOf(P, c.s, c.e), t, i === 0 || i === n - 1), t);
+        if(!pick1) return;
+        var from = c.name;
+        c.root = pick1.root; c.bass = (pick1.root === o.root) ? c.bass : null; c.suffix = "";
+        c.iv = pick1.D.iv; c.name = nameOf(pick1.root, pick1.D.sym); c.cls = pick1.D.cls; c.am = pick1.am;
+        items.push({ from: from, to: c.name, tag: pick1.tag, sc: (o.fc || "?") + "→" + (pick1.D.fc || "?") });
+      });
+      // 2) inserciones: acorde de aproximación al siguiente, en la cola del acorde
+      if(t >= 0.25){
+        var res = [];
+        out.forEach(function(c, i){
+          res.push(c);
+          if(i >= n - 1 || rnd() >= (t - 0.25) * 0.9) return;
+          var nx = out[i + 1], len = c.e - c.s, tail = len >= 8 ? 4 : (len >= 4 ? 2 : (len >= 2 ? 1 : 0));
+          if(!tail || len - tail < 1) return;
+          var rN = nx.root, nMin = nx.cls === "min" || nx.cls === "dim";
+          if(c.cls === "dom" && (c.root === (rN + 7) % 12 || c.root === (rN + 1) % 12)) return;      // ya es su dominante
+          function domSym(){
+            var alt = t >= 0.45 && rnd() < (0.2 + 0.6 * t) * (nMin ? 1.2 : 0.8);
+            return alt ? pick(nMin ? ["7b9","7#9","7b13","13b9","7#9b13"] : ["7b9","7#9","7b13","13b9","7#5"]) : pick(["7","9","13"]);
+          }
+          var opts = [];
+          if(t >= 0.25) opts.push({ tag: "V7 secundario", parts: [{ r: (rN + 7) % 12, sym: domSym(), b: tail }] });
+          if(t >= 0.4) opts.push({ tag: "sustituto tritonal bII7", parts: [{ r: (rN + 1) % 12, sym: pick(["7","9","13","7#11"]), b: tail }] });
+          if(t >= 0.35 && tail >= 2) opts.push({ tag: "ii–V", parts: [{ r: (rN + 2) % 12, sym: nMin ? "m7b5" : "m7", b: tail / 2 }, { r: (rN + 7) % 12, sym: domSym(), b: tail / 2 }] });
+          if(t >= 0.55) opts.push({ tag: "disminuido de paso", parts: [{ r: (rN + 11) % 12, sym: "dim7", b: tail }] });
+          if(t >= 0.7) opts.push({ tag: "backdoor bVII7", parts: [{ r: (rN + 10) % 12, sym: pick(["7","9","13"]), b: tail }] });
+          if(t >= 0.75 && tail >= 2) opts.push({ tag: "ii–bII7", parts: [{ r: (rN + 2) % 12, sym: nMin ? "m7b5" : "m7", b: tail / 2 }, { r: (rN + 1) % 12, sym: pick(["7","9","13"]), b: tail / 2 }] });
+          var done = null;
+          shuffle(opts).some(function(op){
+            var s0 = c.e - tail, built = [], ok = true;
+            op.parts.forEach(function(pt){
+              if(!ok) return;
+              var D = dbBySym(pt.sym); if(!D){ ok = false; return; }
+              var am = rot(D.rm, pt.r), z = s0 + pt.b;
+              if(fit(am, melOf(P, s0, z)) < 0.5){ ok = false; return; }
+              built.push({ s: s0, e: z, root: pt.r, bass: null, suffix: "", name: nameOf(pt.r, pt.sym), iv: D.iv, cls: D.cls, am: am, _fc: D.fc });
+              s0 = z;
+            });
+            if(ok){ done = { op: op, built: built }; return true; }
+            return false;
+          });
+          if(done){
+            c.e -= tail; ins++;
+            done.built.forEach(function(b){ res.push(b); });
+            items.push({ from: c.name + " → " + nx.name, to: done.built.map(function(b){ return b.name; }).join(" ") + " (inserta)", tag: done.op.tag, sc: done.built.map(function(b){ return b._fc || "?"; }).join(" ") });
+          }
+        });
+        out = res;
+      }
+      var subs = items.length - ins;
+      var summary = "Reharmonization " + L + "%: " + subs + " sustituidos, " + ins + " insertados";
+      var html = '<div style="font-size:12px;"><b>' + esc(summary) + '</b> · ' + items.slice(0, 14).map(function(it){
+        return esc(it.from) + " → " + esc(it.to) + ' <span style="color:var(--ink-muted);">(' + esc(it.tag) + " · " + esc(it.sc) + ")</span>";
+      }).join("  ·  ") + (items.length > 14 ? " · …" : "") + "</div>";
+      api.last = { level: L, items: items, summary: summary };
+      return { chords: out, html: html, summary: summary };
+    };
+    // el valor del slider
+    document.addEventListener("input", function(e){
+      if(e.target && e.target.id === "jazzReharmSlider"){ var v = document.getElementById("jazzReharmVal"); if(v) v.textContent = e.target.value + "%"; }
+    });
+    return api;
+  })();
+  window.__reharm = REHARM;
+
+  /* ================================================================
      JAZZTUNES — botón "🎷 JazzTunes" (debajo de Partimenti). Un random choose más, como CreaturaRandom / Partimenti / ChordS.
      Sortea UNA canción de la carpeta "Band in a box SONGS" (archivos MGU que el parser MGU de la tarjeta Band in a Box abre sin error),
      toma sus ACORDES y su MELODÍA (primera pista de notas) y la arma con el motor de la página:
@@ -17028,8 +17269,10 @@ function runAnalysis() {
       TOTAL_BEATS = RHYTHM.total();
       var chordEvents = [], bassEvents = [], melodyEvents = [], slotChords = [], progression = [], roles = [], names = [], prevV = null, b;
       for(b = 0; b < NUM_BARS; b++) slotChords.push([]);
-      P.chords.forEach(function(c){
-        var iv = INT[c.suffix] || [0, 4, 7], full = fullStack(c.root, iv), vo = voicing(c.root, iv, prevV), dur = c.e - c.s;
+      var RH = REHARM.apply(P), CHS = RH.chords;      // Reharmonization (checkbox + slider): acordes de la canción reharmonizados; apagado = los originales
+      api.reharm = RH.summary || ""; api.chordsUsed = CHS;
+      CHS.forEach(function(c){
+        var iv = c.iv || INT[c.suffix] || [0, 4, 7], full = fullStack(c.root, iv), vo = voicing(c.root, iv, prevV), dur = c.e - c.s;
         prevV = vo;
         var barC = Math.min(NUM_BARS - 1, Math.floor(c.s / bpb + 1e-9));
         var bo = BROKENCHORD.offsetsFor(vo, dur);
@@ -17091,9 +17334,9 @@ function runAnalysis() {
       var rd = document.getElementById("consolaNotesReadout");
       if(rd) rd.textContent = names.join("  ");
       var sol = document.getElementById("consolaSolomonReadout");
-      if(sol) sol.innerHTML = "";
+      if(sol) sol.innerHTML = RH.html || "";
       var sub = "(JazzTunes · " + P.file + " · ♩=" + P.tempo + " · " + bpb + "/4 · " + P.bars + " compases · " + P.chords.length + " acordes · " + P.melody.length + " notas de melodía" +
-        (P.tempo > 200 || P.tempo < 25 ? " · tempo recortado a 25–200" : "") + (P.warnings.length ? " · ⚠ " + P.warnings.length + " aviso(s) del parser" : "") + ")";
+        (RH.summary ? " · " + RH.summary : "") + (P.tempo > 200 || P.tempo < 25 ? " · tempo recortado a 25–200" : "") + (P.warnings.length ? " · ⚠ " + P.warnings.length + " aviso(s) del parser" : "") + ")";
       SONGTITLE.set(P.title, sub, "");
       ["consolaPlayBtn", "consolaRegenPlayBtn"].forEach(function(id){
         var bt = document.getElementById(id); if(bt) bt.disabled = false;
@@ -24419,6 +24662,10 @@ function runAnalysis() {
         SL("JazzTunes sorteo", P.file + " · \"" + P.title + "\" · ♩=" + P.tempo + " · " + P.bpb + "/4 · " + P.bars + " compases · " + P.chords.length + " acordes · " + P.melody.length + " notas de melodía (intento " + P.tries + ")");
         rcPre("jazz");
         window.__jazzTunes.start(P);
+        try {
+          var RHL = window.__reharm && window.__reharm.last;
+          if(RHL) SL("JazzTunes reharmonization", RHL.summary + " · " + RHL.items.map(function(it){ return it.from + " → " + it.to + " (" + it.tag + " · " + it.sc + ")"; }).join(" | "));
+        } catch(_e){}
         rcPost("jazz");
         clickIfEnabled("consolaPlayBtn");
       } finally {
