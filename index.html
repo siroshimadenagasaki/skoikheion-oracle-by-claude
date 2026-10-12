@@ -15274,9 +15274,9 @@ function runAnalysis() {
     // Slider 0–100%: hasta 50% es la escala de siempre (corcheas/semicorcheas, una figura por acorde); de 50% a 100% crece la probabilidad del modo FLORIDO:
     // grilla a la mitad (semicorcheas/fusas) y el acorde entero se llena encadenando figuras distintas (escalas, terceras, giros, bordaduras, arpegios) que cierran acercándose al soprano siguiente.
     var DIM_FIGS = { passing: "Notas de paso", neighbor: "Bordaduras", turn: "Giros", arpeggio: "Arpegios", anticipation: "Anticipaciones", scale: "Escalas", thirds: "Terceras rotas",
-                     trill: "Trino barroco", mordentL: "Mordente inferior", mordentU: "Mordente superior", appoggiatura: "Apoyatura" };
-    var DIM_W = { passing: 3, neighbor: 2, turn: 1, arpeggio: 1.5, anticipation: 1, scale: 2, thirds: 1.5, trill: 1.5, mordentL: 1.5, mordentU: 1.5, appoggiatura: 2 };
-    var ORN_FIGS = { trill: 1, mordentL: 1, mordentU: 1, appoggiatura: 1 };   // ornamentos de una nota (no se parten con silencios ni llevan staccato)
+                     trill: "Trino barroco", trillLong: "Trino largo ↗↘", mordentL: "Mordente inferior", mordentU: "Mordente superior", appoggiatura: "Apoyatura" };
+    var DIM_W = { passing: 3, neighbor: 2, turn: 1, arpeggio: 1.5, anticipation: 1, scale: 2, thirds: 1.5, trill: 1.5, trillLong: 1.5, mordentL: 1.5, mordentU: 1.5, appoggiatura: 2 };
+    var ORN_FIGS = { trill: 1, trillLong: 1, mordentL: 1, mordentU: 1, appoggiatura: 1 };   // ornamentos de una nota (no se parten con silencios ni llevan staccato)
     var DIM_REST_P = 0.3;                                                  // slider Silences al 50 %: probabilidad de que un acorde lleve una pausa
     function scaleList(key, mode){
       var set = mode === "minor" ? HMIN : MAJ, out = [];
@@ -15431,6 +15431,30 @@ function runAnalysis() {
             if(trem >= 0.5 && dnOK && Math.random() < 0.4) tlist.push([dn, TL, tu], [s, TL + tu, dur - TL - tu]);   // terminación
             else tlist[tlist.length - 1][2] = tu + trem;                                                           // la última nota del trino sigue sonando
             opts.push({ fig: "trill", full: tlist });
+          }
+        }
+        // Trino largo ↗↘ (casilla "Trino largo"): trino barroco MÁS LARGO que el común (ocupa 90–100 % de la nota, que debe durar 2 tiempos o más) con velocidad variable:
+        // empieza lento, ACELERA hasta el centro y DESACELERA hacia el final (curva senoidal de la duración de cada nota, cuantizada a 1/16 de tiempo). Siempre arranca en la nota
+        // SUPERIOR sobre el tiempo, alterna con la principal y termina en la principal (que queda sonando; a veces con terminación por la nota inferior).
+        // La nota más rápida respeta el tempo (dim.bpm): como mínimo 0,1 s entre ataques, para que SPEEDLIMIT no recorte el trino.
+        if(allow.indexOf("trillLong") >= 0 && upOK && dur >= 2 - 1e-9){
+          var G2 = 0.0625, spb2 = dim.bpm > 0 ? 60 / dim.bpm : 0.5;
+          var dMin = Math.max(0.125, Math.ceil(0.1 / spb2 / G2 - 1e-9) * G2);
+          var dMax = Math.max(dur >= 3 ? 0.5 : 0.25, dMin + 0.125);
+          if(dMax <= 0.5 + 1e-9){
+            var TL2 = dur * (0.9 + 0.1 * Math.random()), t2 = [], tt = 0, dd = dMin, dLast = dMin;
+            for(;;){
+              dd = dMax - (dMax - dMin) * Math.sin(Math.PI * Math.min(1, tt / TL2));
+              dd = Math.min(dMax, Math.max(dMin, Math.round(dd / G2) * G2));
+              if(tt + 2 * dd > TL2 + 1e-9) break;
+              t2.push([up, tt, dd], [s, tt + dd, dd]); tt += 2 * dd; dLast = dd;
+            }
+            if(t2.length >= 8){                                                                 // al menos 4 pares (8 notas)
+              var rem2 = dur - tt;
+              if(rem2 >= dLast + 0.25 && dnOK && Math.random() < 0.4) t2.push([dn, tt, dLast], [s, tt + dLast, rem2 - dLast]);   // terminación
+              else t2[t2.length - 1][2] += rem2;                                                // la última nota (principal) sigue sonando
+              opts.push({ fig: "trillLong", full: t2 });
+            }
           }
         }
       }
@@ -15961,6 +15985,7 @@ function runAnalysis() {
                       scale: "Escalas: carreras por grados conjuntos de 3 a 7 notas.",
                       thirds: "Terceras rotas: salta una tercera, vuelve por grado y salta de nuevo (do-mi-re-fa).",
                       trill: "Trino barroco: empieza en la nota SUPERIOR sobre el tiempo y alterna con la nota principal (rápido); a veces termina con la nota inferior y la principal queda sonando. No se usa con TestContrapunctus.",
+                      trillLong: "Trino largo ↗↘: trino barroco más largo que el común (ocupa casi toda la nota, que debe durar 2 tiempos o más) que ACELERA desde lento hasta el centro y DESACELERA hacia el final. Empieza en la nota SUPERIOR sobre el tiempo, alterna con la principal y termina en ella (a veces con terminación por la nota inferior). Respeta el tempo: a tempos altos acelera menos. No se usa con TestContrapunctus.",
                       mordentL: "Mordente inferior: nota, nota de abajo (por grado), nota; rápido, a veces doble. La nota principal sigue sonando. No se usa con TestContrapunctus.",
                       mordentU: "Mordente superior: nota, nota de arriba (por grado), nota; rápido, a veces doble. La nota principal sigue sonando. No se usa con TestContrapunctus.",
                       appoggiatura: "Apoyatura: la nota auxiliar (por grado, arriba o abajo) cae sobre el tiempo, larga (la mitad de la nota) o corta, y resuelve a la nota del acorde. No se usa con TestContrapunctus." };
@@ -16107,7 +16132,7 @@ function runAnalysis() {
 
     // Staccato (casilla, solo Partimenti): en pasajes rápidos (3 o más notas seguidas de <= 1/2 tiempo, sin pausas entre ellas) cada nota dura la mitad.
     // Trino, mordentes y apoyatura (ORN_FIGS) no entran. Se aplica a los eventos de melodía ya armados.
-    var SP_ORN = { trill: 1, mordentL: 1, mordentU: 1, appoggiatura: 1 };
+    var SP_ORN = { trill: 1, trillLong: 1, mordentL: 1, mordentU: 1, appoggiatura: 1 };
     function applyStaccato(events){
       var arr = events.map(function(e){ return spCopy(e, e.startBeat, e.durBeats); }), idx = arr.map(function(_, k){ return k; }), run = [];
       idx.sort(function(a, b){ return arr[a].startBeat - arr[b].startBeat; });
@@ -16179,7 +16204,7 @@ function runAnalysis() {
       var orn = core.ornFor(tempo.bpm);
       var dimEl = document.getElementById("partimentiDimPct"), dimPct = dimEl ? parseInt(dimEl.value, 10) : 25;
       var silEl = document.getElementById("partimentiRestsPct"), silPct = silEl ? parseInt(silEl.value, 10) : 50;
-      var dim = { level: dimPct / 100, figs: checkedKeys("dim"), restLevel: silPct / 100 };
+      var dim = { level: dimPct / 100, figs: checkedKeys("dim"), restLevel: silPct / 100, bpm: tempo.bpm };
       var keyName = spellPitchClass(song.key) + (song.mixed ? " mayor/menor" : (song.mode === "minor" ? " menor" : " mayor"));
       var chordEvents = [], bassEvents = [], melodyEvents = [];
       var progression = [], roles = [], slotChords = [], labels = [], lastBass = null;
