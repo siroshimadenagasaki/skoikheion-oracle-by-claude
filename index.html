@@ -259,6 +259,33 @@
   #radioVintage #rvExportBox{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);z-index:7;display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;max-width:calc(100% - 20px);}
   #radioVintage #rvExportBox button{appearance:none;-webkit-appearance:none;cursor:pointer;border:1px solid #b08a45;border-radius:999px;padding:6px 14px;background:rgba(18,13,8,.88);color:#f3e6c4;font:700 12px/1 Georgia,"Times New Roman",serif;letter-spacing:.06em;box-shadow:0 2px 8px rgba(0,0,0,.35);}
   #radioVintage #rvExportBox button:disabled{opacity:.45;cursor:default;}
+  /* ♥ Favoritos: corazón + carpeta, abajo a la derecha (Player y página principal) */
+  .favbar{display:flex;align-items:center;gap:6px;}
+  .favbar button{appearance:none;-webkit-appearance:none;cursor:pointer;border:1px solid #b08a45;border-radius:999px;min-width:34px;height:34px;padding:0 9px;background:rgba(18,13,8,.88);color:#f3e6c4;font:700 15px/1 Georgia,"Times New Roman",serif;box-shadow:0 2px 8px rgba(0,0,0,.35);opacity:.78;}
+  .favbar button:hover,.favbar button:focus-visible{opacity:1;}
+  .favbar .fav-heart{color:#ff5d73;font-size:17px;}
+  .favbar .fav-heart.fav-flash{animation:favFlash .7s ease-out;}
+  @keyframes favFlash{0%{transform:scale(1);}30%{transform:scale(1.5);}100%{transform:scale(1);}}
+  .favbar-main{position:fixed;right:8px;bottom:calc(8px + env(safe-area-inset-bottom,0px));z-index:9000;gap:4px;}
+  .favbar-main button{min-width:28px;height:28px;padding:0 7px;font-size:13px;opacity:.55;}
+  .favbar-main .fav-heart{font-size:14px;}
+  .favbar-main button:hover,.favbar-main button:focus-visible{opacity:1;}
+  #radioVintage .favbar-rv{position:absolute;right:10px;bottom:6px;z-index:7;}
+  #radioVintage .rv-cab{padding-bottom:calc(clamp(12px,2.6vh,26px) + 40px);} /* skin clásica: lugar abajo para Export y ♥ 📂 sin tapar los botones */
+  #favPanel{position:fixed;inset:0;z-index:100040;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.55);}
+  #favPanel.on{display:flex;}
+  #favPanel .fav-box{width:min(520px,calc(100vw - 20px));max-height:min(78vh,640px);overflow:auto;-webkit-overflow-scrolling:touch;box-sizing:border-box;padding:12px 14px;border:1px solid #b08a45;border-radius:12px;background:rgba(18,13,8,.97);color:#f3e6c4;font:13px/1.4 Georgia,"Times New Roman",serif;box-shadow:0 10px 40px rgba(0,0,0,.6);}
+  #favPanel .fav-h{display:flex;align-items:center;justify-content:space-between;font-size:16px;margin-bottom:6px;}
+  #favPanel .fav-sec{margin:12px 0 4px;font:700 11px/1 Georgia,serif;letter-spacing:.14em;text-transform:uppercase;color:#d4a537;display:flex;align-items:center;gap:8px;}
+  #favPanel button{appearance:none;-webkit-appearance:none;cursor:pointer;border:1px solid #b08a45;border-radius:999px;padding:5px 12px;background:rgba(40,28,14,.9);color:#f3e6c4;font:700 12px/1 Georgia,serif;}
+  #favPanel button:hover{background:#b08a45;color:#1a1208;}
+  #favPanel .fav-row{display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid rgba(176,138,69,.25);}
+  #favPanel .fav-n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  #favPanel .fav-n i{display:block;font-size:11px;opacity:.65;font-style:normal;}
+  #favPanel .fav-empty{opacity:.7;font-size:12px;padding:4px 0;}
+  #favPanel .fav-foot{margin-top:14px;text-align:center;}
+  #favToast{position:fixed;left:50%;bottom:calc(60px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:100050;display:none;max-width:min(560px,calc(100vw - 24px));box-sizing:border-box;padding:9px 14px;border:1px solid #b08a45;border-radius:10px;background:rgba(18,13,8,.96);color:#f3e6c4;font:12px/1.35 Georgia,serif;text-align:center;box-shadow:0 6px 24px rgba(0,0,0,.5);}
+  #favToast.on{display:block;}
   #radioVintage #rvExportStatus{font:600 11px/1.2 Georgia,serif;color:#f3e6c4;background:rgba(18,13,8,.8);border-radius:8px;padding:2px 8px;}
   #radioVintage #rvExportStatus:empty{display:none;}
   /* ===== 📻 Player: skins (se sortea una al abrir: 50% "portada", 50% una de las otras 7) ===== */
@@ -13670,6 +13697,7 @@ function runAnalysis() {
   })();
 
   function regenerateConsola(){
+    if(window.__favApplying) return; // ♥ Favoritos: mientras se repone un favorito, los controles no regeneran (pisarían la música guardada)
     NUM_BARS = desiredNumBars(true);
     RHYTHM.recompute();
     TOTAL_BEATS = RHYTHM.total();
@@ -19609,7 +19637,13 @@ function runAnalysis() {
       return cur;
     }
     function reroll(){ cur = null; }   // próxima foto = variación nueva (rubato / ad libitum sortean fase)
-    return { current:current, reroll:reroll, autoProfile:function(){ return autoProf; }, autoReset:function(){ autoProf = null; autoSig = ""; }, ident:IDENT, build:build, presets:PRESETS };
+    // ♥ Favoritos: repone el perfil Auto guardado (datos planos) para la canción que está cargada ahora (llamar DESPUÉS de reponer los eventos: la firma sale de ellos).
+    function setAuto(P){
+      if(!P || typeof P !== "object" || !Array.isArray(P.parts)) return false;
+      autoProf = P; autoSig = autoSigOf(TOTAL_BEATS); cur = null;
+      return true;
+    }
+    return { current:current, reroll:reroll, autoProfile:function(){ return autoProf; }, autoReset:function(){ autoProf = null; autoSig = ""; }, setAuto:setAuto, ident:IDENT, build:build, presets:PRESETS };
   })();
   // Dynamics: ev.vel (0-127, neutra 96) escala la ganancia y elige la capa de velocity del .sf2; sin ev.vel, igual que siempre.
   function velK(ev){ return ev.vel != null ? ev.vel/96 : 1; }
@@ -20453,9 +20487,16 @@ function runAnalysis() {
       if(list.length > MAX) list.shift();
       pos = list.length - 1;
     };
+    H.capture = cap;
     H.restore = function(i){
       var e = list[i];
       if(!e) return false;
+      H.applyEntry(e);
+      pos = i;
+      return true;
+    };
+    // Repone una foto completa en el motor (la usan Previous/Next y los ♥ Favoritos abiertos desde un .json).
+    H.applyEntry = function(e){
       var s = e.snap;
       state.chordEvents = s.chord; state.bassEvents = s.bass; state.melodyEvents = s.melody;
       state.comping2Events = s.comping2; state.bebopEvents = s.bebop; state.melody2Events = s.melody2; state.melody3Events = s.melody3 || [];
@@ -20474,11 +20515,9 @@ function runAnalysis() {
       if(t && e.tempo != null){ t.value = e.tempo; t.dispatchEvent(new Event("input", { bubbles: true })); }
       SONGTITLE.set(e.title, e.sets);
       window.__radioMixLast = e.kind;
-      try{ if(window.__songLog) window.__songLog.select(e.logId); }catch(errL){}
+      try{ if(window.__songLog && e.logId) window.__songLog.select(e.logId); }catch(errL){}
       var pb = document.getElementById("consolaPlayBtn"); if(pb) pb.disabled = false;
       renderRoll(); renderBebopRoll();
-      pos = i;
-      return true;
     };
     H.reset = function(){ list = []; pos = -1; };
     // Al arrancar RADIO! con CreaturaRandom/Bella el motor arma primero un Compose que se corta enseguida: deja solo la canción que quedó sonando.
@@ -20487,6 +20526,259 @@ function runAnalysis() {
     H.len = function(){ return list.length; };
     H.canForward = function(){ return pos >= 0 && pos < list.length - 1; };
     return H;
+  })();
+  /* ================================================================
+     ♥ FAVORITOS — corazón en el Player (abajo a la derecha) y en la página principal (abajo a la derecha).
+     Guarda la canción que suena como un .json (formato "stoikheion-favorite", versión 1) con todo lo necesario
+     para reproducirla idéntica SIN depender del random (el motor no usa semilla: se guarda el resultado):
+     eventos de cada pista + batería, armonía (slotChords / progresión / roles), presets, tempo, compases,
+     plan de dinámica, perfil Auto de Tempo & Expression y el estado de todos los controles.
+     El corazón descarga el .json (para dejarlo en la carpeta Favorites/ del repo) y lo copia en el localStorage
+     de este navegador. 📂 abre favoritos: los del navegador, los de Favorites/ (lista por la API de GitHub, igual
+     que los soundfonts) o un .json suelto. Para cambiar el formato: subir VER y completar migrate().
+     ================================================================ */
+  window.__favorites = (function(){
+    var F = {}, FMT = "stoikheion-favorite", VER = 1;
+    var IDX_KEY = "stoikheionFavIndex.v1", ITEM_KEY = "stoikheionFav.v1:", REMOTE_KEY = "stoikheionFavRemote.v1", REMOTE_TTL = 5 * 60 * 1000;
+    // Controles que NO se guardan: otras herramientas de la página, el selector de archivos y los interruptores del modo Radio (reponerlos arrancaría la radio).
+    var SKIP = /^(sf2LocalPicker|favFile|cif|progresion|anexo1Filter|mv|rollVScroll|consolaRadio)/;
+    var PRESET_PAIRS = [["harmonyPresetSelect","harmony"],["chordDoublePresetSelect","chordDouble"],["melodyPresetSelect","melody"],["melodyDoublePresetSelect","melodyDouble"],
+      ["bebopPresetSelect","bebop"],["melody2PresetSelect","melody2"],["melody3PresetSelect","melody3"],["comping2PresetSelect","comping2"],["bassPresetSelect","bass"],
+      ["bassDoublePresetSelect","bassDouble"],["drumPresetSelect","drum"]];
+
+    function esc(t){ return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+    var toastT = null;
+    function toast(msg){
+      var t = document.getElementById("favToast");
+      if(!t){ t = document.createElement("div"); t.id = "favToast"; t.setAttribute("role", "status"); t.setAttribute("aria-live", "polite"); document.body.appendChild(t); }
+      t.textContent = msg; t.classList.add("on");
+      clearTimeout(toastT); toastT = setTimeout(function(){ t.classList.remove("on"); }, 6000);
+    }
+
+    // ---------- estado de los controles ----------
+    function readControls(){
+      var o = {};
+      Array.prototype.forEach.call(document.querySelectorAll("input[id],select[id]"), function(el){
+        if(SKIP.test(el.id) || el.type === "file" || el.type === "button" || el.type === "submit") return;
+        o[el.id] = (el.type === "checkbox" || el.type === "radio") ? !!el.checked : el.value;
+      });
+      return o;
+    }
+    // Repone cada control que cambió y avisa con input + change (etiquetas, nodos de audio, mixer). Los handlers que regeneran quedan frenados por window.__favApplying.
+    function writeControls(map){
+      Object.keys(map).forEach(function(id){
+        var el = document.getElementById(id);
+        if(!el || SKIP.test(id) || el.type === "file") return;
+        var v = map[id];
+        try{
+          if(el.type === "checkbox" || el.type === "radio"){
+            if(el.checked === !!v) return;
+            el.checked = !!v;
+          } else {
+            if(el.value === String(v)) return;
+            el.value = v;
+            if(el.value !== String(v)) return; // la opción ya no existe en el selector (ej. soundfont sin cargar todavía)
+          }
+          el.dispatchEvent(new Event("input", { bubbles: true }));
+          el.dispatchEvent(new Event("change", { bubbles: true }));
+        }catch(_e){}
+      });
+    }
+
+    // ---------- captura ----------
+    function capture(){
+      var tempoEl = document.getElementById("consolaTempo"), setsEl = document.getElementById("consolaSongSets"), alt = document.getElementById("consolaAltMelodyChk");
+      var exprSel = document.getElementById("consolaExprSelect");
+      var title = SONGTITLE.current() || "";
+      var o = {
+        format: FMT, version: VER, savedAt: new Date().toISOString(),
+        name: title || "Favorito", title: title, sets: setsEl ? setsEl.textContent : "", kind: window.__radioMixLast || "",
+        engine: { numBars: NUM_BARS, totalBeats: TOTAL_BEATS, tempo: tempoEl ? tempoEl.value : null, rhythm: RHYTHM.save(), dyn: DYNAMICS.getPlan(), mdInterval: (alt && alt.checked) ? -7 : -12 },
+        presets: Object.assign({}, mixPresets),
+        tracks: { chord: state.chordEvents, bass: state.bassEvents, melody: state.melodyEvents, comping2: state.comping2Events, bebop: state.bebopEvents,
+                  melody2: state.melody2Events, melody3: state.melody3Events, drum: drumEvents },
+        harmony: { slotChords: state.slotChords, progression: state.progression, roles: state.roles, rootChord: state.rootChord },
+        expr: { auto: (exprSel && exprSel.value === "auto") ? EXPR.autoProfile() : null },
+        controls: readControls()
+      };
+      return JSON.parse(JSON.stringify(o)); // copia profunda: si algo no fuera serializable, falla acá y no a medias
+    }
+    function slug(t){ return String(t || "").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40); }
+    function fileName(o){
+      var d = new Date(o.savedAt), p = function(n){ return (n < 10 ? "0" : "") + n; };
+      var stamp = d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + "-" + p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds());
+      var s = slug(o.title);
+      return "Fav_" + stamp + (s ? "_" + s : "") + ".json";
+    }
+
+    // ---------- validación / migración ----------
+    function migrate(o){ return o; } // versión 1: nada que migrar todavía (acá se convierten los favoritos viejos si cambia el formato)
+    function check(o){
+      if(!o || typeof o !== "object" || o.format !== FMT) throw new Error("no es un favorito de Stoikheion");
+      if(typeof o.version !== "number" || o.version > VER) throw new Error("es de una versión más nueva (" + o.version + ") que esta página (" + VER + ")");
+      o = migrate(o);
+      if(!o.tracks || !Array.isArray(o.tracks.chord) || !o.engine || !o.presets) throw new Error("faltan datos en el archivo");
+      return o;
+    }
+    function entryOf(o){
+      var T = o.tracks, E = o.engine, Hm = o.harmony || {};
+      return { snap: { chord: T.chord, bass: T.bass || [], melody: T.melody || [], comping2: T.comping2 || [], bebop: T.bebop || [], melody2: T.melody2 || [],
+                       melody3: T.melody3 || [], drum: T.drum || [], presets: o.presets, mdInterval: E.mdInterval },
+               slot: Hm.slotChords || [], prog: Hm.progression || [], roles: Hm.roles || [], root: Hm.rootChord || [],
+               tempo: E.tempo, numBars: E.numBars, total: E.totalBeats, rhythm: E.rhythm, dyn: E.dyn,
+               title: o.title || "", sets: o.sets || "", kind: o.kind || "", logId: 0 };
+    }
+
+    // ---------- abrir ----------
+    F.open = function(o, opts){
+      o = check(o);
+      var RPl = window.__radioPlayer;
+      if(RPl && RPl.isOn && RPl.isOn()) RPl.stop();   // la radio engancharía otra canción nueva encima
+      stopPlayback();
+      window.__favApplying = true;
+      try{
+        writeControls(o.controls || {});
+        window.__radioHist.applyEntry(entryOf(o));    // mismo camino que Previous/Next: eventos, armonía, presets, tempo, compases, dinámica y título
+        var exprSel = document.getElementById("consolaExprSelect");
+        if(exprSel && exprSel.value === "auto" && o.expr && o.expr.auto) EXPR.setAuto(o.expr.auto); else EXPR.reroll();
+      } finally { window.__favApplying = false; }
+      var missing = [];
+      PRESET_PAIRS.forEach(function(pr){
+        var el = document.getElementById(pr[0]), v = o.presets[pr[1]];
+        if(el && v != null && el.value !== v) missing.push(pr[1]);
+      });
+      toast("♥ Abierto: " + (o.name || "favorito") + (missing.length ? " — ojo: sin instrumento cargado en el selector de " + missing.join(", ") + " (¿soundfont todavía cargando?)" : ""));
+      if(!opts || opts.play !== false){
+        var pb = document.getElementById("consolaPlayBtn");
+        if(pb && !pb.disabled && typeof window.consolaStartPlayback === "function") window.consolaStartPlayback();
+      }
+      return o;
+    };
+
+    // ---------- guardar en este navegador (localStorage) ----------
+    function lsIndex(){ try{ var a = JSON.parse(localStorage.getItem(IDX_KEY) || "[]"); return Array.isArray(a) ? a : []; }catch(_e){ return []; } }
+    function lsPut(id, name, savedAt, text){
+      try{
+        localStorage.setItem(ITEM_KEY + id, text);
+        var idx = lsIndex(); idx.unshift({ id: id, name: name, savedAt: savedAt });
+        localStorage.setItem(IDX_KEY, JSON.stringify(idx));
+        return true;
+      }catch(_e){ try{ localStorage.removeItem(ITEM_KEY + id); }catch(_e2){} return false; }
+    }
+    function lsDel(id){
+      try{ localStorage.removeItem(ITEM_KEY + id); localStorage.setItem(IDX_KEY, JSON.stringify(lsIndex().filter(function(x){ return x.id !== id; }))); }catch(_e){}
+    }
+    function lsGet(id){ return JSON.parse(localStorage.getItem(ITEM_KEY + id)); }
+
+    F.save = function(){
+      if(!state.chordEvents.length){ toast("No hay música generada para guardar todavía."); return null; }
+      var o, text;
+      try{ o = capture(); text = JSON.stringify(o); }catch(err){ toast("No se pudo guardar: " + err.message); return null; }
+      var stored = lsPut(Date.now().toString(36), o.name, o.savedAt, text), fname = fileName(o);
+      try{ exportDownload(new Blob([text], { type: "application/json" }), fname); }catch(_e){}
+      toast("♥ Guardado: " + o.name + " — archivo " + fname + " (dejalo en la carpeta Favorites/ del proyecto)" + (stored ? "" : ". No entró en el navegador: queda solo el archivo."));
+      Array.prototype.forEach.call(document.querySelectorAll(".fav-heart"), function(b){ b.classList.remove("fav-flash"); void b.offsetWidth; b.classList.add("fav-flash"); });
+      return o;
+    };
+
+    // ---------- carpeta Favorites/ del sitio ----------
+    function remoteList(force){
+      if(!force){
+        try{ var c = JSON.parse(localStorage.getItem(REMOTE_KEY) || "null"); if(c && Array.isArray(c.files) && Date.now() - c.t < REMOTE_TTL) return Promise.resolve(c.files); }catch(_e){}
+      }
+      var api = "https://api.github.com/repos/" + SF_GH_OWNER + "/" + SF_GH_REPO + "/git/trees/main?recursive=1";
+      return fetch(api, { headers: { Accept: "application/vnd.github+json" } }).then(function(r){
+        if(!r.ok) throw new Error("GitHub API " + r.status);
+        return r.json();
+      }).then(function(d){
+        var files = (d.tree || []).filter(function(it){ return it.type === "blob" && /^Favorites\/[^\/]+\.json$/i.test(it.path); }).map(function(it){ return it.path; }).sort().reverse();
+        try{ localStorage.setItem(REMOTE_KEY, JSON.stringify({ t: Date.now(), files: files })); }catch(_e){}
+        return files;
+      });
+    }
+    function fetchRemote(path){
+      return fetch(path.split("/").map(encodeURIComponent).join("/"), { cache: "no-cache" }).then(function(r){
+        if(!r.ok) throw new Error("no se pudo leer " + path + " (" + r.status + ")");
+        return r.json();
+      });
+    }
+
+    // ---------- panel 📂 ----------
+    function panel(){
+      var p = document.getElementById("favPanel");
+      if(p) return p;
+      p = document.createElement("div");
+      p.id = "favPanel"; p.setAttribute("role", "dialog"); p.setAttribute("aria-label", "Favoritos");
+      p.innerHTML = '<div class="fav-box"><div class="fav-h"><b>♥ Favoritos</b><button type="button" data-fav="close" aria-label="Cerrar">✕</button></div>' +
+        '<div class="fav-sec">En este navegador</div><div id="favLocal"></div>' +
+        '<div class="fav-sec">Carpeta Favorites/ del sitio <button type="button" data-fav="refresh" title="Volver a leer la carpeta">↻</button></div><div id="favRemote"></div>' +
+        '<div class="fav-foot"><button type="button" data-fav="file">📂 Abrir un archivo .json…</button></div>' +
+        '<input type="file" id="favFile" accept=".json,application/json" hidden></div>';
+      document.body.appendChild(p);
+      p.addEventListener("click", function(e){
+        var t = e.target;
+        if(t === p){ p.classList.remove("on"); return; }
+        var b = t.closest ? t.closest("[data-fav]") : null;
+        if(!b) return;
+        var act = b.getAttribute("data-fav"), id = b.getAttribute("data-id"), path = b.getAttribute("data-path");
+        if(act === "close") p.classList.remove("on");
+        else if(act === "file") document.getElementById("favFile").click();
+        else if(act === "refresh") fillRemote(true);
+        else if(act === "del"){ lsDel(id); fillLocal(); }
+        else if(act === "open-local"){ try{ var o = lsGet(id); p.classList.remove("on"); F.open(o); }catch(err){ toast("No se pudo abrir: " + err.message); } }
+        else if(act === "open-remote"){
+          fetchRemote(path).then(function(o){ p.classList.remove("on"); F.open(o); }).catch(function(err){ toast("No se pudo abrir: " + err.message); });
+        }
+      });
+      document.getElementById("favFile").addEventListener("change", function(e){
+        var f = e.target.files && e.target.files[0]; e.target.value = "";
+        if(!f) return;
+        var fr = new FileReader();
+        fr.onload = function(){ try{ var o = JSON.parse(fr.result); p.classList.remove("on"); F.open(o); }catch(err){ toast("No se pudo abrir " + f.name + ": " + err.message); } };
+        fr.onerror = function(){ toast("No se pudo leer " + f.name); };
+        fr.readAsText(f);
+      });
+      return p;
+    }
+    function fillLocal(){
+      var el = document.getElementById("favLocal"); if(!el) return;
+      var idx = lsIndex();
+      if(!idx.length){ el.innerHTML = '<div class="fav-empty">Todavía no guardaste ninguno: apretá ♥ mientras suena una canción.</div>'; return; }
+      el.innerHTML = idx.map(function(x){
+        var d = ""; try{ d = new Date(x.savedAt).toLocaleString(); }catch(_e){}
+        return '<div class="fav-row"><span class="fav-n">' + esc(x.name) + '<i>' + esc(d) + '</i></span><button type="button" data-fav="open-local" data-id="' + esc(x.id) + '">Abrir</button><button type="button" data-fav="del" data-id="' + esc(x.id) + '" title="Borrar de este navegador">🗑</button></div>';
+      }).join("");
+    }
+    function fillRemote(force){
+      var el = document.getElementById("favRemote"); if(!el) return;
+      el.innerHTML = '<div class="fav-empty">Buscando…</div>';
+      remoteList(force).then(function(files){
+        if(!files.length){ el.innerHTML = '<div class="fav-empty">No hay archivos .json en Favorites/ (o todavía no se publicaron).</div>'; return; }
+        el.innerHTML = files.map(function(pth){
+          return '<div class="fav-row"><span class="fav-n">' + esc(pth.replace(/^Favorites\//, "").replace(/\.json$/i, "")) + '</span><button type="button" data-fav="open-remote" data-path="' + esc(pth) + '">Abrir</button></div>';
+        }).join("");
+      }).catch(function(err){ el.innerHTML = '<div class="fav-empty">No se pudo leer la carpeta (' + esc(err.message) + '). Podés abrir el archivo a mano abajo.</div>'; });
+    }
+    F.panel = function(){ var p = panel(); fillLocal(); fillRemote(false); p.classList.add("on"); };
+
+    // ---------- botones ♥ 📂 ----------
+    function bar(cls){
+      var d = document.createElement("div");
+      d.className = "favbar " + cls;
+      d.innerHTML = '<button type="button" class="fav-heart" data-fav="save" title="Guardar esta canción como favorita" aria-label="Guardar favorito">♥</button><button type="button" data-fav="panel" title="Abrir un favorito" aria-label="Abrir favorito">📂</button>';
+      d.addEventListener("click", function(e){
+        var b = e.target.closest ? e.target.closest("[data-fav]") : null;
+        if(!b) return;
+        e.stopPropagation();
+        if(b.getAttribute("data-fav") === "save") F.save(); else F.panel();
+      });
+      return d;
+    }
+    F.mount = function(host, cls){ if(host) host.appendChild(bar(cls || "favbar-rv")); }; // lo usa el Player en cada skin
+    F.capture = capture; F.check = check; F.VERSION = VER;
+    function initMain(){ if(!document.querySelector(".favbar-main")) document.body.appendChild(bar("favbar-main")); }
+    if(document.body) initMain(); else document.addEventListener("DOMContentLoaded", initMain);
+    return F;
   })();
   window.consolaStopPlayback = stopPlayback; // declaración hoisted más abajo — accesible acá igual
 
@@ -23309,6 +23601,7 @@ function runAnalysis() {
       rvEl.innerHTML = (name === "classic" || !SK) ? RV_CLASSIC : SK.html(name);
       rvLogMount();   // 📝 el panel Log va encima de cualquier skin
       rvExportMount(); // ⬇ Export MIDI / Audio al pie, sobre cualquier skin
+      if(window.__favorites) window.__favorites.mount(rvEl, "favbar-rv"); // ♥ Favoritos abajo a la derecha, sobre cualquier skin
       rvFit();
     }
     // Skin a mano (para probar): __radioPlayer.skin(1..7 | 9) ; skin(0) = el vintage original
