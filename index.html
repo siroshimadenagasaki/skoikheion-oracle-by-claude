@@ -23212,7 +23212,7 @@ function runAnalysis() {
             '<div class="rv-sets" id="rvSets"></div>' +
             '<div class="rv-scale">' + ticks + '<b class="rv-needle" id="rvNeedle"></b></div>' +
           '</div></div>' +
-          '<div class="rv-grille"><div class="rv-lamp"><em></em>ON AIR</div><canvas class="rv-art" id="rvArt" width="256" height="256" aria-hidden="true"></canvas></div>' +
+          '<div class="rv-grille"><div class="rv-lamp"><em></em>ON AIR</div><canvas class="rv-art" id="rvArt" width="288" height="288" aria-hidden="true"></canvas></div>' +
           '<div class="rv-keys">' +
             key("prev", "&#9198;&#65038;", "Previous") + key("play", "&#9654;&#65038;", "Play") +
             key("stop", "&#9632;&#65038;", "Stop") + key("next", "&#9197;&#65038;", "Next") +
@@ -23321,7 +23321,7 @@ function runAnalysis() {
   })();
 </script>
 <script>
-/* pixelart.js - imagen 8 bits (se arma en 32x32 y se muestra a 64x64 con Scale2x) por cancion: paisaje + personaje opcional.
+/* pixelart.js - imagen 8 bits (se arma en 32x32 y se muestra a 96x96 con Scale3x) por cancion: paisaje + personaje opcional.
    API: PixelArt.render(canvas, {set:[0,4,7], seed:'titulo', mode:'auto'|'landscape'|'character'})
    - Misma entrada => misma imagen (determinista).
    - set: pitch classes de la cancion. Si no hay set se usa seed (texto o numero).
@@ -23445,22 +23445,27 @@ function runAnalysis() {
     return { pixels: out, type: type, character: withChar };
   }
 
-  // Scale2x (EPX): duplica la resolución (32 -> 64) suavizando los escalones de las diagonales sin inventar colores ni difuminar.
-  function scale2x(g) {
-    var n = g.length, o = [], y, x;
-    for (y = 0; y < n * 2; y++) o[y] = [];
+  // Scale3x (AdvMAME3x): triplica la resolución (32 -> 96) suavizando los escalones de las diagonales sin inventar colores ni difuminar.
+  function scale3x(g) {
+    var n = g.length, o = [], y, x, k;
+    for (y = 0; y < n * 3; y++) o[y] = [];
+    function at(yy, xx) { return g[yy < 0 ? 0 : yy >= n ? n - 1 : yy][xx < 0 ? 0 : xx >= n ? n - 1 : xx]; }
     for (y = 0; y < n; y++) for (x = 0; x < n; x++) {
-      var P = g[y][x], A = y > 0 ? g[y - 1][x] : P, B = x < n - 1 ? g[y][x + 1] : P, C = x > 0 ? g[y][x - 1] : P, D = y < n - 1 ? g[y + 1][x] : P;
-      o[2 * y][2 * x] = (C === A && C !== D && A !== B) ? A : P;
-      o[2 * y][2 * x + 1] = (A === B && A !== C && B !== D) ? B : P;
-      o[2 * y + 1][2 * x] = (D === C && D !== B && C !== A) ? C : P;
-      o[2 * y + 1][2 * x + 1] = (B === D && B !== A && D !== C) ? D : P;
+      var A = at(y - 1, x - 1), B = at(y - 1, x), C = at(y - 1, x + 1),
+          D = at(y, x - 1),     E = at(y, x),     F = at(y, x + 1),
+          G = at(y + 1, x - 1), H = at(y + 1, x), I = at(y + 1, x + 1), e;
+      if (B !== H && D !== F) {
+        e = [D === B ? D : E, ((D === B && E !== C) || (B === F && E !== A)) ? B : E, B === F ? F : E,
+             ((D === B && E !== G) || (D === H && E !== A)) ? D : E, E, ((B === F && E !== I) || (H === F && E !== C)) ? F : E,
+             D === H ? D : E, ((D === H && E !== I) || (H === F && E !== G)) ? H : E, H === F ? F : E];
+      } else e = [E, E, E, E, E, E, E, E, E];
+      for (k = 0; k < 9; k++) o[3 * y + ((k / 3) | 0)][3 * x + (k % 3)] = e[k];
     }
     return o;
   }
 
   function render(canvas, opts) {
-    var img = build(opts), ctx = canvas.getContext('2d'), g = scale2x(img.pixels), M = g.length, px = canvas.width / M;
+    var img = build(opts), ctx = canvas.getContext('2d'), g = scale3x(img.pixels), M = g.length, px = canvas.width / M;
     ctx.imageSmoothingEnabled = false;
     for (var y = 0; y < M; y++) for (var x = 0; x < M; x++) { ctx.fillStyle = g[y][x]; ctx.fillRect(x * px, y * px, Math.ceil(px), Math.ceil(px)); }
     canvas.style.imageRendering = 'pixelated';
@@ -23483,7 +23488,7 @@ function runAnalysis() {
     close: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12"/><path d="M18 6L6 18"/></svg>'
   };
   var X = '<button type="button" class="x" id="rvClose" aria-label="Cerrar">' + IC.close + '</button>';
-  var ART = '<canvas class="art" id="rvArt" width="256" height="256" aria-hidden="true"></canvas>';
+  var ART = '<canvas class="art" id="rvArt" width="288" height="288" aria-hidden="true"></canvas>';
   var K = '<div class="k" id="rvKind">RADIO !</div>', T = '<div class="t" id="rvTitle">&nbsp;</div>', S = '<div class="s" id="rvSets"></div>';
   var NEEDLE = '<div class="scale"><b class="sk-needle" id="rvNeedle"></b></div>';
   function keys(){
@@ -23631,15 +23636,15 @@ function runAnalysis() {
   function coverFor(seedKey){
     try {
       if (!window.PixelArt) return [];
-      // 512x512 con la imagen ENTERA (448x448, 32 px de aire alrededor y marco fino): si CarPlay / la pantalla de bloqueo
+      // 512x512 con la imagen ENTERA (480x480 = 5x de 96, 16 px de aire alrededor y marco fino): si CarPlay / la pantalla de bloqueo
       // recorta o redondea los bordes, no se corta nada de la imagen.
       var c = document.createElement("canvas"); c.width = 512; c.height = 512;
-      var a = document.createElement("canvas"); a.width = 448; a.height = 448;
+      var a = document.createElement("canvas"); a.width = 480; a.height = 480;
       window.PixelArt.render(a, { seed: seedKey, mode: "auto" });
       var cx = c.getContext("2d");
       cx.fillStyle = "#111"; cx.fillRect(0, 0, 512, 512);
-      cx.imageSmoothingEnabled = false; cx.drawImage(a, 32, 32);
-      cx.strokeStyle = "rgba(255,255,255,.9)"; cx.lineWidth = 2; cx.strokeRect(31, 31, 450, 450);
+      cx.imageSmoothingEnabled = false; cx.drawImage(a, 16, 16);
+      cx.strokeStyle = "rgba(255,255,255,.9)"; cx.lineWidth = 2; cx.strokeRect(15, 15, 482, 482);
       var u = c.toDataURL("image/png");
       return [{ src: u, sizes: "512x512", type: "image/png" }];
     } catch(e){ return []; }
