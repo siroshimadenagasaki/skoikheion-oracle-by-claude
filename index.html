@@ -255,6 +255,12 @@
   #radioVintage .rvl-r span{color:#c9b184;flex:0 1 46%;overflow-wrap:anywhere;}
   #radioVintage .rvl-r i{font-style:normal;color:#f3e6c4;flex:1 1 54%;text-align:right;overflow-wrap:anywhere;}
   #radioVintage .rvl-sub{margin:5px 0 2px;color:#d9b563;font:700 10px/1 Georgia,serif;letter-spacing:.14em;text-transform:uppercase;}
+  /* ===== ⬇ Export MIDI / Audio en el Player (pie, sobre cualquier skin; dispara los botones reales del reloj de entrada) ===== */
+  #radioVintage #rvExportBox{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);z-index:7;display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;max-width:calc(100% - 20px);}
+  #radioVintage #rvExportBox button{appearance:none;-webkit-appearance:none;cursor:pointer;border:1px solid #b08a45;border-radius:999px;padding:6px 14px;background:rgba(18,13,8,.88);color:#f3e6c4;font:700 12px/1 Georgia,"Times New Roman",serif;letter-spacing:.06em;box-shadow:0 2px 8px rgba(0,0,0,.35);}
+  #radioVintage #rvExportBox button:disabled{opacity:.45;cursor:default;}
+  #radioVintage #rvExportStatus{font:600 11px/1.2 Georgia,serif;color:#f3e6c4;background:rgba(18,13,8,.8);border-radius:8px;padding:2px 8px;}
+  #radioVintage #rvExportStatus:empty{display:none;}
   /* ===== 📻 Player: skins (se sortea una al abrir: 50% "portada", 50% una de las otras 7) ===== */
   #radioVintage{overflow:hidden;}
   #radioVintage .sk{--ac:#ff5a1f;--acfg:#fff;--acs:rgba(255,90,31,.28);--fg:#1a1a1a;--mut:#8a877e;position:relative;flex:none;width:760px;height:500px;box-sizing:border-box;transform-origin:50% 50%;
@@ -1533,6 +1539,11 @@
         <label for="consolaPrerenderChk">⚡ Prerender</label>
         <span class="consola-val" id="consolaPrerenderStatus"></span>
       </div>
+      <div class="consola-export" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px;justify-content:center;">
+      <button type="button" class="chip" id="consolaExportMidiBtn" disabled title="Descarga el segmento actual como archivo MIDI (.mid): una pista por instrumento (armonía, dobles, bajo, melodía, moreComping, bebopMelody, batería en canal 10) con el tempo y los compases actuales.">&#11015; Export MIDI</button>
+      <button type="button" class="chip" id="consolaExportMp3Btn" disabled title="Renderiza el segmento actual (una vuelta + cola de reverb) con los timbres, volúmenes y reverb que estás usando y lo descarga como MP3. La primera vez baja el codificador MP3 (lamejs) de internet.">&#11015; Export MP3</button>
+      <span id="consolaExportStatus" role="status" aria-live="polite" style="font-size:12px;color:var(--ink-muted);"></span>
+      </div>
     </div>
     <div class="clock-card multiset-card" id="multiSetsCard">
       <div class="multiset-head">
@@ -2232,11 +2243,6 @@
     </div>
 
 
-    <div class="consola-export" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px;">
-      <button type="button" class="chip" id="consolaExportMidiBtn" disabled title="Descarga el segmento actual como archivo MIDI (.mid): una pista por instrumento (armonía, dobles, bajo, melodía, moreComping, bebopMelody, batería en canal 10) con el tempo y los compases actuales.">&#11015; Export MIDI</button>
-      <button type="button" class="chip" id="consolaExportMp3Btn" disabled title="Renderiza el segmento actual (una vuelta + cola de reverb) con los timbres, volúmenes y reverb que estás usando y lo descarga como MP3. La primera vez baja el codificador MP3 (lamejs) de internet.">&#11015; Export MP3</button>
-      <span id="consolaExportStatus" role="status" aria-live="polite" style="font-size:12px;color:var(--ink-muted);"></span>
-    </div>
 
     <p class="consola-foot">
       Harmony: each re-attack draws a subset of the chosen set (or the full set) with its own transposition and inversion, never the same combination twice in a row and never a note outside the set; the bass depends on Bass function (in How to play): with Current set (default) it plays only notes of the current chord; with Superset it plays, half of the time, a note from outside the set (the only mode that leaves the chosen set). Notes never enter as a block: they are staggered, with more distance between attacks the longer the chord lasts. &#8634; Simplicity plays the full set with no subsets or transposition, a single inversion per bar. Bass: walks through degrees of the current chord, variable rhythm (half notes, quarter notes, an occasional syncopation). Flute melody: plays only notes of the current chord, with short arpeggiated fills in ~30% of the bars. Optional drums: kick/snare/hi-hat with a pattern that varies per bar; the hi-hat also alternates even eighths, quarters and dotted eighths. It loops until Stop &mdash; you can change the set or press Simplicity while it plays.
@@ -20485,7 +20491,7 @@ function runAnalysis() {
   window.consolaStopPlayback = stopPlayback; // declaración hoisted más abajo — accesible acá igual
 
   /* ================================================================
-     EXPORT MIDI / MP3 — botones debajo de los dos piano rolls.
+     EXPORT MIDI / MP3 — botones al pie de la tarjeta del reloj de entrada (y copia en el Player).
      Exportan lo MISMO que suena al apretar Reproducir: las pistas
      cuyo checkbox está prendido (Armonía/Bajo/Melodía/Batería), los
      dobles si no están en Mute, moreComping y bebopMelody si están
@@ -23192,6 +23198,32 @@ function runAnalysis() {
       pn.innerHTML = h;
       pn.scrollTop = top;
     }
+    // ⬇ Export MIDI / Audio: dos botones al pie del Player que disparan los botones reales (los del reloj de entrada), así exportan exactamente lo mismo.
+    function rvExportMount(){
+      if(!rvEl) return;
+      var box = document.createElement("div");
+      box.id = "rvExportBox";
+      box.innerHTML = '<button type="button" data-rvx="midi" title="Descarga el segmento actual como archivo MIDI (.mid)">⬇ Export MIDI</button><button type="button" data-rvx="mp3" title="Renderiza el segmento actual y lo descarga como audio MP3">⬇ Export Audio</button><span id="rvExportStatus" role="status" aria-live="polite"></span>';
+      box.addEventListener("click", function(e){
+        var b = e.target.closest ? e.target.closest("[data-rvx]") : null;
+        if(!b || b.disabled) return;
+        var src = document.getElementById(b.getAttribute("data-rvx") === "midi" ? "consolaExportMidiBtn" : "consolaExportMp3Btn");
+        if(src && !src.disabled) src.click();
+        rvExportSync();
+      });
+      rvEl.appendChild(box);
+      rvExportSync();
+    }
+    function rvExportSync(){
+      var box = document.getElementById("rvExportBox");
+      if(!box) return;
+      var m = document.getElementById("consolaExportMidiBtn"), a = document.getElementById("consolaExportMp3Btn"), st = document.getElementById("consolaExportStatus");
+      var bm = box.querySelector('[data-rvx="midi"]'), ba = box.querySelector('[data-rvx="mp3"]');
+      if(bm) bm.disabled = !m || m.disabled;
+      if(ba) ba.disabled = !a || a.disabled;
+      var se = document.getElementById("rvExportStatus");
+      if(se){ var t = st ? st.textContent : ""; if(se.textContent !== t) se.textContent = t; }
+    }
     function rvBuild(){
       if(rvEl) return rvEl;
       rvEl = document.createElement("div");
@@ -23256,6 +23288,7 @@ function runAnalysis() {
       var pk = rvEl.querySelector('[data-act="play"]');
       if(pk) pk.classList.toggle("rv-lit", on);
       rvLogUpdate();
+      rvExportSync();
     }
     // Skins: al abrir el player se sortea una (50% "portada"; 50% una de radio/vinilo/cassette/dial/texto/marco/polaroid). El markup está en window.__RV_SKINS.
     function rvFit(){
@@ -23266,7 +23299,7 @@ function runAnalysis() {
       if(!st) return;
       if(st.classList.contains("sk-portada")){ st.style.transform = ""; return; }
       var W = port ? 460 : 760, H = port ? 780 : 500;
-      var sc = Math.min((window.innerWidth - 24) / W, (window.innerHeight - 24) / H, 2.4);
+      var sc = Math.min((window.innerWidth - 24) / W, (window.innerHeight - 24 - 44) / H, 2.4); // 44px de reserva abajo para los botones Export
       st.style.transform = "scale(" + (sc > 0 ? sc : 1).toFixed(3) + ")";
     }
     function rvRender(name){
@@ -23275,6 +23308,7 @@ function runAnalysis() {
       var SK = window.__RV_SKINS;
       rvEl.innerHTML = (name === "classic" || !SK) ? RV_CLASSIC : SK.html(name);
       rvLogMount();   // 📝 el panel Log va encima de cualquier skin
+      rvExportMount(); // ⬇ Export MIDI / Audio al pie, sobre cualquier skin
       rvFit();
     }
     // Skin a mano (para probar): __radioPlayer.skin(1..7 | 9) ; skin(0) = el vintage original
