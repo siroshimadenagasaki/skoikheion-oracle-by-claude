@@ -6202,15 +6202,6 @@ async function sf2GetArrayBuffer(url, onProgress) {
     let cached = null;
     const nm = sf2BasenameOfUrl(url);
     try { cached = await sf2CacheGet(url); } catch (e) { sfLog("[" + nm + "] IDB get falló: " + (e && e.message || e)); }
-    // Auto-actualización: con internet, compara el tamaño guardado con el del servidor
-    // (HEAD). Si cambió, se descarta lo guardado y se baja de nuevo. Sin internet: usa lo guardado.
-    if (cached && navigator.onLine !== false) {
-      try {
-        const h = await fetch(url, { method: "HEAD", cache: "no-cache" });
-        const len = parseInt(h.headers.get("Content-Length") || "0", 10);
-        if (h.ok && len && len !== cached.byteLength) { sfLog("[" + nm + "] cambió en el servidor (" + sfFmtMB(cached.byteLength) + " -> " + sfFmtMB(len) + "), re-bajando"); cached = null; }
-      } catch (e) { /* sin red: se usa lo guardado */ }
-    }
     if (cached) {
       sfLog("[" + nm + "] desde IDB " + sfFmtMB(cached.byteLength || 0));
       if (onProgress) onProgress(1);
