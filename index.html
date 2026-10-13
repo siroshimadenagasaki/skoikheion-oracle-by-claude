@@ -1511,6 +1511,7 @@
             <input type="range" id="jazzReharmSlider" min="0" max="100" step="1" value="100" style="flex:1;min-width:60px;" aria-label="Complejidad de la Reharmonization">
             <span id="jazzReharmVal" style="min-width:34px;text-align:right;font-family:'JetBrains Mono',monospace;">100%</span>
           </div>
+          <label id="jazzWalkingRow" style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted);cursor:pointer;" title="Walking (solo JazzTunes): el bajo toca un walking bass simple, una negra por tiempo sobre los acordes de la canción (los reharmonizados, si Reharmonization está prendida). Tiempo 1 = la raíz del acorde (o el bajo del slash chord); tiempos del medio = notas del acorde (3ª, 5ª, 7ª...) llevadas por la más cercana a la anterior; último tiempo del acorde = nota de aproximación cromática (un semitono arriba o abajo) a la raíz del acorde que viene. Registro C2–G3. Apagado = el bajo de siempre (la raíz de cada acorde, sostenida). Se aplica en el próximo JazzTunes y en cada 🔀 / tecla G."><input type="checkbox" id="jazzWalkingChk">Walking</label>
           <button class="chip primary" id="creaturaIntervalicBtn" type="button" title="Igual que CreaturaRandom (mismos sliders, Compose, Mix time signatures, Detener, espera 2s y Regenerar, con 5 o 2 sets), pero antes sortea una combinación de clases de intervalo (1, 2 o 3 de ic1..ic6) y los sets salen SOLO de los que tienen todas esas clases en su vector de intervalos, con más probabilidad cuanto mayor parte del vector ocupan esas clases.">Intervalic.Creature</button>
         </div>
         <button class="chip" id="composeBtn" type="button" title="Como CreaturA pero con TU set y TU compás: con el set elegido en el reloj/piano (2+ notas) y el time signature que dejaste escrito, sortea los sliders, el tempo y los presets al azar (como CreaturA), no cambia el set, no mezcla compases, y toca una variación nueva en primer plano. Sin set elegido, sortea uno con la misma regla de CreaturA (sets del índice por jerarquía); cada vez que lo apretás de nuevo, sortea otro set distinto (un set que elegiste vos a mano se respeta).">🎹 Compose</button>
@@ -17267,6 +17268,39 @@ function runAnalysis() {
     // Todo el acorde (raíz, 3ª, 5ª, 7ª y extensiones) en orden ascendente desde la raíz: es el "set" que ven bebopMelody, moreComping y los demás módulos.
     function fullStack(root, iv){ var base = 48 + root; return iv.map(function(x){ return base + x; }).sort(function(a, b){ return a - b; }); }
 
+    // Walking bass simple: una negra por tiempo. Tiempo 1 = raíz (o bajo del slash); tiempos del medio = notas del acorde por la voz más cercana;
+    // último tiempo (si el acorde dura 2+ tiempos y hay acorde siguiente) = aproximación cromática (semitono arriba o abajo) a la raíz del siguiente. Registro MIDI 36–55.
+    function walkingBass(chs, INT, bpb, nBars){
+      var LO = 36, HI = 55, out = [], prev = null;
+      function near(pc, ref){
+        var best = null, m;
+        for(m = LO; m <= HI; m++){ if(m % 12 === pc && (best === null || Math.abs(m - ref) < Math.abs(best - ref))) best = m; }
+        return best === null ? LO + ((pc - LO) % 12 + 12) % 12 : best;
+      }
+      chs.forEach(function(c, i){
+        var iv = c.iv || INT[c.suffix] || [0, 4, 7], nx = chs[i + 1], len = c.e - c.s, n = Math.max(1, Math.floor(len + 1e-6));
+        var rootPc = (c.bass !== null && c.bass !== undefined) ? c.bass : c.root;
+        var tones = [];
+        iv.forEach(function(x){ var p = (c.root + x) % 12; if(p !== c.root % 12 && tones.indexOf(p) < 0) tones.push(p); });
+        if(!tones.length) tones.push((c.root + 7) % 12);
+        for(var k = 0; k < n; k++){
+          var pc, ref = prev === null ? 40 : prev;
+          if(k === 0) pc = rootPc;
+          else if(k === n - 1 && n >= 2 && nx) pc = ((((nx.bass !== null && nx.bass !== undefined) ? nx.bass : nx.root) + (Math.random() < 0.5 ? 1 : 11)) % 12);
+          else {
+            var cands = tones.concat([c.root % 12]).map(function(p){ return near(p, ref); })
+              .filter(function(m){ return prev === null || m !== prev; })
+              .sort(function(a, b){ return Math.abs(a - ref) - Math.abs(b - ref); });
+            var m0 = cands[Math.min(cands.length - 1, Math.random() < 0.7 ? 0 : 1)];
+            pc = m0 % 12;
+          }
+          var midi = near(pc, ref), st = c.s + k, du = (k === n - 1) ? (len - k) : 0.95;
+          out.push({ midi: midi, startBeat: st, durBeats: Math.max(0.1, du), bar: Math.min(nBars - 1, Math.floor(st / bpb + 1e-9)) });
+          prev = midi;
+        }
+      });
+      return out;
+    }
     function build(){
       var P = api.song;
       if(!P){ api.active = false; regenerateConsola(); return; }
@@ -17292,6 +17326,8 @@ function runAnalysis() {
         }
         names.push(c.name);
       });
+      var wk = document.getElementById("jazzWalkingChk"), walking = !!(wk && wk.checked);
+      if(walking) bassEvents = walkingBass(CHS, INT, bpb, NUM_BARS);       // Walking: reemplaza el bajo de siempre
       for(b = 0; b < NUM_BARS; b++){
         if(!slotChords[b].length){ var pv = slotChords[b - 1]; var cp = pv && pv.length ? pv[pv.length - 1] : null; if(cp) slotChords[b].push({ chord: cp.chord, startBeat: 0, durBeats: bpb, setNotes: cp.setNotes, tonic: cp.tonic, ccLabel: cp.ccLabel, ccCat: cp.ccCat, held: true }); }
         progression.push(slotChords[b].length ? slotChords[b][0].chord.slice() : [60]);
@@ -17343,7 +17379,7 @@ function runAnalysis() {
       var sol = document.getElementById("consolaSolomonReadout");
       if(sol) sol.innerHTML = RH.html || "";
       var sub = "(JazzTunes · " + P.file + " · ♩=" + P.tempo + " · " + bpb + "/4 · " + P.bars + " compases · " + P.chords.length + " acordes · " + P.melody.length + " notas de melodía" +
-        (RH.summary ? " · " + RH.summary : "") + (P.tempo > 200 || P.tempo < 25 ? " · tempo recortado a 25–200" : "") + (P.warnings.length ? " · ⚠ " + P.warnings.length + " aviso(s) del parser" : "") + ")";
+        (RH.summary ? " · " + RH.summary : "") + (walking ? " · Walking bass" : "") + (P.tempo > 200 || P.tempo < 25 ? " · tempo recortado a 25–200" : "") + (P.warnings.length ? " · ⚠ " + P.warnings.length + " aviso(s) del parser" : "") + ")";
       SONGTITLE.set(P.title, sub, "");
       ["consolaPlayBtn", "consolaRegenPlayBtn"].forEach(function(id){
         var bt = document.getElementById(id); if(bt) bt.disabled = false;
@@ -24668,7 +24704,7 @@ function runAnalysis() {
     }
     // Defaults de 🎷 JazzTunes: cada vez que se aprieta el botón (canción nueva) fija estos controles; 🔀 / tecla G no los tocan (ahí valen tus cambios a mano).
     //   Reharmonization on y 100% · Tempo & Expression = None (strict tempo) 0% · Chromatism 100% · Chords 100% · 24 bars sin tildar ·
-    //   Melody n2 y Melody n3 apagadas · Beats y Beatswithspice apagados · BlockwithMelody (Harmony) sorteado entre 30% y 100%.
+    //   Melody n2 y Melody n3 apagadas · Beats, Beatswithspice, Cycles e Intro apagados · BlockwithMelody (Harmony) sorteado entre 30% y 100%.
     function jazzDefaults(){
       function el(id){ return document.getElementById(id); }
       function setRange(id, v){ var e = el(id); if(!e) return; e.value = v; e.dispatchEvent(new Event("input", { bubbles: true })); }
@@ -24683,9 +24719,9 @@ function runAnalysis() {
       var m2 = el("consolaMelody2Chk"), m3 = el("consolaMelody3Chk");
       if(m2) m2.checked = false;
       if(m3) m3.checked = false;
-      [el("consolaBeatsChk"), el("consolaSpiceBeatsChk")].forEach(function(c){ if(c && c.checked){ c.checked = false; c.dispatchEvent(new Event("change", { bubbles: true })); } });
+      [el("consolaBeatsChk"), el("consolaSpiceBeatsChk"), el("consolaCyclesChk"), el("consolaIntroChk")].forEach(function(c){ if(c && c.checked){ c.checked = false; c.dispatchEvent(new Event("change", { bubbles: true })); } });
       randomizeSlider("consolaHT_bwmSlider", 30, 100);
-      SL("JazzTunes defaults", "Reharmonization on 100% · Tempo & Expression None 0% · Chromatism 100% · Chords 100% · 24 bars off · Melody n2/n3 off · Beats y Beatswithspice off · BlockwithMelody (Harmony) 30–100%");
+      SL("JazzTunes defaults", "Reharmonization on 100% · Tempo & Expression None 0% · Chromatism 100% · Chords 100% · 24 bars off · Melody n2/n3 off · Beats, Beatswithspice, Cycles e Intro off · BlockwithMelody (Harmony) 30–100%");
     }
     async function runJazzTunes(){
       if(running) return;
