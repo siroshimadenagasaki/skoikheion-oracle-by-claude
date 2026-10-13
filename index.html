@@ -1511,7 +1511,7 @@
             <input type="range" id="jazzReharmSlider" min="0" max="100" step="1" value="100" style="flex:1;min-width:60px;" aria-label="Complejidad de la Reharmonization">
             <span id="jazzReharmVal" style="min-width:34px;text-align:right;font-family:'JetBrains Mono',monospace;">100%</span>
           </div>
-          <label id="jazzWalkingRow" style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted);cursor:pointer;" title="Walking (solo JazzTunes): el bajo toca un walking bass simple, una negra por tiempo sobre los acordes de la canción (los reharmonizados, si Reharmonization está prendida). Tiempo 1 = la raíz del acorde (o el bajo del slash chord); tiempos del medio = notas del acorde (3ª, 5ª, 7ª...) llevadas por la más cercana a la anterior; último tiempo del acorde = nota de aproximación cromática (un semitono arriba o abajo) a la raíz del acorde que viene. Registro C2–G3. Apagado = el bajo de siempre (la raíz de cada acorde, sostenida). Se aplica en el próximo JazzTunes y en cada 🔀 / tecla G."><input type="checkbox" id="jazzWalkingChk">Walking</label>
+          <label id="jazzWalkingRow" style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted);cursor:pointer;" title="Walking (solo JazzTunes): el bajo toca un walking bass simple, una negra por tiempo sobre los acordes de la canción (los reharmonizados, si Reharmonization está prendida). Tiempo 1 = la raíz del acorde (o el bajo del slash chord); tiempos del medio = notas del acorde (3ª, 5ª, 7ª...) llevadas por la más cercana a la anterior; último tiempo del acorde = nota de aproximación cromática (un semitono arriba o abajo) a la raíz del acorde que viene. Registro C2–G3. Apagado = el bajo de siempre (la raíz de cada acorde, sostenida). Se aplica en el próximo JazzTunes y en cada 🔀 / tecla G."><input type="checkbox" id="jazzWalkingChk" checked>Walking</label>
           <button class="chip primary" id="creaturaIntervalicBtn" type="button" title="Igual que CreaturaRandom (mismos sliders, Compose, Mix time signatures, Detener, espera 2s y Regenerar, con 5 o 2 sets), pero antes sortea una combinación de clases de intervalo (1, 2 o 3 de ic1..ic6) y los sets salen SOLO de los que tienen todas esas clases en su vector de intervalos, con más probabilidad cuanto mayor parte del vector ocupan esas clases.">Intervalic.Creature</button>
         </div>
         <button class="chip" id="composeBtn" type="button" title="Como CreaturA pero con TU set y TU compás: con el set elegido en el reloj/piano (2+ notas) y el time signature que dejaste escrito, sortea los sliders, el tempo y los presets al azar (como CreaturA), no cambia el set, no mezcla compases, y toca una variación nueva en primer plano. Sin set elegido, sortea uno con la misma regla de CreaturA (sets del índice por jerarquía); cada vez que lo apretás de nuevo, sortea otro set distinto (un set que elegiste vos a mano se respeta).">🎹 Compose</button>
@@ -24338,7 +24338,7 @@ function runAnalysis() {
     if(!btn) return;
     var running = false;
     function SL(l, v){ try{ if(window.__songLog) window.__songLog.add(l, v); }catch(_e){} }   // 📝 Log de la canción
-    function SLbegin(k){ try{ if(window.__songLog) window.__songLog.begin(k); }catch(_e){} }
+    function SLbegin(k){ try{ window.__songKindName = String(k && k.name || k || ""); if(window.__songLog) window.__songLog.begin(k); }catch(_e){} }
     function SLpartimenti(pr){
       if(!pr) return;
       SL("Partimenti sorteo", Object.keys(pr).map(function(k){ return k + "=" + (pr[k] === null ? "off" : pr[k]); }).join(" · "));
@@ -24519,10 +24519,23 @@ function runAnalysis() {
         }
         if(kind === "mix"){
           // RADIO!: cada vuelta nueva sortea entre CreaturaRandom, CreaturA, Intervalic.Creature, CommonChords y Partimenti.
-          var pick = ["random", "bella", "intervalic", "common", "partimenti"][Math.floor(Math.random() * 5)];
+          var kinds = ["random", "bella", "intervalic", "common", "partimenti", "jazz"];
+          if(!(window.__jazzPre && window.__jazzPre.P)) kinds.pop();   // JazzTunes solo si ya hay una canción precargada (la vuelta se arma sin esperar)
+          var pick = kinds[Math.floor(Math.random() * kinds.length)];
           window.__radioMixLast = pick;
-          SLbegin({ random: "CreaturaRandom", bella: "CreaturA", intervalic: "Intervalic.Creature", common: "ChordS", partimenti: "Partimenti" }[pick]);
-          if(pick === "partimenti"){ SLpartimenti(window.__partimenti.randomize()); rcPre("partimenti"); window.__partimenti.start(); rcPost("partimenti"); return; }
+          if(pick === "jazz"){
+            var PJ = window.__jazzPre.P; window.__jazzPre = null;
+            if(window.__partimenti) window.__partimenti.off();
+            if(window.__commonChords) window.__commonChords.off();
+            SLbegin("JazzTunes");
+            SL("JazzTunes sorteo", PJ.file + " \u00b7 \"" + PJ.title + "\" \u00b7 \u2669=" + PJ.tempo + " \u00b7 " + PJ.bpb + "/4 \u00b7 " + PJ.bars + " compases (RADIO!)");
+            rcPre("jazz"); jazzDefaults(); window.__jazzTunes.start(PJ); rcPost("jazz");
+            jazzPrefetch();
+            return;
+          }
+          jazzPrefetch();
+          SLbegin({ random: "CreaturaRandom", bella: "CreaturA", intervalic: "Intervalic.Creature", common: "ChordS", partimenti: "Partimenti", jazz: "JazzTunes" }[pick]);
+          if(pick === "partimenti"){ if(window.__jazzTunes) window.__jazzTunes.off(); SLpartimenti(window.__partimenti.randomize()); rcPre("partimenti"); window.__partimenti.start(); rcPost("partimenti"); return; }
           if(window.__partimenti) window.__partimenti.off();
           if(window.__jazzTunes) window.__jazzTunes.off();
           if(pick === "common"){ randomizeSlider("consolaTempo", 30, 120); rcPre("common"); window.__commonChords.start(); rcPost("common"); return; }
@@ -24723,7 +24736,7 @@ function runAnalysis() {
       randomizeSlider("consolaHT_bwmSlider", 30, 100);
       SL("JazzTunes defaults", "Reharmonization on 100% · Tempo & Expression None 0% · Chromatism 100% · Chords 100% · 24 bars off · Melody n2/n3 off · Beats, Beatswithspice, Cycles e Intro off · BlockwithMelody (Harmony) 30–100%");
     }
-    async function runJazzTunes(){
+    async function runJazzTunes(fromMix){
       if(running) return;
       running = true;
       var lbl = btnJT ? btnJT.textContent : "";
@@ -24733,7 +24746,7 @@ function runAnalysis() {
         if(typeof window.__rollToFront === "function") window.__rollToFront();
         clickIfEnabled("consolaStopBtn");
         if(btnJT){ btnJT.disabled = true; btnJT.textContent = "🎷 JazzTunes…"; }
-        var pr = window.__jazzTunes.pick(selJT && selJT.value ? selJT.value : undefined);   // canción elegida en el selector, o sorteo; lee mientras el Detener se asienta
+        var pr = window.__jazzTunes.pick(fromMix !== true && selJT && selJT.value ? selJT.value : undefined);   // canción elegida en el selector, o sorteo; lee mientras el Detener se asienta
         pr.catch(function(){});                                // el error (si hay) se muestra más abajo; esto evita el aviso de promesa sin atrapar
         await wait(300);
         var P;
@@ -24762,7 +24775,13 @@ function runAnalysis() {
         running = false;
       }
     }
-    if(btnJT) btnJT.addEventListener("click", runJazzTunes);
+    // Precarga de una canción de JazzTunes para el RADIO!: las vueltas nuevas se arman sin esperar red.
+    function jazzPrefetch(){
+      if(!window.__jazzTunes || (window.__jazzPre && (window.__jazzPre.busy || window.__jazzPre.P))) return;
+      window.__jazzPre = { busy: true };
+      window.__jazzTunes.pick().then(function(P){ window.__jazzPre = { P: P }; }, function(){ window.__jazzPre = null; });
+    }
+    if(btnJT) btnJT.addEventListener("click", function(){ runJazzTunes(); });
     // 📻 RadioClassicalMode: como RadioCreaturaMode pero solo Partimenti. Excluyente con RadioCreaturaMode.
     var rcChk = document.getElementById("consolaRadioClassicalChk"), rcBtn = document.getElementById("consolaRadioClassicalBtn");
     function classicalPaint(){
@@ -24804,9 +24823,11 @@ function runAnalysis() {
     }
     window.__radioMixOff = function(){ mixSet(false); };
     async function runMix(){
-      var pick = ["random", "bella", "intervalic", "common", "partimenti"][Math.floor(Math.random() * 5)];
+      jazzPrefetch();
+      var pick = ["random", "bella", "intervalic", "common", "partimenti", "jazz"][Math.floor(Math.random() * 6)];
       window.__radioMixLast = pick;
-      if(pick === "random") await runCreatura(false);
+      if(pick === "jazz") await runJazzTunes(true);
+      else if(pick === "random") await runCreatura(false);
       else if(pick === "bella") await runCreatura(true);
       else if(pick === "intervalic") await runCreatura("intervalic");
       else if(pick === "common") await runCommonChords();
@@ -24818,7 +24839,7 @@ function runAnalysis() {
     if(stopBtnRM) stopBtnRM.addEventListener("click", function(){ mixSet(false); });
     // 📻 Reproductor vintage (RADIO!): Previous / Play / Stop / Next. Los mismos controles los usa Media Session (auricular / CarPlay).
     var rvBusy = false, rvEl = null, rvTimer = null, rvSkin = "classic", RV_CLASSIC = "";
-    var RV_KINDS = { random: "CreaturaRandom", bella: "CreaturA", intervalic: "Intervalic.Creature", common: "ChordS", partimenti: "Partimenti" };
+    var RV_KINDS = { random: "CreaturaRandom", bella: "CreaturA", intervalic: "Intervalic.Creature", common: "ChordS", partimenti: "Partimenti", jazz: "JazzTunes" };
     var RP = window.__radioPlayer = { resumable: false };
     RP.isOn = function(){ return !!(rmChk && rmChk.checked); };
     function rpFlags(){ // la radio sigue enganchando vueltas (los Detener internos la habían apagado)
@@ -25041,7 +25062,8 @@ function runAnalysis() {
         var ak = tt ? tt + "|" + (sEl ? sEl.textContent.trim() : "") : "RADIO";
         if(art.__k !== ak){ art.__k = ak; try{ window.PixelArt.render(art, { seed: ak, mode: "auto" }); }catch(_e){} }
       }
-      document.getElementById("rvKind").textContent = on ? (RV_KINDS[window.__radioMixLast] || "RADIO !") : "RADIO OFF";
+      var kn = String(window.__songKindName || ""), kl = /^partimenti/i.test(kn) ? "Partimenti" : /^jazztunes/i.test(kn) ? "JazzTunes" : kn;
+      document.getElementById("rvKind").textContent = (on && RV_KINDS[window.__radioMixLast]) || (playing && kl) || (on ? "RADIO !" : "RADIO OFF");
       var pk = rvEl.querySelector('[data-act="play"]');
       if(pk) pk.classList.toggle("rv-lit", on);
       rvLogUpdate();
