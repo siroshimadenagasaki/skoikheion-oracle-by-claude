@@ -24717,7 +24717,7 @@ function runAnalysis() {
     }
     // Defaults de 🎷 JazzTunes: cada vez que se aprieta el botón (canción nueva) fija estos controles; 🔀 / tecla G no los tocan (ahí valen tus cambios a mano).
     //   Reharmonization on y 100% · Tempo & Expression = None (strict tempo) 0% · Chromatism 100% · Chords 100% · 24 bars sin tildar ·
-    //   Melody n2 y Melody n3 apagadas · Beats, Beatswithspice, Cycles e Intro apagados · BlockwithMelody (Harmony) sorteado entre 30% y 100%.
+    //   Melody n2 y Melody n3 apagadas · Beats, Beatswithspice, Cycles e Intro apagados · BlockwithMelody (Harmony) sorteado entre 30% y 100% · Reverb 35%.
     function jazzDefaults(){
       function el(id){ return document.getElementById(id); }
       function setRange(id, v){ var e = el(id); if(!e) return; e.value = v; e.dispatchEvent(new Event("input", { bubbles: true })); }
@@ -24734,7 +24734,8 @@ function runAnalysis() {
       if(m3) m3.checked = false;
       [el("consolaBeatsChk"), el("consolaSpiceBeatsChk"), el("consolaCyclesChk"), el("consolaIntroChk")].forEach(function(c){ if(c && c.checked){ c.checked = false; c.dispatchEvent(new Event("change", { bubbles: true })); } });
       randomizeSlider("consolaHT_bwmSlider", 30, 100);
-      SL("JazzTunes defaults", "Reharmonization on 100% · Tempo & Expression None 0% · Chromatism 100% · Chords 100% · 24 bars off · Melody n2/n3 off · Beats, Beatswithspice, Cycles e Intro off · BlockwithMelody (Harmony) 30–100%");
+      setRange("consolaReverbAmount", 35);
+      SL("JazzTunes defaults", "Reharmonization on 100% · Tempo & Expression None 0% · Chromatism 100% · Chords 100% · 24 bars off · Melody n2/n3 off · Beats, Beatswithspice, Cycles e Intro off · BlockwithMelody (Harmony) 30–100% · Reverb 35%");
     }
     async function runJazzTunes(fromMix){
       if(running) return;
