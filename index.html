@@ -1505,6 +1505,7 @@
           <button class="chip primary" id="partimentiBtn" type="button" title="Partimenti (experimental): el motor inventa un bajo (Regla de la octava ascendente/descendente, quintas descendentes, I–IV–V–I, esquemas galantes y cadencias simple/compuesta/doble) en una tonalidad mayor al azar y lo completa a 4 voces con conducción de voces (sin quintas ni octavas paralelas, la 7ª baja, la sensible sube): bajo en Bass, tenor y alto en Harmony, soprano con diminuciones en Melody. Al entrar pone Clavecín en los tres y Batería a 0%. Cada canción sortea un movimiento de tempo (Grave…Prestissimo). En el piano roll: cifra romana e inversión (V4/3, V6/4, I6...). Las opciones están en el desplegable de abajo. 🔀 / tecla G sortean otra canción.">🎹 Partimenti</button>
           <details id="partimentiOpts" style="margin-top:2px;"><summary style="font-size:12px;color:var(--ink-muted);cursor:pointer;" title="Partimenti: elegí qué celdas de bajo, esquemas galantes (Romanesca, Prinner, Meyer, Do-Re-Mi, Sol-Fa-Mi, Aprile, Jupiter, Pastorella, Fenaroli, Ponte, Passo Indietro, Quiescenza), cadencias (simple, compuesta, doble) y movimientos de tempo (Grave…Prestissimo) puede sortear. Sin tildar nada = todo.">🎹 Partimenti: esquemas, cadencias, tempo</summary><div id="partimentiOptsBody" style="padding:4px 0;"></div></details>
           <button class="chip primary" id="jazzTunesBtn" type="button" title="JazzTunes (random choose): sortea una canción de la carpeta Band in a box SONGS (archivo MGU), toma sus acordes y su melodía y la arma con el motor: la melodía es la de la canción nota por nota, la armonía sale del motor siguiendo los acordes de la canción (tonos guía llevados por la voz más cercana; respeta Chord simultaneity, BlockwithMelody, wide.range), el bajo toca la raíz de cada acorde y la batería es la del motor con tus controles. Tempo y compás (4/4 o 3/4) = los de la canción; una canción = un coro. moreComping y bebopMelody, si los tenés prendidos, tocan sobre los acordes de la canción. 🔀 / tecla G rearman el acompañamiento de la misma canción; este botón sortea otra.">🎷 JazzTunes</button>
+          <select id="jazzSongSel" style="width:100%;max-width:100%;font-size:12px;" title="Canciones de la carpeta Band in a box SONGS (todos los archivos MG*/SG*, como presets). Auto = el botón 🎷 JazzTunes sortea una canción. Elegir una canción de la lista la carga y la reproduce ya (con los defaults de JazzTunes y Reharmonization); mientras haya una elegida, el botón 🎷 JazzTunes vuelve a armar ESA canción (otra reharmonización). Para volver a sortear, elegí Auto. Si el archivo es de una versión que el parser MGU todavía no verifica, avisa con un mensaje en vez de adivinar. Se puede escribir para saltar a un nombre."><option value="">Auto · sortear</option></select>
           <div id="jazzReharmRow" style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-muted);" title="Reharmonization (solo JazzTunes): reharmoniza los acordes de la canción con conocimiento de sets (Forte-Solomon, vector de intervalos, pares Z) y la base de acordes de CommonChords, sin tocar la melodía: cada acorde nuevo tiene que calzar con las notas que suenan sobre él. Cuanto más grande el slider, más complejo: 1–25% colores y relativos (maj7→maj9, Cmaj7→Em7); 30–50% sustitutos tritonales, dominantes secundarios y ii–V insertados; 45%+ dominantes alterados; 55%+ clases de set iguales o pares Z, disminuidos de paso; 70%+ medíantes cromáticas y backdoor. Se aplica en el próximo JazzTunes y en cada 🔀 / tecla G (re-sortea). El detalle de lo cambiado (con el número de Forte de cada acorde) queda en el log de la canción.">
             <label style="display:flex;align-items:center;gap:4px;white-space:nowrap;cursor:pointer;"><input type="checkbox" id="jazzReharmChk" checked>Reharmonization</label>
             <input type="range" id="jazzReharmSlider" min="0" max="100" step="1" value="100" style="flex:1;min-width:60px;" aria-label="Complejidad de la Reharmonization">
@@ -17139,7 +17140,7 @@ function runAnalysis() {
      tocar el reloj/piano (JAZZTUNES.off()). Expone window.__jazzTunes (active, song, last, pick, start, off).
      ================================================================ */
   var JAZZTUNES = (function(){
-    var DIR = "Band in a box SONGS/", KEY = "mguListCache", TTL = 6 * 3600 * 1000, MAX_TRIES = 80;
+    var DIR = "Band in a box SONGS/", KEY = "jazzTunesListCache2", TTL = 6 * 3600 * 1000, MAX_TRIES = 80;
     var api = { active: false, song: null, file: null, last: null, lastSong: null };
     var listP = null;
 
@@ -17156,7 +17157,7 @@ function runAnalysis() {
         p = fetch("https://api.github.com/repos/" + owner + "/" + repo + "/git/trees/main?recursive=1", { headers: { Accept: "application/vnd.github+json" } })
           .then(function(r){ if(!r.ok) throw new Error("GitHub API " + r.status); return r.json(); })
           .then(function(d){
-            var f = (d.tree || []).filter(function(it){ return it.type === "blob" && it.path.indexOf(DIR) === 0 && /\.(mgu|mg1|sg1|sgu)$/i.test(it.path); })
+            var f = (d.tree || []).filter(function(it){ return it.type === "blob" && it.path.indexOf(DIR) === 0 && /\.(m|s)g\w$/i.test(it.path); })
               .map(function(it){ return it.path.slice(DIR.length); })
               .sort(function(a, b){ return a.localeCompare(b, "es", { sensitivity: "base" }); });
             try { localStorage.setItem(KEY, JSON.stringify({ t: Date.now(), files: f })); } catch(_e){}
@@ -17195,9 +17196,24 @@ function runAnalysis() {
     }
 
     // Sortea una canción que el parser abra y tenga coro + melodía. Devuelve una promesa de la canción preparada (con .file).
-    api.pick = function(){
+    api.files = function(){ return listFiles(); };       // todas las canciones MG*/SG* de la carpeta (para el selector)
+    function loadOne(f, tries){
+      var MG = window.__MGU;
+      return fetch((DIR + f).split("/").map(encodeURIComponent).join("/"))
+        .then(function(r){ if(!r.ok) throw new Error("no se pudo leer (" + r.status + ")"); return r.arrayBuffer(); })
+        .then(function(buf){
+          var P = prepare(MG.parseMgu(new Uint8Array(buf)));
+          if(!P) throw new Error("no tiene un coro con acordes y melodía que JazzTunes pueda armar (compás 4/4 o 3/4, 4–96 compases, 8+ notas de melodía)");
+          P.file = f; P.tries = tries;
+          return P;
+        });
+    }
+    // pick(): sortea una canción que el parser abra y tenga coro + melodía. pick("archivo"): carga ESA canción (si no se puede, rechaza con el motivo).
+    // Devuelve una promesa de la canción preparada (con .file).
+    api.pick = function(only){
       var MG = window.__MGU;
       if(!MG) return Promise.reject(new Error("el parser MGU no está cargado"));
+      if(only) return loadOne(only, 1);
       return listFiles().then(function(list){
         var mgu = list.filter(function(f){ return /\.mgu$/i.test(f); });
         if(!mgu.length) mgu = list.slice();
@@ -17205,16 +17221,7 @@ function runAnalysis() {
         var tries = 0;
         function next(){
           if(tries++ >= MAX_TRIES) return Promise.reject(new Error("no encontré una canción usable en " + MAX_TRIES + " intentos"));
-          var f = mgu[Math.floor(Math.random() * mgu.length)];
-          return fetch((DIR + f).split("/").map(encodeURIComponent).join("/"))
-            .then(function(r){ if(!r.ok) throw new Error("no se pudo leer (" + r.status + ")"); return r.arrayBuffer(); })
-            .then(function(buf){
-              var P = prepare(MG.parseMgu(new Uint8Array(buf)));
-              if(!P) throw new Error("sin forma o sin melodía usable");
-              P.file = f; P.tries = tries;
-              return P;
-            })
-            .catch(function(){ return next(); });
+          return loadOne(mgu[Math.floor(Math.random() * mgu.length)], tries).catch(function(){ return next(); });
         }
         return next();
       });
@@ -24637,9 +24644,31 @@ function runAnalysis() {
     });
     // 🎷 JazzTunes (ver módulo JAZZTUNES): sortea una canción de Band in a box SONGS (acordes + melodía del MGU), detiene lo que suene, la arma con el motor y la reproduce.
     var btnJT = document.getElementById("jazzTunesBtn");
+    var selJT = document.getElementById("jazzSongSel");
+    // Selector de canciones (tipo presets): todas las MG*/SG* de Band in a box SONGS. Auto = sorteo. Elegir una canción la carga y la reproduce.
+    var jtListOk = false;
+    function jtFill(){
+      if(!selJT || !window.__jazzTunes) return;
+      window.__jazzTunes.files().then(function(files){
+        var keep = selJT.value, fr = document.createDocumentFragment();
+        while(selJT.options.length > 1) selJT.remove(1);
+        files.forEach(function(f){ var o = document.createElement("option"); o.value = f; o.textContent = f; fr.appendChild(o); });
+        selJT.appendChild(fr);
+        selJT.options[0].textContent = "Auto · sortear (" + files.length + " canciones)";
+        if(keep) selJT.value = keep;
+        jtListOk = true;
+      }).catch(function(e){
+        selJT.options[0].textContent = "Auto · sortear (lista no disponible: " + (e && e.message ? e.message : "error") + ")";
+      });
+    }
+    if(selJT){
+      jtFill();
+      selJT.addEventListener("focus", function(){ if(!jtListOk) jtFill(); });
+      selJT.addEventListener("change", function(){ if(selJT.value) runJazzTunes(); });
+    }
     // Defaults de 🎷 JazzTunes: cada vez que se aprieta el botón (canción nueva) fija estos controles; 🔀 / tecla G no los tocan (ahí valen tus cambios a mano).
     //   Reharmonization on y 100% · Tempo & Expression = None (strict tempo) 0% · Chromatism 100% · Chords 100% · 24 bars sin tildar ·
-    //   Melody n2 y Melody n3 apagadas · BlockwithMelody (Harmony) sorteado entre 30% y 100%.
+    //   Melody n2 y Melody n3 apagadas · Beats y Beatswithspice apagados · BlockwithMelody (Harmony) sorteado entre 30% y 100%.
     function jazzDefaults(){
       function el(id){ return document.getElementById(id); }
       function setRange(id, v){ var e = el(id); if(!e) return; e.value = v; e.dispatchEvent(new Event("input", { bubbles: true })); }
@@ -24654,8 +24683,9 @@ function runAnalysis() {
       var m2 = el("consolaMelody2Chk"), m3 = el("consolaMelody3Chk");
       if(m2) m2.checked = false;
       if(m3) m3.checked = false;
+      [el("consolaBeatsChk"), el("consolaSpiceBeatsChk")].forEach(function(c){ if(c && c.checked){ c.checked = false; c.dispatchEvent(new Event("change", { bubbles: true })); } });
       randomizeSlider("consolaHT_bwmSlider", 30, 100);
-      SL("JazzTunes defaults", "Reharmonization on 100% · Tempo & Expression None 0% · Chromatism 100% · Chords 100% · 24 bars off · Melody n2/n3 off · BlockwithMelody (Harmony) 30–100%");
+      SL("JazzTunes defaults", "Reharmonization on 100% · Tempo & Expression None 0% · Chromatism 100% · Chords 100% · 24 bars off · Melody n2/n3 off · Beats y Beatswithspice off · BlockwithMelody (Harmony) 30–100%");
     }
     async function runJazzTunes(){
       if(running) return;
@@ -24667,7 +24697,8 @@ function runAnalysis() {
         if(typeof window.__rollToFront === "function") window.__rollToFront();
         clickIfEnabled("consolaStopBtn");
         if(btnJT){ btnJT.disabled = true; btnJT.textContent = "🎷 JazzTunes…"; }
-        var pr = window.__jazzTunes.pick();                    // lee la lista y la canción mientras el Detener se asienta
+        var pr = window.__jazzTunes.pick(selJT && selJT.value ? selJT.value : undefined);   // canción elegida en el selector, o sorteo; lee mientras el Detener se asienta
+        pr.catch(function(){});                                // el error (si hay) se muestra más abajo; esto evita el aviso de promesa sin atrapar
         await wait(300);
         var P;
         try { P = await pr; }
@@ -24680,6 +24711,7 @@ function runAnalysis() {
         }
         SLbegin("JazzTunes");
         SL("JazzTunes sorteo", P.file + " · \"" + P.title + "\" · ♩=" + P.tempo + " · " + P.bpb + "/4 · " + P.bars + " compases · " + P.chords.length + " acordes · " + P.melody.length + " notas de melodía (intento " + P.tries + ")");
+        if(selJT && !selJT.value && jtListOk) selJT.options[0].textContent = "Auto · sortear — ahora: " + P.file;
         rcPre("jazz");
         jazzDefaults();                                        // después del random choose: los defaults de JazzTunes mandan
         window.__jazzTunes.start(P);
@@ -25032,7 +25064,7 @@ function runAnalysis() {
     });
     document.addEventListener("click", function(e){
       var t = e.target;
-      if(!window.__radioBusy && t && t.closest && t.closest("#commonChordsBtn,#creaturaBtn,#creaturaBellaBtn,#creaturaIntervalicBtn,#partimentiBtn,#jazzTunesBtn,#composeBtn,#clearBtn,#multiSetsRandomFillBtn,#multiSetsComposeBtn,#multiSetsMemBtn2,#consolaRadioBtn,#consolaRadioClassicalBtn")) mixSet(false);
+      if(!window.__radioBusy && t && t.closest && t.closest("#commonChordsBtn,#creaturaBtn,#creaturaBellaBtn,#creaturaIntervalicBtn,#partimentiBtn,#jazzTunesBtn,#jazzSongSel,#composeBtn,#clearBtn,#multiSetsRandomFillBtn,#multiSetsComposeBtn,#multiSetsMemBtn2,#consolaRadioBtn,#consolaRadioClassicalBtn")) mixSet(false);
     }, true);
     // Cualquier otro modo automático (Creaturas, Compose, Clear, CommonChords, RadioCreaturaMode) saca de RadioClassicalMode.
     document.addEventListener("click", function(e){
