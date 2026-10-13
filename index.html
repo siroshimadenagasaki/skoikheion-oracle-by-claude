@@ -17595,6 +17595,13 @@ function runAnalysis() {
       state.bassEvents = bassEvents;
       state.melodyEvents = melodyEvents;
       state.comping2Events = []; state.bebopEvents = []; state.melody2Events = []; state.melody3Events = [];
+      melody2RestCur = {};
+      if(melody2Enabled()){                          // Melody n2 (JazzTunes / Jazz.i.Tunes): 2ª melodía independiente (sorteo propio) sobre los acordes de la canción, con los silencios del slider Melody silences
+        if(!P.free){ MELODICPATTERNS.reset(); MELODICSPACE.reset(NUM_BARS); HARMONICSPACE.reset(NUM_BARS); }
+        var n2Rest = melodySilenceBars(NUM_BARS); melody2RestCur = n2Rest;
+        var n2Bar = function(beat){ for(var nb = NUM_BARS - 1; nb >= 0; nb--) if(beat >= RHYTHM.start(nb) - 1e-6) return nb; return 0; };
+        state.melody2Events = buildBassMelodyEventsRandom(progression, null, slotChords).melodyEvents.filter(function(e){ return !n2Rest[n2Bar(e.startBeat)]; });
+      }
       var chordAt = function(bar, offset){ return currentChordAt(state.slotChords[bar], offset); };
       if(MORECOMPING.enabled()) state.comping2Events = MORECOMPING.buildEvents(melodyPlain || melodyEvents, chordAt);   // moreComping: cuerdas sobre la melodía (la de la canción, o la del motor libre sin adornar), con notas del acorde en curso
       if(BEBOPMELODY.enabled()){                                                                          // bebopMelody: línea de escala/arpegio sobre los acordes de la canción
@@ -17617,10 +17624,11 @@ function runAnalysis() {
       var keepMel = P.free ? null : state.melodyEvents; if(keepMel) state.melodyEvents = [];   // el límite de velocidad no toca la melodía de la canción (sí la del motor libre)
       SPEEDLIMIT.apply(state);
       if(keepMel) state.melodyEvents = keepMel; else NOREPEAT.melody(state.melodyEvents, "consolaNoRepChk");
+      NOREPEAT.melody(state.melody2Events, "consolaNoRepChk"); applyMelody2Follows();   // Melody n2: Norepetitions y melody_2follows (copia la principal en ~50% de los compases)
       applyMelody3();
       state.chordEvents = HARMTEXTURES.apply(WIDERANGE.apply(state.chordEvents), state.slotChords);
       state.chordEvents = staggerBigChordAttacks(state.chordEvents);
-      if(P.free) PITCHFX.mark(state.melodyEvents);   // glissando / bend↓ (Ornaments): marcas para el audio
+      if(P.free) PITCHFX.mark(state.melodyEvents); PITCHFX.mark(state.melody2Events);   // glissando / bend↓ (Ornaments): marcas para el audio
       DYNAMICS.applyPitched(state);
       RHYTHMSPACE.reset(0);          // batería compartida, sin tramos de respiro ni tresillos (igual que CommonChords y Partimenti)
       TRIPLETS.setActive(false);
