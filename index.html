@@ -1506,9 +1506,9 @@
           <details id="partimentiOpts" style="margin-top:2px;"><summary style="font-size:12px;color:var(--ink-muted);cursor:pointer;" title="Partimenti: elegí qué celdas de bajo, esquemas galantes (Romanesca, Prinner, Meyer, Do-Re-Mi, Sol-Fa-Mi, Aprile, Jupiter, Pastorella, Fenaroli, Ponte, Passo Indietro, Quiescenza), cadencias (simple, compuesta, doble) y movimientos de tempo (Grave…Prestissimo) puede sortear. Sin tildar nada = todo.">🎹 Partimenti: esquemas, cadencias, tempo</summary><div id="partimentiOptsBody" style="padding:4px 0;"></div></details>
           <button class="chip primary" id="jazzTunesBtn" type="button" title="JazzTunes (random choose): sortea una canción de la carpeta Band in a box SONGS (archivo MGU), toma sus acordes y su melodía y la arma con el motor: la melodía es la de la canción nota por nota, la armonía sale del motor siguiendo los acordes de la canción (tonos guía llevados por la voz más cercana; respeta Chord simultaneity, BlockwithMelody, wide.range), el bajo toca la raíz de cada acorde y la batería es la del motor con tus controles. Tempo y compás (4/4 o 3/4) = los de la canción; una canción = un coro. moreComping y bebopMelody, si los tenés prendidos, tocan sobre los acordes de la canción. 🔀 / tecla G rearman el acompañamiento de la misma canción; este botón sortea otra.">🎷 JazzTunes</button>
           <div id="jazzReharmRow" style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-muted);" title="Reharmonization (solo JazzTunes): reharmoniza los acordes de la canción con conocimiento de sets (Forte-Solomon, vector de intervalos, pares Z) y la base de acordes de CommonChords, sin tocar la melodía: cada acorde nuevo tiene que calzar con las notas que suenan sobre él. Cuanto más grande el slider, más complejo: 1–25% colores y relativos (maj7→maj9, Cmaj7→Em7); 30–50% sustitutos tritonales, dominantes secundarios y ii–V insertados; 45%+ dominantes alterados; 55%+ clases de set iguales o pares Z, disminuidos de paso; 70%+ medíantes cromáticas y backdoor. Se aplica en el próximo JazzTunes y en cada 🔀 / tecla G (re-sortea). El detalle de lo cambiado (con el número de Forte de cada acorde) queda en el log de la canción.">
-            <label style="display:flex;align-items:center;gap:4px;white-space:nowrap;cursor:pointer;"><input type="checkbox" id="jazzReharmChk">Reharmonization</label>
-            <input type="range" id="jazzReharmSlider" min="0" max="100" step="1" value="40" style="flex:1;min-width:60px;" aria-label="Complejidad de la Reharmonization">
-            <span id="jazzReharmVal" style="min-width:34px;text-align:right;font-family:'JetBrains Mono',monospace;">40%</span>
+            <label style="display:flex;align-items:center;gap:4px;white-space:nowrap;cursor:pointer;"><input type="checkbox" id="jazzReharmChk" checked>Reharmonization</label>
+            <input type="range" id="jazzReharmSlider" min="0" max="100" step="1" value="100" style="flex:1;min-width:60px;" aria-label="Complejidad de la Reharmonization">
+            <span id="jazzReharmVal" style="min-width:34px;text-align:right;font-family:'JetBrains Mono',monospace;">100%</span>
           </div>
           <button class="chip primary" id="creaturaIntervalicBtn" type="button" title="Igual que CreaturaRandom (mismos sliders, Compose, Mix time signatures, Detener, espera 2s y Regenerar, con 5 o 2 sets), pero antes sortea una combinación de clases de intervalo (1, 2 o 3 de ic1..ic6) y los sets salen SOLO de los que tienen todas esas clases en su vector de intervalos, con más probabilidad cuanto mayor parte del vector ocupan esas clases.">Intervalic.Creature</button>
         </div>
@@ -24637,6 +24637,26 @@ function runAnalysis() {
     });
     // 🎷 JazzTunes (ver módulo JAZZTUNES): sortea una canción de Band in a box SONGS (acordes + melodía del MGU), detiene lo que suene, la arma con el motor y la reproduce.
     var btnJT = document.getElementById("jazzTunesBtn");
+    // Defaults de 🎷 JazzTunes: cada vez que se aprieta el botón (canción nueva) fija estos controles; 🔀 / tecla G no los tocan (ahí valen tus cambios a mano).
+    //   Reharmonization on y 100% · Tempo & Expression = None (strict tempo) 0% · Chromatism 100% · Chords 100% · 24 bars sin tildar ·
+    //   Melody n2 y Melody n3 apagadas · BlockwithMelody (Harmony) sorteado entre 30% y 100%.
+    function jazzDefaults(){
+      function el(id){ return document.getElementById(id); }
+      function setRange(id, v){ var e = el(id); if(!e) return; e.value = v; e.dispatchEvent(new Event("input", { bubbles: true })); }
+      var rc = el("jazzReharmChk"); if(rc) rc.checked = true;
+      setRange("jazzReharmSlider", 100);
+      var ex = el("consolaExprSelect");
+      if(ex){ ex.value = "none"; ex.dispatchEvent(new Event("change", { bubbles: true })); }
+      setRange("consolaExprSlider", 0);
+      setRange("consolaChromaSlider", 100);
+      setRange("consolaChordsSlider", 100);
+      var b24 = el("consola24BarsChk"); if(b24) b24.checked = false;
+      var m2 = el("consolaMelody2Chk"), m3 = el("consolaMelody3Chk");
+      if(m2) m2.checked = false;
+      if(m3) m3.checked = false;
+      randomizeSlider("consolaHT_bwmSlider", 30, 100);
+      SL("JazzTunes defaults", "Reharmonization on 100% · Tempo & Expression None 0% · Chromatism 100% · Chords 100% · 24 bars off · Melody n2/n3 off · BlockwithMelody (Harmony) 30–100%");
+    }
     async function runJazzTunes(){
       if(running) return;
       running = true;
@@ -24661,6 +24681,7 @@ function runAnalysis() {
         SLbegin("JazzTunes");
         SL("JazzTunes sorteo", P.file + " · \"" + P.title + "\" · ♩=" + P.tempo + " · " + P.bpb + "/4 · " + P.bars + " compases · " + P.chords.length + " acordes · " + P.melody.length + " notas de melodía (intento " + P.tries + ")");
         rcPre("jazz");
+        jazzDefaults();                                        // después del random choose: los defaults de JazzTunes mandan
         window.__jazzTunes.start(P);
         try {
           var RHL = window.__reharm && window.__reharm.last;
