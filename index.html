@@ -1865,6 +1865,7 @@
           <span class="consola-inst-toggle" title="One chord test: la canción tiene UN solo acorde. Se sortea el primer acorde del algoritmo (con su transposición) y TODOS los ataques de Harmony repiten ese mismo set, en todos los compases. Bajo y melodía quedan sobre ese set. El ritmo y las demás casillas (inversions, arp, in3rds…) siguen funcionando sobre ese único acorde. No entra en all."><input type="checkbox" id="consolaHT_onechord"><label for="consolaHT_onechord">One chord test</label></span>
           <span class="consola-inst-toggle" title="wide.range: los acordes largos (3 negras o más, de 2+ notas) se extienden en varias octavas: se duplican 1 octava abajo y 2 o 3 octavas arriba (se sortea por acorde). Las copias nunca suenan juntas: en ~80% de los acordes ninguna nota ataca junto con otra (cada nota de cada octava entra con su propio ataque, en orden al azar, repartidas a lo largo de la primera mitad del acorde); en el ~20% restante cada capa (la octava de abajo, el acorde original y las de arriba) ataca sus notas juntas, y las capas entran escalonadas. Todas terminan cuando termina el acorde. Mismas clases de tono: el set no se traiciona. Las capas que se pasan del registro (más agudo que C8 o más grave que E1) se omiten. No entra en all."><input type="checkbox" id="consolaHT_wide"><label for="consolaHT_wide">wide.range</label></span>
           <span class="consola-inst-toggle" title="textures (Harmony): en algunos tramos la armonía toca una textura pianística moderna en vez de los acordes de siempre. Cada nota se ajusta a las del set vigente: el set no se traiciona. Uso moderado, por secciones de 4 compases: la primera sección y el último compás quedan normales. Auto: según el largo de la canción y su cantidad de secciones usa una o varias texturas (1 con 1–2 secciones, 2 con 3–4, 3 con 5–8, 4 con 9+), en tramos de 2 compases. Preset fijo: solo esa textura, con el mismo criterio de secciones. Tildada por defecto."><input type="checkbox" id="consolaHarmTexChk" checked><label for="consolaHarmTexChk">textures</label><select class="mix-preset-select" id="consolaHarmTexSelect" style="max-width:170px;margin-left:6px;" title="Preset de textures. Auto (default): elige una o varias según el largo de la canción y su cantidad de secciones."><option value="auto" selected>Auto</option><option value="quartas">Quartas apiladas</option><option value="arpegio">Arpegio amplio</option><option value="cluster">Segundas apiladas</option><option value="comping">Comping sincopado</option><option value="cascada">Cascada impresionista</option><option value="alberti">Alberti moderno</option><option value="sinfund">Sin fundamental</option><option value="stride">Stride moderno</option><option value="ostinato">Ostinato en quintas</option><option value="tremolo">Trémolo</option><option value="campanas">Campanas</option><option value="caminante">Bajo caminante</option><option value="tresillo">Comping en tresillo</option><option value="ondas">Ondas en tresillos</option></select></span>
+          <span class="consola-inst-toggle" title="Ostinatov2 (Harmony, test, OFF por defecto): la armonía toca SOLO un ostinato estricto en TODOS los compases (reemplaza acordes, textures y demás). Se sortea una figura de 8 corcheas (ej. 1-3-5-3-1-3-5-3 en grados del set) y se repite idéntica compás tras compás, en la misma voz y registro. Cuando cambia el acorde, la misma figura (mismos grados) se apoya en el set del acorde vigente: el set no se traiciona. Una figura nueva en cada generación."><input type="checkbox" id="consolaHarmOst2Chk"><label for="consolaHarmOst2Chk">Ostinatov2</label></span>
         </div>
         <div class="consola-inst-row">
           <span class="consola-inst-toggle" title="Arpegiador de armonía: 0% = nunca (Armonía de siempre). 100% = TODOS los compases se arpegian. Entre medio, cada compás se sortea: con probabilidad = el valor se reemplaza por un arpegio de las notas del acorde vigente (el set no se traiciona: solo sus notas, subiendo de octava si el patrón lo pide). En cada compás arpegiado se sortea de nuevo el patrón (casi siempre aleatorios o asimétricos: paseo aleatorio, permutación, célula irregular, convergente, pedal, saltos de 2 o 3… los lineales arriba/abajo salen poco, ~10%), la subdivisión (corcheas, semicorcheas o tresillos) y el largo de las notas. Con el slider por encima de 0 la Armonía deja el motor libre (como al tildar una casilla). Se combina con inversions, in3rds, guitar y accent; en los compases arpegiados reemplaza el ritmo de sync/poly/rythmicarmonies."><label for="consolaHT_arpSlider">&#127929; Arp</label><input type="range" class="consola-mini-range" id="consolaHT_arpSlider" min="0" max="100" value="0" step="1"><span class="consola-val" id="consolaHT_arpVal">0%</span></span>
@@ -13860,6 +13861,62 @@ function runAnalysis() {
     if(el) el.addEventListener("change", function(){ if(state.rootChord.length) regenerateConsola(); });
   });
   /* ================================================================
+     OSTINATOV2 — casilla #consolaHarmOst2Chk ("Ostinatov2", Harmony, OFF por defecto). Módulo aparte y autocontenido (test).
+     Ostinato estricto: una figura de 8 corcheas (índices de grado dentro de las notas del set) que se repite IDÉNTICA en todos los compases,
+     en la misma voz y registro. Al cambiar el acorde, los mismos grados se apoyan en el set vigente (slotChords): el set no se traiciona.
+     Con la casilla tildada REEMPLAZA toda la armonía (acordes, textures, wide.range…); apagada devuelve los eventos tal cual.
+     Se sortea una figura nueva en cada generación. Se llama justo después de HARMTEXTURES; pasa el resultado por TEMPODENSITY.
+     ================================================================ */
+  var OSTINATOV2 = (function(){
+    var LO = 36, HI = 100, ANCHOR = 55;   // ANCHOR: la raíz del acorde se busca lo más cerca posible de G3
+    var CELLS = [
+      { id: "arpegio", d: [0,2,4,2,0,2,4,2] },
+      { id: "vaiven",  d: [0,1,2,1,0,1,2,1] },
+      { id: "quinta",  d: [0,4,2,4,0,4,2,4] },
+      { id: "salto",   d: [0,2,0,3,0,2,0,3] }
+    ];
+    var lastId = null;
+    function enabled(){ var e = document.getElementById("consolaHarmOst2Chk"); return !!(e && e.checked); }
+    function setOf(sl){
+      var src = (sl.setNotes && sl.setNotes.length) ? sl.setNotes : sl.chord, seen = {}, pcs = [];
+      (src || []).forEach(function(m){ var p = mod12(m); if(!seen[p]){ seen[p] = 1; pcs.push(p); } });
+      return { pcs: pcs, root: (src && src.length) ? mod12(Math.min.apply(null, src)) : 0 };
+    }
+    function build(slots){
+      var n = Math.min(NUM_BARS, slots.length), cell = CELLS[randomInt(0, CELLS.length - 1)], out = [];
+      lastId = cell.id;
+      for(var bar = 0; bar < n; bar++){
+        var bs = RHYTHM.start(bar), bl = RHYTHM.beats(bar), bslots = slots[bar];
+        if(!(bl > 0) || !bslots || !bslots.length) continue;
+        var steps = Math.max(1, Math.round(bl * 2));
+        for(var k = 0; k < steps; k++){
+          var off = k * 0.5, info = setOf(currentSlotAt(bslots, off));
+          if(info.pcs.length < 2) continue;
+          var ladder = [], m;
+          for(m = LO; m <= HI; m++) if(info.pcs.indexOf(mod12(m)) >= 0) ladder.push(m);
+          var a = 0, bd = 1e9;
+          for(var i = 0; i < ladder.length; i++){
+            if(mod12(ladder[i]) === info.root && Math.abs(ladder[i] - ANCHOR) < bd){ bd = Math.abs(ladder[i] - ANCHOR); a = i; }
+          }
+          var idx = Math.min(ladder.length - 1, a + cell.d[k % cell.d.length]);
+          out.push({ midi: ladder[idx], startBeat: bs + off, durBeats: Math.min(0.5, bl - off), bar: bar, vel: (k % 2 === 0) ? 95 : 70 });
+        }
+      }
+      return out.sort(function(x, y){ return x.startBeat - y.startBeat || x.midi - y.midi; });
+    }
+    function apply(events, slots){
+      if(!enabled() || !slots || !slots.length) return events;
+      var ob = build(slots);
+      return ob.length ? TEMPODENSITY.apply(ob) : events;
+    }
+    return { enabled: enabled, apply: apply, build: build, cells: CELLS, lastId: function(){ return lastId; } };
+  })();
+  window.OSTINATOV2 = OSTINATOV2;
+  (function(){
+    var el = document.getElementById("consolaHarmOst2Chk");
+    if(el) el.addEventListener("change", function(){ if(state.rootChord.length) regenerateConsola(); });
+  })();
+  /* ================================================================
      WIDERANGE — casilla #consolaHT_wide ("wide.range", Harmony, OFF por defecto). Post-proceso de la ARMONÍA: un acorde que dura 3 negras
      o más (3 tiempos; con 2+ notas distintas) se extiende en varias octavas. Por acorde se sortea cuántas octavas hacia arriba (2 o 3) y se
      agrega una copia 1 octava abajo: capas = [-1, original, +1, +2 (, +3)]. Las capas NUNCA atacan juntas. En ~80% de los acordes tampoco ataca junta NINGUNA nota: cada nota de cada capa tiene su propio ataque, en
@@ -14496,7 +14553,7 @@ function runAnalysis() {
     SPEEDLIMIT.apply(state); // límite de velocidad de Melody / Bass / Melody n2 / bebop / moreComping según el tempo
     NOREPEAT.melody(state.melodyEvents, "consolaNoRepChk"); // Norepetitions (otra vez: el límite de velocidad puede juntar notas iguales)
     applyMelody3(); // Melody n3: notas largas o la melodía principal una octava abajo (parte de la melodía ya recortada)
-    state.chordEvents = HARMTEXTURES.apply(WIDERANGE.apply(state.chordEvents), state.slotChords); // wide.range (Harmony): acordes largos duplicados en varias octavas, capas escalonadas
+    state.chordEvents = OSTINATOV2.apply(HARMTEXTURES.apply(WIDERANGE.apply(state.chordEvents), state.slotChords), state.slotChords); // wide.range (Harmony): acordes largos duplicados en varias octavas, capas escalonadas
     state.chordEvents = staggerBigChordAttacks(state.chordEvents); // Armonía: 6+ notas nunca atacan simultáneas
     applyMelody2Follows(); // melody_2follows: Melody n2 copia la melodía principal en ~50% de los compases
     NOREPEAT.melody(state.melody2Events, "consolaNoRepChk"); // Norepetitions: también en Melody n2
@@ -14554,7 +14611,7 @@ function runAnalysis() {
     SPEEDLIMIT.apply(state); // límite de velocidad de Melody / Bass / Melody n2 / bebop / moreComping según el tempo
     NOREPEAT.melody(state.melodyEvents, "consolaNoRepChk"); // Norepetitions (otra vez: el límite de velocidad puede juntar notas iguales)
     applyMelody3(); // Melody n3: notas largas o la melodía principal una octava abajo (parte de la melodía ya recortada)
-    state.chordEvents = HARMTEXTURES.apply(WIDERANGE.apply(state.chordEvents), state.slotChords); // wide.range (Harmony): acordes largos duplicados en varias octavas, capas escalonadas
+    state.chordEvents = OSTINATOV2.apply(HARMTEXTURES.apply(WIDERANGE.apply(state.chordEvents), state.slotChords), state.slotChords); // wide.range (Harmony): acordes largos duplicados en varias octavas, capas escalonadas
     state.chordEvents = staggerBigChordAttacks(state.chordEvents); // Armonía: 6+ notas nunca atacan simultáneas
     DYNAMICS.applyPitched(state); // Dynamics (0% = no-op)
     drumEvents = buildDrumEvents(NUM_BARS);
@@ -15000,7 +15057,7 @@ function runAnalysis() {
       state.chordEvents = TEMPODENSITY.apply(state.chordEvents);
       SPEEDLIMIT.apply(state); // límite de velocidad de Melody / Bass / Melody n2 / bebop / moreComping según el tempo
       applyMelody3(); // Melody n3: notas largas o la melodía principal una octava abajo (parte de la melodía ya recortada)
-      state.chordEvents = HARMTEXTURES.apply(WIDERANGE.apply(state.chordEvents), state.slotChords);
+      state.chordEvents = OSTINATOV2.apply(HARMTEXTURES.apply(WIDERANGE.apply(state.chordEvents), state.slotChords), state.slotChords);
       if(!testH) state.chordEvents = staggerBigChordAttacks(state.chordEvents); // ModeTestHarmony: simultáneo también con más de 5 notas
       DYNAMICS.applyPitched(state);
       RHYTHMSPACE.reset(0);          // igual que Simplicity: la batería es compartida, sin tramos de respiro ni tresillos
@@ -17633,7 +17690,7 @@ function runAnalysis() {
       if(keepMel) state.melodyEvents = keepMel; else NOREPEAT.melody(state.melodyEvents, "consolaNoRepChk");
       NOREPEAT.melody(state.melody2Events, "consolaNoRepChk"); applyMelody2Follows();   // Melody n2: Norepetitions y melody_2follows (copia la principal en ~50% de los compases)
       applyMelody3();
-      state.chordEvents = HARMTEXTURES.apply(WIDERANGE.apply(state.chordEvents), state.slotChords);
+      state.chordEvents = OSTINATOV2.apply(HARMTEXTURES.apply(WIDERANGE.apply(state.chordEvents), state.slotChords), state.slotChords);
       state.chordEvents = staggerBigChordAttacks(state.chordEvents);
       if(P.free) PITCHFX.mark(state.melodyEvents); PITCHFX.mark(state.melody2Events);   // glissando / bend↓ (Ornaments): marcas para el audio
       DYNAMICS.applyPitched(state);
