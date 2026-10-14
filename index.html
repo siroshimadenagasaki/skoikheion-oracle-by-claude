@@ -40,25 +40,26 @@
      pase desapercibido), no desaparece sola en ese caso. */
   .sf2-load-overlay{
     position:fixed; top:14px; left:14px; z-index:9999;
-    background:var(--surface); border:1px solid var(--line);
-    border-radius:10px; padding:10px 14px;
-    font-family:'JetBrains Mono',monospace; font-size:12px;
-    color:var(--ink); box-shadow:0 6px 20px rgba(0,0,0,.35);
-    display:flex; align-items:center; gap:10px;
+    background:var(--surface); border:2px solid var(--line);
+    border-radius:40px; padding:40px 56px;
+    font-family:'JetBrains Mono',monospace; font-size:48px;   /* 4x (antes 12px / padding 10px 14px) */
+    color:var(--ink); box-shadow:0 24px 80px rgba(0,0,0,.35);
+    display:flex; align-items:center; gap:40px;
+    max-width:calc(100vw - 28px); box-sizing:border-box;
     opacity:1; transition:opacity .4s ease;
     pointer-events:none;
   }
   .sf2-load-overlay.sf2-load-hidden{ opacity:0; }
-  .sf2-load-overlay.sf2-load-extra{ top:58px; }
+  .sf2-load-overlay.sf2-load-extra{ top:190px; }
   .sf2-load-overlay .sf2-load-bar{
-    width:90px; height:6px; border-radius:4px; overflow:hidden;
-    background:var(--surface-2); border:1px solid var(--line);
+    width:360px; height:24px; border-radius:16px; overflow:hidden; flex:0 1 360px; min-width:60px;
+    background:var(--surface-2); border:2px solid var(--line);
   }
   .sf2-load-overlay .sf2-load-bar-fill{
     height:100%; width:0%; background:var(--gold); transition:width .15s linear;
   }
   .sf2-load-overlay.sf2-load-error .sf2-load-bar-fill{ background:var(--red-warn); }
-  .sf2-load-overlay .sf2-load-label{ white-space:nowrap; }
+  .sf2-load-overlay .sf2-load-label{ white-space:normal; }
   body{
     margin:0;
     background:
@@ -5706,10 +5707,10 @@ function getAudioCtx() {
       if (audioCtx.state === "interrupted") { try { window.dispatchEvent(new CustomEvent("stk-audio-interrupted", { detail: "audiocontext" })); } catch (e) {} return; }
       var sysInt = false; try { sysInt = !!(navigator.audioSession && navigator.audioSession.state === "interrupted"); } catch (e) {}
       // "suspended" espontáneo mientras suena (no por una interrupción del sistema): se reanuda como siempre.
-      if (audioCtx.state === "suspended" && b && b.disabled && !sysInt) { try { audioCtx.resume().catch(function(){}); } catch (e) {} }
+      if (audioCtx.state === "suspended" && b && b.disabled && !sysInt && !window.__rpPaused) { try { audioCtx.resume().catch(function(){}); } catch (e) {} }   // __rpPaused: pausa del Player (no se reanuda sola)
     };
   }
-  if (audioCtx.state === "suspended") audioCtx.resume();
+  if (audioCtx.state === "suspended" && !window.__rpPaused) audioCtx.resume();
   return audioCtx;
 }
 
@@ -21786,6 +21787,7 @@ function runAnalysis() {
     var loopDur = TOTAL_BEATS * spb;
     var sr = ctx.sampleRate;
     var looping = document.getElementById("consolaLoopChk").checked;
+    window.__radioEnsureLevels();   // Player: ninguna pista activa arranca en 0%
     var tracks = prActiveTracks();
     if(!tracks.length){ return startPlaybackLive(); }
     document.getElementById("consolaPlayBtn").disabled = true;
@@ -21880,9 +21882,34 @@ function runAnalysis() {
     try{ if(typeof sfLog === "function") sfLog(msg); }catch(e){}
     return quiet.length;
   }
+  // ✔ Chequeo de niveles del Player (RADIO!): ninguna pista activa arranca con el fader en 0. Si alguna está en 0% (p.ej. un set de otro modo que
+  // la dejó muda), vuelve a su nivel por defecto y se anota en el 📝 Log. Solo corre con el Player prendido: en uso manual se respeta tu mezcla.
+  // Excepción: la Batería en una canción de Partimenti, que es 0% a propósito (set "partimenti"). Solo/Foco/"solo batería" no se tocan (los reporta pfReport).
+  var ENSURE_LEVEL = { chord:0.85, bass:0.25, melody:0.85, melodyDouble:0.35, chordDouble:0.35, bassDouble:0.25, drum:1.05, comping2:0.85, bebop:0.85, melody2:0.85, melody3:0.85 };
+  window.__radioEnsureLevels = function(){
+    var fixed = [];
+    try{
+      if(!(window.__radioPlayer && window.__radioPlayer.isOn && window.__radioPlayer.isOn())) return fixed;
+      prActiveTracks().forEach(function(tr){
+        if(mixGains[tr] > 0) return;
+        if(tr === "drum" && window.__radioMixLast === "partimenti") return;
+        var v = ENSURE_LEVEL[tr] || 0.85;
+        var sl = document.getElementById("mix" + tr.charAt(0).toUpperCase() + tr.slice(1) + "Vol");
+        if(sl){ sl.value = Math.round(v * 100); sl.dispatchEvent(new Event("input", { bubbles: true })); }   // actualiza etiqueta y gain
+        else setMixGain(tr, v);                                                                                // comping2 no tiene fader
+        fixed.push((PF_LABEL[tr] || tr) + " → " + Math.round(v * 100) + "%");
+      });
+      if(fixed.length){
+        try{ if(window.__songLog) window.__songLog.add("Chequeo de niveles (Player)", "pistas activas en 0%, vueltas a su nivel: " + fixed.join(", ")); }catch(e){}
+        try{ if(typeof sfLog === "function") sfLog("✔ Player: niveles corregidos [" + fixed.join(", ") + "]"); }catch(e){}
+      }
+    }catch(e){ console.error("radioEnsureLevels:", e); }
+    return fixed;
+  };
   function startPlaybackChecked(){
     var ctx = getAudioCtx();   // síncrono, dentro del gesto del usuario (iOS)
     if(!ctx) return;
+    window.__radioEnsureLevels();
     var tracks = prActiveTracks();
     var nQuiet = pfReport(tracks);
     if(nQuiet){
@@ -22001,8 +22028,18 @@ function runAnalysis() {
         if(rk && typeof window.__radioNext === "function"){
           // RadioMode: arma una vuelta nueva (mismos sliders/sets al azar que CreaturaRandom/Bella)
           // ~0.8 s antes de que termine la actual y la programa pegada, en el mismo reloj de audio.
+          var drumWas = mixGains.drum;
           try{ window.__radioNext(rk); }catch(err){ console.error("RadioMode:", err); }
-          schedLoopStart += loopDur + RADIO_GAP_SEC;   // Player/RADIO: 3 s de silencio entre canción y canción
+          window.__radioEnsureLevels();   // Player: la canción nueva tampoco arranca con una pista activa en 0%
+          schedLoopStart += loopDur + RADIO_GAP_SEC;
+          // La Batería acaba de volver de 0% (se salió de Partimenti) pero todavía suenan los últimos ~0,8 s de la canción vieja, que sí tiene eventos de batería:
+          // el nodo vivo queda mudo hasta que arranca la canción nueva (programado en el reloj de audio, no con un timer).
+          if(drumWas === 0 && mixGains.drum > 0 && drumGainNode){
+            var gnow = ctx.currentTime;
+            drumGainNode.gain.cancelScheduledValues(gnow);
+            drumGainNode.gain.setValueAtTime(0, gnow);
+            drumGainNode.gain.setValueAtTime(audioGain("drum"), schedLoopStart);
+          }   // Player/RADIO: 3 s de silencio entre canción y canción
           var bpmNew = parseInt(tempoEl.value, 10);          // la canción nueva puede traer su propio tempo (RadioClassicalMode: movimiento de Partimenti)
           if(bpmNew > 0) spb = 60/bpmNew;
           loopDur = TOTAL_BEATS*spb;
@@ -23681,9 +23718,16 @@ function runAnalysis() {
       // Partimenti: Clavecín en Armonía, Bajo y Melodía y Batería a 0% (se aplica al entrar al modo 🎹 Partimenti; después se puede cambiar a mano).
       partimenti: { harmony: "harpsichord", bass: "harpsichord", melody: "harpsichord", melody2: "harpsichord", melody3: "harpsichord", gains: { drum: 0 } }
     };
+    // Foto de lo que había ANTES de aplicar el set "partimenti" (clavecín en Armonía/Bajo/Melodía/Melody n2/n3 + Batería a 0%), para poder deshacerlo
+    // cuando el Player (RADIO!) pasa a otro modo: sin esto el Bajo y Melody n2/n3 quedaban en clavecín y la Batería en 0% en todas las canciones siguientes.
+    var partSnap = null;
     function applyPresetSet(setKey){
       var set = PRESET_SETS[setKey];
       if(!set) return;
+      if(setKey === "partimenti" && !partSnap){
+        partSnap = { presets: {}, drum: mixGains.drum };
+        SELECTS.forEach(function(cfg){ if(cfg.key in set) partSnap.presets[cfg.key] = mixPresets[cfg.key]; });
+      }
       SELECTS.forEach(function(cfg){
         if(!(cfg.key in set)) return;
         var el = document.getElementById(cfg.id);
@@ -23729,6 +23773,24 @@ function runAnalysis() {
       }
     }
     window.__applyPresetSet = applyPresetSet;   // lo usa 🎹 Partimenti para poner Clavecín y Batería muteada al entrar
+    // Deshace el set "partimenti": cada selector vuelve a lo que tenía, solo si sigue con el valor que puso el set (lo que el usuario
+    // cambió a mano no se pisa), y la Batería vuelve a su volumen anterior si sigue en 0%.
+    window.__undoPartimentiSet = function(){
+      if(!partSnap) return;
+      var snap = partSnap, set = PRESET_SETS.partimenti;
+      partSnap = null;
+      SELECTS.forEach(function(cfg){
+        if(!(cfg.key in snap.presets) || mixPresets[cfg.key] !== set[cfg.key]) return;
+        var el = document.getElementById(cfg.id);
+        mixPresets[cfg.key] = snap.presets[cfg.key];
+        if(el) el.value = snap.presets[cfg.key];
+      });
+      if(mixGains.drum === 0 && snap.drum > 0){
+        var sl = document.getElementById("mixDrumVol");
+        if(sl){ sl.value = Math.round(snap.drum * 100); sl.dispatchEvent(new Event("input", { bubbles: true })); }
+        else setMixGain("drum", snap.drum);
+      }
+    };
 
     // ================================================================
     // RANDOM CHOOSE — sorteos que se aplican al apretar CreaturaRandom / CreaturA (e Intervalic) / ChordS / Partimenti
@@ -23910,6 +23972,8 @@ function runAnalysis() {
       }
       window.__randomChoose = {
         pre: function(kind){
+          // Player (RADIO!): al salir de Partimenti se deshace su set de instrumentos (clavecín + Batería a 0%); si no, se arrastraba a los otros modos.
+          if(kind !== "partimenti" && window.__radioPlayer && window.__radioPlayer.isOn && window.__radioPlayer.isOn() && typeof window.__undoPartimentiSet === "function") window.__undoPartimentiSet();
           restore(stDr);
           if(auto8){ auto8 = false; if(chk8){ chk8.checked = false; } restore(st8); }
           rollBars();
@@ -25322,8 +25386,32 @@ function runAnalysis() {
     // RP.start(only): only = "random" | "bella" | "intervalic" | "common" | "partimenti" | "jazz" | "jazzi" limita la radio a ese modo; null = RADIO! (mix de todos);
     // sin argumento conserva el modo vigente (Play / Next / Previous del player).
     RP.only = null;
+    // ⏸ Pausa: congela el reloj de audio (la canción queda justo donde estaba, sin reiniciarse) y Play la retoma.
+    // window.__rpPaused evita que los "resume" automáticos (getAudioCtx, visibilitychange, onstatechange) la reanuden sola.
+    RP.paused = false;
+    function rpUnpause(){
+      if(!window.__rpPaused) return false;
+      window.__rpPaused = false; RP.paused = false;
+      try{ if(typeof audioCtx !== "undefined" && audioCtx && audioCtx.state === "suspended") audioCtx.resume(); }catch(_e){}
+      return true;
+    }
+    RP.pause = function(){
+      if(!RP.isOn() || window.__rpPaused) return;
+      var pb = document.getElementById("consolaPlayBtn");
+      if(!(pb && pb.disabled)) return;   // no está sonando nada
+      if(typeof audioCtx === "undefined" || !audioCtx) return;
+      window.__rpPaused = true; RP.paused = true;
+      try{ audioCtx.suspend(); }catch(_e){}
+      rvSync();
+    };
+    RP.resume = function(){ if(rpUnpause()) rvSync(); };
+    ["consolaStopBtn", "consolaPlayBtn", "consolaRegenPlayBtn"].forEach(function(id){   // Detener / Play / 🔀 a mano estando en pausa: se sale de la pausa antes
+      var el = document.getElementById(id);
+      if(el) el.addEventListener("click", rpUnpause, true);
+    });
     RP.start = async function(only){
       if(rvBusy) return;
+      rpUnpause();
       if(only !== undefined) RP.only = only || null;
       window.__radioOnly = RP.only;
       rvBusy = true;
@@ -25338,6 +25426,7 @@ function runAnalysis() {
       } finally { rvBusy = false; rvSync(); }
     };
     RP.stop = function(){
+      rpUnpause();
       RP.resumable = true;
       if(window.__radioHist) window.__radioHist.on = false;
       mixSet(false);
@@ -25346,6 +25435,7 @@ function runAnalysis() {
     };
     // Canción nueva al instante: corta lo que suena, arma la siguiente (mismo sorteo que cada vuelta del RADIO!) y la reproduce.
     async function rpSkipNew(){
+      rpUnpause();
       rvBusy = true;
       try {
         window.__radioOnly = RP.only;
@@ -25362,6 +25452,7 @@ function runAnalysis() {
     function rpPlayHist(i){
       var H = window.__radioHist;
       if(!H) return;
+      rpUnpause();
       rvBusy = true;
       try {
         if(typeof window.consolaStopPlayback === "function") window.consolaStopPlayback();
@@ -25505,7 +25596,7 @@ function runAnalysis() {
           '<div class="rv-grille"><div class="rv-lamp"><em></em>ON AIR</div><canvas class="rv-art" id="rvArt" width="288" height="288" aria-hidden="true"></canvas></div>' +
           '<div class="rv-keys">' +
             key("prev", "&#9198;&#65038;", "Previous") + key("play", "&#9654;&#65038;", "Play") +
-            key("stop", "&#9632;&#65038;", "Stop") + key("next", "&#9197;&#65038;", "Next") +
+            key("pause", "&#9208;&#65038;", "Pause") + key("next", "&#9197;&#65038;", "Next") +
           '</div>' +
         '</div>';
       document.body.appendChild(rvEl);
@@ -25519,8 +25610,8 @@ function runAnalysis() {
           var nd = document.getElementById("rvNeedle");
           if(nd){ nd.classList.remove("rv-sweep"); void nd.offsetWidth; nd.classList.add("rv-sweep"); }
         }
-        if(act === "play"){ if(!RP.isOn()) RP.start(); }
-        else if(act === "stop") RP.stop();
+        if(act === "play"){ if(window.__rpPaused) RP.resume(); else if(!RP.isOn()) RP.start(); }
+        else if(act === "pause") RP.pause();
         else if(act === "next") RP.next();
         else if(act === "prev") RP.prev();
         rvSync();
@@ -25531,7 +25622,8 @@ function runAnalysis() {
       if(!rvEl || !document.getElementById("rvTitle")) return;
       var on = RP.isOn(), pb = document.getElementById("consolaPlayBtn");
       var playing = !!(pb && pb.disabled);
-      rvEl.classList.toggle("rv-on", on && playing);
+      var paused = !!window.__rpPaused;
+      rvEl.classList.toggle("rv-on", on && playing && !paused);
       rvEl.classList.toggle("rv-busy", rvBusy);
       var tEl = document.getElementById("consolaSongTitle"), sEl = document.getElementById("consolaSongSets");
       var tt = tEl ? tEl.textContent.trim() : "";
@@ -25543,9 +25635,11 @@ function runAnalysis() {
         if(art.__k !== ak){ art.__k = ak; try{ window.PixelArt.render(art, { seed: ak, mode: "auto" }); }catch(_e){} }
       }
       var kn = String(window.__songKindName || ""), kl = /^partimenti/i.test(kn) ? "Partimenti" : /^jazztunes/i.test(kn) ? "JazzTunes" : /^jazz\.i\.tunes/i.test(kn) ? "Jazz.i.Tunes" : kn;
-      document.getElementById("rvKind").textContent = (on && RV_KINDS[window.__radioMixLast]) || (playing && kl) || (on ? "RADIO !" : "RADIO OFF");
+      document.getElementById("rvKind").textContent = (paused && "PAUSA") || (on && RV_KINDS[window.__radioMixLast]) || (playing && kl) || (on ? "RADIO !" : "RADIO OFF");
       var pk = rvEl.querySelector('[data-act="play"]');
-      if(pk) pk.classList.toggle("rv-lit", on);
+      if(pk) pk.classList.toggle("rv-lit", on && !paused);
+      var pz = rvEl.querySelector('[data-act="pause"]');
+      if(pz) pz.classList.toggle("rv-lit", paused);
       rvLogUpdate();
       rvExportSync();
     }
@@ -25597,6 +25691,8 @@ function runAnalysis() {
     if(rvOpenBtn) rvOpenBtn.addEventListener("click", function(){
       if(!RP.isOn()){ RP.only = null; window.__radioOnly = null; }   // el botón Player abre el RADIO! normal (mix de todos los modos); con la radio ya prendida en un modo limitado, solo la muestra
       rvOpen();
+      if(window.__rpPaused) RP.resume();                              // al entrar al player: si estaba en pausa, sigue
+      else if(!RP.isOn() && !rvBusy) RP.start(null);                  // y si no sonaba nada, arranca solo (Play automático)
     });
     if(rmBtn && rmChk) rmBtn.addEventListener("click", function(){
       if(rmChk.checked){ RP.stop(); RP.resumable = false; return; }
@@ -25790,7 +25886,7 @@ function runAnalysis() {
   var IC = {
     prev: sv('<path d="M19 5v14L9 12z"/><path d="M5 5v14"/>'),
     play: sv('<path d="M7 4l13 8-13 8z"/>'),
-    stop: sv('<rect x="6" y="6" width="12" height="12" rx="1"/>'),
+    pause: sv('<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>'),
     next: sv('<path d="M5 5v14l10-7z"/><path d="M19 5v14"/>'),
     close: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12"/><path d="M18 6L6 18"/></svg>'
   };
@@ -25802,14 +25898,14 @@ function runAnalysis() {
     return '<div class="keys">' +
       '<button type="button" class="b" data-act="prev" aria-label="Previous">' + IC.prev + '</button>' +
       '<button type="button" class="b p" data-act="play" aria-label="Play">' + IC.play + '</button>' +
-      '<button type="button" class="b" data-act="stop" aria-label="Stop">' + IC.stop + '</button>' +
+      '<button type="button" class="b" data-act="pause" aria-label="Pause">' + IC.pause + '</button>' +
       '<button type="button" class="b" data-act="next" aria-label="Next">' + IC.next + '</button></div>';
   }
   function cmd(){
     return '<div class="cmd">' +
       '<button type="button" class="tb" data-act="prev">Prev</button>' +
       '<button type="button" class="tb" data-act="play">Play</button>' +
-      '<button type="button" class="tb" data-act="stop">Stop</button>' +
+      '<button type="button" class="tb" data-act="pause">Pause</button>' +
       '<button type="button" class="tb" data-act="next">Next</button></div>';
   }
   var HTML = {
@@ -25972,7 +26068,7 @@ function runAnalysis() {
     a.loop = true; a.setAttribute("playsinline", ""); a.volume = 0.05;
     // Si el sistema la pausa mientras suena (llamada, Siri, otra app, auricular/Bluetooth desconectado) NO se reintenta:
     // antes se reiniciaba sola y la página le quitaba el audio a la llamada. Ahora se detiene el player y se cede el audio.
-    a.addEventListener("pause", function(){ if (isPlaying()) yieldToSystem("media-pause"); });
+    a.addEventListener("pause", function(){ if (isPlaying() && !window.__rpPaused) yieldToSystem("media-pause"); });   // __rpPaused: la pausa la hizo el propio player (keepOff), no el sistema
     return a;
   }
   var yielded = false;
@@ -26061,7 +26157,8 @@ function runAnalysis() {
   });
   // Sincroniza con el estado real (fin de loop, Stop, RadioMode, etc.).
   setInterval(function(){
-    if (isPlaying()) { if (sysInterrupted()) yieldToSystem("audioSession"); else keepOn(); }
+    if (window.__rpPaused) keepOff();   // Player en pausa: CarPlay / pantalla de bloqueo muestran "pausado" con el botón Play
+    else if (isPlaying()) { if (sysInterrupted()) yieldToSystem("audioSession"); else keepOn(); }
     else keepOff();
   }, 1500);
   // Interrupciones del sistema (llamada, Siri, otra app): el player se detiene y devuelve el audio.
@@ -26076,10 +26173,14 @@ function runAnalysis() {
         var r = rp(); if (r && r.isOn()) { r.stop(); return; }
         var b = document.getElementById("consolaStopBtn"); if (b && !b.disabled) b.click();
       };
-      navigator.mediaSession.setActionHandler("pause", stopFn);
+      navigator.mediaSession.setActionHandler("pause", function(){   // pausa de verdad (como la tecla Pause del player): la canción sigue donde estaba
+        var r = rp(); if (r && r.isOn() && r.pause) { r.pause(); return; }
+        stopFn();
+      });
       navigator.mediaSession.setActionHandler("stop", stopFn);
       navigator.mediaSession.setActionHandler("play", function(){
-        var r = rp(); if (r && r.resumable) { r.start(); return; }
+        var r = rp(); if (r && r.paused) { r.resume(); return; }
+        if (r && r.resumable) { r.start(); return; }
         var b = document.getElementById("consolaPlayBtn"); if (b && !b.disabled) b.click();
       });
       // Next / Previous (botones del auricular, pantalla de bloqueo y CarPlay): mueven la radio.
@@ -26090,7 +26191,7 @@ function runAnalysis() {
 
   // Al volver a primer plano / tras interrupciones: reanudar el contexto.
   document.addEventListener("visibilitychange", function(){
-    if (!isPlaying() || sysInterrupted()) return;   // tras ceder el audio (llamada) no se reanuda sola
+    if (!isPlaying() || sysInterrupted() || window.__rpPaused) return;   // tras ceder el audio (llamada) o en pausa no se reanuda solo
     // pantalla apagada o vuelta a primer plano: reforzar la sesión de audio
     try { if (typeof audioCtx !== "undefined" && audioCtx && audioCtx.state !== "running") audioCtx.resume(); } catch(e){}
     keepOn();
