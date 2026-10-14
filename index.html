@@ -3954,7 +3954,9 @@ var MGU = (function () {
     <h2 style="margin:0 0 12px;text-align:center;">Tools</h2>
     <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;">
       <a class="chip primary" id="soundfontTesterBtn" href="soundfont-tester.html" target="_blank" rel="noopener" title="Abre el SoundFont Tester en otra pestaña" style="text-decoration:none;">🎹 Soundfont tester</a>
+      <button type="button" class="chip" id="reloadAllBtn" title="Modo offline: la app se carga una vez y después no usa internet. Este botón baja la última versión del código y vuelve a bajar los sonidos (borra los guardados). Necesita conexión; antes de borrar nada comprueba que la versión nueva se pueda bajar.">🔄 Reload sounds and code</button>
     </div>
+    <div id="offlineStatus" title="Tocá para actualizar este estado" style="text-align:center;margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:10.5px;opacity:.75;cursor:pointer;"></div>
   </div>
 
   <script>
@@ -5695,10 +5697,15 @@ function getAudioCtx() {
     const Ctx = window.AudioContext || window.webkitAudioContext;
     if (!Ctx) return null;
     audioCtx = new Ctx();
-    // iOS puede dejar el contexto en "interrupted" (llamada, otra app, bloqueo).
+    // iOS deja el contexto en "interrupted" cuando entra una llamada / Siri / otra app toma el audio.
+    // NO se fuerza resume(): antes la página se peleaba por el audio y la música nunca se cortaba ni con una llamada.
+    // Se avisa (evento) para que el bloque de Media Session detenga el player y devuelva el audio al sistema.
     audioCtx.onstatechange = function () {
       var b = document.getElementById("consolaPlayBtn");
-      if (audioCtx.state === "interrupted" || (audioCtx.state === "suspended" && b && b.disabled)) { try { audioCtx.resume().catch(function(){}); } catch (e) {} }
+      if (audioCtx.state === "interrupted") { try { window.dispatchEvent(new CustomEvent("stk-audio-interrupted", { detail: "audiocontext" })); } catch (e) {} return; }
+      var sysInt = false; try { sysInt = !!(navigator.audioSession && navigator.audioSession.state === "interrupted"); } catch (e) {}
+      // "suspended" espontáneo mientras suena (no por una interrupción del sistema): se reanuda como siempre.
+      if (audioCtx.state === "suspended" && b && b.disabled && !sysInt) { try { audioCtx.resume().catch(function(){}); } catch (e) {} }
     };
   }
   if (audioCtx.state === "suspended") audioCtx.resume();
@@ -21789,10 +21796,66 @@ function runAnalysis() {
     })();
   }
 
+  // ✔ Chequeo previo de instrumentos (modo en vivo). Antes de sonar: (1) se ve qué pistas están realmente activas
+  // (checkbox de pista, preset distinto de mute, con notas) y cuáles quedan apagadas / con el fader en 0 — queda en el 📝 log;
+  // (2) se espera (máx. 8 s) a que terminen de bajar los .sf2 de las pistas activas, igual que ya hace Prerender: dar Play con un
+  // .sf2 a medio cargar hacía que esa pista cayera al sintetizador o sonara distinta ("a veces suena bien, a veces un solo instrumento");
+  // (3) se reescriben los niveles del mixer (el mismo "refuerzo" que usa Detener) para que ningún canal arranque en 0.
+  var PF_LABEL = { chord:"Harmony", chordDouble:"Harmony 2", bass:"Bass", bassDouble:"Bass 2", melody:"Melody", melodyDouble:"Melody 2x", drum:"Drums", comping2:"Comping", bebop:"Bebop", melody2:"Melody 2", melody3:"Melody 3" };
+  function pfSleep(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
+  // Por qué una pista activa igual no se oye: batería sola, otro canal en Solo, o fader en 0.
+  function pfWhy(tr){
+    try{
+      if(onlyDrums && tr !== "drum") return "solo batería";
+      if(soloActive() && !soloTracks[tr]) return "otro canal en Solo";
+      if(!(mixGains[tr] > 0)) return "fader en 0";
+    }catch(e){}
+    return "";
+  }
+  function pfReport(tracks){
+    var act = [], quiet = [], off = [];
+    tracks.forEach(function(tr){
+      var why = pfWhy(tr), name = PF_LABEL[tr] || tr;
+      if(why) quiet.push(name + " (" + why + ")"); else act.push(name);
+    });
+    Object.keys(PR_PRESET_OF_TRACK).forEach(function(tr){ if(tracks.indexOf(tr) < 0) off.push(PF_LABEL[tr] || tr); });
+    var msg = "▶ Play · suenan [" + act.join(", ") + "]" + (quiet.length ? " · activos pero callados [" + quiet.join(", ") + "]" : "") + (off.length ? " · apagados o sin notas [" + off.join(", ") + "]" : "");
+    try{ if(typeof sfLog === "function") sfLog(msg); }catch(e){}
+    return quiet.length;
+  }
+  function startPlaybackChecked(){
+    var ctx = getAudioCtx();   // síncrono, dentro del gesto del usuario (iOS)
+    if(!ctx) return;
+    var tracks = prActiveTracks();
+    var nQuiet = pfReport(tracks);
+    if(nQuiet){
+      prStatus("ℹ " + nQuiet + " pista(s) activa(s) pero calladas — ver 📝 log");
+      setTimeout(function(){ var el = document.getElementById("consolaPrerenderStatus"); if(el && el.textContent.indexOf("ℹ") === 0) el.textContent = ""; }, 6000);
+    }
+    function go(){ try{ applyAllMixGains(); }catch(e){} startPlaybackLive(); }
+    if(!prFontsLoading(tracks)) return go();
+    var token = prToken = (prToken | 0) + 1;   // Detener lo cancela (stopPlayback sube prToken)
+    document.getElementById("consolaPlayBtn").disabled = true;
+    document.getElementById("consolaStopBtn").disabled = false;
+    (async function(){
+      var t0 = performance.now();
+      while(prFontsLoading(tracks) && performance.now() - t0 < 8000){
+        prStatus("⏳ Checking instruments…");
+        await pfSleep(150);
+        if(token !== prToken) return;
+      }
+      if(token !== prToken) return;
+      var late = prFontsLoading(tracks);
+      prStatus(late ? "⚠ SoundFonts incomplete → synth fallback" : "");
+      if(late) setTimeout(function(){ var el = document.getElementById("consolaPrerenderStatus"); if(el && el.textContent.indexOf("⚠ SoundFonts") === 0) el.textContent = ""; }, 5000);
+      go();
+    })();
+  }
+
   function startPlayback(){
     if(state.chordEvents.length === 0) return;
     if(prOn()) return startPlaybackRendered();
-    return startPlaybackLive();
+    return startPlaybackChecked();
   }
 
   function startPlaybackLive(startBeat){
@@ -25850,9 +25913,24 @@ function runAnalysis() {
     for (var i = 0; i < n; i++) v.setInt16(44 + i*2, Math.round((Math.random()*2 - 1) * 10), true);
     var a = new Audio(URL.createObjectURL(new Blob([buf], {type:"audio/wav"})));
     a.loop = true; a.setAttribute("playsinline", ""); a.volume = 0.05;
-    // Si el sistema la pausa (pantalla apagada, foco de audio), se retoma sola mientras suena la música.
-    a.addEventListener("pause", function(){ if (isPlaying()) { try { a.play().catch(function(){}); } catch(e){} } });
+    // Si el sistema la pausa mientras suena (llamada, Siri, otra app, auricular/Bluetooth desconectado) NO se reintenta:
+    // antes se reiniciaba sola y la página le quitaba el audio a la llamada. Ahora se detiene el player y se cede el audio.
+    a.addEventListener("pause", function(){ if (isPlaying()) yieldToSystem("media-pause"); });
     return a;
+  }
+  var yielded = false;
+  function sysInterrupted(){ try { return !!(navigator.audioSession && navigator.audioSession.state === "interrupted"); } catch(e){ return false; } }
+  // El sistema (llamada, Siri, otra app) tomó el audio: se detiene el player (igual que el botón Stop / pausa de CarPlay)
+  // y NO se reanuda solo; se retoma con Play (pantalla, auricular o CarPlay).
+  function yieldToSystem(why){
+    yielded = true;
+    try { if (typeof sfLog === "function") sfLog("⏸ audio cedido al sistema (" + why + ")"); } catch(e){}
+    try {
+      var r = window.__radioPlayer || null;
+      if (r && r.isOn && r.isOn()) r.stop();
+      else { var b = document.getElementById("consolaStopBtn"); if (b && !b.disabled) b.click(); }
+    } catch(e){}
+    try { if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused"; } catch(e){}
   }
   // Portada para CarPlay / pantalla de bloqueo: la MISMA imagen 8 bits que muestra el player
   // (misma semilla = título|sets), dibujada en un canvas fuera de pantalla y pasada como PNG.
@@ -25873,6 +25951,8 @@ function runAnalysis() {
     } catch(e){ return []; }
   }
   function keepOn(){
+    if (sysInterrupted()) return;   // llamada / Siri en curso: no se le pelea el audio al sistema
+    yielded = false;
     try { if (!keep) keep = makeKeep(); if (keep.paused) keep.play().catch(function(){}); } catch(e){}
     try {
       if ("mediaSession" in navigator) {
@@ -25911,7 +25991,8 @@ function runAnalysis() {
   }
   function keepOff(){
     try { if (keep && !keep.paused) keep.pause(); } catch(e){}
-    try { if ("mediaSession" in navigator) { navigator.mediaSession.playbackState = "none"; if (navigator.mediaSession.setPositionState) navigator.mediaSession.setPositionState(); } } catch(e){}
+    // "paused" (no "none") una vez que ya sonó algo: CarPlay / pantalla de bloqueo siguen mostrando el tema con el botón Play para retomar.
+    try { if ("mediaSession" in navigator) { navigator.mediaSession.playbackState = lastMeta ? "paused" : "none"; if (navigator.mediaSession.setPositionState) navigator.mediaSession.setPositionState(); } } catch(e){}
     lastPos = null;
   }
   function isPlaying(){ var b = document.getElementById("consolaPlayBtn"); return !!(b && b.disabled); }
@@ -25922,7 +26003,13 @@ function runAnalysis() {
     if (el) el.addEventListener("click", keepOn, true);
   });
   // Sincroniza con el estado real (fin de loop, Stop, RadioMode, etc.).
-  setInterval(function(){ if (isPlaying()) keepOn(); else keepOff(); }, 1500);
+  setInterval(function(){
+    if (isPlaying()) { if (sysInterrupted()) yieldToSystem("audioSession"); else keepOn(); }
+    else keepOff();
+  }, 1500);
+  // Interrupciones del sistema (llamada, Siri, otra app): el player se detiene y devuelve el audio.
+  try { if (navigator.audioSession && navigator.audioSession.addEventListener) navigator.audioSession.addEventListener("statechange", function(){ if (sysInterrupted() && isPlaying()) yieldToSystem("audioSession"); }); } catch(e){}
+  window.addEventListener("stk-audio-interrupted", function(e){ if (isPlaying()) yieldToSystem((e && e.detail) || "interrupted"); });
 
   // Controles de la pantalla de bloqueo.
   try {
@@ -25946,23 +26033,164 @@ function runAnalysis() {
 
   // Al volver a primer plano / tras interrupciones: reanudar el contexto.
   document.addEventListener("visibilitychange", function(){
-    if (document.hidden && isPlaying()) {   // pantalla apagada / app en segundo plano: reforzar la sesión de audio
-      try { if (typeof audioCtx !== "undefined" && audioCtx && audioCtx.state !== "running") audioCtx.resume(); } catch(e){}
-      keepOn();
-    }
-    if (!document.hidden && isPlaying()) {
-      try { if (typeof audioCtx !== "undefined" && audioCtx && audioCtx.state !== "running") audioCtx.resume(); } catch(e){}
-      keepOn();
-    }
+    if (!isPlaying() || sysInterrupted()) return;   // tras ceder el audio (llamada) no se reanuda sola
+    // pantalla apagada o vuelta a primer plano: reforzar la sesión de audio
+    try { if (typeof audioCtx !== "undefined" && audioCtx && audioCtx.state !== "running") audioCtx.resume(); } catch(e){}
+    keepOn();
   });
 })();
 </script>
 <script>
-/* PWA offline: el service worker cachea la app (index, catalog.json, manifest, fuentes);
-   los .sf2 ya los guarda IndexedDB (sf2CachePut). persist() pide a iOS no borrarlos. */
-if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) {
-  window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function (e) { console.warn("SW:", e); }); });
-}
+/* PWA OFFLINE-FIRST: el service worker (sw.js) sirve todo desde el caché y solo va a la red por lo que todavía no está guardado;
+   los .sf2 los guarda IndexedDB (sf2CachePut). persist() pide a iOS no borrarlos.
+   La versión nueva (código + sonidos) se trae a mano con el botón "Reload sounds and code" de la pestaña Tools. */
+(function () {
+  var swOk = "serviceWorker" in navigator && location.protocol.indexOf("http") === 0;
+  var SHELL = ["./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
+  var FONT_RE = /(^|\.)(fonts\.googleapis|fonts\.gstatic)\.com$/;
+  function say(m) { var el = document.getElementById("offlineStatus"); if (el) el.textContent = m; }
+  function mb(n) { return Math.round((n || 0) / 1048576) + " MB"; }
+  function dbg(m) { try { if (typeof sfLog === "function") sfLog(m); } catch (e) {} }
+
+  // Lo que la página pide en la PRIMERA carga (fuentes, etc.) todavía no pasa por el service worker (recién se activa).
+  // Una vez que controla la página se vuelve a pedir lo que falte en el caché, así la próxima apertura ya no necesita internet.
+  function warmUp() {
+    var urls = [], seen = {};
+    performance.getEntriesByType("resource").forEach(function (r) {
+      var x; try { x = new URL(r.name); } catch (e) { return; }
+      if (x.protocol !== "http:" && x.protocol !== "https:") return;
+      if (/\.sf2$/i.test(x.pathname) || x.hostname === "api.github.com" || x.searchParams.has("stknet")) return;
+      if (!(x.origin === location.origin || FONT_RE.test(x.hostname))) return;
+      if (!seen[r.name]) { seen[r.name] = 1; urls.push({ u: r.name, same: x.origin === location.origin }); }
+    });
+    return urls.reduce(function (p, it) {
+      return p.then(function () {
+        return caches.match(it.u, { ignoreSearch: it.same }).then(function (hit) {
+          if (hit) return;
+          return fetch(it.u, { mode: it.same ? "same-origin" : "cors" }).catch(function () {});
+        });
+      });
+    }, Promise.resolve()).then(function () { dbg("offline: caché calentado (" + urls.length + " recursos revisados)"); });
+  }
+  function whenControlled(fn) {
+    if (navigator.serviceWorker.controller) { fn(); return; }
+    var done = false;
+    function once() { if (done) return; done = true; fn(); }
+    navigator.serviceWorker.addEventListener("controllerchange", once);
+    setTimeout(once, 6000);   // sin claim a tiempo: igual se intenta
+  }
+  if (swOk) {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("./sw.js")
+        .then(function () { return navigator.serviceWorker.ready; })
+        .then(function () { whenControlled(function () { setTimeout(function () { warmUp().then(refreshStatus); }, 1500); }); })
+        .catch(function (e) { console.warn("SW:", e); });
+    });
+  }
+
+  // ---- Estado: qué quedó guardado para usar sin conexión ----
+  function countSounds() {
+    if (typeof sf2CacheOpenDb !== "function" || typeof SF2_CACHE_STORE_NAME === "undefined") return Promise.resolve(null);
+    return sf2CacheOpenDb().then(function (db) {
+      return new Promise(function (res, rej) {
+        var rq = db.transaction(SF2_CACHE_STORE_NAME, "readonly").objectStore(SF2_CACHE_STORE_NAME).getAllKeys();
+        rq.onsuccess = function () { var p = SF2_CACHE_VERSION + "::"; res(rq.result.filter(function (k) { return String(k).indexOf(p) === 0; }).length); };
+        rq.onerror = function () { rej(rq.error); };
+      });
+    });
+  }
+  var holdUntil = 0;   // mientras el botón Reload está trabajando (o acaba de dar un mensaje), el refresco automático no lo pisa
+  function refreshStatus(force) {
+    if (force === true || (force && force.type === "click")) holdUntil = 0;
+    if (Date.now() < holdUntil) return Promise.resolve();
+    var parts = [];
+    var codeP = (window.caches ? caches.keys().then(function (ks) {
+      return Promise.all(ks.map(function (k) { return caches.open(k).then(function (c) { return c.match("./index.html"); }); }));
+    }).then(function (r) { parts.push(r.some(Boolean) ? "Code ✔ saved" : "Code ✗ not saved yet"); }) : Promise.resolve()).catch(function () { parts.push("Code: n/a"); });
+    return codeP
+      .then(function () { return countSounds().then(function (n) { if (n !== null) parts.push("Sounds saved: " + n); }).catch(function () {}); })
+      .then(function () { return (navigator.storage && navigator.storage.estimate) ? navigator.storage.estimate().then(function (e) { parts.push("Storage " + mb(e.usage) + " / " + mb(e.quota) + (e.quota && e.usage / e.quota > 0.9 ? " ⚠ nearly full: some sounds may not stay saved" : "")); }).catch(function () {}) : null; })
+      .then(function () { say(parts.join(" · ")); });
+  }
+
+  // ---- Botón "Reload sounds and code" ----
+  function wipeSounds() {
+    return new Promise(function (resolve) {
+      try {
+        var p = (typeof sf2CacheDbPromise !== "undefined" && sf2CacheDbPromise) ? sf2CacheDbPromise : Promise.resolve(null);
+        p.then(function (db) { if (db) { try { db.close(); } catch (e) {} } }, function () {}).then(function () {
+          var rq = indexedDB.deleteDatabase(typeof SF2_CACHE_DB_NAME !== "undefined" ? SF2_CACHE_DB_NAME : "stoikheionSF2Cache"), done = false;
+          function fin() { if (!done) { done = true; resolve(); } }
+          rq.onsuccess = fin; rq.onerror = fin; rq.onblocked = function () { setTimeout(fin, 2500); };
+          setTimeout(fin, 8000);
+        });
+      } catch (e) { resolve(); }
+    });
+  }
+  async function reloadAll() {
+    var btn = document.getElementById("reloadAllBtn");
+    if (btn && btn.disabled) return;
+    if (!swOk) { holdUntil = Date.now() + 20000; say("⚠ Offline mode needs the https page (service worker not available here)."); return; }
+    if (navigator.onLine === false) { holdUntil = Date.now() + 20000; say("⚠ No connection — nothing was changed."); return; }
+    if (!confirm("¿Actualizar código y sonidos a la última versión?\n\nSe vuelve a bajar la página y se borran los sonidos guardados (se bajan de nuevo; pueden ser cientos de MB).\nHacelo con buena conexión: antes de borrar nada se comprueba que la versión nueva se pueda bajar.")) return;
+    if (btn) btn.disabled = true;
+    holdUntil = Date.now() + 120000;
+    var changed = false;
+    try {
+      say("⏳ Checking connection and downloading the latest code…");
+      var fresh = [];
+      for (var i = 0; i < SHELL.length; i++) {
+        var ctl = new AbortController(), to = setTimeout(function () { ctl.abort(); }, 30000);
+        var res = await fetch(SHELL[i] + "?stknet=" + Date.now(), { cache: "reload", signal: ctl.signal });   // ?stknet: el service worker lo manda siempre a la red
+        clearTimeout(to);
+        if (!res.ok) throw new Error(SHELL[i] + " → HTTP " + res.status);
+        fresh.push({ u: new URL(SHELL[i], location.href).href, ct: res.headers.get("Content-Type") || "", buf: await res.arrayBuffer() });
+      }
+      if (!fresh[0] || fresh[0].buf.byteLength < 100000) throw new Error("index.html llegó incompleto");
+      // La versión nueva ya está bajada (en memoria). Primero se liberan los sonidos (si el almacenamiento está casi lleno, el código nuevo no entraría) y después se guarda el código.
+      say("⏳ Clearing the saved sounds…");
+      changed = true;
+      await wipeSounds();
+      try { if (typeof SF_DISCOVER_CACHE_KEY !== "undefined") localStorage.removeItem(SF_DISCOVER_CACHE_KEY); } catch (e) {}
+      say("⏳ Replacing the saved code…");
+      var names = (await caches.keys()).filter(function (k) { return /^shell-/.test(k); });
+      var target = names.length ? names[names.length - 1] : "shell-v2";
+      var c = await caches.open(target);
+      var dirUrl = new URL("./", location.href).href, keep = {};
+      // El navegador libera la cuota de forma asíncrona tras borrar los sonidos: si el guardado falla por cuota, se reintenta.
+      var putTry = async function (req, mk) {
+        for (var a = 0; ; a++) {
+          try { await c.put(req, mk()); return; }
+          catch (e) { if (a < 5 && /quota/i.test(((e && e.name) || "") + " " + ((e && e.message) || ""))) { await new Promise(function (r) { setTimeout(r, 1200); }); continue; } throw e; }
+        }
+      };
+      for (var j = 0; j < fresh.length; j++) {
+        var mk = function () { return new Response(fresh[j].buf.slice(0), { headers: { "Content-Type": fresh[j].ct } }); };
+        await putTry(new Request(fresh[j].u), mk); keep[fresh[j].u] = 1;
+        if (/index\.html$/.test(fresh[j].u)) { await putTry(new Request(dirUrl), mk); keep[dirUrl] = 1; }
+      }
+      (await c.keys()).forEach(function (r) { if (!keep[r.url]) c.delete(r); });   // catálogos, fuentes, MIDIs… se vuelven a guardar al usarse
+      (await caches.keys()).forEach(function (k) { if (k !== target) caches.delete(k); });
+      try { var reg = await navigator.serviceWorker.getRegistration(); if (reg) await reg.update(); } catch (e) {}
+      dbg("offline: Reload sounds and code OK");
+      say("✔ Done — reloading…");
+      setTimeout(function () { location.reload(); }, 600);
+    } catch (err) {
+      dbg("offline: Reload sounds and code FALLÓ: " + (err && err.message || err));
+      holdUntil = Date.now() + 30000;
+      var quotaErr = /quota/i.test(((err && err.name) || "") + " " + ((err && err.message) || ""));
+      say(changed && quotaErr ? "⚠ Storage is full or not yet freed by the browser (Quota exceeded). The saved sounds were cleared; the previous version still works. Close and reopen the app, then press the button again."
+        : changed ? "⚠ Stopped midway (" + (err && err.message || err) + "): the saved sounds were cleared. Connect and press the button again."
+                  : "⚠ Could not reach the server (" + (err && err.message || err) + ") — nothing was deleted.");
+      if (btn) btn.disabled = false;
+    }
+  }
+  window.addEventListener("load", function () {
+    var b = document.getElementById("reloadAllBtn"); if (b) b.addEventListener("click", reloadAll);
+    var s = document.getElementById("offlineStatus"); if (s) s.addEventListener("click", refreshStatus);
+    setTimeout(refreshStatus, 4000); setTimeout(refreshStatus, 25000);
+  });
+})();
 function sfAskPersist() { try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().then(function (ok) { if (typeof sfLog === "function") sfLog("storage.persist = " + ok); }); } catch (e) {} }
 window.addEventListener("load", sfAskPersist);
 </script>
