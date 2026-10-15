@@ -1370,6 +1370,10 @@
   /* Nombre(s) del set bajo el título: (código Solomon + nombre - cifrado - slash) */
   #consolaSongSets{text-align:center;font-size:clamp(11px,1.2vw,15px);color:var(--ink-muted);padding:0 12px;margin-top:2px;line-height:1.3;}
   #consolaSongSets:empty{display:none;}
+  #consolaSongSetsBtn{flex:none;align-self:center;min-width:26px;height:22px;padding:0 8px;border:1px solid var(--line,#444);border-radius:11px;background:transparent;color:var(--ink-muted);font:700 14px/1 'JetBrains Mono',monospace;cursor:pointer;pointer-events:auto;}
+  #consolaSongSetsBtn[hidden]{display:none;}
+  #consolaSongSets.sets-folded{display:none;}
+  #consolaSongSets.sets-open{max-height:34vh;overflow:auto;}
   /* "+" bajo Shortcuts: trae el piano roll (de fondo, detrás de la página) al primer plano */
   /* + / − del piano roll: fijo arriba a la izquierda, grande y llamativo; por encima del piano roll en primer plano (z 90/95) */
   .shortcuts-roll-btn{position:fixed;top:10px;left:10px;z-index:120;width:56px;height:56px;display:flex;align-items:center;justify-content:center;background:#ff2d95;border:3px solid #fff;color:#fff;border-radius:50%;font-size:36px;font-weight:800;line-height:1;cursor:pointer;padding:0;box-shadow:0 0 0 3px #ff2d95,0 4px 18px rgba(255,45,149,.65);transition:transform .12s ease,box-shadow .12s ease;}
@@ -1467,7 +1471,7 @@
 <input type="range" id="rollVScroll" min="-25" max="25" value="0" step="1" title="Mueve el piano roll general hacia arriba o abajo (doble click = centrar)" aria-label="Scroll vertical del piano roll">
 <!-- Piano rolls de SetMusicBox: fondo fijo a pantalla completa, siempre -->
     <div id="consolaRollsLayer">
-    <div id="consolaSongHead"><div id="consolaSongTitle" aria-live="polite"></div><span id="consolaSongBpm" title="Tempo actual"></span><span id="consolaSongVec" title="Vector intervalico elegido para esta canción (Intervalic.Creature)"></span></div>
+    <div id="consolaSongHead"><div id="consolaSongTitle" aria-live="polite"></div><span id="consolaSongBpm" title="Tempo actual"></span><span id="consolaSongVec" title="Vector intervalico elegido para esta canción (Intervalic.Creature)"></span><button type="button" id="consolaSongSetsBtn" hidden aria-expanded="false" title="Mostrar / ocultar los acordes de la canción">+</button></div>
     <div id="consolaSongSets" aria-live="polite"></div>
     <div id="consolaBebopRollLabel" style="margin-bottom:6px;font-size:12px;font-weight:600;color:var(--ink-muted);padding-top:0;">🎷 bebopMelody — separate piano roll (isolated from the main one)</div>
     <div class="consola-roll-wrap" id="consolaBebopRollHost" style="min-height:60px;margin-bottom:20px;"></div>
@@ -1649,7 +1653,7 @@
 <div class="overlay-card consola-card collapsible-card" id="consolaCard">
     <button class="module-toggle" aria-expanded="false" aria-controls="consolaContent" onclick="toggleModule(this)"></button>
     <button type="button" class="module-fs-toggle fullscreen-btn" data-fs-card="consolaCard" title="Pantalla completa">⛶ Full screen</button>
-    <h2>SetMusicBox · Looped segment</h2>
+    <h2>Composer Configuration</h2>
     <div class="collapsible-content collapsed" id="consolaContent">
     <p class="consola-status">With the notes chosen above (clock or piano) it builds a 12-bar looped segment, always within the same Solomon set. The &#8681;&#8679; Chromatism slider (25% by default) controls how much the chord is transposed and shrunk per bar &mdash; at 0%, literal notes, full set; raise it for more chromatic variety. &#8634; Simplicity goes back to the simple version (full set, no transposition, a single inversion). Bass and drums vary their rhythm per bar; the melody follows the current chord note, with short fills in ~30% of the bars and rests ~20% of the time. Pad harmony, synthesized bass, flute melody and optional generic drums &mdash; each instrument with its own mute.</p>
 
@@ -1741,6 +1745,7 @@
       </div>
       <div class="consola-field" title="Norepetitions: la melodía evita repetir la misma nota seguida (solo el 30% de las veces deja pasar 2 iguales; 3 nunca; la repetida se cambia por otra nota que el set permite en ese momento, la más cercana: C C C C pasa a C D C D) y la armonía evita repetir el mismo acorde seguido (idem: 30% deja pasar 2, 3 nunca; en la repetición se cambia una nota por su octava, así sigue siendo del set pero no suena a máquina). Vale para Melody principal, Melody n2 y Armonía del motor libre. Tildado por defecto; apagado = como siempre."><span class="consola-inst-toggle"><input type="checkbox" id="consolaNoRepChk" checked><label for="consolaNoRepChk">Norepetitions</label></span></div>
       <div class="consola-field" title="Intro: apagado por defecto. Antes de la canción suena UNA vez una introducción de 2 a 12 compases (el largo se sortea en cada Play, nunca mayor que la canción) hecha con los primeros compases de la propia canción pero más tranquila: solo algunas de las pistas (solo armonía, solo batería, bajo + batería, armonía + melodía…) y aligeradas (un acorde y una nota de bajo por compás, menos notas de melodía, batería solo sobre el pulso), un poco más suave y en tempo estricto. Es el mismo interruptor que el Intro de Partimenti. Los sorteos RANDOM CHOOSE (CreaturaRandom / CreaturA / Intervalic / ChordS / Partimenti / Radio) lo pueden prender o apagar. No entra en el export MIDI/MP3."><span class="consola-inst-toggle"><input type="checkbox" id="consolaIntroChk"><label for="consolaIntroChk">Intro</label></span></div>
+      <div class="consola-field" title="Form: apagado por defecto. La canción se arma con SECCIONES: Intro, A y, al azar, B / C / D (una, dos, tres o ninguna) y Coda. Los compases se AGREGAN: A es el largo de siempre (12 / 24 / 4–48 / el número a mano) y suman Intro y Coda (2 a 4 compases cada una) y cada parte B / C / D (4 a 12), con tope de 96 en total. Cada sección tiene su propia instrumentación (armonía / bajo / melodía / batería): el Intro arranca con un solo instrumento, en A entran otros, B / C / D alternan banda completa y versión reducida (baja la intensidad, a veces sin melodía o sin batería) y la sección siguiente vuelve, y la Coda cierra con 1–2 instrumentos más suave. Dos secciones seguidas nunca suenan igual. No se escribe ninguna nota nueva: el set no se traiciona. El piano roll marca cada sección en celeste (Intro, A, B…). Si Form se aplica, el Intro suelto no suena (la intro es una sección de Form). Vale en el motor libre (CreaturaRandom / CreaturA / Intervalic.Creature) y en Simplicity; en Partimenti / ChordS / JazzTunes no se aplica. En los RANDOM CHOOSE, con Form tildado lo llevan el 100% de las canciones."><span class="consola-inst-toggle"><input type="checkbox" id="consolaFormChk"><label for="consolaFormChk">Form</label></span></div>
       <div class="consola-field" title="Dynamics: aplica dinámicas de volumen (pp, p, mp, mf, f, ff) a cada evento MIDI con lógica musical: crescendos/diminuendos y terrazas de 2-4 compases que vuelven al nivel inicial del loop, acento en el tiempo 1, melodía por encima del acompañamiento y nota aguda un poco más fuerte que la grave. 0% = como siempre (velocity original). 100% = pp a ff. Mover el slider no regenera: re-aplica sobre las mismas notas. Ver el resultado en Mini mixer > Velocity por track.">
         <label for="consolaDynamicsSlider">Dynamics</label>
         <input type="range" id="consolaDynamicsSlider" min="0" max="100" value="50" step="1">
@@ -9415,6 +9420,208 @@ function runAnalysis() {
   })();
 
   /* ================================================================
+     MÓDULO FORM — checkbox #consolaFormChk (How to play, apagado por defecto).
+     La canción deja de ser un bloque parejo y pasa a tener SECCIONES: Intro, A, al azar B / C / D (una, dos, tres o ninguna) y Coda.
+     Los compases se AGREGAN: A es el largo de siempre (12 / 24 / 4–48 / el número a mano) y suman su largo Intro y Coda (2 a 4
+     compases; 1 en canciones muy cortas) y cada parte B / C / D (4 a 12, nunca más que A); tope de 96 compases en total.
+     La canción ENTERA la arma el motor libre (o Simplicity) con el set de siempre; Form solo decide QUIÉN toca en cada sección,
+     así que no se escribe ninguna nota nueva (el set nunca se traiciona). Las pistas son 4 grupos: armonía (+ moreComping),
+     bajo, melodía (principal, n2, n3, bebop) y batería. Un grupo que no toca en una sección queda en silencio (las notas que lo
+     atraviesan se cortan en el borde). Reglas:
+       · dos secciones seguidas nunca tienen la misma instrumentación;
+       · Intro: UN instrumento (25% dos); A: se suman otros (queda uno afuera si hay B, así B es "el resto");
+       · B / C / D alternan banda completa y versión reducida (se saca un grupo —más seguido melodía o batería—, a veces dos) y
+         la sección siguiente vuelve; Coda: 1–2 instrumentos;
+       · intensidad por sección (velocity): Intro x0,78 · A x0,92 (x1 sin B) · completa x1 · reducida x0,82 · Coda x0,7.
+     El piano roll marca cada sección en celeste. Con Form aplicado, el Intro suelto (INTRO) no suena. Solo motor libre y
+     Simplicity (Partimenti / ChordS / JazzTunes arman sus propios compases y Form no se aplica). El plan se guarda con la
+     canción (historial del Player y ♥ Favoritos). Dynamics lo respeta (ev._fk).
+     ================================================================ */
+  var FORM = (function(){
+    var EPS = 1e-6, MAX_BARS = 96, COLOR = "#7fd6ff";   // celeste
+    var GKEYS = { harm: ["chordEvents", "comping2Events"], bass: ["bassEvents"], mel: ["melodyEvents", "melody2Events", "melody3Events", "bebopEvents"] };
+    var GNAME = { harm: "armonía", bass: "bajo", mel: "melodía", drum: "batería" };
+    var GW = { harm: 4.5, mel: 2.5, drum: 1.5, bass: 1.5 };   // peso al elegir quién abre el Intro / la Coda
+    var RW = { mel: 3.5, drum: 3.5, harm: 1.5, bass: 1.5 };   // peso al elegir qué se saca en una versión reducida
+    var cur = null;   // plan de la canción vigente: { base, total, sections: [{ name, b0, n, set, k }], applied, av }
+    function on(){ var c = document.getElementById("consolaFormChk"); return !!(c && c.checked); }
+    function engineOk(){
+      return !((typeof COMMONCHORDS !== "undefined" && COMMONCHORDS && COMMONCHORDS.active) ||
+               (typeof PARTIMENTI !== "undefined" && PARTIMENTI && PARTIMENTI.active) ||
+               (typeof JAZZTUNES !== "undefined" && JAZZTUNES && JAZZTUNES.active));
+    }
+    function pick(a){ return a[Math.floor(Math.random() * a.length)]; }
+    function wpick(pool, W){
+      var tot = 0, i;
+      for(i = 0; i < pool.length; i++) tot += W[pool[i]] || 1;
+      var r = Math.random() * tot;
+      for(i = 0; i < pool.length; i++){ r -= W[pool[i]] || 1; if(r <= 0) return pool[i]; }
+      return pool[pool.length - 1];
+    }
+    function same(a, b){ return a.length === b.length && a.every(function(g){ return b.indexOf(g) >= 0; }); }
+    function minus(a, b){ return a.filter(function(g){ return b.indexOf(g) < 0; }); }
+    // Largos de las secciones (los compases se agregan al largo base). null = no hay lugar (la canción ya llena el tope).
+    function plan(base){
+      var n = Math.max(1, base | 0), room = MAX_BARS - n;
+      if(room < 2) return null;
+      var intro = n >= 8 ? pick([2, 3, 4]) : (n >= 4 ? 2 : 1);
+      var coda = n >= 8 ? pick([2, 3, 4]) : (n >= 4 ? 2 : 1);
+      var r = Math.random(), k = r < 0.10 ? 0 : (r < 0.40 ? 1 : (r < 0.80 ? 2 : 3));   // B / C / D: ninguna 10% · una 30% · dos 40% · tres 20%
+      var lens = [], i;
+      for(i = 0; i < k; i++) lens.push(Math.min(pick([4, 6, 8, 8, 12]), Math.max(2, n)));
+      function sum(){ var s = intro + coda; lens.forEach(function(l){ s += l; }); return s; }
+      while(lens.length && sum() > room) lens.pop();
+      if(sum() > room){ intro = 1; coda = 1; }
+      var names = ["B", "C", "D"], secs = [], b = 0;
+      secs.push({ name: "Intro", b0: b, n: intro }); b += intro;
+      secs.push({ name: "A", b0: b, n: n }); b += n;
+      lens.forEach(function(l, j){ secs.push({ name: names[j], b0: b, n: l }); b += l; });
+      secs.push({ name: "Coda", b0: b, n: coda }); b += coda;
+      return { base: n, total: b, sections: secs, applied: false };
+    }
+    // Devuelve el largo total de la canción (base + secciones agregadas). reuse = mantener el plan de esta generación (Simplicity lo pide de nuevo).
+    function begin(base, reuse){
+      base = Math.max(1, base | 0);
+      if(!on() || !engineOk()){ cur = null; return base; }
+      if(reuse && cur && cur.base === base) return cur.total;
+      cur = plan(base);
+      return cur ? cur.total : base;
+    }
+    function reset(){ cur = null; }
+    function active(){ return !!(cur && cur.applied && cur.total === NUM_BARS); }
+    // Grupos de pistas con notas y habilitados en el mini mixer.
+    function avail(){
+      var a = [];
+      function has(keys){ return keys.some(function(k){ return state[k] && state[k].length; }); }
+      if(has(GKEYS.harm) && instEnabled("consolaChordChk")) a.push("harm");
+      if(has(GKEYS.bass) && instEnabled("consolaBassChk")) a.push("bass");
+      if(has(GKEYS.mel) && instEnabled("consolaMelodyChk")) a.push("mel");
+      if(drumEvents && drumEvents.length && instEnabled("consolaDrumChk")) a.push("drum");
+      return a;
+    }
+    // Versión reducida de la banda completa: se saca un grupo (a veces dos si hay 4); nunca igual a la sección anterior.
+    function reduce(full, prev){
+      var tries = 0, set = full.slice();
+      while(tries++ < 8){
+        set = minus(full, [wpick(full, RW)]);
+        if(full.length >= 4 && Math.random() < 0.3) set = minus(set, [wpick(set, RW)]);
+        if(set.length && !same(set, prev)) return set;
+      }
+      return set.length ? set : full.slice();
+    }
+    // Instrumentación (set) e intensidad (k) de cada sección.
+    function assign(secs, av){
+      var L = av.length, full = av.slice(), nx = secs.length - 3, i, prev, s;
+      var intro = secs[0], A = secs[1], coda = secs[secs.length - 1];
+      intro.k = 0.78; coda.k = 0.7; A.k = nx ? 0.92 : 1;
+      var types = [], t0 = Math.random() < 0.6 ? "full" : "reduced";   // B / C / D: completa y reducida se alternan
+      for(i = 0; i < nx; i++) types.push(i === 0 ? t0 : (types[i - 1] === "full" ? "reduced" : "full"));
+      if(L <= 1){   // un solo grupo: no hay con qué variar la instrumentación, queda solo la intensidad
+        secs.forEach(function(x){ x.set = full.slice(); });
+        for(i = 0; i < nx; i++) secs[2 + i].k = types[i] === "full" ? 1 : 0.82;
+        return;
+      }
+      var iset = [wpick(av, GW)];
+      if(L >= 3 && Math.random() < 0.25) iset.push(wpick(minus(av, iset), GW));
+      intro.set = iset;
+      var aSize = nx ? Math.min(L, iset.length + 1 + ((L >= 4 && Math.random() < 0.4) ? 1 : 0)) : L;
+      if(nx && aSize === L && L - 1 >= iset.length + 1) aSize = L - 1;   // con B: A deja un grupo afuera, B es "el resto"
+      var aset = iset.slice();
+      while(aset.length < aSize) aset.push(wpick(minus(av, aset), GW));
+      A.set = aset;
+      prev = aset;
+      for(i = 0; i < nx; i++){
+        s = secs[2 + i];
+        var set;
+        if(types[i] === "full"){ set = full.slice(); s.k = 1; }
+        else { set = reduce(full, prev); s.k = 0.82; }
+        if(same(set, prev)){   // dos secciones seguidas nunca iguales
+          if(same(set, full)){ set = reduce(full, prev); s.k = 0.82; }
+          else { set = full.slice(); s.k = 1; }
+        }
+        s.set = set; prev = set;
+      }
+      var cset = null, t, c;
+      for(t = 0; t < 8 && !cset; t++){
+        c = [wpick(av, GW)];
+        if(L >= 3 && Math.random() < 0.5) c.push(wpick(minus(av, c), GW));
+        if(!same(c, prev)) cset = c;
+      }
+      coda.set = cset || [wpick(av, GW)];
+    }
+    function describe(s){
+      var names = s.set.map(function(g){ return GNAME[g]; }).join(" + ");
+      var out = cur && cur.av ? minus(cur.av, s.set).map(function(g){ return GNAME[g]; }) : [];
+      return names + (out.length ? " (sin " + out.join(", ") + ")" : "");
+    }
+    function summary(){
+      if(!active()) return on() ? "tildado, pero no se aplica en este modo" : "no";
+      return "sí: " + cur.sections.map(function(s){ return s.name + " " + s.n + "c (" + describe(s) + ")"; }).join(" · ") + " — " + cur.total + " compases";
+    }
+    // Arma las instrumentaciones y las aplica a los arrays de la canción ya generada (nuevos arrays; los originales no se mutan).
+    function apply(){
+      if(!cur) return;
+      if(cur.total !== NUM_BARS){ cur = null; return; }
+      var av = avail(), secs = cur.sections;
+      assign(secs, av);
+      cur.av = av.slice();
+      secs.forEach(function(s){ s.t0 = RHYTHM.start(s.b0); s.t1 = RHYTHM.start(s.b0 + s.n); });
+      function kAt(t){ for(var i = secs.length - 1; i >= 0; i--) if(t >= secs[i].t0 - EPS) return secs[i].k; return 1; }
+      function gapsOf(g){ var out = []; secs.forEach(function(s){ if(s.set.indexOf(g) < 0) out.push({ s: s.t0, e: s.t1 }); }); return out; }
+      function rework(evs, g){
+        if(!evs || !evs.length) return evs;
+        var out = evs, gp = (g && av.indexOf(g) >= 0) ? gapsOf(g) : [];
+        if(gp.length) out = MUSICSILENCE.cut(out, { n: gp.length, gaps: gp });   // saca lo que empieza en una pausa y corta lo que la atraviesa
+        return out.map(function(ev){
+          var k = kAt(ev.startBeat);
+          if(Math.abs(k - 1) < 0.005) return ev;
+          var c = {}, p;
+          for(p in ev) c[p] = ev[p];
+          c._fk = k;   // intensidad de la sección (Dynamics la respeta al re-aplicarse)
+          c.vel = Math.max(1, Math.min(127, Math.round((ev.vel != null ? ev.vel : 96) * k)));
+          return c;
+        });
+      }
+      Object.keys(GKEYS).forEach(function(g){ GKEYS[g].forEach(function(key){ state[key] = rework(state[key], g); }); });
+      drumEvents = rework(drumEvents, "drum");
+      cur.applied = true;
+      try{ if(window.__songLog) window.__songLog.add("Form", summary()); }catch(_e){}
+    }
+    function save(){ return cur ? JSON.parse(JSON.stringify(cur)) : null; }
+    function load(o){ cur = (o && o.sections && o.sections.length) ? JSON.parse(JSON.stringify(o)) : null; }
+    // Etiquetas celestes de las secciones sobre un piano roll (franja fina arriba, línea punteada en cada comienzo y el nombre).
+    function drawLabels(svg, ml, ppb, h){
+      if(!active()) return;
+      cur.sections.forEach(function(s){
+        var x = ml + RHYTHM.start(s.b0) * ppb, x2 = ml + RHYTHM.start(s.b0 + s.n) * ppb;
+        var tip = s.name + " — " + s.n + (s.n === 1 ? " compás" : " compases") + " — " + describe(s);
+        var rc = svgEl("rect", { x: x, y: 0, width: Math.max(1, x2 - x), height: 1.6, fill: COLOR, opacity: 0.95 });
+        var t1 = svgEl("title", {}); t1.textContent = tip; rc.appendChild(t1);
+        svg.appendChild(rc);
+        svg.appendChild(svgEl("line", { x1: x, x2: x, y1: 0, y2: h, stroke: COLOR, "stroke-width": 1.3, "stroke-dasharray": "5,3", opacity: 0.7 }));
+        var tx = svgEl("text", { x: x + 4, y: 8, fill: COLOR, "font-size": 9, "font-weight": 700, "font-family": "'JetBrains Mono',monospace" });
+        tx.textContent = s.name;
+        var t2 = svgEl("title", {}); t2.textContent = tip; tx.appendChild(t2);
+        svg.appendChild(tx);
+      });
+    }
+    return { on: on, begin: begin, reset: reset, apply: apply, active: active, summary: summary, save: save, load: load, drawLabels: drawLabels, color: function(){ return COLOR; },
+             sections: function(){ return cur ? cur.sections : null; },
+             // (para pruebas) cuántos eventos de cada grupo caen en cada sección
+             counts: function(){
+               if(!cur || !cur.applied) return null;
+               var G = { harm: ["chordEvents", "comping2Events"], bass: ["bassEvents"], mel: ["melodyEvents", "melody2Events", "melody3Events", "bebopEvents"] };
+               return cur.sections.map(function(s){
+                 var o = { name: s.name, b0: s.b0, n: s.n, set: s.set.slice(), k: s.k, harm: 0, bass: 0, mel: 0, drum: 0 };
+                 Object.keys(G).forEach(function(g){ G[g].forEach(function(key){ (state[key] || []).forEach(function(ev){ if(ev.startBeat >= s.t0 - 1e-6 && ev.startBeat < s.t1 - 1e-6) o[g]++; }); }); });
+                 (drumEvents || []).forEach(function(ev){ if(ev.startBeat >= s.t0 - 1e-6 && ev.startBeat < s.t1 - 1e-6) o.drum++; });
+                 return o;
+               });
+             } };
+  })();
+  window.__form = FORM;   // (para pruebas)
+
+  /* ================================================================
      MÓDULO RAPID RUNS — slider #consolaRapidRunsSlider (0–100%,
      default 5%; 0% = apagado). Por CADA compás del motor libre, con
      esa probabilidad, reemplaza la célula rítmica de la melodía por una
@@ -14528,7 +14735,7 @@ function runAnalysis() {
 
   function regenerateConsola(){
     if(window.__favApplying) return; // ♥ Favoritos: mientras se repone un favorito, los controles no regeneran (pisarían la música guardada)
-    NUM_BARS = desiredNumBars(true);
+    NUM_BARS = FORM.begin(desiredNumBars(true), false); // Form (How to play): suma los compases de Intro / B / C / D / Coda al largo de siempre (sin Form o en otros motores = el largo de siempre)
     RHYTHM.recompute();
     TOTAL_BEATS = RHYTHM.total();
     DYNAMICS.newPlan(); // Dynamics: curva nueva por generación
@@ -14691,6 +14898,7 @@ function runAnalysis() {
       drumEvents = MUSICSILENCE.cut(drumEvents, muSilPF);
       MUSICSILENCE.last = muSilPF;
     }
+    FORM.apply(); // Form: instrumentación e intensidad por sección (no-op sin Form)
     renderRoll();
     renderBebopRoll();
   }
@@ -14702,7 +14910,7 @@ function runAnalysis() {
   // regenerateConsola() lo delega acá; destildado vuelve al motor libre.
   function normalizeConsola(){
     if(state.rootChord.length === 0) return;
-    NUM_BARS = desiredNumBars();
+    NUM_BARS = FORM.begin(desiredNumBars(), true); // Form: el mismo plan de secciones que armó regenerateConsola
     MELODICPATTERNS.reset(); // melodicPatterns: también sortea contorno nuevo en Simplicity
     RHYTHMSPACE.reset(0); // No afecta a Simplicity: buildDrumEvents es compartida por los dos motores, así que se apaga a mano (reset(0) siempre deja range=null)
     TRIPLETS.setActive(false); // idem Triplets: buildDrumEvents es compartida, Simplicity no tresilla nada (regenerateConsola lo vuelve a prender)
@@ -14735,6 +14943,7 @@ function runAnalysis() {
     state.chordEvents = staggerBigChordAttacks(state.chordEvents); // Armonía: 6+ notas nunca atacan simultáneas
     DYNAMICS.applyPitched(state); // Dynamics (0% = no-op)
     drumEvents = buildDrumEvents(NUM_BARS);
+    FORM.apply(); // Form: instrumentación e intensidad por sección (no-op sin Form)
     renderRoll();
     renderBebopRoll();
   }
@@ -15029,6 +15238,7 @@ function runAnalysis() {
       }
       var testH = modeTestOn("commonChordsModeTestH"), testM = modeTestOn("commonChordsModeTestM");
       var narrow = narrowOn(), prevRange = null, narrowMiss = 0; // narrowregister: [nota más grave, más aguda] del acorde anterior
+      FORM.reset(); // Form no se aplica en ChordS
       NUM_BARS = desiredNumBars(true);
       RHYTHM.recompute();
       TOTAL_BEATS = RHYTHM.total();
@@ -16908,6 +17118,7 @@ function runAnalysis() {
     }
 
     function build(){
+      FORM.reset(); // Form no se aplica en Partimenti
       NUM_BARS = desiredNumBars(true);
       var tsN = document.getElementById("partimentiTSNum"), tsD = document.getElementById("partimentiTSDen");
       RHYTHM.recompute(tsN && tsD ? RHYTHM.parse(tsN.value + "/" + tsD.value) : null);   // compás propio de Partimenti (inválido → 4/4)
@@ -17736,6 +17947,7 @@ function runAnalysis() {
       var P = api.song;
       if(!P){ api.active = false; regenerateConsola(); return; }
       var bpb = P.bpb, INT = window.__MGU_INT || {};
+      FORM.reset(); // Form no se aplica en JazzTunes / Jazz.i.Tunes
       NUM_BARS = P.bars;
       RHYTHM.recompute(RHYTHM.parse(bpb + "/4"));      // el compás de la canción (4/4 o 3/4) manda sobre Time signature / Mix
       TOTAL_BEATS = RHYTHM.total();
@@ -18128,6 +18340,7 @@ function runAnalysis() {
     state.melody2Events.forEach(function(ev){ drawEventRect(svg, ev, rowOf, "var(--c-melody2)", 0.95, 0.82); }); // Melody n2: amarillo flúor
     state.melody3Events.forEach(function(ev){ drawEventRect(svg, ev, rowOf, "var(--c-melody3)", 0.9, 0.82); }); // Melody n3: celeste
 
+    FORM.drawLabels(svg, MARGIN_L, PPB, height); // Form: Intro / A / B… en celeste
     var playhead = svgEl("line", {id:"consolaPlayhead", x1:MARGIN_L, x2:MARGIN_L, y1:MARGIN_T, y2:height-MARGIN_B, stroke:"var(--gold)", "stroke-width":2, visibility:"hidden"});
     svg.appendChild(playhead);
     svg.appendChild(kbG);
@@ -18148,6 +18361,7 @@ function runAnalysis() {
     if(state.comping2Events.length) items.push(["var(--c-comping2)","moreComping"]);
     if(state.melody2Events.length) items.push(["var(--c-melody2)","Melody n2"]);
     if(state.melody3Events.length) items.push(["var(--c-melody3)","Melody n3"]);
+    if(FORM.active()) items.push([FORM.color(),"Form: Intro · A · B…"]);
     // bebopMelody ya no lleva ítem acá: tiene su propio roll+label aparte.
     items.forEach(function(it){
       var span = document.createElement("span");
@@ -18237,6 +18451,7 @@ function runAnalysis() {
 
     state.bebopEvents.forEach(function(ev){ drawEventRect(svg, ev, rowOf, "var(--c-bebop)", 0.78, 0.82); });
 
+    FORM.drawLabels(svg, MARGIN_L, PPB, height); // Form: Intro / A / B… en celeste
     var playhead = svgEl("line", {id:"consolaBebopPlayhead", x1:MARGIN_L, x2:MARGIN_L, y1:MARGIN_T, y2:height-MARGIN_B, stroke:"var(--gold)", "stroke-width":2, visibility:"hidden"});
     svg.appendChild(playhead);
     svg.appendChild(kbG);
@@ -18434,11 +18649,12 @@ function runAnalysis() {
         if(ev._v0 === undefined) ev._v0 = (ev.vel == null ? null : ev.vel);
         if(a <= 0){
           if(ev._v0 == null) delete ev.vel; else ev.vel = ev._v0;
+          if(ev._fk) ev.vel = Math.max(1, Math.min(127, Math.round((ev._v0 == null ? 96 : ev._v0) * ev._fk)));   // Form: intensidad de la sección
           continue;
         }
         var hasOrig = ev._v0 != null, v = velFor(role, ev, a, hasOrig);
         if(hasOrig || role === "drum") v = (hasOrig ? ev._v0 : 96) * (v/96);
-        ev.vel = Math.max(1, Math.min(127, Math.round(v)));
+        ev.vel = Math.max(1, Math.min(127, Math.round(v * (ev._fk || 1))));   // Form: intensidad de la sección
       }
       return list;
     }
@@ -21644,7 +21860,7 @@ function runAnalysis() {
     }
     // Arma el plan de la intro de esta Play a partir de la foto de la canción (liveSnap). null = sin intro.
     function plan(snap){
-      if(!on() || !snap || NUM_BARS < 2) return null;
+      if(!on() || !snap || NUM_BARS < 2 || FORM.active()) return null;   // Form aplicado: la intro es una sección de la canción, no un precalentamiento aparte
       var nb = 2 + Math.floor(Math.random() * (Math.min(12, NUM_BARS) - 1));     // 2..12 compases (máx. el largo de la canción)
       var starts = [], b;
       for(b = 0; b <= nb; b++) starts.push(RHYTHM.start(b));
@@ -21679,7 +21895,7 @@ function runAnalysis() {
   })();
   window.__intro = INTRO;   // (para pruebas)
 
-  function tickPlayhead(ctx, loopAnchor, spb, loopDur, clk, tw0){
+  function tickPlayhead(ctx, loopAnchor, spb, loopDur, clk, tw0, introBeats){
     // Optimizado: los elementos se buscan una vez y el ancho scrolleable
     // (scrollWidth/clientWidth, que fuerzan layout) se mide cada ~0.5 s en
     // vez de en cada frame; scrollLeft solo se escribe si cambió. Antes eran
@@ -21720,10 +21936,11 @@ function runAnalysis() {
       }
       if(clk && clk.twq && ctx.currentTime >= clk.twq.anchor){ tw = clk.twq.tw; clk.twq = null; }   // arrancó una vuelta con otro mapa
       var elapsed = ctx.currentTime - loopAnchor;
-      if(elapsed >= 0){
+      {   // antes del inicio (Intro / pre-roll) el cursor queda visible, quieto en el compás 1
         if(ts - lastMeasure > 500){ measure(); lastMeasure = ts; }
-        var inLoop = (clk && clk.pend && elapsed >= loopDur) ? loopDur : elapsed % loopDur;   // RADIO: en los 3 s de silencio el playhead espera al final
-        var beats = tw.inv(inLoop/spb);
+        var inLoop = elapsed < 0 ? 0 : ((clk && clk.pend && elapsed >= loopDur) ? loopDur : elapsed % loopDur);   // RADIO: en los 3 s de silencio el playhead espera al final
+        // Intro previo: el cursor recorre los primeros compases (de donde sale el Intro, tempo estricto) hasta llegar al compás 1 de la canción
+        var beats = (elapsed < 0 && introBeats > 0) ? Math.max(0, introBeats + elapsed/spb) : tw.inv(inLoop/spb);
         var x = MARGIN_L + beats*PPB;
         var xs = x.toFixed(1);
         if(ph){ ph.setAttribute("x1", xs); ph.setAttribute("x2", xs); }
@@ -21964,7 +22181,7 @@ function runAnalysis() {
           window._consolaStopTimer = setTimeout(stopPlayback, (loopDur + introSecPR + 0.3) * 1000);
         }
         CLICK.runRendered(ctx, t0, spb, loopDur, rsnap.tw);   // click de tempo (las pistas ya vienen congeladas)
-        tickPlayhead(ctx, t0, spb, loopDur, null, rsnap.tw);
+        tickPlayhead(ctx, t0, spb, loopDur, null, rsnap.tw, introPR ? introPR.beats : 0);
       } catch(err){
         console.error("Prerender failed; using live mode:", err);
         if(token !== prToken) return;
@@ -22183,7 +22400,7 @@ function runAnalysis() {
     pump();
     if(playing && !ending) schedulerTimer = setInterval(pump, TICK_MS);
 
-    tickPlayhead(ctx, loopAnchor, spb, loopDur, clk, tw0);
+    tickPlayhead(ctx, loopAnchor, spb, loopDur, clk, tw0, introP ? introP.beats : 0);
   }
   window.consolaStartPlayback = startPlayback;
   // Piano roll en primer plano (botón +): un clic en un compás reproduce desde ahí. Con el roll de fondo no hace nada.
@@ -22231,6 +22448,7 @@ function runAnalysis() {
       var mc = document.getElementById("consolaMoreCompingBtn"); if(mc) st.push(["moreComping", mc.classList.contains("primary") ? "sí" : "no"]);
       if(chk("mix8bitsChk")) st.push(["8bits", "tildado"]);
       st.push(["Intro", chk("consolaIntroChk") ? "sí" : "no"]);
+      st.push(["Form", FORM.summary()]);
       var dv = val("mixDrumVol"); if(dv != null) st.push(["Volumen Drums", dv + "%"]);
       PRESETS.forEach(function(p){
         var k = mixPresets[p[1]];
@@ -22303,7 +22521,7 @@ function runAnalysis() {
         snap: liveSnap(),
         slot: state.slotChords, prog: state.progression, roles: state.roles, root: state.rootChord,
         tempo: tempoEl ? tempoEl.value : null,
-        numBars: NUM_BARS, total: TOTAL_BEATS,
+        numBars: NUM_BARS, total: TOTAL_BEATS, form: FORM.save(),
         rhythm: RHYTHM.save(), dyn: DYNAMICS.getPlan(),
         title: SONGTITLE.current(), sets: setsEl ? setsEl.textContent : "",
         kind: window.__radioMixLast || "", vec: SONGTITLE.vec(),
@@ -22337,7 +22555,7 @@ function runAnalysis() {
       state.comping2Events = s.comping2; state.bebopEvents = s.bebop; state.melody2Events = s.melody2; state.melody3Events = s.melody3 || [];
       state.slotChords = e.slot; state.progression = e.prog; state.roles = e.roles; state.rootChord = e.root;
       drumEvents = s.drum;
-      NUM_BARS = e.numBars; RHYTHM.load(e.rhythm); TOTAL_BEATS = e.total; DYNAMICS.setPlan(e.dyn);
+      NUM_BARS = e.numBars; RHYTHM.load(e.rhythm); TOTAL_BEATS = e.total; DYNAMICS.setPlan(e.dyn); FORM.load(e.form);
       Object.keys(s.presets).forEach(function(k){ mixPresets[k] = s.presets[k]; });
       [["harmonyPresetSelect","harmony"],["chordDoublePresetSelect","chordDouble"],["melodyPresetSelect","melody"],["melodyDoublePresetSelect","melodyDouble"],
        ["bebopPresetSelect","bebop"],["melody2PresetSelect","melody2"],["melody3PresetSelect","melody3"],["comping2PresetSelect","comping2"],["bassPresetSelect","bass"],
@@ -22428,7 +22646,7 @@ function runAnalysis() {
       var o = {
         format: FMT, version: VER, savedAt: new Date().toISOString(),
         name: title || "Favorito", title: title, sets: setsEl ? setsEl.textContent : "", kind: window.__radioMixLast || "", vec: SONGTITLE.vec(),
-        engine: { numBars: NUM_BARS, totalBeats: TOTAL_BEATS, tempo: tempoEl ? tempoEl.value : null, rhythm: RHYTHM.save(), dyn: DYNAMICS.getPlan(), mdInterval: (alt && alt.checked) ? -7 : -12 },
+        engine: { numBars: NUM_BARS, totalBeats: TOTAL_BEATS, form: FORM.save(), tempo: tempoEl ? tempoEl.value : null, rhythm: RHYTHM.save(), dyn: DYNAMICS.getPlan(), mdInterval: (alt && alt.checked) ? -7 : -12 },
         presets: Object.assign({}, mixPresets),
         tracks: { chord: state.chordEvents, bass: state.bassEvents, melody: state.melodyEvents, comping2: state.comping2Events, bebop: state.bebopEvents,
                   melody2: state.melody2Events, melody3: state.melody3Events, drum: drumEvents },
@@ -22460,7 +22678,7 @@ function runAnalysis() {
       return { snap: { chord: T.chord, bass: T.bass || [], melody: T.melody || [], comping2: T.comping2 || [], bebop: T.bebop || [], melody2: T.melody2 || [],
                        melody3: T.melody3 || [], drum: T.drum || [], presets: o.presets, mdInterval: E.mdInterval },
                slot: Hm.slotChords || [], prog: Hm.progression || [], roles: Hm.roles || [], root: Hm.rootChord || [],
-               tempo: E.tempo, numBars: E.numBars, total: E.totalBeats, rhythm: E.rhythm, dyn: E.dyn,
+               tempo: E.tempo, numBars: E.numBars, total: E.totalBeats, form: E.form, rhythm: E.rhythm, dyn: E.dyn,
                title: o.title || "", sets: o.sets || "", kind: o.kind || "", vec: o.vec || "", logId: 0 };
     }
 
@@ -23474,6 +23692,9 @@ function runAnalysis() {
   document.getElementById("consolaNoRepChk").addEventListener("change", function(){
     if(state.rootChord.length) regenerateConsola();
   });
+  document.getElementById("consolaFormChk").addEventListener("change", function(){
+    if(state.rootChord.length) regenerateConsola(); // Form: el largo cambia (se agregan compases), hay que armar la canción de nuevo
+  });
   document.getElementById("consolaRhythmBwmSlider").addEventListener("input", function(){
     document.getElementById("consolaRhythmBwmVal").textContent = this.value + "%";
   });
@@ -24080,6 +24301,13 @@ function runAnalysis() {
         if(Math.random() < 0.5){ INTRO.set(true); autoIntro = true; SL("Intro (RANDOM CHOOSE)", "sí (50%): 2–12 compases antes de la canción"); }
         else SL("Intro (RANDOM CHOOSE)", "no (50%)");
       }
+      // ---- Form ----
+      // Checkbox "Form" (How to play): no se sortea, lo decide el usuario. Tildado = el 100% de las canciones del random llevan secciones
+      // (Intro, A, B / C / D al azar, Coda; compases agregados). Solo motor libre y Simplicity.
+      function rollForm(){
+        if(FORM.on()) SL("Form (RANDOM CHOOSE)", "tildado: la canción lleva secciones, 100% (solo motor libre y Simplicity; en Partimenti / ChordS / JazzTunes no se aplica)");
+        else SL("Form (RANDOM CHOOSE)", "apagado: no se sortea");
+      }
       // ---- reverb ----
       function hasSpaceAndSilence(kind){
         function val(id){ var el = document.getElementById(id); return el ? Number(el.value) : 0; }
@@ -24099,6 +24327,7 @@ function runAnalysis() {
           rollMelodies();
           rollBeats();
           rollIntro();
+          rollForm();
         },
         post: function(kind){
           if(chk8 && !chk8.checked){
@@ -25806,8 +26035,20 @@ function runAnalysis() {
     function rvClose(){ if(rvEl) rvEl.classList.remove("open"); if(rvTimer){ clearInterval(rvTimer); rvTimer = null; } }
     RP.open = rvOpen;
     document.addEventListener("keydown", function(e){ if(e.key === "Escape" && rvEl && rvEl.classList.contains("open")) rvClose(); });
+    // iOS / Safari solo dejan arrancar el audio DENTRO del gesto del toque. El Player arma la canción con esperas (sorteo, descargas, los 2 s del
+    // Detener interno) y el primer sonido llegaba ya fuera del gesto: el player abría pero quedaba mudo hasta tocar Play a mano.
+    // Acá, todavía dentro del gesto, se crea / reanuda el AudioContext y suena una muestra en silencio; el resto del flujo no cambia.
+    function rvUnlockAudio(){
+      try{
+        var uc = (typeof getAudioCtx === "function") ? getAudioCtx() : null;
+        if(!uc) return;
+        var ub = uc.createBuffer(1, 1, 22050), us = uc.createBufferSource();
+        us.buffer = ub; us.connect(uc.destination); us.start(0);
+      }catch(_e){}
+    }
     var rvOpenBtn = document.getElementById("radioVintageOpenBtn");
     if(rvOpenBtn) rvOpenBtn.addEventListener("click", function(){
+      rvUnlockAudio();   // dentro del gesto del toque
       if(!RP.isOn()){ RP.only = null; window.__radioOnly = null; }   // el botón Player abre el RADIO! normal (mix de todos los modos); con la radio ya prendida en un modo limitado, solo la muestra
       rvOpen();
       if(window.__rpPaused) RP.resume();                              // al entrar al player: si estaba en pausa, sigue
@@ -25815,6 +26056,7 @@ function runAnalysis() {
     });
     if(rmBtn && rmChk) rmBtn.addEventListener("click", function(){
       if(rmChk.checked){ RP.stop(); RP.resumable = false; return; }
+      rvUnlockAudio();
       rvOpen();       // al pasar a ON se abre la radio vintage
       RP.start(null); // RADIO! = mix de todos los modos
     });
@@ -25824,6 +26066,7 @@ function runAnalysis() {
       if(!b) return;
       var k = b.getAttribute("data-radio-only");
       if(RP.isOn() && RP.only === k){ RP.stop(); RP.resumable = false; return; }   // ya suena ese modo: la detiene
+      rvUnlockAudio();
       rvOpen();
       if(RP.isOn()){ RP.only = k; if(!rvBusy) rpSkipNew(); }                        // la radio ya está prendida (otro modo): canción nueva del modo elegido
       else RP.start(k);
@@ -26470,6 +26713,28 @@ function runAnalysis() {
 })();
 function sfAskPersist() { try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().then(function (ok) { if (typeof sfLog === "function") sfLog("storage.persist = " + ok); }); } catch (e) {} }
 window.addEventListener("load", sfAskPersist);
+</script>
+
+<script>
+/* ChordS: la descripción (acordes) bajo el título queda plegada tras un "+"; no se toca textContent (lo leen log/favoritos/Player). */
+(function(){
+  var el = document.getElementById("consolaSongSets"), btn = document.getElementById("consolaSongSetsBtn");
+  if(!el || !btn) return;
+  var open = false, busy = false;
+  function sync(){
+    if(busy) return; busy = true;
+    var t = el.textContent || "", chords = /^\(ChordS\b/.test(t) && t.length > 120;
+    btn.hidden = !chords;
+    el.classList.toggle("sets-folded", chords && !open);
+    el.classList.toggle("sets-open", chords && open);
+    btn.textContent = open ? "\u2212" : "+";
+    btn.setAttribute("aria-expanded", open ? "true" : "false");
+    busy = false;
+  }
+  btn.addEventListener("click", function(e){ e.stopPropagation(); open = !open; sync(); });
+  new MutationObserver(sync).observe(el, {childList:true, characterData:true, subtree:true});
+  sync();
+})();
 </script>
 </body>
 </html>
