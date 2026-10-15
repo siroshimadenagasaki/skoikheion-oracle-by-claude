@@ -1878,7 +1878,7 @@
           <span class="consola-inst-toggle" title="Guitar comping: en vez del voicing de piano, cada ataque toca una DIGITACIÓN DE GUITARRA real del set (el mismo motor de la tarjeta Digitaciones de Guitarra: cuerdas, trastes y dedos tocables), con el grave del set como nota más grave y la posición más cercana a la digitación anterior. Pasa Armonía a Guitarra jazz (al destildar vuelve al preset anterior). El ritmo sale de las otras casillas (sync, poly, rythmicarmonies…). Pisa inversiones e in3rds. Sets de 7+ notas: toca 6 (el grave + 5 al azar). No entra en all."><input type="checkbox" id="consolaHT_guitar"><label for="consolaHT_guitar">guitar</label></span>
           <span class="consola-inst-toggle" title="One chord test: la canción tiene UN solo acorde. Se sortea el primer acorde del algoritmo (con su transposición) y TODOS los ataques de Harmony repiten ese mismo set, en todos los compases. Bajo y melodía quedan sobre ese set. El ritmo y las demás casillas (inversions, arp, in3rds…) siguen funcionando sobre ese único acorde. No entra en all."><input type="checkbox" id="consolaHT_onechord"><label for="consolaHT_onechord">One chord test</label></span>
           <span class="consola-inst-toggle" title="wide.range: los acordes largos (3 negras o más, de 2+ notas) se extienden en varias octavas: se duplican 1 octava abajo y 2 o 3 octavas arriba (se sortea por acorde). Las copias nunca suenan juntas: en ~80% de los acordes ninguna nota ataca junto con otra (cada nota de cada octava entra con su propio ataque, en orden al azar, repartidas a lo largo de la primera mitad del acorde); en el ~20% restante cada capa (la octava de abajo, el acorde original y las de arriba) ataca sus notas juntas, y las capas entran escalonadas. Todas terminan cuando termina el acorde. Mismas clases de tono: el set no se traiciona. Las capas que se pasan del registro (más agudo que C8 o más grave que E1) se omiten. No entra en all."><input type="checkbox" id="consolaHT_wide"><label for="consolaHT_wide">wide.range</label></span>
-          <span class="consola-inst-toggle" title="textures (Harmony): en algunos tramos la armonía toca una textura pianística moderna en vez de los acordes de siempre. Cada nota se ajusta a las del set vigente: el set no se traiciona. Uso moderado, por secciones de 4 compases: la primera sección y el último compás quedan normales. Auto: según el largo de la canción y su cantidad de secciones usa una o varias texturas (1 con 1–2 secciones, 2 con 3–4, 3 con 5–8, 4 con 9+), en tramos de 2 compases. Preset fijo: solo esa textura, con el mismo criterio de secciones. Tildada por defecto."><input type="checkbox" id="consolaHarmTexChk" checked><label for="consolaHarmTexChk">textures</label><select class="mix-preset-select" id="consolaHarmTexSelect" style="max-width:170px;margin-left:6px;" title="Preset de textures. Auto (default): elige una o varias según el largo de la canción y su cantidad de secciones."><option value="auto" selected>Auto</option><option value="quartas">Quartas apiladas</option><option value="arpegio">Arpegio amplio</option><option value="cluster">Segundas apiladas</option><option value="comping">Comping sincopado</option><option value="cascada">Cascada impresionista</option><option value="alberti">Alberti moderno</option><option value="sinfund">Sin fundamental</option><option value="stride">Stride moderno</option><option value="ostinato">Ostinato en quintas</option><option value="tremolo">Trémolo</option><option value="campanas">Campanas</option><option value="caminante">Bajo caminante</option><option value="tresillo">Comping en tresillo</option><option value="ondas">Ondas en tresillos</option></select></span>
+          <span class="consola-inst-toggle" title="textures (Harmony): en algunos tramos la armonía toca una textura pianística moderna en vez de los acordes de siempre. Cada nota se ajusta a las del set vigente: el set no se traiciona. Uso moderado, por secciones de 4 compases (cantidad regulable con el slider, default 25%): la primera sección y el último compás quedan normales. Auto: según el largo de la canción y su cantidad de secciones usa una o varias texturas (1 con 1–2 secciones, 2 con 3–4, 3 con 5–8, 4 con 9+), en tramos de 2 compases. Preset fijo: solo esa textura, con el mismo criterio de secciones. Tildada por defecto."><input type="checkbox" id="consolaHarmTexChk" checked><label for="consolaHarmTexChk">textures</label><select class="mix-preset-select" id="consolaHarmTexSelect" style="max-width:170px;margin-left:6px;" title="Preset de textures. Auto (default): elige una o varias según el largo de la canción y su cantidad de secciones."><option value="auto" selected>Auto</option><option value="quartas">Quartas apiladas</option><option value="arpegio">Arpegio amplio</option><option value="cluster">Segundas apiladas</option><option value="comping">Comping sincopado</option><option value="cascada">Cascada impresionista</option><option value="alberti">Alberti moderno</option><option value="sinfund">Sin fundamental</option><option value="stride">Stride moderno</option><option value="ostinato">Ostinato en quintas</option><option value="tremolo">Trémolo</option><option value="campanas">Campanas</option><option value="caminante">Bajo caminante</option><option value="tresillo">Comping en tresillo</option><option value="ondas">Ondas en tresillos</option></select><input type="range" class="consola-mini-range" id="consolaHarmTexSlider" min="0" max="100" value="25" step="1" style="margin-left:6px;" title="Cantidad de uso de textures (0–100%, default 25%): proporción de las secciones de 4 compases que reciben un tramo de textura (2 compases, a veces 4). 25% = en promedio 1 de cada 4 secciones; 0% = nunca; 100% = todas las que se pueden (la primera sección y el último compás quedan siempre normales). Vale para Auto y para un preset fijo. Vale desde la próxima generación."><span class="consola-val" id="consolaHarmTexVal">25%</span></span>
           <span class="consola-inst-toggle" title="Ostinatov2 (Harmony, test, OFF por defecto): la armonía toca SOLO un ostinato estricto en TODOS los compases (reemplaza acordes, textures y demás). Se sortea una figura de 8 corcheas (ej. 1-3-5-3-1-3-5-3 en grados del set) y se repite idéntica compás tras compás, en la misma voz y registro. Cuando cambia el acorde, la misma figura (mismos grados) se apoya en el set del acorde vigente: el set no se traiciona. Una figura nueva en cada generación."><input type="checkbox" id="consolaHarmOst2Chk"><label for="consolaHarmOst2Chk">Ostinatov2</label></span>
         </div>
         <div class="consola-inst-row">
@@ -13812,7 +13812,7 @@ function runAnalysis() {
      más cercana del set de ese acorde: el set no se traiciona. Los compases con otra métrica (3/4, 6/8…) estiran la plantilla en proporción.
      Uso moderado, por secciones de 4 compases (el largo de la canción y su cantidad de secciones mandan):
        · La primera sección queda con la armonía normal y el último compás de la canción también (si dura más de 4 compases).
-       · Auto: se texturan ~la mitad de las secciones restantes (nunca vecinas si hay lugar), en tramos de 2 compases (4 con 8+ secciones, a veces).
+       · Auto: se texturan secciones en proporción al slider #consolaHarmTexSlider (default 25%: T = S × %, redondeo al azar; nunca vecinas si hay lugar), en tramos de 2 compases (4 con 8+ secciones, a veces).
          Texturas distintas: 1 con 1–2 secciones, 2 con 3–4, 3 con 5–8, 4 con 9+. Se reparten en orden y se repiten (coherencia).
        · Preset fijo: solo esa textura, con el mismo criterio de secciones.
        · Canciones de 3 o 4 compases: textura en los compases 3 y 4. De menos de 3: nada.
@@ -13871,6 +13871,7 @@ function runAnalysis() {
     TEX.forEach(function(t){ byId[t.id] = t; });
     function enabled(){ var e = document.getElementById("consolaHarmTexChk"); return !!(e && e.checked); }
     function value(){ var e = document.getElementById("consolaHarmTexSelect"); var v = e ? e.value : "auto"; return byId[v] ? v : "auto"; }
+    function amount(){ var e = document.getElementById("consolaHarmTexSlider"); var v = e ? parseFloat(e.value) : 25; return isNaN(v) ? 0.25 : Math.max(0, Math.min(1, v / 100)); }   // slider "cantidad de uso" (default 25%)
     function shuffle(a){
       for(var i = a.length - 1; i > 0; i--){ var j = randomInt(0, i), t = a[i]; a[i] = a[j]; a[j] = t; }
       return a;
@@ -13880,13 +13881,15 @@ function runAnalysis() {
       var plan = [], i;
       for(i = 0; i < n; i++) plan.push(null);
       if(n < 3) return plan;
-      var S = Math.ceil(n / 4), blocks = [];
+      var S = Math.ceil(n / 4), blocks = [], pAmt = amount();
+      if(pAmt <= 0) return plan;                                  // slider en 0%: sin texturas
       if(S === 1){
-        blocks.push([2, n - 2]);                                  // 3 o 4 compases: textura en los dos últimos (o el último)
+        if(Math.random() < pAmt) blocks.push([2, n - 2]);                                  // 3 o 4 compases: textura en los dos últimos (o el último)
       } else {
         var cand = [], s;
         for(s = 1; s < S; s++) cand.push(s);                      // la primera sección queda normal
-        var T = Math.max(1, Math.round(cand.length * 0.5)), chosen = [];
+        var xT = S * pAmt, T = Math.floor(xT) + (Math.random() < xT - Math.floor(xT) ? 1 : 0), chosen = [];   // proporción del slider sobre las S secciones (redondeo al azar: el promedio respeta el %)
+        T = Math.min(T, cand.length);
         shuffle(cand);
         cand.forEach(function(c){ if(chosen.length < T && chosen.every(function(x){ return Math.abs(x - c) > 1; })) chosen.push(c); });
         cand.forEach(function(c){ if(chosen.length < T && chosen.indexOf(c) < 0) chosen.push(c); });
@@ -13972,7 +13975,8 @@ function runAnalysis() {
     return { enabled: enabled, apply: apply, plan: function(){ return lastPlan.slice(); }, textures: TEX, makePlan: makePlan };
   })();
   window.HARMTEXTURES = HARMTEXTURES;
-  ["consolaHarmTexChk", "consolaHarmTexSelect"].forEach(function(id){
+  (function(){ var sl = document.getElementById("consolaHarmTexSlider"), vl = document.getElementById("consolaHarmTexVal"); if(sl && vl) sl.addEventListener("input", function(){ vl.textContent = this.value + "%"; }); })();
+  ["consolaHarmTexChk", "consolaHarmTexSelect", "consolaHarmTexSlider"].forEach(function(id){
     var el = document.getElementById(id);
     if(el) el.addEventListener("change", function(){ if(state.rootChord.length) regenerateConsola(); });
   });
@@ -16775,10 +16779,10 @@ function runAnalysis() {
       auto.firstChild.id = "partimentiAutoTempo"; tb.appendChild(auto);
       tb.appendChild(group("", "", "tempo", core.TEMPOS.map(function(t){ return { k: t.key, text: t.name + " " + t.lo + (t.hi !== t.lo ? "–" + t.hi : ""), tip: t.name + ": " + t.lo + (t.hi !== t.lo ? "–" + t.hi : "") + " BPM" }; })));
       b.appendChild(tb);
-      // TestContrapunctus: contrapunto tradicional en las 4 voces (apagado por defecto: apagado no cambia nada). Reglas y fuentes en core.CTP_RULES.
+      // TestContrapunctus: contrapunto tradicional en las 4 voces (ENCENDIDO por defecto desde 2026-10-15; apagado no cambia nada). Reglas y fuentes en core.CTP_RULES.
       var cb = mk("div", "padding:2px 0 6px;border-top:1px solid var(--line, #8884);margin-top:4px;");
       var ch0 = label("TestContrapunctus", "TEST. Aplica contrapunto tradicional (Fux; reglas de curso UVM) a todas las voces de 🎹 Partimenti: bajo (auditado: es el partimento dado), tenor, alto, soprano y sus figuras de disminución. Apagado: no cambia nada. Vale desde la próxima canción (🔀 / G). Si una regla no deja ninguna realización posible, se afloja (el subtítulo cuenta cuántas veces). Pasá el mouse por cada regla para ver su fuente.", "opt", "ctp", false);
-      ch0.firstChild.id = "partimentiCtp"; ch0.style.fontWeight = "700"; cb.appendChild(ch0);
+      ch0.firstChild.id = "partimentiCtp"; ch0.firstChild.checked = true; ch0.style.fontWeight = "700"; cb.appendChild(ch0);
       var cw = mk("div", "display:flex;flex-wrap:wrap;gap:4px 10px;padding-left:18px;");
       Object.keys(core.CTP_RULES).forEach(function(k){ cw.appendChild(label(core.CTP_RULES[k].name, core.CTP_RULES[k].tip, "ctp", k, true)); });
       cb.appendChild(cw); b.appendChild(cb);
@@ -25293,7 +25297,7 @@ function runAnalysis() {
       selJT.addEventListener("change", function(){ if(selJT.value) runJazzTunes(); });
     }
     // Defaults de 🎷 JazzTunes: cada vez que se aprieta el botón (canción nueva) fija estos controles; 🔀 / tecla G no los tocan (ahí valen tus cambios a mano).
-    //   Reharmonization on y 50% · Tempo & Expression = None (strict tempo) 0% · Chromatism 100% · Chords 100% · 24 bars sin tildar ·
+    //   Reharmonization on y 50% · Tempo & Expression = None (strict tempo) 0% · Chromatism 100% · Chords 100% · 24 bars, 12 bars y Random 4–48 sin tildar ·
     //   Melody n2 y Melody n3 apagadas · Beats, Beatswithspice, Cycles e Intro apagados · BlockwithMelody (Harmony) sorteado entre 30% y 100% · Reverb 35%.
     function jazzDefaults(free){        // free = Jazz.i.Tunes: fija SUS controles de Reharmonization (jazziReharm*)
       function el(id){ return document.getElementById(id); }
@@ -25305,14 +25309,14 @@ function runAnalysis() {
       setRange("consolaExprSlider", 0);
       setRange("consolaChromaSlider", 100);
       setRange("consolaChordsSlider", 100);
-      var b24 = el("consola24BarsChk"); if(b24) b24.checked = false;
+      ["consola24BarsChk", "consola12BarsChk", "consolaRandBarsChk"].forEach(function(id){ var c = el(id); if(c) c.checked = false; });   // 24 bars, 12 bars y Random 4–48 sin tildar (sin evento: la generación que sigue ya lee el largo)
       var m2 = el("consolaMelody2Chk"), m3 = el("consolaMelody3Chk");
       if(m2) m2.checked = false;
       if(m3) m3.checked = false;
       [el("consolaBeatsChk"), el("consolaSpiceBeatsChk"), el("consolaCyclesChk"), el("consolaIntroChk")].forEach(function(c){ if(c && c.checked){ c.checked = false; c.dispatchEvent(new Event("change", { bubbles: true })); } });
       randomizeSlider("consolaHT_bwmSlider", 30, 100);
       setRange("consolaReverbAmount", 35);
-      SL("JazzTunes defaults", "Reharmonization on 100% · Tempo & Expression None 0% · Chromatism 100% · Chords 100% · 24 bars off · Melody n2/n3 off · Beats, Beatswithspice, Cycles e Intro off · BlockwithMelody (Harmony) 30–100% · Reverb 35%");
+      SL("JazzTunes defaults", "Reharmonization on 100% · Tempo & Expression None 0% · Chromatism 100% · Chords 100% · 24/12/Random bars off · Melody n2/n3 off · Beats, Beatswithspice, Cycles e Intro off · BlockwithMelody (Harmony) 30–100% · Reverb 35%");
     }
     async function runJazzTunes(fromMix){
       if(running) return;
