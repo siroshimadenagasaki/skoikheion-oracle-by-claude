@@ -40,20 +40,20 @@
      pase desapercibido), no desaparece sola en ese caso. */
   .sf2-load-overlay{
     position:fixed; top:14px; left:14px; z-index:9999;
-    background:var(--surface); border:2px solid var(--line);
-    border-radius:40px; padding:40px 56px;
-    font-family:'JetBrains Mono',monospace; font-size:48px;   /* 4x (antes 12px / padding 10px 14px) */
-    color:var(--ink); box-shadow:0 24px 80px rgba(0,0,0,.35);
-    display:flex; align-items:center; gap:40px;
+    background:var(--surface); border:1px solid var(--line);
+    border-radius:10px; padding:10px 14px;
+    font-family:'JetBrains Mono',monospace; font-size:12px;
+    color:var(--ink); box-shadow:0 6px 20px rgba(0,0,0,.35);
+    display:flex; align-items:center; gap:10px;
     max-width:calc(100vw - 28px); box-sizing:border-box;
     opacity:1; transition:opacity .4s ease;
     pointer-events:none;
   }
   .sf2-load-overlay.sf2-load-hidden{ opacity:0; }
-  .sf2-load-overlay.sf2-load-extra{ top:190px; }
+  .sf2-load-overlay.sf2-load-extra{ top:60px; }
   .sf2-load-overlay .sf2-load-bar{
-    width:360px; height:24px; border-radius:16px; overflow:hidden; flex:0 1 360px; min-width:60px;
-    background:var(--surface-2); border:2px solid var(--line);
+    width:90px; height:6px; border-radius:4px; overflow:hidden; flex:0 1 90px; min-width:30px;
+    background:var(--surface-2); border:1px solid var(--line);
   }
   .sf2-load-overlay .sf2-load-bar-fill{
     height:100%; width:0%; background:var(--gold); transition:width .15s linear;
