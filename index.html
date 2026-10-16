@@ -1770,6 +1770,11 @@
         <span class="consola-val" id="consolaExprVal">50%</span>
         <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;" title="Click audible en cada pulso (acento en el primer pulso de cada compás). Sigue el mismo mapa de tempo que las notas: con Accelerando/Ritardando/Rubato/Ad libitum se oye cómo se mueve el tempo. Solo suena en vivo (no entra en el export MIDI/MP3)."><input type="checkbox" id="consolaClickChk"> click</label>
       </div>
+      <div class="consola-field" title="Swing: toca TODAS las pistas (armonía, bajo, melodías, comping, batería, click) sobre una grilla de corcheas en swing. Cada pulso se parte en dos corcheas desiguales: la del tiempo se alarga y la del contratiempo se acorta y llega más tarde. El slider fija la proporción: 0% = corcheas parejas (1:1, sin swing), ~67% = swing de tresillo (2:1, el clásico), 100% = swing duro/punteado (3:1). Las notas conservan su lugar en la partitura (no cambia qué suena ni el piano roll), solo cambia CUÁNDO suena cada una; las semicorcheas y los tresillos se deforman en proporción. Con Swing Drums activo la batería NO se vuelve a swingear (ese groove ya trae su propio swing). Se aplica en el próximo loop; también entra en el export MP3 y MIDI. Apagado por defecto.">
+        <span class="consola-inst-toggle"><input type="checkbox" id="consolaSwingChk"><label for="consolaSwingChk">Swing</label></span>
+        <input type="range" id="consolaSwingSlider" min="0" max="100" value="67" step="1" disabled style="opacity:0.35">
+        <span class="consola-val" id="consolaSwingVal" style="opacity:0.35">67% &middot; 2.0:1</span>
+      </div>
       <div class="consola-field consola-instruments">
         <label>Engine options</label>
         <div class="consola-inst-row">
@@ -21401,7 +21406,39 @@ function runAnalysis() {
       }
       return tw;
     }
-    function current(){
+    /* ---------- SWING: grilla de corcheas en swing, compuesta sobre el mapa de tiempo ----------
+       Checkbox #consolaSwingChk + slider #consolaSwingSlider (How to play). Deformación lineal por tramos de cada pulso:
+       la corchea del tiempo ocupa [0, s] y la del contratiempo [s, 1], con s = 0.5 + 0.25*slider/100
+       (0% -> 0.5 = parejas 1:1 · 66.7% -> 0.667 = tresillo 2:1 · 100% -> 0.75 = punteado 3:1).
+       Los pulsos enteros no se mueven (w(n) = n), así que el largo de la vuelta y el click en los tiempos se conservan.
+       Se compone ANTES del tempo & expression: f'(b) = f(w(b)); inv'(x) = w^-1(inv(x)). Sin swing devuelve el mapa base tal cual. */
+    function swingS(){
+      var c = document.getElementById("consolaSwingChk"), sl = document.getElementById("consolaSwingSlider");
+      if(!c || !c.checked || !sl) return 0.5;
+      var p = Math.max(0, Math.min(100, parseInt(sl.value, 10) || 0));
+      return 0.5 + 0.25*p/100;
+    }
+    function swingWarp(b, s){
+      var n = Math.floor(b), f = b - n;
+      return n + (f < 0.5 ? f*2*s : s + (f - 0.5)*2*(1 - s));
+    }
+    function swingUnwarp(x, s){
+      var n = Math.floor(x), g = x - n;
+      return n + (g < s ? g/(2*s) : 0.5 + (g - s)/(2*(1 - s)));
+    }
+    var swCache = null;
+    function composeSwing(base, s){
+      if(!(s > 0.5 + 1e-9)) return base;
+      if(swCache && swCache.base === base && swCache.s === s) return swCache.tw;
+      var tw = { on:true, ck:(base.ck || "") + "|sw" + s, mul:base.mul,
+        f:function(b){ return base.f(swingWarp(b, s)); },
+        inv:function(x){ return swingUnwarp(base.inv(x), s); } };
+      swCache = { base:base, s:s, tw:tw };
+      return tw;
+    }
+    function current(){ return composeSwing(currentBase(), swingS()); }   // con Swing apagado/0% = idéntico a antes
+    function currentNoSwing(){ return currentBase(); }                    // para batería con Swing Drums (ya trae su swing)
+    function currentBase(){
       var sel = document.getElementById("consolaExprSelect"), sl = document.getElementById("consolaExprSlider");
       var key = sel ? sel.value : "auto";
       if(key === "auto") return currentAuto();
@@ -21544,7 +21581,7 @@ function runAnalysis() {
       autoProf = P; autoSig = autoSigOf(TOTAL_BEATS); cur = null;
       return true;
     }
-    return { current:current, reroll:reroll, autoProfile:function(){ return autoProf; }, autoReset:function(){ autoProf = null; autoSig = ""; }, setAuto:setAuto, ident:IDENT, build:build, presets:PRESETS };
+    return { current:current, currentBase:currentBase, currentNoSwing:currentNoSwing, swingS:swingS, swingWarp:swingWarp, reroll:reroll, autoProfile:function(){ return autoProf; }, autoReset:function(){ autoProf = null; autoSig = ""; }, setAuto:setAuto, ident:IDENT, build:build, presets:PRESETS };
   })();
   // Dynamics: ev.vel (0-127, neutra 96) escala la ganancia y elige la capa de velocity del .sf2; sin ev.vel, igual que siempre.
   function velK(ev){ return ev.vel != null ? ev.vel/96 : 1; }
@@ -21567,7 +21604,7 @@ function runAnalysis() {
     return {
       chord: state.chordEvents, bass: state.bassEvents, melody: state.melodyEvents,
       comping2: state.comping2Events, bebop: state.bebopEvents, melody2: state.melody2Events, melody3: state.melody3Events,
-      drum: drumEvents, presets: Object.assign({}, mixPresets), tw: EXPR.current(),
+      drum: drumEvents, presets: Object.assign({}, mixPresets), tw: EXPR.current(), twDrum: (swingDrumsEnabled ? EXPR.currentNoSwing() : null),
       mdInterval: (altMelodyChk && altMelodyChk.checked) ? -7 : -12
     };
   }
@@ -21783,8 +21820,9 @@ function runAnalysis() {
       var drumKitKey = P.drum || "kit";
       var drumWin = S.drum.filter(inWin);
       var kitIsJazzTraps = sm2Active && drumWin.length > 0 && drumKitIsJazzTraps(drumKitKey);
+      var TWdf = S.twDrum ? S.twDrum.f : TWf;   // Swing Drums ya trae su swing: no se swingea otra vez
       drumWin.forEach(function(ev){
-        var t = loopStartTime + TWf(ev.startBeat)*spb;
+        var t = loopStartTime + TWdf(ev.startBeat)*spb;
         // Swing Drums / Velocity humanizada / ghost notes traen ev.vel
         // (0-127): escala la ganancia de siempre. Sin ev.vel queda en 1.
         var velScale = velK(ev);
@@ -23020,12 +23058,16 @@ function runAnalysis() {
     return [0x4D, 0x54, 0x72, 0x6B].concat(midiU32(out.length), out); // "MTrk"
   }
   function midiNoteEvents(evs, ch, semitones, defaultVel){
+    var isDrumTrack = (ch === 9);
     var out = [];
     evs.forEach(function(ev){
       var note = Math.round(ev.midi + semitones);
       if(note < 0 || note > 127) return;
-      var on = Math.round(ev.startBeat * EXPORT_PPQ);
-      var dur = ev.durBeats != null ? Math.max(1, Math.round(ev.durBeats * EXPORT_PPQ)) : Math.round(EXPORT_PPQ / 4);
+      var sws = (isDrumTrack && swingDrumsEnabled) ? 0.5 : EXPR.swingS();   // Swing (How to play); la batería de Swing Drums no se vuelve a swingear
+      var b0 = ev.startBeat, b1 = ev.startBeat + (ev.durBeats != null ? ev.durBeats : 0.25);
+      if(sws > 0.5 + 1e-9){ b0 = EXPR.swingWarp(b0, sws); b1 = EXPR.swingWarp(b1, sws); }
+      var on = Math.round(b0 * EXPORT_PPQ);
+      var dur = ev.durBeats != null ? Math.max(1, Math.round((b1 - b0) * EXPORT_PPQ)) : Math.round(EXPORT_PPQ / 4);
       var vel = ev.vel != null ? Math.max(1, Math.min(127, Math.round(ev.vel))) : defaultVel;
       out.push({ tick:on,       order:2, bytes:[0x90 | ch, note, vel] });
       out.push({ tick:on + dur, order:1, bytes:[0x80 | ch, note, 0] });
@@ -23752,6 +23794,14 @@ function runAnalysis() {
     var sel = document.getElementById("consolaExprSelect"), sl = document.getElementById("consolaExprSlider"), vl = document.getElementById("consolaExprVal");
     function sync(){ var auto = sel.value === "auto"; sl.disabled = auto; sl.style.opacity = auto ? "0.35" : ""; vl.style.opacity = auto ? "0.35" : ""; }
     sel.addEventListener("change", function(){ if(sel.value === "auto" && EXPR.autoReset) EXPR.autoReset(); EXPR.reroll(); sync(); });
+    sync();
+  })();
+  (function(){
+    var chk = document.getElementById("consolaSwingChk"), sl = document.getElementById("consolaSwingSlider"), vl = document.getElementById("consolaSwingVal");
+    function label(){ var s = 0.5 + 0.25*(parseInt(sl.value, 10) || 0)/100; vl.innerHTML = sl.value + "% &middot; " + (s/(1 - s)).toFixed(1) + ":1"; }
+    function sync(){ var on = chk.checked; sl.disabled = !on; sl.style.opacity = on ? "" : "0.35"; vl.style.opacity = on ? "" : "0.35"; label(); }
+    chk.addEventListener("change", sync);   // se lee al armar cada vuelta (liveSnap): suena desde el próximo loop
+    sl.addEventListener("input", label);
     sync();
   })();
   document.getElementById("consolaTripletsSlider").addEventListener("input", function(){
