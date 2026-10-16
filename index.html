@@ -866,8 +866,13 @@
   .cifrado-acorde.mono{font-family:'JetBrains Mono',monospace;}
 
   /* ---- Subconjuntos / superconjuntos ---- */
-  .subsup-block{margin-top:14px;}
-  .subsup-block:first-child{margin-top:0;}
+  /* Los bloques (uno por cantidad de notas, Subset y Superset) se acomodan en 3 columnas, cada uno debajo del anterior dentro de su columna
+     (2 columnas en pantallas medianas, 1 en celular). Un bloque nunca se parte entre dos columnas. */
+  #subsupBody{column-count:3;column-gap:22px;}
+  @media (max-width:1100px){ #subsupBody{column-count:2;} }
+  @media (max-width:640px){ #subsupBody{column-count:1;} }
+  #subsupBody > .overlay-empty{column-span:all;}
+  .subsup-block{margin:0 0 16px;break-inside:avoid;-webkit-column-break-inside:avoid;page-break-inside:avoid;}
   .subsup-block h3{
     font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.18em;
     text-transform:uppercase;color:var(--gold-dim);margin:0 0 8px;font-weight:500;
@@ -5592,7 +5597,7 @@ function syncDigitacionesFrame(pcs) {
    SUBCONJUNTOS Y SUPERCONJUNTOS
    Para el conjunto elegido (cardinalidad n), calcula:
    - Subconjuntos: quitando notas del propio conjunto elegido, para
-     cada cardinalidad de 4 hasta n-1 (por debajo de 4 son intervalos
+     cada cardinalidad de 2 hasta n-1 (se incluyen también los triviales: por debajo de 4 son intervalos
      triviales — dupla/tricordio — que caben en prácticamente
      cualquier cosa, así que no aportan información distintiva).
    - Superconjuntos: agregando notas del resto del universo cromático
@@ -5622,7 +5627,16 @@ function combinations(arr, k) {
   return result;
 }
 
+// Díadas (2 notas): la tabla de 344 clases empieza en 3 notas, así que se nombran por su clase de intervalo (ic1…ic6).
+const DYAD_NAMES = { 1: "minor 2nd / major 7th", 2: "major 2nd / minor 7th", 3: "minor 3rd / major 6th", 4: "major 3rd / minor 6th", 5: "perfect 4th / perfect 5th", 6: "tritone" };
+function dyadIc(r) {
+  if (!r || !r.input || r.input.length !== 2) return 0;
+  const d = (((r.input[1] - r.input[0]) % 12) + 12) % 12;
+  return Math.min(d, 12 - d);
+}
 function classLabel(r) {
+  const ic = dyadIc(r);
+  if (ic && !r.solomon_code && !r.forte_code) return "ic" + ic + " · " + DYAD_NAMES[ic];
   if (r.solomon_code) return r.solomon_code + (r.solomon_name ? ` · ${r.solomon_name}` : "");
   if (r.forte_code) return r.forte_code + (r.forte_name ? ` · ${r.forte_name}` : "");
   return "—";
@@ -5644,15 +5658,15 @@ function solomonKey(r) {
 function computeSubSuper(pcs) {
   const n = pcs.length;
   const sub = {};
-  for (let m = 4; m <= n - 1; m++) {
+  for (let m = 2; m <= n - 1; m++) {   // desde 2 notas: se listan también los subconjuntos triviales (díadas, tricordios)
     const seen = new Map();
     combinations(pcs, m).forEach(combo => {
       const r = analyze(CHORDS_DATA, combo);
       // Usa solomonKey para diferenciar mayor/menor (secuencia intervalica)
-      const key = solomonKey(r) || JSON.stringify(r.prime_form);
+      const key = (m === 2 && dyadIc(r)) ? "ic" + dyadIc(r) : (solomonKey(r) || JSON.stringify(r.prime_form));   // díadas: una por clase de intervalo
       if (!seen.has(key)) seen.set(key, r);
     });
-    const list = Array.from(seen.values()).sort((a, b) => solomonKey(a).localeCompare(solomonKey(b)));
+    const list = Array.from(seen.values()).sort((a, b) => (m === 2 ? dyadIc(a) - dyadIc(b) : solomonKey(a).localeCompare(solomonKey(b))));
     if (list.length) sub[m] = list;
   }
   const complement = [];
@@ -5700,10 +5714,10 @@ function renderSubSuper(baseAnalysis) {
   const subHtml = renderSubSuperBlock("Subset", sub);
   const supHtml = renderSubSuperBlock("Superset", sup);
   if (!subHtml && !supHtml) {
-    body.innerHTML = `<div class="overlay-empty">The set of ${n} notes you chose has no non-trivial subsets or supersets (between 4 and 11 notes) to show.</div>`;
+    body.innerHTML = `<div class="overlay-empty">The set of ${n} notes you chose has no subsets or supersets (between 2 and 11 notes) to show.</div>`;
     return;
   }
-  body.innerHTML = (subHtml || '<div class="subsup-block"><h3>Subsets</h3><div class="overlay-empty subsup-card-empty">No non-trivial ones (the set has fewer than 5 notes).</div></div>') +
+  body.innerHTML = (subHtml || '<div class="subsup-block"><h3>Subsets</h3><div class="overlay-empty subsup-card-empty">No subsets to show (the set has fewer than 3 notes).</div></div>') +
     (supHtml || '<div class="subsup-block"><h3>Supersets</h3><div class="overlay-empty subsup-card-empty">No non-trivial ones (the set has more than 10 notes).</div></div>');
 }
 
