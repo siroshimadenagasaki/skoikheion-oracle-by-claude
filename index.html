@@ -1708,7 +1708,7 @@
         <input type="range" id="consolaChromaSlider" min="0" max="100" value="15" step="1">
         <span class="consola-val" id="consolaChromaVal">15%</span>
       </div>
-      <div class="consola-field" title="Gradúa cuántos compases tienen más de un acorde. 0% = siempre un solo acorde por compás (una redonda, sin reataques extra). 100% = comportamiento de siempre (ritmo armónico variable, con hasta 5 reataques por compás).">
+      <div class="consola-field" title="Gradúa cuántos compases tienen más de un acorde. 0% = siempre un solo acorde por compás (una redonda, sin reataques extra). 100% = comportamiento de siempre (ritmo armónico variable, con hasta 5 reataques por compás). En ChordS (modo Chords) este slider fija cuántos acordes hay por compás, de forma gradual y con variación (no es un valor fijo): 100% = entre 6 y 8 acordes por compás; 0% = un acorde cada 2 a 3 compases (≈ 0,5); en el medio sube parejo (50% ≈ 3 a 4).">
         <label for="consolaChordsSlider">Chords</label>
         <input type="range" id="consolaChordsSlider" min="0" max="100" value="50" step="1">
         <span class="consola-val" id="consolaChordsVal">50%</span>
@@ -1745,7 +1745,7 @@
       </div>
       <div class="consola-field" title="Norepetitions: la melodía evita repetir la misma nota seguida (solo el 30% de las veces deja pasar 2 iguales; 3 nunca; la repetida se cambia por otra nota que el set permite en ese momento, la más cercana: C C C C pasa a C D C D) y la armonía evita repetir el mismo acorde seguido (idem: 30% deja pasar 2, 3 nunca; en la repetición se cambia una nota por su octava, así sigue siendo del set pero no suena a máquina). Vale para Melody principal, Melody n2 y Armonía del motor libre. Tildado por defecto; apagado = como siempre."><span class="consola-inst-toggle"><input type="checkbox" id="consolaNoRepChk" checked><label for="consolaNoRepChk">Norepetitions</label></span></div>
       <div class="consola-field" title="Intro: apagado por defecto. Antes de la canción suena UNA vez una introducción de 2 a 12 compases (el largo se sortea en cada Play, nunca mayor que la canción) hecha con los primeros compases de la propia canción pero más tranquila: solo algunas de las pistas (solo armonía, solo batería, bajo + batería, armonía + melodía…) y aligeradas (un acorde y una nota de bajo por compás, menos notas de melodía, batería solo sobre el pulso), un poco más suave y en tempo estricto. Es el mismo interruptor que el Intro de Partimenti. Los sorteos RANDOM CHOOSE (CreaturaRandom / CreaturA / Intervalic / ChordS / Partimenti / Radio) lo pueden prender o apagar. No entra en el export MIDI/MP3."><span class="consola-inst-toggle"><input type="checkbox" id="consolaIntroChk"><label for="consolaIntroChk">Intro</label></span></div>
-      <div class="consola-field" title="Form: apagado por defecto. La canción se arma con SECCIONES: Intro, A y, al azar, B / C / D (una, dos, tres o ninguna) y Coda. Los compases se AGREGAN: A es el largo de siempre (12 / 24 / 4–48 / el número a mano) y suman Intro y Coda (2 a 4 compases cada una) y cada parte B / C / D (4 a 12), con tope de 96 en total. Cada sección tiene su propia instrumentación (armonía / bajo / melodía / batería): el Intro arranca con un solo instrumento, en A entran otros, B / C / D alternan banda completa y versión reducida (baja la intensidad, a veces sin melodía o sin batería) y la sección siguiente vuelve, y la Coda cierra con 1–2 instrumentos más suave. Dos secciones seguidas nunca suenan igual. No se escribe ninguna nota nueva: el set no se traiciona. El piano roll marca cada sección en celeste (Intro, A, B…). Si Form se aplica, el Intro suelto no suena (la intro es una sección de Form). Vale en el motor libre (CreaturaRandom / CreaturA / Intervalic.Creature) y en Simplicity; en Partimenti / ChordS / JazzTunes no se aplica. En los RANDOM CHOOSE, con Form tildado lo llevan el 100% de las canciones."><span class="consola-inst-toggle"><input type="checkbox" id="consolaFormChk"><label for="consolaFormChk">Form</label></span></div>
+      <div class="consola-field" title="Form: apagado por defecto. La canción se arma con SECCIONES: Intro, A y, al azar, B / C / D (una, dos, tres o ninguna) y Coda. Los compases se AGREGAN: A es el largo de siempre (12 / 24 / 4–48 / el número a mano) y suman Intro y Coda (2 a 4 compases cada una) y cada parte B / C / D (4 a 12), con tope de 96 en total. Cada sección tiene su propia instrumentación (armonía / bajo / melodía / batería): el Intro arranca con un solo instrumento, en A entran otros, B / C / D alternan banda completa y versión reducida (baja la intensidad, a veces sin melodía o sin batería) y la sección siguiente vuelve, y la Coda cierra con 1–2 instrumentos más suave. Dos secciones seguidas nunca suenan igual. No se escribe ninguna nota nueva: el set no se traiciona. El piano roll marca cada sección en celeste (Intro, A, B…). Si Form se aplica, el Intro suelto no suena (la intro es una sección de Form). Vale en el motor libre (CreaturaRandom / CreaturA / Intervalic.Creature), en Simplicity, en ChordS y en Partimenti (ahí es el mismo interruptor que el Form de Partimenti); en JazzTunes no se aplica. En los RANDOM CHOOSE, con Form tildado lo llevan el 100% de las canciones."><span class="consola-inst-toggle"><input type="checkbox" id="consolaFormChk"><label for="consolaFormChk">Form</label></span></div>
       <div class="consola-field" title="Dynamics: aplica dinámicas de volumen (pp, p, mp, mf, f, ff) a cada evento MIDI con lógica musical: crescendos/diminuendos y terrazas de 2-4 compases que vuelven al nivel inicial del loop, acento en el tiempo 1, melodía por encima del acompañamiento y nota aguda un poco más fuerte que la grave. 0% = como siempre (velocity original). 100% = pp a ff. Mover el slider no regenera: re-aplica sobre las mismas notas. Ver el resultado en Mini mixer > Velocity por track.">
         <label for="consolaDynamicsSlider">Dynamics</label>
         <input type="range" id="consolaDynamicsSlider" min="0" max="100" value="50" step="1">
@@ -9434,7 +9434,8 @@ function runAnalysis() {
          la sección siguiente vuelve; Coda: 1–2 instrumentos;
        · intensidad por sección (velocity): Intro x0,78 · A x0,92 (x1 sin B) · completa x1 · reducida x0,82 · Coda x0,7.
      El piano roll marca cada sección en celeste. Con Form aplicado, el Intro suelto (INTRO) no suena. Solo motor libre y
-     Simplicity (Partimenti / ChordS / JazzTunes arman sus propios compases y Form no se aplica). El plan se guarda con la
+     Simplicity, ChordS y Partimenti (en estos dos Form es una capa posterior: el motor arma la canción entera con los compases sumados y Form solo
+     decide quién toca; en Partimenti hay una casilla Form que es el mismo interruptor). JazzTunes arma sus propios compases y Form no se aplica. El plan se guarda con la
      canción (historial del Player y ♥ Favoritos). Dynamics lo respeta (ev._fk).
      ================================================================ */
   var FORM = (function(){
@@ -9445,10 +9446,8 @@ function runAnalysis() {
     var RW = { mel: 3.5, drum: 3.5, harm: 1.5, bass: 1.5 };   // peso al elegir qué se saca en una versión reducida
     var cur = null;   // plan de la canción vigente: { base, total, sections: [{ name, b0, n, set, k }], applied, av }
     function on(){ var c = document.getElementById("consolaFormChk"); return !!(c && c.checked); }
-    function engineOk(){
-      return !((typeof COMMONCHORDS !== "undefined" && COMMONCHORDS && COMMONCHORDS.active) ||
-               (typeof PARTIMENTI !== "undefined" && PARTIMENTI && PARTIMENTI.active) ||
-               (typeof JAZZTUNES !== "undefined" && JAZZTUNES && JAZZTUNES.active));
+    function engineOk(){   // Form vale en el motor libre, Simplicity, ChordS y Partimenti (capa posterior: no cambia las notas); JazzTunes arma sus propios compases
+      return !(typeof JAZZTUNES !== "undefined" && JAZZTUNES && JAZZTUNES.active);
     }
     function pick(a){ return a[Math.floor(Math.random() * a.length)]; }
     function wpick(pool, W){
@@ -15248,8 +15247,7 @@ function runAnalysis() {
       }
       var testH = modeTestOn("commonChordsModeTestH"), testM = modeTestOn("commonChordsModeTestM");
       var narrow = narrowOn(), prevRange = null, narrowMiss = 0; // narrowregister: [nota más grave, más aguda] del acorde anterior
-      FORM.reset(); // Form no se aplica en ChordS
-      NUM_BARS = desiredNumBars(true);
+      NUM_BARS = FORM.begin(desiredNumBars(true), false); // Form (How to play): suma los compases de Intro / B / C / D / Coda al largo de siempre (sin Form = el largo de siempre)
       RHYTHM.recompute();
       TOTAL_BEATS = RHYTHM.total();
       var cfgOn = composerCfgOn();
@@ -15277,20 +15275,32 @@ function runAnalysis() {
       var progression = [], roles = [], slotChords = [], song = [];
       var prevMel = 84;
       var span;
+      // Cantidad de acordes (slider Chords de How to play). NO es un valor fijo: cada compás sortea su cantidad dentro de una ventana que sube con el slider.
+      //  · techo (acordes por compás) = 0,5 + 7,5 × slider → 0% = 0,5 · 100% = 8 (subida lineal: 25% ≈ 2,4 · 50% ≈ 4,3 · 75% ≈ 6,1);
+      //  · piso = 75% del techo → en 100% cada compás lleva entre 6 y 8 acordes (promedio 7); en 0%, entre 0,375 y 0,5.
+      //  · sorteo x uniforme entre piso y techo; x >= 1 → x acordes en el compás (redondeo al azar al entero vecino, así la graduación es continua);
+      //    x < 1 → el acorde se SOSTIENE 1 / x compases (0% ≈ 2 a 3 compases por acorde; redondeo al azar igual).
+      // Tope por compás corto: acordes de >= 0,5 pulso (en 4/4 hasta 8; menos de 2 pulsos = 1). ModeTestHarmony (un acorde cada 2 compases) no se toca.
+      var chFrac = 1; { var chSl = document.getElementById("consolaChordsSlider"), chV = chSl ? parseFloat(chSl.value) : 100; if(isFinite(chV)) chFrac = Math.max(0, Math.min(100, chV)) / 100; }
+      var chHi = 0.5 + 7.5 * chFrac, chLo = 0.75 * chHi;
+      function chDraw(){                                                 // { n: acordes en este compás, span: compases que dura }
+        var x = chLo + Math.random() * (chHi - chLo), f;
+        if(x >= 1){ f = Math.floor(x); return { n: Math.max(1, f + (Math.random() < x - f ? 1 : 0)), span: 1 }; }
+        var s = 1 / x; f = Math.floor(s);
+        return { n: 1, span: f + (Math.random() < s - f ? 1 : 0) };
+      }
       for(var bar = 0; bar < NUM_BARS; bar += span){
         span = testH ? Math.min(2, NUM_BARS - bar) : 1;   // ModeTestHarmony: cada acorde dura 2 compases (si queda 1 solo al final, dura 1)
+        var chD = testH ? null : chDraw();
+        if(chD) span = Math.max(1, Math.min(NUM_BARS - bar, chD.span));   // acorde sostenido varios compases (si quedan menos al final, dura lo que queda)
         var beats = RHYTHM.beats(bar), barStart = RHYTHM.start(bar);
         var spanBeats = 0;
         for(var sb = 0; sb < span; sb++) spanBeats += RHYTHM.beats(bar + sb);
         var nSlots = 1;
-        if(!testH){
-          var r = Math.random();
-          nSlots = r < 0.5 ? 1 : (r < 0.85 ? 2 : 4);
-          if(cfgOn){ // Composer Configuration: el slider Chords gradúa cuántos compases llevan más de un acorde (100% = el reparto de siempre de ChordS: 50% / 35% / 15%; 0% = siempre uno); HarmonicSpace: compás de respiro = un solo acorde
-            nSlots = Math.random() < 1 - 0.5 * cfgFrac("consolaChordsSlider") ? 1 : (Math.random() < 0.7 ? 2 : 4);
-            if(HARMONICSPACE.isPeaceBar(bar)) nSlots = 1;
-          }
-          if(beats < 2) nSlots = 1; else if(beats < 4 && nSlots === 4) nSlots = 2;
+        if(chD){
+          nSlots = chD.n;
+          if(cfgOn && HARMONICSPACE.isPeaceBar(bar)) nSlots = 1;       // Composer Configuration · HarmonicSpace: compás de respiro = un solo acorde
+          if(beats < 2) nSlots = 1; else nSlots = Math.max(1, Math.min(nSlots, Math.floor(2 * beats + 1e-9)));   // acordes de >= 0,5 pulso
         }
         var slotDur = spanBeats / nSlots, slots = [], labels = [];
         for(var si = 0; si < nSlots; si++){
@@ -15457,6 +15467,7 @@ function runAnalysis() {
         }
       }
       api.lastSong = song; api.narrowMisses = narrowMiss;
+      FORM.apply(); // Form: instrumentación e intensidad por sección sobre la canción ya armada (no-op sin Form; no escribe notas nuevas)
 
       var names = song.map(function(s){ return s.label; });
       var rd = document.getElementById("consolaNotesReadout");
@@ -16839,6 +16850,18 @@ function runAnalysis() {
       var itc = mk("input"); itc.type = "checkbox"; itc.id = "partimentiIntroChk";
       var itc0 = document.getElementById("consolaIntroChk"); itc.checked = !!(itc0 && itc0.checked);
       itk.appendChild(itc); itk.appendChild(document.createTextNode(" Intro")); spw.appendChild(itk);
+      // Form: mismo interruptor que el "Form" de How to play (se sincronizan solos). Apagado por defecto. Es una capa posterior: el motor de Partimenti no se toca,
+      // solo se le suman los compases de las secciones y Form decide quién suena en cada una (no se escribe ninguna nota nueva).
+      var fmk = mk("label", LBL + "font-weight:700;");
+      fmk.title = "Form (general): apagado por defecto. La canción se arma con SECCIONES: Intro, A y, al azar, B / C / D (una, dos, tres o ninguna) y Coda. Los compases se AGREGAN: A es el largo de siempre y suman Intro y Coda (2 a 4 compases cada una) y cada parte B / C / D (4 a 12), con tope de 96 en total. Cada sección tiene su propia instrumentación (armonía / bajo / melodía / batería) e intensidad; dos secciones seguidas nunca suenan igual. El motor de Partimenti no cambia: arma la canción entera y Form solo decide QUIÉN toca en cada sección (no se escribe ninguna nota nueva). El piano roll marca cada sección en celeste. Es el mismo interruptor que Form en How to play. Vale desde la próxima canción (🔀 / G).";
+      var fmc = mk("input"); fmc.type = "checkbox"; fmc.id = "partimentiFormChk";
+      var fmc0 = document.getElementById("consolaFormChk"); fmc.checked = !!(fmc0 && fmc0.checked);
+      fmk.appendChild(fmc); fmk.appendChild(document.createTextNode(" Form")); spw.appendChild(fmk);
+      fmc.addEventListener("change", function(){   // esta casilla mueve la de How to play (su "change" regenera la canción)
+        var m = document.getElementById("consolaFormChk");
+        if(m && m.checked !== fmc.checked){ m.checked = fmc.checked; m.dispatchEvent(new Event("change", { bubbles: true })); }
+      });
+      if(fmc0) fmc0.addEventListener("change", function(){ fmc.checked = fmc0.checked; });   // y al revés
       var tsw = mk("div", "display:flex;align-items:center;gap:6px;padding:4px 0 2px;font-weight:700;");
       tsw.appendChild(mk("span", null, "Time signature"));
       var tsn = mk("input"); tsn.id = "partimentiTSNum"; tsn.type = "text"; tsn.value = "4"; tsn.maxLength = 2; tsn.title = "Numerador (1-32)"; tsn.style.cssText = "width:40px;text-align:center;";
@@ -17181,8 +17204,7 @@ function runAnalysis() {
     }
 
     function build(){
-      FORM.reset(); // Form no se aplica en Partimenti
-      NUM_BARS = desiredNumBars(true);
+      NUM_BARS = FORM.begin(desiredNumBars(true), false); // Form (How to play / Partimenti): suma los compases de Intro / B / C / D / Coda al largo de siempre (sin Form = el largo de siempre)
       var tsN = document.getElementById("partimentiTSNum"), tsD = document.getElementById("partimentiTSDen");
       RHYTHM.recompute(tsN && tsD ? RHYTHM.parse(tsN.value + "/" + tsD.value) : null);   // compás propio de Partimenti (inválido → 4/4)
       TOTAL_BEATS = RHYTHM.total();
@@ -17445,6 +17467,7 @@ function runAnalysis() {
       }
       api.lastMusicSilence = muSilPlan;   // (para pruebas)
       api.lastSong = song;
+      FORM.apply();   // Form: capa posterior sobre las pistas ya armadas (no-op sin Form; el motor de Partimenti no se toca, solo decide quién suena en cada sección)
 
       var rd = document.getElementById("consolaNotesReadout");
       if(rd) rd.textContent = labels.join("  ");
@@ -24368,7 +24391,7 @@ function runAnalysis() {
       // Checkbox "Form" (How to play): no se sortea, lo decide el usuario. Tildado = el 100% de las canciones del random llevan secciones
       // (Intro, A, B / C / D al azar, Coda; compases agregados). Solo motor libre y Simplicity.
       function rollForm(){
-        if(FORM.on()) SL("Form (RANDOM CHOOSE)", "tildado: la canción lleva secciones, 100% (solo motor libre y Simplicity; en Partimenti / ChordS / JazzTunes no se aplica)");
+        if(FORM.on()) SL("Form (RANDOM CHOOSE)", "tildado: la canción lleva secciones, 100% (motor libre, Simplicity, ChordS y Partimenti; en JazzTunes no se aplica)");
         else SL("Form (RANDOM CHOOSE)", "apagado: no se sortea");
       }
       // ---- reverb ----
@@ -25411,7 +25434,7 @@ function runAnalysis() {
           if(pick === "partimenti"){ if(window.__jazzTunes) window.__jazzTunes.off(); SLpartimenti(window.__partimenti.randomize()); rcPre("partimenti"); window.__partimenti.start(); rcPost("partimenti"); return; }
           if(window.__partimenti) window.__partimenti.off();
           if(window.__jazzTunes) window.__jazzTunes.off();
-          if(pick === "common"){ randomizeSlider("consolaTempo", 30, 120); rcPre("common"); window.__commonChords.start(); rcPost("common"); return; }
+          if(pick === "common"){ randomizeSlider("consolaTempo", 30, 120); rcPre("common"); zeroForChordS(); window.__commonChords.start(); rcPost("common"); return; }
           if(window.__commonChords) window.__commonChords.off();
           randomizeAndFill(pick === "intervalic" ? "intervalic" : pick === "bella");
           rcPre("creatura");
@@ -25521,6 +25544,29 @@ function runAnalysis() {
     if(radioChkEl) radioChkEl.addEventListener("change", function(){ if(!radioChkEl.checked) window.__radioKind = null; });
     // 🎼 CommonChords (ver módulo COMMONCHORDS): detiene lo que suene, genera la canción con acordes de la base y la reproduce.
     var btnCC = document.getElementById("commonChordsBtn");
+    // ChordS arranca con TODO en cero: los sliders de How to play y de Harmony pasan a 0 y sus checkboxes se destildan (se ve en pantalla y se puede retocar después).
+    // Excepciones: Simplicity queda en 100% y Form queda como esté (Form sí vale en ChordS). El slider Chords en 0 = 75% menos acordes (ver COMMONCHORDS.build).
+    // Solo se tocan los valores y las etiquetas (evento "input", que no regenera); los selects, el compás y los botones de instrumentos no se mueven.
+    function zeroForChordS(){
+      var moved = [];
+      ["howToPlayBody", "harmTestBody"].forEach(function(bid){
+        var body = document.getElementById(bid);
+        if(!body) return;
+        Array.prototype.forEach.call(body.querySelectorAll('input[type="range"]'), function(sl){
+          var want = sl.id === "consolaNormalSlider" ? "100" : "0";   // Simplicity = 100%
+          if(String(sl.value) !== want){ sl.value = want; moved.push(sl.id.replace(/^consola/, "").replace(/Slider$/, "")); }
+          sl.dispatchEvent(new Event("input", { bubbles: true }));   // actualiza la etiqueta y la variable interna, sin regenerar
+        });
+        Array.prototype.forEach.call(body.querySelectorAll('input[type="checkbox"]'), function(c){
+          if(c.id === "consolaFormChk" || !c.checked) return;
+          if(c.id === "consolaIntroChk" && typeof INTRO !== "undefined") INTRO.set(false); else c.checked = false;   // Intro: las dos casillas (How to play y Partimenti) son el mismo interruptor
+          moved.push(c.id.replace(/^consola/, "").replace(/Chk$/, ""));
+        });
+      });
+      var mc = document.getElementById("consolaMoreCompingBtn");
+      if(mc && mc.getAttribute("aria-pressed") === "true"){ mc.click(); moved.push("MoreComping"); }
+      SL("ChordS: How to play + Harmony en cero", "Simplicity 100% · Form como esté" + (moved.length ? " · movidos: " + moved.join(", ") : " · ya estaba todo en cero"));
+    }
     async function runCommonChords(){
       if(running) return;
       running = true;
@@ -25532,6 +25578,7 @@ function runAnalysis() {
         await wait(300);
         randomizeSlider("consolaTempo", 30, 120); // tempo al azar con el mismo rango que CreaturaRandom/Bella (se sortea antes de generar: el motor lo lee al armar la canción)
         rcPre("common");
+        zeroForChordS();   // después del sorteo (que puede prender Intro): ChordS arranca con How to play y Harmony en cero
         window.__commonChords.start();
         rcPost("common");
         clickIfEnabled("consolaPlayBtn");
