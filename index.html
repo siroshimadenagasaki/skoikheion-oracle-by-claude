@@ -1775,6 +1775,9 @@
         <input type="range" id="consolaSwingSlider" min="0" max="100" value="67" step="1" disabled style="opacity:0.35">
         <span class="consola-val" id="consolaSwingVal" style="opacity:0.35">67% &middot; 2.0:1</span>
       </div>
+      <div class="consola-field" title="Micro-timing (armonía, bajo y melodías): corre cada ataque unos milisegundos (hasta ~±20 ms a 84 BPM; el bajo mucho menos, porque ancla el pulso) antes o después del grid exacto, como un intérprete humano. Las notas de un mismo acorde se mueven juntas (el acorde no se deshace) y no cambia qué suena ni el piano roll, solo cuándo. Es el equivalente de Micro-timing de Rhythm, que mueve hi-hat y caja de la batería. También entra en el export MP3 y MIDI. Prendido por defecto; se aplica en el próximo loop.">
+        <span class="consola-inst-toggle"><input type="checkbox" id="consolaHarmMicroTimingChk" checked><label for="consolaHarmMicroTimingChk">Micro-timing</label></span>
+      </div>
       <div class="consola-field consola-instruments">
         <label>Engine options</label>
         <div class="consola-inst-row">
@@ -20225,6 +20228,18 @@ function runAnalysis() {
   // unos milisegundos antes o después del grid — expresado en beats para
   // no depender del tempo elegido. ±0.035 beats ~ ±25ms a 84 BPM.
   var MICRO_TIMING_MAX_BEATS = 0.035;
+  // Micro-timing de ARMONÍA / BAJO / MELODÍAS (checkbox #consolaHarmMicroTimingChk, How to play, prendido por defecto):
+  // corre cada ataque unos ms antes/después del grid, SOLO al sonar (no toca las notas ni el piano roll). El corrimiento sale de
+  // un hash de la posición (startBeat): determinista, y todas las notas de un mismo acorde comparten tirada (el acorde no se deshace;
+  // si Chord simultaneity las escalonó, cada ataque escalonado tiene la suya). k escala la amplitud (bajo = 0.4: ancla el pulso).
+  var HARM_MICRO_MAX_BEATS = 0.03;   // ~ ±21 ms a 84 BPM
+  function harmMicroEnabled(){ var c = document.getElementById("consolaHarmMicroTimingChk"); return !!(c && c.checked); }
+  function harmMicroOffset(startBeat, k, on){
+    if(on === false) return 0;
+    var x = Math.sin(Math.round(startBeat*1000)*12.9898 + 78.233)*43758.5453;
+    var off = ((x - Math.floor(x))*2 - 1)*HARM_MICRO_MAX_BEATS*(k == null ? 1 : k);
+    return startBeat + off < 0 ? -startBeat : off;
+  }
   function microTimingOffset(){
     return microTimingEnabled() ? (Math.random()*2 - 1) * MICRO_TIMING_MAX_BEATS : 0;
   }
@@ -21604,7 +21619,7 @@ function runAnalysis() {
     return {
       chord: state.chordEvents, bass: state.bassEvents, melody: state.melodyEvents,
       comping2: state.comping2Events, bebop: state.bebopEvents, melody2: state.melody2Events, melody3: state.melody3Events,
-      drum: drumEvents, presets: Object.assign({}, mixPresets), tw: EXPR.current(), twDrum: (swingDrumsEnabled ? EXPR.currentNoSwing() : null),
+      drum: drumEvents, presets: Object.assign({}, mixPresets), micro: harmMicroEnabled(), tw: EXPR.current(), twDrum: (swingDrumsEnabled ? EXPR.currentNoSwing() : null),
       mdInterval: (altMelodyChk && altMelodyChk.checked) ? -7 : -12
     };
   }
@@ -21676,6 +21691,7 @@ function runAnalysis() {
       if(ev.vel != null || TW.on) o.peakGain = (o.peakGain != null ? o.peakGain : 0.15) * velK(ev);
       return o;
     }
+    function mtOff(ev, k){ return harmMicroOffset(ev.startBeat, k, S.micro); }
     var wFrom = win ? win.from : -Infinity, wTo = win ? win.to : Infinity;
     function inWin(ev){ return ev.startBeat >= wFrom && ev.startBeat < wTo; }
     // Mini mixer: un canal de ganancia por instrumento (independiente
@@ -21688,7 +21704,7 @@ function runAnalysis() {
       var hdSm2 = 0, hdFb = 0; // diagnóstico Armonía muda (solo lectura)
       (want("chord") ? S.chord : []).forEach(function(ev){
         if(!inWin(ev)) return;
-        var t = loopStartTime + TWf(ev.startBeat)*spb;
+        var t = loopStartTime + TWf(ev.startBeat + mtOff(ev, 1))*spb;
         var dur = twD(ev)*spb;
         // ev.vel (solo Harmony testing/accent): escala el volumen y elige capa de velocidad del .sf2
         if(sm2Active && playSM2Voice(ctx, gains.chord, P.harmony, ev.midi, t, dur*0.93, 0.2*velK(ev), velL(ev))){ hdSm2++; return; }
@@ -21746,7 +21762,7 @@ function runAnalysis() {
         var chordDoubleFam = voiceFamilyFor(P.chordDouble, "strings1");
         S.chord.forEach(function(ev){
           if(!inWin(ev)) return;
-          var t = loopStartTime + TWf(ev.startBeat)*spb;
+          var t = loopStartTime + TWf(ev.startBeat + mtOff(ev, 1))*spb;
           var dur = twD(ev)*spb;
           if(sm2Active && playSM2Voice(ctx, gains.chordDouble, P.chordDouble, ev.midi, t, dur*0.93, 0.2*velK(ev), velL(ev))) return;
           chordDoubleFam.fn(ctx, gains.chordDouble, ev.midi, t, dur*0.93, velOpts(chordDoubleFam, dur*0.93, ev));
@@ -21757,7 +21773,7 @@ function runAnalysis() {
       var bassFam = voiceFamilyFor(P.bass, "contrabass");
       (want("bass") ? S.bass : []).forEach(function(ev){
         if(!inWin(ev)) return;
-        var t = loopStartTime + TWf(ev.startBeat)*spb;
+        var t = loopStartTime + TWf(ev.startBeat + mtOff(ev, 0.4))*spb;
         var dur = twD(ev)*spb;
         if(sm2Active && playSM2Voice(ctx, gains.bass, P.bass, ev.midi, t, dur*0.9, 0.24*velK(ev), velL(ev))) return;
         bassFam.fn(ctx, gains.bass, ev.midi, t, dur*0.9, velOpts(bassFam, dur*0.9, ev));
@@ -21768,7 +21784,7 @@ function runAnalysis() {
         var bassDoubleFam = voiceFamilyFor(P.bassDouble, "contrabass");
         S.bass.forEach(function(ev){
           if(!inWin(ev)) return;
-          var t = loopStartTime + TWf(ev.startBeat)*spb;
+          var t = loopStartTime + TWf(ev.startBeat + mtOff(ev, 0.4))*spb;
           var dur = twD(ev)*spb;
           if(sm2Active && playSM2Voice(ctx, gains.bassDouble, P.bassDouble, ev.midi, t, dur*0.9, 0.24*velK(ev), velL(ev))) return;
           bassDoubleFam.fn(ctx, gains.bassDouble, ev.midi, t, dur*0.9, velOpts(bassDoubleFam, dur*0.9, ev));
@@ -21779,7 +21795,7 @@ function runAnalysis() {
       var melodyFam = voiceFamilyFor(P.melody, "flute");
       (want("melody") ? S.melody : []).forEach(function(ev){
         if(!inWin(ev)) return;
-        var t = loopStartTime + TWf(ev.startBeat)*spb;
+        var t = loopStartTime + TWf(ev.startBeat + mtOff(ev, 1))*spb;
         var dur = twD(ev)*spb;
         PITCHFX_CUR = pitchFxFor(ev, t, dur*0.85);
         try{
@@ -21801,7 +21817,7 @@ function runAnalysis() {
         var melodyDoubleInterval = S.mdInterval;
         S.melody.forEach(function(ev){
           if(!inWin(ev)) return;
-          var t = loopStartTime + TWf(ev.startBeat)*spb;
+          var t = loopStartTime + TWf(ev.startBeat + mtOff(ev, 1))*spb;
           var dur = twD(ev)*spb;
           var mdMidi = ev.midi + melodyDoubleInterval;
           PITCHFX_CUR = pitchFxFor(ev, t, dur*0.85);
@@ -21845,7 +21861,7 @@ function runAnalysis() {
     var comping2Fam = voiceFamilyFor(P.comping2, "epiano");
     (want("comping2") ? S.comping2 : []).forEach(function(ev){
       if(!inWin(ev)) return;
-      var t = loopStartTime + TWf(ev.startBeat)*spb;
+      var t = loopStartTime + TWf(ev.startBeat + mtOff(ev, 1))*spb;
       var dur = twD(ev)*spb;
       if(sm2Active && playSM2Voice(ctx, gains.comping2, P.comping2, ev.midi, t, dur*0.9, 0.16*velK(ev), velL(ev))) return;
       comping2Fam.fn(ctx, gains.comping2, ev.midi, t, dur*0.9, velOpts(comping2Fam, dur*0.9, ev));
@@ -21856,7 +21872,7 @@ function runAnalysis() {
     var bebopFam = voiceFamilyFor(P.bebop, "sopranoSax");
     (want("bebop") ? S.bebop : []).forEach(function(ev){
       if(!inWin(ev)) return;
-      var t = loopStartTime + TWf(ev.startBeat)*spb;
+      var t = loopStartTime + TWf(ev.startBeat + mtOff(ev, 1))*spb;
       var dur = twD(ev)*spb;
       if(sm2Active && playSM2Voice(ctx, gains.bebop, P.bebop, ev.midi, t, dur*0.85, 0.16*velK(ev), velL(ev))) return;
       bebopFam.fn(ctx, gains.bebop, ev.midi, t, dur*0.85, velOpts(bebopFam, dur*0.85, ev));
@@ -21866,7 +21882,7 @@ function runAnalysis() {
     var melody2Fam = voiceFamilyFor(P.melody2, "flute");
     (want("melody2") ? S.melody2 : []).forEach(function(ev){
       if(!inWin(ev)) return;
-      var t = loopStartTime + TWf(ev.startBeat)*spb;
+      var t = loopStartTime + TWf(ev.startBeat + mtOff(ev, 1))*spb;
       var dur = twD(ev)*spb;
       PITCHFX_CUR = pitchFxFor(ev, t, dur*0.9);
       try{
@@ -21878,7 +21894,7 @@ function runAnalysis() {
     var melody3Fam = voiceFamilyFor(P.melody3, "flute");
     (want("melody3") ? (S.melody3 || []) : []).forEach(function(ev){
       if(!inWin(ev)) return;
-      var t = loopStartTime + TWf(ev.startBeat)*spb;
+      var t = loopStartTime + TWf(ev.startBeat + mtOff(ev, 1))*spb;
       var dur = twD(ev)*spb;
       if(sm2Active && playSM2Voice(ctx, gains.melody3, P.melody3, ev.midi, t, dur*0.95, 0.16*velK(ev), velL(ev))) return;
       melody3Fam.fn(ctx, gains.melody3, ev.midi, t, dur*0.95, velOpts(melody3Fam, dur*0.95, ev));
@@ -23064,7 +23080,8 @@ function runAnalysis() {
       var note = Math.round(ev.midi + semitones);
       if(note < 0 || note > 127) return;
       var sws = (isDrumTrack && swingDrumsEnabled) ? 0.5 : EXPR.swingS();   // Swing (How to play); la batería de Swing Drums no se vuelve a swingear
-      var b0 = ev.startBeat, b1 = ev.startBeat + (ev.durBeats != null ? ev.durBeats : 0.25);
+      var mo = isDrumTrack ? 0 : harmMicroOffset(ev.startBeat, ch === 2 ? 0.4 : 1, harmMicroEnabled());
+      var b0 = ev.startBeat + mo, b1 = ev.startBeat + mo + (ev.durBeats != null ? ev.durBeats : 0.25);
       if(sws > 0.5 + 1e-9){ b0 = EXPR.swingWarp(b0, sws); b1 = EXPR.swingWarp(b1, sws); }
       var on = Math.round(b0 * EXPORT_PPQ);
       var dur = ev.durBeats != null ? Math.max(1, Math.round((b1 - b0) * EXPORT_PPQ)) : Math.round(EXPORT_PPQ / 4);
