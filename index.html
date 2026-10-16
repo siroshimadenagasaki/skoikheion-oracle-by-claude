@@ -19858,7 +19858,11 @@ function runAnalysis() {
                track === "melody3" ? melody3GainNode : null;
     if(node){
       var ctx = getAudioCtx();
-      node.gain.setTargetAtTime(audioGain(track), ctx ? ctx.currentTime : 0, 0.01);
+      var tNow = ctx ? ctx.currentTime : 0;
+      // cancelScheduledValues: borra eventos futuros pendientes (p.ej. la restauración que programó stopPlayback
+      // con el nivel de ANTES de regenerar). Sin esto ese valor viejo pisaba al nuevo y el nodo quedaba en 0.
+      node.gain.cancelScheduledValues(tNow);
+      node.gain.setTargetAtTime(audioGain(track), tNow, 0.01);
     }
   }
   // Reverb: mismo patrón que setMixGain de arriba (setTargetAtTime, sin
@@ -22502,8 +22506,9 @@ function runAnalysis() {
               snapG[tr] = { nodo: gv, mixer: want_ };
               if(isNaN(gv) || (want_ > 0 && gv < 0.0001)) bad.push(tr + " (node " + gv + ", mixer " + want_ + ")");
             });
-            window.__chanDiag = { canales:snapG, ctx:ctx.state, t:new Date().toISOString() };
+            window.__chanDiag = { canales:snapG, ctx:ctx.state, ctxTime:ctx.currentTime, msDesdeStop:Math.round(performance.now() - (window.__lastStopAt || 0)), t:new Date().toISOString() };
             if(bad.length){
+              try{ applyAllMixGains(); }catch(eH){}   // autocorrige: reescribe los niveles del mixer (el aviso igual queda)
               console.warn("[Muted channel] " + bad.join(", "), window.__chanDiag);
               var stEl2 = document.getElementById("consolaPrerenderStatus");
               if(stEl2) stEl2.textContent = "⚠ Muted channel: " + bad.join(", ");
@@ -24074,6 +24079,7 @@ function runAnalysis() {
     // estuviera sonando (release de un pad, del saxo, etc.) en vez de
     // esperar a que cada nota termine su propia envolvente.
     var FADE = 0.015;
+    window.__lastStopAt = performance.now();   // diagnóstico "Muted channel": cuánto pasó desde el último Stop
     [chordGainNode, bassGainNode, melodyGainNode, drumGainNode, melodyDoubleGainNode, chordDoubleGainNode, bassDoubleGainNode, comping2GainNode, bebopGainNode, melody2GainNode, melody3GainNode, reverbReturnGain, masterGain].forEach(function(g){
       if(!g) return;
       g.gain.cancelScheduledValues(now);
