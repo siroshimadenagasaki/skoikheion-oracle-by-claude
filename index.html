@@ -556,6 +556,7 @@
   button.chip.primary{border-color:var(--gold);color:var(--gold);}
   button.chip.primary:hover{background:var(--gold);color:#1a1622;}
   button.chip.primary:active{background:var(--gold);color:#1a1622;transform:scale(.97);}
+  button.chip[data-radio-only]{font-size:22px;line-height:1;}   /* 📻 junto a cada modo: el doble de grande */
 
   .examples{
     margin-top:16px;padding-top:16px;border-top:1px solid var(--line);
@@ -1551,7 +1552,7 @@
 <label id="jazziWalkingRow" style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted);cursor:pointer;" title="Walking (solo Jazz.i.Tunes; JazzTunes tiene el suyo): el bajo toca un walking bass simple, una negra por tiempo sobre los acordes de la canción (los reharmonizados, si Reharmonization está prendida). Tiempo 1 = la raíz del acorde (o el bajo del slash chord); tiempos del medio = notas del acorde (3ª, 5ª, 7ª...) llevadas por la más cercana a la anterior; último tiempo del acorde = nota de aproximación cromática (un semitono arriba o abajo) a la raíz del acorde que viene. Registro C2–G3. Apagado = el bajo de siempre (la raíz de cada acorde, sostenida). Se aplica en el próximo Jazz.i.Tunes y en cada 🔀 / tecla G."><input type="checkbox" id="jazziWalkingChk" checked>Walking</label>
           <div style="display:flex;align-items:stretch;gap:6px;"><button class="chip primary" style="flex:1;" id="creaturaIntervalicBtn" type="button" title="Igual que CreaturaRandom (mismos sliders, Compose, Mix time signatures, Detener, espera 2s y Regenerar, con 5 o 2 sets), pero antes sortea una combinación de clases de intervalo (1, 2 o 3 de ic1..ic6) y los sets salen SOLO de los que tienen todas esas clases en su vector de intervalos, con más probabilidad cuanto mayor parte del vector ocupan esas clases.">Intervalic.Creature</button><button type="button" class="chip" data-radio-only="intervalic" style="flex:0 0 auto;padding-left:8px;padding-right:8px;" aria-label="Radio: solo Intervalic.Creature" title="Radio (player): abre el mismo player del RADIO! pero limitado a Intervalic.Creature: cada canción nueva es de Intervalic.Creature (Next / Previous / Stop, historial, log y export iguales). Con la radio prendida en este modo, apretarlo de nuevo la detiene; para volver al sorteo entre todos los modos usá el botón RADIO!.">📻</button></div>
           <div style="display:flex;align-items:stretch;gap:6px;"><button class="chip primary" style="flex:1;" id="creaturaOneSetBtn" type="button" title="Igual que CreaturaRandom (mismos sliders, sets al azar, Compose, Mix time signatures, Detener, espera 2s y Regenerar), pero cada SECCIÓN de Form usa un solo set: Intro, A, B / C / D y Coda tocan cada una un único set (sets distintos entre secciones, sin repetir el de la sección anterior mientras haya otros). Dentro de la sección no hay reataques de otros sets. Sin Form tildado, la canción entera es una sola sección (un solo set).">🪄 One.Set</button></div>
-          <div style="display:flex;align-items:stretch;gap:6px;"><button class="chip primary" style="flex:1;" id="creaPartBtn" type="button" title="Creatura+Partimenti (modo test): arma una canción de Creatura (sets) y una de Partimenti (bajo + 4 voces) con el mismo largo, compás y tempo y las combina según el checkbox elegido. Apaga Form y Mix time signatures (los dos motores comparten la grilla de compases). La batería es la de Creatura. Partimenti se transporta a la tónica del primer set. 🔀 / tecla G vuelven a Creatura común.">🪄🎹 Creatura+Partimenti (test)</button></div>
+          <div style="display:flex;align-items:stretch;gap:6px;"><button class="chip primary" style="flex:1;" id="creaPartBtn" type="button" title="Creatura+Partimenti (modo test): arma una canción de Creatura (sets) y una de Partimenti (bajo + 4 voces) con el mismo largo, compás y tempo y las combina según el checkbox elegido. Apaga Form y Mix time signatures (los dos motores comparten la grilla de compases). La batería es la de Creatura. Partimenti se transporta a la tónica del primer set. 🔀 / tecla G vuelven a Creatura común.">🪄🎹 Creatura+Partimenti (test)</button><button type="button" class="chip" data-radio-only="creapart" style="flex:0 0 auto;padding-left:8px;padding-right:8px;" aria-label="Radio: solo Creatura+Partimenti" title="Radio (player): abre el mismo player del RADIO! pero limitado a Creatura+Partimenti (test): cada canción nueva es de Creatura+Partimenti, con el checkbox de mezcla tildado (mixbysection / Totalfusion / Layers). Next / Previous / Stop, historial, log y export iguales. Con la radio prendida en este modo, apretarlo de nuevo la detiene; para volver al sorteo entre todos los modos usá el botón RADIO!.">📻</button></div>
           <div id="creaPartModes" style="display:flex;flex-wrap:wrap;gap:4px 10px;padding:2px 0 4px 8px;"><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="mixbysection: bloques de 4 compases; cada bloque sale entero de Creatura o de Partimenti (50/50, siempre al menos uno de cada uno)."><input type="checkbox" id="creaPartBySection" checked> mixbysection</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="Totalfusion: bajo, tenor/alto, soprano y Melody n2 de Partimenti, con cada nota llevada a la nota más cercana del set que Creatura sorteó para ese compás (el set no se traiciona)."><input type="checkbox" id="creaPartTotal"> Totalfusion</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="Layers: el bajo es el de Partimenti (partimento) y la armonía, la melodía y lo demás son los de Creatura, en todos los compases."><input type="checkbox" id="creaPartLayers"> Layers</label></div>
         </div>
         <button class="chip" id="composeBtn" type="button" title="Como CreaturA pero con TU set y TU compás: con el set elegido en el reloj/piano (2+ notas) y el time signature que dejaste escrito, sortea los sliders, el tempo y los presets al azar (como CreaturA), no cambia el set, no mezcla compases, y toca una variación nueva en primer plano. Sin set elegido, sortea uno con la misma regla de CreaturA (sets del índice por jerarquía); cada vez que lo apretás de nuevo, sortea otro set distinto (un set que elegiste vos a mano se respeta).">🎹 Compose</button>
@@ -17259,6 +17260,15 @@ function runAnalysis() {
       function rowsOf(grp, tips){
         return Object.keys(C).filter(function(k){ return C[k].group === grp; }).map(function(k){ return { k: k, text: C[k].name, tip: (tips && tips[k]) || C[k].long }; });
       }
+      // Chromatism (modo test): por defecto el slider Chromatism de How to play decide cuántas celdas son cadencias modulatorias (modo 1). Con esta casilla (modo 2) transpone celdas enteras.
+      var crb = mk("div", "padding:2px 0 6px;");
+      var crh = mk("div", "font-size:12px;font-weight:700;color:var(--ink-muted);margin-bottom:2px;", "Chromatism");
+      crh.title = "Chromatism en Partimenti. Modo 1 (por defecto, casilla destildada): el slider Chromatism de How to play (con su MiX) es la probabilidad de que cada celda del cuerpo sea una cadencia modulatoria de tu biblioteca. Modo 2 (test, casilla tildada): el slider Chromatism transpone celdas enteras hasta ±6 semitonos (la primera celda y la cadencia final quedan en la tonalidad).";
+      crb.appendChild(crh);
+      var crl = mk("label", LBL); crl.title = "Modo 2 (test): el slider Chromatism transpone celdas enteras (±0–6 semitonos según el slider y su MiX). Destildada: modo 1 (cadencias modulatorias). Vale desde la próxima canción: 🔀 / G.";
+      var crc = mk("input"); crc.type = "checkbox"; crc.id = "partimentiChromaTr";
+      crl.appendChild(crc); crl.appendChild(document.createTextNode(" Transponer celdas (modo test)"));
+      crb.appendChild(crl); b.appendChild(crb);
       var hint = mk("div", "font-size:11px;color:var(--ink-muted);padding:2px 0 4px;", "Sin tildar nada = todo. Los cambios valen desde la próxima canción (🔀 / G). La cadencia final sale de las cadencias tildadas (si no hay ninguna, de las tres).");
       b.appendChild(hint);
       var spw = mk("div", "padding:2px 0 6px;");
@@ -17389,15 +17399,6 @@ function runAnalysis() {
       mdr.addEventListener("input", function(){ mdv.textContent = mdr.value + "%"; });
       mdl.appendChild(document.createTextNode("celdas ")); mdl.appendChild(mdr); mdl.appendChild(mdv); mdw.appendChild(mdl);
       mdb.appendChild(mdw); b.appendChild(mdb);
-      // Chromatism (modo test): por defecto el slider Chromatism de How to play decide cuántas celdas son cadencias modulatorias (modo 1). Con esta casilla (modo 2) transpone celdas enteras.
-      var crb = mk("div", "padding:2px 0 6px;");
-      var crh = mk("div", "font-size:12px;font-weight:700;color:var(--ink-muted);margin-bottom:2px;", "Chromatism");
-      crh.title = "Chromatism en Partimenti. Modo 1 (por defecto, casilla destildada): el slider Chromatism de How to play (con su MiX) es la probabilidad de que cada celda del cuerpo sea una cadencia modulatoria de tu biblioteca. Modo 2 (test, casilla tildada): el slider Chromatism transpone celdas enteras hasta ±6 semitonos (la primera celda y la cadencia final quedan en la tonalidad).";
-      crb.appendChild(crh);
-      var crl = mk("label", LBL); crl.title = "Modo 2 (test): el slider Chromatism transpone celdas enteras (±0–6 semitonos según el slider y su MiX). Destildada: modo 1 (cadencias modulatorias). Vale desde la próxima canción: 🔀 / G.";
-      var crc = mk("input"); crc.type = "checkbox"; crc.id = "partimentiChromaTr";
-      crl.appendChild(crc); crl.appendChild(document.createTextNode(" Transponer celdas (modo test)"));
-      crb.appendChild(crl); b.appendChild(crb);
       // Schemata: tu biblioteca de My_schemattas._v6.gp. Tildado: con probabilidad p cada celda del cuerpo es uno de tus esquemas (Romanesca, Prinner, Fonte, Monte, Ut re mi...).
       var stb = mk("div", "padding:2px 0 6px;");
       var sth = mk("div", "font-size:12px;font-weight:700;color:var(--ink-muted);margin-bottom:2px;", "Schemata");
@@ -18050,7 +18051,7 @@ function runAnalysis() {
     function byTime(a, b){ return a.startBeat - b.startBeat; }
     function snapPc(m, pcs){ if(pcs[((m % 12) + 12) % 12]) return m; for(var k = 1; k <= 6; k++){ if(pcs[(((m - k) % 12) + 12) % 12]) return m - k; if(pcs[(((m + k) % 12) + 12) % 12]) return m + k; } return m; }
     function barPcs(slots){ var pcs = {}, any = false; (slots || []).forEach(function(s){ ((s.setNotes && s.setNotes.length) ? s.setNotes : s.chord || []).forEach(function(m){ pcs[((m % 12) + 12) % 12] = true; any = true; }); }); return any ? pcs : null; }
-    api.make = function(mode){
+    api.make = function(mode, noPlay){   // noPlay: no para ni arranca la reproducción (vueltas de la radio: el scheduler en vivo engancha la canción nueva)
       ["__commonChords", "__jazzTunes", "__partimenti"].forEach(function(k){ if(window[k] && window[k].off) window[k].off(); });
       regenerateConsola();                                   // 1) Creatura (los sets de Compose siguen en memoria)
       var bars = NUM_BARS, C = snap();
@@ -18111,8 +18112,7 @@ function runAnalysis() {
       if(subEl) subEl.textContent = cSub + " · [Creatura+Partimenti test · " + info + "]";
       if(rdEl) rdEl.textContent = cRd; if(solEl) solEl.innerHTML = cSol;
       renderRoll(); renderBebopRoll();
-      if(playing) stopPlayback();
-      startPlayback();
+      if(!noPlay){ if(playing) stopPlayback(); startPlayback(); }
       api.last = { mode: mode, d: d, info: info };
       return { ok: true, text: info };
     };
@@ -26219,9 +26219,26 @@ function runAnalysis() {
           if(window.__jazziPre && window.__jazziPre.P) kinds.push("jazzi");  // Jazz.i.Tunes, idem (tema de iReal precargado)
           // Player limitado a un modo (📻 junto a cada random choose): solo ese. Si es JazzTunes / Jazz.i.Tunes y todavía no hay canción precargada, sigue el sorteo normal esta vuelta.
           var only = window.__radioOnly;
-          if(only && kinds.indexOf(only) >= 0) kinds = [only];
+          if(only === "creapart") kinds = ["creapart"];
+          else if(only && kinds.indexOf(only) >= 0) kinds = [only];
           var pick = kinds[Math.floor(Math.random() * kinds.length)];
           window.__radioMixLast = pick;
+          if(pick === "creapart"){
+            // 📻 Creatura+Partimenti: vuelta nueva = Creatura (sets al azar) mezclada con Partimenti según el checkbox elegido; sin Compose/Detener (la radio ya está sonando).
+            SLbegin("Creatura+Partimenti");
+            if(window.__partimenti) window.__partimenti.off();
+            if(window.__jazzTunes) window.__jazzTunes.off();
+            if(window.__commonChords) window.__commonChords.off();
+            setChecked("consolaFormChk", false); setChecked("consolaMixTimeSigChk", false);   // modo test: misma grilla de compases
+            randomizeAndFill(false);
+            rcPre("creatura");
+            randomizeVoices(true);
+            randomizeExtras();
+            randomizeSlider("consolaTempo", 30, 120);
+            rcPost("creatura");
+            SL("Creatura+Partimenti", window.__creaPart.make(creaPartMode(true), true).text);
+            return;
+          }
           if(pick === "jazzi"){
             var PI = window.__jazziPre.P; window.__jazziPre = null;
             if(window.__partimenti) window.__partimenti.off();
@@ -26282,12 +26299,17 @@ function runAnalysis() {
         else if(!cpBoxes.some(function(o){ return o && o.checked; })) c.checked = true;
       });
     });
-    async function runCreaPart(){
+    // rnd = true (📻 Creatura+Partimenti): cada canción sortea el modo de mezcla, 33% mixbysection / 33% Totalfusion / 33% Layers, y tilda ese checkbox.
+    function creaPartMode(rnd){
+      if(rnd) setChecked(["creaPartBySection", "creaPartTotal", "creaPartLayers"][Math.floor(Math.random() * 3)], true);
+      return (cpBoxes[1] && cpBoxes[1].checked) ? "total" : ((cpBoxes[2] && cpBoxes[2].checked) ? "layers" : "section");
+    }
+    async function runCreaPart(rnd){
       if(running) return;
       running = true;
       if(btnCP) btnCP.disabled = true;
       try {
-        var mode = (cpBoxes[1] && cpBoxes[1].checked) ? "total" : ((cpBoxes[2] && cpBoxes[2].checked) ? "layers" : "section");
+        var mode = creaPartMode(rnd === true);   // rnd === true solo desde la radio (el click del botón pasa el evento)
         if(typeof window.__rollToFront === "function") window.__rollToFront();
         window.__oneSet = false; window.__radioKind = null;
         SLbegin("Creatura+Partimenti");
@@ -26681,6 +26703,7 @@ function runAnalysis() {
       else if(pick === "bella") await runCreatura(true);
       else if(pick === "intervalic") await runCreatura("intervalic");
       else if(pick === "common") await runCommonChords();
+      else if(pick === "creapart") await runCreaPart(true);
       else await runPartimenti(false);
       if(rmChk){ rmChk.checked = true; mixPaint(); window.__radioKind = "mix"; }   // los Detener internos lo habían apagado
     }
@@ -26689,7 +26712,7 @@ function runAnalysis() {
     if(stopBtnRM) stopBtnRM.addEventListener("click", function(){ mixSet(false); });
     // 📻 Reproductor vintage (RADIO!): Previous / Play / Stop / Next. Los mismos controles los usa Media Session (auricular / CarPlay).
     var rvBusy = false, rvEl = null, rvTimer = null, rvSkin = "classic", RV_CLASSIC = "";
-    var RV_KINDS = { random: "CreaturaRandom", bella: "CreaturA", intervalic: "Intervalic.Creature", common: "ChordS", partimenti: "Partimenti", jazz: "JazzTunes", jazzi: "Jazz.i.Tunes" };
+    var RV_KINDS = { random: "CreaturaRandom", bella: "CreaturA", intervalic: "Intervalic.Creature", common: "ChordS", partimenti: "Partimenti", jazz: "JazzTunes", jazzi: "Jazz.i.Tunes", creapart: "Creatura+Partimenti" };
     var RP = window.__radioPlayer = { resumable: false };
     RP.isOn = function(){ return !!(rmChk && rmChk.checked); };
     function rpFlags(){ // la radio sigue enganchando vueltas (los Detener internos la habían apagado)
@@ -27040,7 +27063,7 @@ function runAnalysis() {
     });
     document.addEventListener("click", function(e){
       var t = e.target;
-      if(!window.__radioBusy && t && t.closest && t.closest("#commonChordsBtn,#creaturaBtn,#creaturaBellaBtn,#creaturaIntervalicBtn,#creaturaOneSetBtn,#partimentiBtn,#jazzTunesBtn,#jazzSongSel,#jazziTunesBtn,#jazziSongSel,#composeBtn,#clearBtn,#multiSetsRandomFillBtn,#multiSetsComposeBtn,#multiSetsMemBtn2,#consolaRadioBtn,#consolaRadioClassicalBtn")) mixSet(false);
+      if(!window.__radioBusy && t && t.closest && t.closest("#commonChordsBtn,#creaturaBtn,#creaturaBellaBtn,#creaturaIntervalicBtn,#creaturaOneSetBtn,#partimentiBtn,#creaPartBtn,#jazzTunesBtn,#jazzSongSel,#jazziTunesBtn,#jazziSongSel,#composeBtn,#clearBtn,#multiSetsRandomFillBtn,#multiSetsComposeBtn,#multiSetsMemBtn2,#consolaRadioBtn,#consolaRadioClassicalBtn")) mixSet(false);
     }, true);
     // Cualquier otro modo automático (Creaturas, Compose, Clear, CommonChords, RadioCreaturaMode) saca de RadioClassicalMode.
     document.addEventListener("click", function(e){
