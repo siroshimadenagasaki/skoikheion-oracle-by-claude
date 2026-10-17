@@ -1540,6 +1540,7 @@
           </div>
 <label id="jazziWalkingRow" style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted);cursor:pointer;" title="Walking (solo Jazz.i.Tunes; JazzTunes tiene el suyo): el bajo toca un walking bass simple, una negra por tiempo sobre los acordes de la canción (los reharmonizados, si Reharmonization está prendida). Tiempo 1 = la raíz del acorde (o el bajo del slash chord); tiempos del medio = notas del acorde (3ª, 5ª, 7ª...) llevadas por la más cercana a la anterior; último tiempo del acorde = nota de aproximación cromática (un semitono arriba o abajo) a la raíz del acorde que viene. Registro C2–G3. Apagado = el bajo de siempre (la raíz de cada acorde, sostenida). Se aplica en el próximo Jazz.i.Tunes y en cada 🔀 / tecla G."><input type="checkbox" id="jazziWalkingChk" checked>Walking</label>
           <div style="display:flex;align-items:stretch;gap:6px;"><button class="chip primary" style="flex:1;" id="creaturaIntervalicBtn" type="button" title="Igual que CreaturaRandom (mismos sliders, Compose, Mix time signatures, Detener, espera 2s y Regenerar, con 5 o 2 sets), pero antes sortea una combinación de clases de intervalo (1, 2 o 3 de ic1..ic6) y los sets salen SOLO de los que tienen todas esas clases en su vector de intervalos, con más probabilidad cuanto mayor parte del vector ocupan esas clases.">Intervalic.Creature</button><button type="button" class="chip" data-radio-only="intervalic" style="flex:0 0 auto;padding-left:8px;padding-right:8px;" aria-label="Radio: solo Intervalic.Creature" title="Radio (player): abre el mismo player del RADIO! pero limitado a Intervalic.Creature: cada canción nueva es de Intervalic.Creature (Next / Previous / Stop, historial, log y export iguales). Con la radio prendida en este modo, apretarlo de nuevo la detiene; para volver al sorteo entre todos los modos usá el botón RADIO!.">📻</button></div>
+          <div style="display:flex;align-items:stretch;gap:6px;"><button class="chip primary" style="flex:1;" id="creaturaOneSetBtn" type="button" title="Igual que CreaturaRandom (mismos sliders, sets al azar, Compose, Mix time signatures, Detener, espera 2s y Regenerar), pero cada SECCIÓN de Form usa un solo set: Intro, A, B / C / D y Coda tocan cada una un único set (sets distintos entre secciones, sin repetir el de la sección anterior mientras haya otros). Dentro de la sección no hay reataques de otros sets. Sin Form tildado, la canción entera es una sola sección (un solo set).">🪄 One.Set</button></div>
         </div>
         <button class="chip" id="composeBtn" type="button" title="Como CreaturA pero con TU set y TU compás: con el set elegido en el reloj/piano (2+ notas) y el time signature que dejaste escrito, sortea los sliders, el tempo y los presets al azar (como CreaturA), no cambia el set, no mezcla compases, y toca una variación nueva en primer plano. Sin set elegido, sortea uno con la misma regla de CreaturA (sets del índice por jerarquía); cada vez que lo apretás de nuevo, sortea otro set distinto (un set que elegiste vos a mano se respeta).">🎹 Compose</button>
         <button class="chip" id="clearBtn">Clear</button>
@@ -9664,7 +9665,9 @@ function runAnalysis() {
      canción (historial del Player y ♥ Favoritos). Dynamics lo respeta (ev._fk).
      ================================================================ */
   var FORM = (function(){
-    var EPS = 1e-6, MAX_BARS = 96, COLOR = "#7fd6ff";   // celeste
+    var EPS = 1e-6, MAX_BARS = 96, COLOR = "#7fd6ff";   // celeste (leyenda)
+    var SEC_COLORS = { "Intro": "#8e9aaf", "A": "#4f8ef7", "B": "#f2994a", "C": "#9b59b6", "D": "#27ae60", "Coda": "#e74c3c" };   // un color por tipo de sección
+    function colorOf(name){ return SEC_COLORS[name] || COLOR; }
     var GKEYS = { harm: ["chordEvents", "comping2Events"], bass: ["bassEvents"], mel: ["melodyEvents", "melody2Events", "melody3Events", "bebopEvents"] };
     var GNAME = { harm: "armonía", bass: "bajo", mel: "melodía", drum: "batería" };
     var GW = { harm: 4.5, mel: 2.5, drum: 1.5, bass: 1.5 };   // peso al elegir quién abre el Intro / la Coda
@@ -9819,18 +9822,21 @@ function runAnalysis() {
       cur.sections.forEach(function(s){
         var x = ml + RHYTHM.start(s.b0) * ppb, x2 = ml + RHYTHM.start(s.b0 + s.n) * ppb;
         var tip = s.name + " — " + s.n + (s.n === 1 ? " compás" : " compases") + " — " + describe(s);
-        var rc = svgEl("rect", { x: x, y: 0, width: Math.max(1, x2 - x), height: 1.6, fill: COLOR, opacity: 0.95 });
+        var col = colorOf(s.name);
+        var bg = svgEl("rect", { x: x, y: 0, width: Math.max(1, x2 - x), height: h, fill: col, opacity: 0.07, "pointer-events": "none" });
+        svg.appendChild(bg);
+        var rc = svgEl("rect", { x: x, y: 0, width: Math.max(1, x2 - x), height: 3, fill: col, opacity: 0.95 });
         var t1 = svgEl("title", {}); t1.textContent = tip; rc.appendChild(t1);
         svg.appendChild(rc);
-        svg.appendChild(svgEl("line", { x1: x, x2: x, y1: 0, y2: h, stroke: COLOR, "stroke-width": 1.3, "stroke-dasharray": "5,3", opacity: 0.7 }));
-        var tx = svgEl("text", { x: x + 4, y: 8, fill: COLOR, "font-size": 9, "font-weight": 700, "font-family": "'JetBrains Mono',monospace" });
+        svg.appendChild(svgEl("line", { x1: x, x2: x, y1: 0, y2: h, stroke: col, "stroke-width": 1.3, "stroke-dasharray": "5,3", opacity: 0.7 }));
+        var tx = svgEl("text", { x: x + 4, y: 12, fill: col, "font-size": 9, "font-weight": 700, "font-family": "'JetBrains Mono',monospace" });
         tx.textContent = s.name;
         var t2 = svgEl("title", {}); t2.textContent = tip; tx.appendChild(t2);
         svg.appendChild(tx);
       });
     }
     return { on: on, begin: begin, reset: reset, apply: apply, active: active, summary: summary,
-       sections: function(){ return cur && cur.sections ? cur.sections.map(function(s){ return { name: s.name, b0: s.b0, n: s.n }; }) : null; }, save: save, load: load, drawLabels: drawLabels, color: function(){ return COLOR; },
+       sections: function(){ return cur && cur.sections ? cur.sections.map(function(s){ return { name: s.name, b0: s.b0, n: s.n }; }) : null; }, save: save, load: load, drawLabels: drawLabels, color: function(){ return COLOR; }, colorOf: colorOf,
              sections: function(){ return cur ? cur.sections : null; },
              // (para pruebas) cuántos eventos de cada grupo caen en cada sección
              counts: function(){
@@ -11200,6 +11206,25 @@ function runAnalysis() {
       var m = mode();
       chords = slots.map(function(pcs){ return pcSetToChord(pcs); });
       barSlot = []; barKind = [];
+      if(window.__oneSet && slots.length){
+        // One.Set: UN solo set por sección de Form (sets distintos entre secciones, sin repetir seguidos mientras alcancen). Sin Form la canción entera es una sola sección.
+        var fs = (typeof FORM !== "undefined" && FORM && FORM.sections) ? FORM.sections() : null;   // (Form.active() recién es true después de apply: acá se leen las secciones del plan)
+        if(fs && fs.length){ var fl = fs[fs.length - 1]; if(fl.b0 + fl.n !== numBars) fs = null; }
+        if(!fs || !fs.length) fs = [{ name: "(canción)", b0: 0, n: numBars }];
+        var order = slots.map(function(_, i){ return i; }), last = -1, picks = [];
+        for(var oi = order.length - 1; oi > 0; oi--){ var oj = randomInt(0, oi), ot = order[oi]; order[oi] = order[oj]; order[oj] = ot; }
+        var pool = [];
+        fs.forEach(function(sec, si){
+          if(!pool.length) pool = order.slice().sort(function(){ return Math.random() - 0.5; });
+          var k = pool.findIndex(function(x){ return x !== last; });   // evita repetir el set de la sección anterior
+          if(k < 0) k = 0;
+          var slot = pool.splice(k, 1)[0]; last = slot; picks.push(sec.name + "=S" + (slot + 1));
+          for(var bb = sec.b0; bb < sec.b0 + sec.n && bb < numBars; bb++) barSlot[bb] = slot;
+        });
+        for(var b0 = 0; b0 < numBars; b0++){ if(barSlot[b0] == null) barSlot[b0] = last >= 0 ? last : 0; barKind.push("bar"); }
+        try{ if(window.__songLog) window.__songLog.add("One.Set", picks.join(" · ")); }catch(_e){}
+        return;
+      }
       for(var b=0; b<numBars; b++){
         barSlot.push(randomInt(0, slots.length-1));
         barKind.push(m === "mixed" ? (Math.random() < 0.5 ? "bar" : "attack") : m);
@@ -11517,9 +11542,9 @@ function runAnalysis() {
     function init(){
       el("multiSetsMemBtn").addEventListener("click", toMemory);
       if(el("multiSetsMemBtn2")) el("multiSetsMemBtn2").addEventListener("click", toMemory);
-      el("multiSetsComposeBtn").addEventListener("click", compose);
+      el("multiSetsComposeBtn").addEventListener("click", function(ev){ if(ev && ev.isTrusted) window.__oneSet = false; compose(); });   // click a mano = Compose normal; One.Set lo dispara por código
       el("multiSetsClearBtn").addEventListener("click", clearMemory);
-      if(el("multiSetsRandomFillBtn")) el("multiSetsRandomFillBtn").addEventListener("click", function(){ randomFill(); });
+      if(el("multiSetsRandomFillBtn")) el("multiSetsRandomFillBtn").addEventListener("click", function(){ window.__oneSet = false; randomFill(); });
       window.__multiSetsRandomFillCount = randomFill; // creatura: llena solo N casilleros (1-5)
       // Compose sin set elegido: UN set al azar con la misma regla de CreaturA (solo sets del índice, más probable cuanto mayor jerarquía, 3..máx notas del slider, tónica al azar). No toca las memorias.
       window.__multiSetsBellaPickOne = function(){
@@ -15851,7 +15876,7 @@ function runAnalysis() {
     // Cualquier otra Creatura / Compose / Clear / cambio de set sale de CommonChords.
     document.addEventListener("click", function(e){
       var t = e.target;
-      if(t && t.closest && t.closest("#creaturaBtn,#creaturaBellaBtn,#creaturaIntervalicBtn,#composeBtn,#clearBtn,#multiSetsRandomFillBtn,#multiSetsComposeBtn,#multiSetsMemBtn2,#consolaRadioBtn")) api.off();
+      if(t && t.closest && t.closest("#creaturaBtn,#creaturaBellaBtn,#creaturaIntervalicBtn,#creaturaOneSetBtn,#composeBtn,#clearBtn,#multiSetsRandomFillBtn,#multiSetsComposeBtn,#multiSetsMemBtn2,#consolaRadioBtn")) api.off();
     }, true);
     return api;
   })();
@@ -17911,7 +17936,7 @@ function runAnalysis() {
     // CommonChords, otra Creatura, Compose, Clear o RadioMode sacan de Partimenti (igual que CommonChords).
     document.addEventListener("click", function(e){
       var t = e.target;
-      if(t && t.closest && t.closest("#commonChordsBtn,#creaturaBtn,#creaturaBellaBtn,#creaturaIntervalicBtn,#composeBtn,#clearBtn,#multiSetsRandomFillBtn,#multiSetsComposeBtn,#multiSetsMemBtn2,#consolaRadioBtn")) api.off();
+      if(t && t.closest && t.closest("#commonChordsBtn,#creaturaBtn,#creaturaBellaBtn,#creaturaIntervalicBtn,#creaturaOneSetBtn,#composeBtn,#clearBtn,#multiSetsRandomFillBtn,#multiSetsComposeBtn,#multiSetsMemBtn2,#consolaRadioBtn")) api.off();
     }, true);
     return api;
   })();
@@ -18513,7 +18538,7 @@ function runAnalysis() {
     // Otra Creatura, Partimenti, CommonChords, Compose, Clear o RadioMode sacan de JazzTunes.
     document.addEventListener("click", function(e){
       var t = e.target;
-      if(t && t.closest && t.closest("#commonChordsBtn,#creaturaBtn,#creaturaBellaBtn,#creaturaIntervalicBtn,#partimentiBtn,#composeBtn,#clearBtn,#multiSetsRandomFillBtn,#multiSetsComposeBtn,#multiSetsMemBtn2,#consolaRadioBtn,#consolaRadioClassicalBtn")) api.off();
+      if(t && t.closest && t.closest("#commonChordsBtn,#creaturaBtn,#creaturaBellaBtn,#creaturaIntervalicBtn,#creaturaOneSetBtn,#partimentiBtn,#composeBtn,#clearBtn,#multiSetsRandomFillBtn,#multiSetsComposeBtn,#multiSetsMemBtn2,#consolaRadioBtn,#consolaRadioClassicalBtn")) api.off();
     }, true);
     return api;
   })();
@@ -18810,7 +18835,7 @@ function runAnalysis() {
     if(state.comping2Events.length) items.push(["var(--c-comping2)","moreComping"]);
     if(state.melody2Events.length) items.push(["var(--c-melody2)","Melody n2"]);
     if(state.melody3Events.length) items.push(["var(--c-melody3)","Melody n3"]);
-    if(FORM.active()) items.push([FORM.color(),"Form: Intro · A · B…"]);
+    if(FORM.active()){ var _fs = FORM.sections() || [], _seen = {}; _fs.forEach(function(x){ if(_seen[x.name]) return; _seen[x.name] = 1; items.push([FORM.colorOf(x.name), x.name]); }); }   // Form: un color por sección
     // bebopMelody ya no lleva ítem acá: tiene su propio roll+label aparte.
     items.forEach(function(it){
       var span = document.createElement("span");
@@ -25762,6 +25787,7 @@ function runAnalysis() {
     var btn = document.getElementById("creaturaBtn");
     var btnBella = document.getElementById("creaturaBellaBtn");
     var btnInterv = document.getElementById("creaturaIntervalicBtn");
+    var btnOne = document.getElementById("creaturaOneSetBtn");
     if(!btn) return;
     var running = false;
     function SL(l, v){ try{ if(window.__songLog) window.__songLog.add(l, v); }catch(_e){} }   // 📝 Log de la canción
@@ -25944,6 +25970,7 @@ function runAnalysis() {
     // RadioMode: vuelta nueva SIN Compose/Detener/espera/Play — solo genera; el scheduler
     // en vivo la engancha. (Mix time signatures queda tildado como en la creatura.)
     window.__radioNext = function(kind){
+      window.__oneSet = false;   // la radio no usa One.Set
       window.__radioBusy = true;
       try{
         if(typeof window.__rollToFront === "function") window.__rollToFront(); // modo automático: piano roll al primer plano
@@ -26018,9 +26045,12 @@ function runAnalysis() {
       btn.disabled = true;
       if(btnBella) btnBella.disabled = true;
       if(btnInterv) btnInterv.disabled = true;
+      if(btnOne) btnOne.disabled = true;
       if(typeof window.__rollToFront === "function") window.__rollToFront(); // modo automático: piano roll al primer plano
       try {
-        SLbegin(bella === "intervalic" ? "Intervalic.Creature" : (bella ? "CreaturA" : "CreaturaRandom"));
+        var oneSet = (bella === "oneset"); window.__oneSet = oneSet;   // One.Set: un set por sección de Form
+        if(oneSet) bella = false;
+        SLbegin(oneSet ? "One.Set" : (bella === "intervalic" ? "Intervalic.Creature" : (bella ? "CreaturA" : "CreaturaRandom")));
         randomizeAndFill(bella);
         rcPre("creatura");
         randomizeVoicesAndTempo();
@@ -26049,6 +26079,7 @@ function runAnalysis() {
         btn.disabled = false;
         if(btnBella) btnBella.disabled = false;
         if(btnInterv) btnInterv.disabled = false;
+        if(btnOne) btnOne.disabled = false;
         running = false;
       }
     }
@@ -26063,6 +26094,8 @@ function runAnalysis() {
       btn.disabled = true;
       if(btnBella) btnBella.disabled = true;
       if(btnInterv) btnInterv.disabled = true;
+      if(btnOne) btnOne.disabled = true;
+      window.__oneSet = false;
       if(typeof window.__rollToFront === "function") window.__rollToFront(); // modo automático: piano roll al primer plano
       try {
         randomizeSliders();
@@ -26076,6 +26109,7 @@ function runAnalysis() {
         btn.disabled = false;
         if(btnBella) btnBella.disabled = false;
         if(btnInterv) btnInterv.disabled = false;
+        if(btnOne) btnOne.disabled = false;
         running = false;
       }
     };
@@ -26736,16 +26770,17 @@ function runAnalysis() {
     });
     document.addEventListener("click", function(e){
       var t = e.target;
-      if(!window.__radioBusy && t && t.closest && t.closest("#commonChordsBtn,#creaturaBtn,#creaturaBellaBtn,#creaturaIntervalicBtn,#partimentiBtn,#jazzTunesBtn,#jazzSongSel,#jazziTunesBtn,#jazziSongSel,#composeBtn,#clearBtn,#multiSetsRandomFillBtn,#multiSetsComposeBtn,#multiSetsMemBtn2,#consolaRadioBtn,#consolaRadioClassicalBtn")) mixSet(false);
+      if(!window.__radioBusy && t && t.closest && t.closest("#commonChordsBtn,#creaturaBtn,#creaturaBellaBtn,#creaturaIntervalicBtn,#creaturaOneSetBtn,#partimentiBtn,#jazzTunesBtn,#jazzSongSel,#jazziTunesBtn,#jazziSongSel,#composeBtn,#clearBtn,#multiSetsRandomFillBtn,#multiSetsComposeBtn,#multiSetsMemBtn2,#consolaRadioBtn,#consolaRadioClassicalBtn")) mixSet(false);
     }, true);
     // Cualquier otro modo automático (Creaturas, Compose, Clear, CommonChords, RadioCreaturaMode) saca de RadioClassicalMode.
     document.addEventListener("click", function(e){
       var t = e.target;
-      if(t && t.closest && t.closest("#commonChordsBtn,#creaturaBtn,#creaturaBellaBtn,#creaturaIntervalicBtn,#composeBtn,#clearBtn,#multiSetsRandomFillBtn,#multiSetsComposeBtn,#multiSetsMemBtn2,#consolaRadioBtn")) classicalSet(false);
+      if(t && t.closest && t.closest("#commonChordsBtn,#creaturaBtn,#creaturaBellaBtn,#creaturaIntervalicBtn,#creaturaOneSetBtn,#composeBtn,#clearBtn,#multiSetsRandomFillBtn,#multiSetsComposeBtn,#multiSetsMemBtn2,#consolaRadioBtn")) classicalSet(false);
     }, true);
     btn.addEventListener("click", function(){ runCreatura(false); });
     if(btnBella) btnBella.addEventListener("click", function(){ runCreatura(true); });
     if(btnInterv) btnInterv.addEventListener("click", function(){ runCreatura("intervalic"); });
+    if(btnOne) btnOne.addEventListener("click", function(){ runCreatura("oneset"); });
   })();
 </script>
 <script>
