@@ -1806,9 +1806,6 @@
         </div>
         </div>
       </div>
-      <div class="consola-field consola-instruments">
-        <label>Instruments</label>
-      </div>
         </div>
       </div>
       <div class="consola-field consola-instruments consola-stack" title="Todo lo de ritmo agrupado y contraído por defecto: Rhythm complexity, Variaciones de ritmo (Velocity humanizada, Micro-timing, Variación por sección, other-rhythm-variations), Rhythm — Time signature (con Mix time signatures) y Loop — mismos controles de siempre, solo reubicados.">
@@ -1820,10 +1817,10 @@
       <div class="consola-field"><div class="consola-inst-row">
           <span class="consola-inst-toggle" title="More repetition · Rhythm (batería): en vez de tirar una moneda compás a compás, repite en FRASES — un compás se toca 2, 3 o 4 veces seguidas y después cambia (el último compás de la frase a veces queda libre). Los compases repetidos llevan un poco de variación de velocity y algún hi-hat suave que falta, para que no suene maquinal."><input type="checkbox" id="consolaMoreRepRhyChk"><label for="consolaMoreRepRhyChk">&#128257; More repetition · Rhythm</label></span>
       </div></div>
-      <div class="consola-field consola-instruments" title="Beats: la batería usa SOLO patrones de la biblioteca de beats (hip-hop, rock, funk, dance, latinos, brasileños, 60s/70s/80s, compases impares...) y los varía dentro de la canción: un beat A y un B de la misma familia por frase de 4 compases, fills de toms/caja, crash al final de frase y respiros. Apagado, la batería funciona exactamente como siempre. El desplegable muestra el beat que está montado en la canción; si elegís otro, la canción se reconstruye con ese como beat A (Auto = lo sortea la app). 'Escuchar todos los beats' abre la lista para oír cada uno y marcar los que querés descartar. Los beats también están como .mid en Midi/Drum Beats/ — cualquier .mid nuevo que subas a esa carpeta se suma solo. Los beats solo suenan en compases donde su largo encaja (4/4 con patrones de 2 o 4 tiempos, 3/4 con los de 3...); el resto de los compases usa la batería de siempre.">
+      <div class="consola-field consola-instruments" title="Beats: la batería usa SOLO patrones de la biblioteca de beats (hip-hop, rock, funk, dance, latinos, brasileños, 60s/70s/80s, compases impares...) y arma la canción con UN solo beat y variaciones del mismo (simple, base, rica) según las secciones de Form (Intro/Coda simples, B/D ricas), con fills de toms/caja, crash al entrar a cada sección y respiros. Apagado, la batería funciona exactamente como siempre. El desplegable muestra el beat que está montado en la canción; si elegís otro, la canción se reconstruye con ese beat (Auto = lo sortea la app). 'Escuchar todos los beats' abre la lista para oír cada uno y marcar los que querés descartar. Los beats también están como .mid en Midi/Drum Beats/ — cualquier .mid nuevo que subas a esa carpeta se suma solo. Los beats solo suenan en compases donde su largo encaja (4/4 con patrones de 2 o 4 tiempos, 3/4 con los de 3...); el resto de los compases usa la batería de siempre.">
         <label>Beats</label>
         <div class="consola-inst-row">
-          <span class="consola-inst-toggle" title="Beats: la batería usa SOLO la biblioteca de beats y los varía dentro de la canción (beat A y B, fills, crash, respiros)."><input type="checkbox" id="consolaBeatsChk"><label for="consolaBeatsChk">Beats</label></span>
+          <span class="consola-inst-toggle" title="Beats: la batería usa SOLO la biblioteca de beats con UN solo beat y variaciones del mismo (simple, base, rica) repartidas según la Form; fills, crash, respiros."><input type="checkbox" id="consolaBeatsChk"><label for="consolaBeatsChk">Beats</label></span>
           <select id="consolaBeatsSel" title="Beat montado en la canción. Elegí otro para reconstruir la batería con ese beat (si Beats está apagado, lo tilda). Auto = lo sortea la app." style="max-width:210px;"><option value="">Auto · apagado</option></select>
         </div>
         <details id="beatsAuditionBox" style="margin-top:6px;max-width:420px;">
@@ -20689,10 +20686,11 @@ function runAnalysis() {
   // Cada patrón = [nombre, familia, bpm original, largo en NEGRAS, [[beat, notaGM, vel], ...]]. Van embebidos acá
   // (como Swing Drums) y además existen como .mid en la carpeta Midi/Drum Beats/ — todo .mid NUEVO que se suba a esa carpeta
   // se descubre solo (Midi/Drum Beats/catalog.json + API de GitHub) y se suma a la biblioteca.
-  //  · Beats: la batería usa SOLO estos patrones. Cada canción sortea un beat A (y un B de la
-  //    misma familia); frases de 4 compases: A casi siempre, B a veces (la última frase siempre A); al final de frase, fill
-  //    de toms/caja (más probable con Rhythm complexity alta), platillo crash tras el fill, y a veces un respiro (sin hi-hat
-  //    en la 2da mitad). El tempo de la app pesa en el sorteo (beats de tempo parecido, o mitad/doble, salen más).
+  //  · Beats: la batería usa SOLO estos patrones. Cada canción sortea UN beat y todo sale de él: versión simple (solo pulso,
+  //    sin ghost notes), base (el MIDI tal cual) y rica (hi-hat más denso, ghost notes, algún bombo extra). Con Form: Intro/Coda
+  //    simples, A base (los últimos 4 compases de una sección larga suben un nivel), B y D ricas, C contraste (simple o rica). Sin Form:
+  //    frases de 4 compases alternando base y rica. Fill al final de cada sección (y a veces de frase), crash al entrar a la
+  //    sección y a veces un respiro. El tempo de la app pesa en el sorteo (beats de tempo parecido, o mitad/doble, salen más).
   //  · Desplegable (#consolaBeatsSel): muestra el beat A MONTADO en la canción. Si el usuario elige otro, queda
   //    "forzado" (pegajoso) hasta que vuelva a "Auto"; si no encaja en ningún compás de la canción, vuelve a Auto solo.
   //  · Lista "Escuchar todos los beats": ▶ por beat y el usuario puede marcar "descartar" (localStorage beatsOutV1): los marcados
@@ -20715,12 +20713,9 @@ function runAnalysis() {
 ["12_techno","dance",130,4.0,[[0.0,36,120],[0.0,42,55],[0.25,42,55],[0.5,42,55],[0.5,46,80],[0.75,42,55],[1.0,36,120],[1.0,42,55],[1.25,42,55],[1.5,42,55],[1.5,46,80],[1.75,42,55],[2.0,36,120],[2.0,42,55],[2.25,42,55],[2.5,42,55],[2.5,46,80],[2.75,42,55],[3.0,36,120],[3.0,37,70],[3.0,42,55],[3.25,42,55],[3.5,42,55],[3.5,46,80],[3.75,42,55]]],
 ["13_drum_and_bass","dance",174,4.0,[[0.0,36,115],[0.0,42,80],[0.5,42,80],[1.0,38,115],[1.0,42,80],[1.5,42,80],[2.0,42,80],[2.5,36,115],[2.5,42,80],[3.0,38,115],[3.0,42,80],[3.5,42,80],[3.75,38,40]]],
 ["14_reggae_one_drop","reggae",75,4.0,[[0.0,42,75],[0.5,42,75],[1.0,42,75],[1.5,42,75],[2.0,36,110],[2.0,37,100],[2.0,42,75],[2.5,42,75],[3.0,42,75],[3.5,42,75]]],
-["15_dembow","latin",95,4.0,[[0.0,36,110],[0.0,42,65],[0.5,42,65],[0.75,38,100],[1.0,36,110],[1.0,42,65],[1.5,38,100],[1.5,42,65],[2.0,36,110],[2.0,42,65],[2.5,42,65],[2.75,38,100],[3.0,36,110],[3.0,42,65],[3.5,38,100],[3.5,42,65]]],
 ["16_bossa_nova","brasil",130,4.0,[[0.0,36,90],[0.0,37,80],[0.0,42,60],[0.5,42,60],[0.75,37,80],[1.0,42,60],[1.5,36,90],[1.5,37,80],[1.5,42,60],[2.0,36,90],[2.0,42,60],[2.5,37,80],[2.5,42,60],[3.0,42,60],[3.25,37,80],[3.5,36,90],[3.5,42,60]]],
 ["17_shuffle_blues","swing",100,4.0,[[0.0,36,100],[0.0,42,80],[0.6667,42,80],[1.0,38,100],[1.0,42,80],[1.6667,42,80],[2.0,36,100],[2.0,42,80],[2.6667,42,80],[3.0,38,100],[3.0,42,80],[3.6667,42,80]]],
 ["18_jazz_swing","swing",140,4.0,[[0.0,36,60],[0.0,51,85],[1.0,42,70],[1.0,51,85],[1.6667,51,85],[2.0,51,85],[2.6667,38,40],[3.0,42,70],[3.0,51,85],[3.6667,51,85]]],
-["19_ska","reggae",160,4.0,[[0.0,36,100],[0.5,37,95],[0.5,42,85],[1.0,36,100],[1.5,37,95],[1.5,42,85],[2.0,36,100],[2.5,37,95],[2.5,42,85],[3.0,36,100],[3.5,37,95],[3.5,42,85]]],
-["20_metal_double_kick","heavy",200,4.0,[[0.0,36,105],[0.0,49,110],[0.0,51,85],[0.25,36,105],[0.5,36,105],[0.75,36,105],[1.0,36,105],[1.0,38,115],[1.0,51,85],[1.25,36,105],[1.5,36,105],[1.75,36,105],[2.0,36,105],[2.0,51,85],[2.25,36,105],[2.5,36,105],[2.75,36,105],[3.0,36,105],[3.0,38,115],[3.0,51,85],[3.25,36,105],[3.5,36,105],[3.75,36,105]]],
 ["21_son_clave_3_2","latin",100,4.0,[[0.0,56,70],[0.0,70,40],[0.0,75,100],[0.25,70,40],[0.5,70,40],[0.75,70,40],[0.75,75,100],[1.0,56,70],[1.0,70,40],[1.25,70,40],[1.5,70,40],[1.5,75,100],[1.75,70,40],[2.0,56,70],[2.0,70,40],[2.25,70,40],[2.5,70,40],[2.5,75,100],[2.75,70,40],[3.0,56,70],[3.0,70,40],[3.0,75,100],[3.25,70,40],[3.5,70,40],[3.75,70,40]]],
 ["22_rumba_clave","latin",100,4.0,[[0.0,56,70],[0.0,70,40],[0.0,75,100],[0.25,70,40],[0.5,70,40],[0.75,70,40],[0.75,75,100],[1.0,56,70],[1.0,70,40],[1.25,70,40],[1.5,70,40],[1.75,70,40],[1.75,75,100],[2.0,56,70],[2.0,70,40],[2.25,70,40],[2.5,70,40],[2.5,75,100],[2.75,70,40],[3.0,56,70],[3.0,70,40],[3.0,75,100],[3.25,70,40],[3.5,70,40],[3.75,70,40]]],
 ["23_habanera_milonga","latin",66,4.0,[[0.0,36,95],[0.0,42,50],[0.75,36,95],[1.0,36,95],[1.0,42,50],[1.5,36,95],[2.0,36,95],[2.0,42,50],[2.75,36,95],[3.0,36,95],[3.0,42,50],[3.5,36,95]]],
@@ -20734,7 +20729,6 @@ function runAnalysis() {
 ["31_vals_jazz_3_4","swing",150,3.0,[[0.0,36,60],[0.0,51,85],[1.0,42,65],[1.0,51,85],[1.6667,51,85],[2.0,42,65],[2.0,51,85]]],
 ["32_blues_lento_12_8","swing",55,4.0,[[0.0,36,105],[0.0,42,70],[0.3333,42,40],[0.6667,42,40],[1.0,38,105],[1.0,42,70],[1.3333,42,40],[1.6667,42,40],[2.0,36,105],[2.0,42,70],[2.3333,42,40],[2.6667,42,40],[3.0,38,105],[3.0,42,70],[3.3333,42,40],[3.6667,42,40]]],
 ["33_doom_lento","heavy",55,4.0,[[0.0,36,115],[0.0,49,100],[0.0,51,70],[0.5,51,70],[1.0,51,70],[1.5,51,70],[2.0,38,115],[2.0,51,70],[2.5,36,115],[2.5,51,70],[3.0,51,70],[3.5,51,70]]],
-["34_blast_beat","heavy",210,4.0,[[0.0,36,105],[0.0,51,80],[0.25,38,105],[0.5,36,105],[0.5,51,80],[0.75,38,105],[1.0,36,105],[1.0,51,80],[1.25,38,105],[1.5,36,105],[1.5,51,80],[1.75,38,105],[2.0,36,105],[2.0,51,80],[2.25,38,105],[2.5,36,105],[2.5,51,80],[2.75,38,105],[3.0,36,105],[3.0,51,80],[3.25,38,105],[3.5,36,105],[3.5,51,80],[3.75,38,105]]],
 ["35_glitch_quebrado","experimental",120,4.0,[[0.0,36,110],[0.5,42,65],[0.75,42,65],[1.25,36,110],[1.75,38,105],[2.0,42,65],[2.25,36,110],[2.5,39,50],[2.75,42,65],[3.0,38,105],[3.25,42,65],[3.5,36,110],[3.75,37,80]]],
 ["36_dub_espacioso","reggae",70,4.0,[[0.0,36,110],[0.5,42,50],[1.5,46,70],[2.0,37,100],[2.5,42,50],[3.5,42,50]]],
 ["37_pop80_cuatro_al_piso","pop80",117,4.0,[[0.0,36,110],[0.0,42,75],[0.5,42,75],[1.0,36,110],[1.0,38,105],[1.0,42,75],[1.5,42,75],[2.0,36,110],[2.0,42,75],[2.5,42,75],[3.0,36,110],[3.0,38,105],[3.0,42,75],[3.5,42,75]]],
@@ -20834,9 +20828,81 @@ function runAnalysis() {
       }
       return { from: base + B - len, events: out };
     }
+    // ---- Variaciones DERIVADAS del beat elegido (nivel 0 simple · 1 base · 2 rico) ----
+    var TIMEKEEP = { 42:1, 44:1, 46:1, 51:1, 53:1, 54:1, 59:1, 69:1, 70:1 };   // hi-hat / ride / shaker...: lo que se afloja o se densifica
+    var LVNAME = ["simple", "base", "rico"];
+    function isSwung(p){
+      return p.ev.some(function(e){ var f = e[0] - Math.floor(e[0]); return [1/3, 2/3, 1/6, 5/6].some(function(x){ return Math.abs(f - x) < 0.02; }); });
+    }
+    // nivel 0: mismo beat, más liviano — el pulso sigue en los tiempos, sin ghost notes ni bombos en semicorchea
+    function simplify(evs, base){
+      var out = evs.filter(function(e){
+        var t = e.startBeat - base, onBeat = Math.abs(t - Math.round(t)) < 1e-3, f = t - Math.floor(t);
+        if(TIMEKEEP[e.midi]) return onBeat;
+        if(e.type === "snare") return e.vel >= 55;
+        if(e.type === "kick") return !(Math.abs(f - 0.25) < 0.02 || Math.abs(f - 0.75) < 0.02);
+        return true;
+      });
+      return out.length >= 2 ? out : evs;
+    }
+    // nivel 2: mismo beat, más movido — hi-hat más denso, ghost notes, algún bombo de más. Receta fija por (beat, compás de la frase)
+    // para que se repita como una variación y no cambie al azar compás a compás. Devuelve [[t, nota, vel], ...] relativos al compás.
+    function richRecipe(p, B, comp, j){
+      if(comp || B < 2 || isSwung(p)) return [];
+      var occ = {}, add = [], hatMidi = 0, hatVel = 0, nHat = 0, backbeats = [], i;
+      p.ev.forEach(function(e){
+        var t = e[0] % p.L; occ[Math.round(t*4)] = (occ[Math.round(t*4)] || 0) + 1;
+        if(TIMEKEEP[e[1]]){ hatMidi = hatMidi || e[1]; hatVel += e[2]; nHat++; }
+        if((e[1] === 38 || e[1] === 39) && e[2] >= 60) backbeats.push(t);
+      });
+      function free(t, types){ var k = Math.round(t*4); return !p.ev.some(function(e){ return Math.round((e[0] % p.L)*4) === k && (!types || types.indexOf(e[1]) >= 0); }); }
+      var dens = nHat / Math.max(1, p.L);
+      if(hatMidi && (hatMidi === 42 || hatMidi === 70 || hatMidi === 54)){
+        var hv = Math.round(hatVel / nHat * 0.62);
+        for(i=0; i<B; i++){
+          if(dens <= 2.5){   // hats en negras/corcheas: se agregan las corcheas o las semicorcheas que faltan
+            [0.5].forEach(function(o){ if(free(i + o, [hatMidi])) add.push([i + o, hatMidi, hv]); });
+            if(dens > 1.5 && ((i + j) % 2 === 0)) [0.25, 0.75].forEach(function(o){ if(free(i + o, [hatMidi])) add.push([i + o, hatMidi, Math.max(20, hv - 12)]); });
+          }
+        }
+      }
+      if(backbeats.length){   // ghost notes de caja justo antes/después del backbeat
+        var tries = [0.75, -0.25, 0.25, 1.75].map(function(d){ return backbeats[(j + Math.round(d*4)) % backbeats.length] + d; });
+        var nG = 0;
+        tries.forEach(function(t){ if(nG < 2 && t >= 0 && t < B && free(t, [36, 38, 39])){ add.push([t, 38, 26 + 3*nG + 4*(j%2)]); nG++; } });
+      }
+      var kc = [1.75, 2.5, 3.25, 0.75, 1.5].filter(function(t){ return t < B && free(t, [36, 38, 39]) && (!occ[Math.round(t*4)]); });
+      if(kc.length && (j % 2 === 1 || kc.length > 2)) add.push([kc[j % kc.length], 36, 82]);
+      return add;
+    }
+    // niveles por compás según la Form (Intro/Coda simples · A base · B rica · C contraste · D rica) o por frases si no hay Form
+    function barLevels(numBars){
+      var fs = (typeof FORM !== "undefined" && FORM && FORM.sections) ? FORM.sections() : null, secs = null, tot = 0;
+      if(fs && fs.length){ fs.forEach(function(s){ tot += s.n; }); if(tot === numBars) secs = fs; }
+      var lv = [], starts = {}, ends = {}, desc = [], bar, contrast = Math.random() < 0.5 ? 0 : 2;
+      if(secs){
+        secs.forEach(function(s){
+          var L = (s.name === "Intro" || s.name === "Coda") ? 0 : (s.name === "A" ? 1 : (s.name === "C" ? contrast : 2));
+          var build = (s.n >= 8 && L < 2 && s.name !== "Intro" && s.name !== "Coda");
+          for(bar = s.b0; bar < s.b0 + s.n && bar < numBars; bar++) lv[bar] = (build && bar >= s.b0 + s.n - 4) ? L + 1 : L;
+          starts[s.b0] = s.name; ends[Math.min(numBars - 1, s.b0 + s.n - 1)] = 1;
+          desc.push(s.name + " " + LVNAME[L] + (build ? "→" + LVNAME[L + 1] : ""));
+        });
+      } else {
+        var nPh = Math.ceil(numBars / 4);
+        for(bar = 0; bar < numBars; bar++){
+          var ph = bar >> 2, L2 = (ph === 0 || ph === nPh - 1) ? 1 : (Math.floor(ph / 2) % 2 === 1 ? 2 : 1);
+          lv[bar] = L2;
+        }
+        for(bar = 7; bar < numBars; bar += 8) ends[bar] = 1;
+        starts[0] = "";
+        desc.push("sin Form: frases de 4 compases (base y rico alternando)");
+      }
+      return { lv: lv, starts: starts, ends: ends, desc: desc, form: !!secs };
+    }
     function assemble(numBars, normalFn){
       var bpm = curBpm(), cx = (typeof rhythmComplexity === "number") ? rhythmComplexity : 0.5, hum = chk("consolaVelocityHumanizeChk");
-      var picks = {}, nPh = Math.ceil(numBars/4), plan = [], i, firstPk = null, usedForced = false;
+      var picks = {}, firstPk = null, usedForced = false, recipes = {};
       function picksFor(B, comp){
         var key = B + (comp ? "c" : "");
         if(picks[key] !== undefined) return picks[key];
@@ -20845,18 +20911,14 @@ function runAnalysis() {
         var A = null;
         if(forced){ A = cands.filter(function(p){ return p.name === forced; })[0] || null; if(A) usedForced = true; }
         if(!A) A = pickW(cands, function(p){ return tempoW(p, bpm); });
-        var sibs = cands.filter(function(p){ return p !== A && p.fam === A.fam; });
-        var res = picks[key] = { A: A, B: sibs.length ? pickW(sibs, function(p){ return tempoW(p, bpm); }) : null };
+        var res = picks[key] = { A: A };
         if(!firstPk) firstPk = res;
         return res;
       }
-      for(i=0; i<nPh; i++){
-        if(i === 0 || i === nPh-1) plan.push("A");
-        else plan.push(Math.random() < 0.3 ? "B" : "A");
-      }
+      var LV = barLevels(numBars), cnt = [0, 0, 0];
       var outBeat = [], outEng = [], nEv = null, prevMark = false;
       for(var bar=0; bar<numBars; bar++){
-        var base = RHYTHM.start(bar), B = RHYTHM.beats(bar), comp = RHYTHM.compound(bar), ph = bar >> 2, j = bar % 4;
+        var base = RHYTHM.start(bar), B = RHYTHM.beats(bar), comp = RHYTHM.compound(bar), j = bar % 4;
         var pk = picksFor(B, comp);
         if(pk && RHYTHMSPACE.isPeaceBar(bar)){ outBeat.push({ type: "kick", startBeat: base, vel: 40 }); prevMark = false; continue; }
         if(!pk){
@@ -20864,16 +20926,27 @@ function runAnalysis() {
           (function(b0, b1){ nEv.forEach(function(e){ if(e.startBeat >= b0 - 1e-9 && e.startBeat < b1 - 1e-9) outEng.push(cp(e)); }); })(base, base + B);
           prevMark = true; continue;
         }
-        var p = (plan[ph] === "B" && pk.B) ? pk.B : pk.A, evs = barEvents(p, base, B, j, hum);
-        var doFill = (j === 3 || bar === numBars-1) && Math.random() < (0.35 + 0.5*cx);
-        if(!doFill && (j === 1 || j === 2) && Math.random() < (0.15 + 0.15*cx)){   // respiro: 2da mitad sin hi-hat/ride/percusión
+        var p = pk.A, lvl = LV.lv[bar] != null ? LV.lv[bar] : 1;
+        var evs = barEvents(p, base, B, j, hum);
+        if(lvl === 0) evs = simplify(evs, base);
+        else if(lvl === 2){
+          var rk = p.name + "|" + B + "|" + (j % 2);
+          if(!recipes[rk]) recipes[rk] = richRecipe(p, B, comp, j);
+          recipes[rk].forEach(function(r){ evs.push(mkEv(r, base + r[0], hum)); });
+        }
+        cnt[lvl]++;
+        var secEnd = !!LV.ends[bar];
+        var doFill = (j === 3 || bar === numBars-1 || secEnd) && Math.random() < (secEnd ? 0.9 : 0.35 + 0.5*cx);
+        if(!doFill && lvl > 0 && (j === 1 || j === 2) && Math.random() < (0.15 + 0.15*cx)){   // respiro: 2da mitad sin hi-hat/ride/percusión
           evs = evs.filter(function(e){ return !(e.type === "hihat" && e.startBeat >= base + B/2 - 1e-9); });
         }
         if(doFill){
           var f = fillFor(base, B, cx);
           evs = evs.filter(function(e){ return e.startBeat < f.from - 1e-9; }).concat(f.events);
         }
-        if(j === 0 && ((prevMark && Math.random() < 0.6) || (bar === 0 && Math.random() < 0.3))) evs.push({ type: "hihat", open: true, startBeat: base, midi: 49, vel: 100 });
+        var secStart = (LV.starts[bar] !== undefined && bar > 0), crashed = false;
+        if(secStart && Math.random() < 0.85){ evs.push({ type: "hihat", open: true, startBeat: base, midi: 49, vel: 105 }); crashed = true; }   // crash al entrar a una sección
+        if(!crashed && j === 0 && ((prevMark && Math.random() < 0.6) || (bar === 0 && Math.random() < 0.3))) evs.push({ type: "hihat", open: true, startBeat: base, midi: 49, vel: 100 });
         evs.forEach(function(e){ outBeat.push(e); });
         prevMark = doFill;
       }
@@ -20886,7 +20959,7 @@ function runAnalysis() {
       try{
         if(window.__songLog){
           window.__songLog.add("Beats", firstPk
-            ? ("A: " + firstPk.A.name + (firstPk.B ? " · B: " + firstPk.B.name : "") + " — frases: " + plan.join(" "))
+            ? ("Beat: " + firstPk.A.name + " — variaciones del mismo beat por sección: " + LV.desc.join(" · ") + " (compases: " + cnt[0] + " simples, " + cnt[1] + " base, " + cnt[2] + " ricos)")
             : "ningún beat encaja en estos compases: batería de siempre");
           if(notFit) window.__songLog.add("Beats (elegido a mano)", "no encaja en los compases de esta canción: vuelve a Auto");
         }
