@@ -445,6 +445,16 @@
   #radioVintage:not(.rv-portrait) .sk-portada canvas.art{left:max(5vw,env(safe-area-inset-left));top:50%;transform:translateY(-50%);}
   #radioVintage:not(.rv-portrait) .sk-portada .k{left:calc(max(5vw,env(safe-area-inset-left)) + var(--artS) + 28px);top:max(26px,calc(env(safe-area-inset-top) + 14px));}
   #radioVintage:not(.rv-portrait) .sk-portada .bot{left:calc(max(5vw,env(safe-area-inset-left)) + var(--artS) + 28px);right:max(4vw,env(safe-area-inset-right));bottom:50%;transform:translateY(50%);}
+  /* ===== Fix iPhone: el pie (Export MIDI/MP3 + ♥ 📂) tapaba Play/Pause/Next ===== */
+  /* 1) el contenedor del pie no captura toques en su espacio vacío; solo sus botones */
+  #radioVintage #rvExportBox{pointer-events:none;}
+  #radioVintage #rvExportBox button,#radioVintage #rvExportBox #rvExportStatus{pointer-events:auto;}
+  /* 2) skins escaladas (todas menos portada y clásica): reservan abajo el lugar del pie, así nunca se pisan */
+  #radioVintage[data-skin]:not([data-skin="portada"]):not([data-skin="classic"]){padding-bottom:52px;}
+  /* 3) portada vertical: botones y título suben sobre el pie y la imagen se achica para no pisarlos */
+  #radioVintage.rv-portrait .sk-portada{--artS:min(92vw,calc(100vh - 360px));}
+  @supports (height:100dvh){#radioVintage.rv-portrait .sk-portada{--artS:min(92vw,calc(100dvh - 360px));}}
+  #radioVintage.rv-portrait .sk-portada .bot{bottom:max(76px,calc(env(safe-area-inset-bottom) + 66px));}
   /* animaciones: solo mientras suena (rv-on); estas reglas van al final a propósito */
   #radioVintage .sk .sp{animation-play-state:paused;}
   #radioVintage.rv-on .sk .sp{animation-play-state:running;}
@@ -8959,8 +8969,8 @@ function runAnalysis() {
      Semilla: cada generación sortea una semilla maestra y cada slider deriva la suya (repetible: MIX.seed()).
      Notes complexity es un slider maestro sin lógica propia: su curva actúa como envolvente que se mezcla (25%) con la
      curva propia de Chromatism, Chords, Jazz y Chord simultaneity cuando éstos tienen MiX prendido.
-     MiX se IGNORA mientras esté activo ChordS (CommonChords), Partimenti, JazzTunes u Ostinatov2: ahí cada slider vale
-     lo que marca. Sin MiX (checkbox destildado) cada slider se comporta exactamente como antes.
+     MiX vale en todos los modos (CreaturaRandom, Creatura, One.Set, ChordS, Partimenti, JazzTunes, Jazz.i.Tunes); solo se IGNORA con
+     Ostinatov2 (ostinato estricto), donde cada slider vale lo que marca. Sin MiX (checkbox destildado) cada slider se comporta exactamente como antes.
      ================================================================ */
   var MIX = (function(){
     var IDS = ["consolaNormalSlider", "consolaChromaSlider", "consolaChordsSlider", "consolaJazzSlider", "consolaChordSimulSlider",
@@ -8988,10 +8998,9 @@ function runAnalysis() {
     function chk(id){ return document.getElementById("mixChk_" + id); }
     function checked(id){ var c = chk(id); return !c || c.checked; }   // sin checkbox en el DOM (todavía) = prendido
     function suspended(){
-      return !!((typeof COMMONCHORDS !== "undefined" && COMMONCHORDS && COMMONCHORDS.active) ||
-                (typeof PARTIMENTI !== "undefined" && PARTIMENTI && PARTIMENTI.active) ||
-                (typeof JAZZTUNES !== "undefined" && JAZZTUNES && JAZZTUNES.active) ||
-                (typeof OSTINATOV2 !== "undefined" && OSTINATOV2 && OSTINATOV2.enabled && OSTINATOV2.enabled()));
+      // MiX ahora vale también con ChordS, Partimenti, JazzTunes / Jazz.i.Tunes, CreaturaRandom, Creatura y One.Set.
+      // Solo Ostinatov2 (ostinato estricto: nada puede variar) lo sigue suspendiendo.
+      return !!(typeof OSTINATOV2 !== "undefined" && OSTINATOV2 && OSTINATOV2.enabled && OSTINATOV2.enabled());
     }
     function on(id){ return !!(plans[id] && nBars > 0 && checked(id) && !suspended()); }
 
@@ -9115,7 +9124,7 @@ function runAnalysis() {
         var lab = document.createElement("label");
         lab.title = NAMES[id] + " MiX: prendido (default), el slider es el TECHO de una automatización que se calcula al generar la canción " +
           "(secciones, frases, compases y mitades de compás con valores entre 0 y el slider) y queda reflejada en el piano roll; el gráfico muestra esa curva. " +
-          "Destildado: el slider vale lo mismo en toda la canción, como siempre. Se ignora con ChordS, Partimenti, JazzTunes y Ostinatov2.";
+          "Destildado: el slider vale lo mismo en toda la canción, como siempre. Vale en todos los modos; solo se ignora con Ostinatov2.";
         lab.style.cssText = "display:inline-flex;align-items:center;gap:3px;font-size:10px;cursor:pointer;white-space:nowrap;";
         var cb = document.createElement("input");
         cb.type = "checkbox"; cb.id = "mixChk_" + id; cb.checked = true;
@@ -14827,6 +14836,15 @@ function runAnalysis() {
       noun: [["luna","f"],["río","m"],["espejo","m"],["jardín","m"],["motor","m"],["marea","f"],["brújula","f"],["ventana","f"],["farol","m"],["órbita","f"],["eco","m"],["puerto","m"],["sombra","f"],["tormenta","f"],["reloj","m"],["puente","m"],["horizonte","m"],["máquina","f"],["sueño","m"],["desierto","m"],["escalera","f"],["señal","f"],["estación","f"],["mapa","m"]],
       where: ["al amanecer","bajo la lluvia","después de medianoche","sobre el agua","en órbita","al borde"]
     };
+    // Palabras propias de la casa: se suman a las listas (aparecen en títulos normales, cortos y largos, en español y en inglés)
+    ES.adj.push(["pepuno","pepuna"], ["peperulo","peperula"]);
+    ES.noun.push(["Stoikheion","m"], ["clacli","m"], ["Santino","m"]);
+    EN.adj.push("Pepuno", "Peperulo");
+    EN.noun.push("Stoikheion", "Clacli", "Santino");
+    // Palabras que además arman títulos propios ("Cachuelas le Santino"): [palabra, género, plural]
+    var HOUSE = [["Stoikheion","m",0],["pepuno","m",0],["peperulo","m",0],["clacli","m",0],["Santino","m",0],["pepuna","f",0],["cachuelas","f",1],["peperula","f",0],["papines","m",1]];
+    // En español "de" se escribe "le" (también "del" y "de la"): "Luna le río", "Cartas le un farol…"
+    function esLe(t){ return t.replace(/\bde la\b/g, "le").replace(/\bDe la\b/g, "Le").replace(/\bdel\b/g, "le").replace(/\bde\b/g, "le").replace(/\bDe\b/g, "Le"); }
     var last = "";
     function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
     function pickOther(a, not){ var x; do { x = pick(a); } while(x === not && a.length > 1); return x; }
@@ -14923,16 +14941,30 @@ function runAnalysis() {
         default: return cap(indefES(n, a)) + " " + wh + ", " + indefES(n2, a2) + " " + wh2 + " y " + npBareES(n3) + " que " + act;
       }
     }
+    function houseArt(w){ return w[2] ? (w[1] === "f" ? "las " : "los ") : (w[1] === "f" ? "la " : "el "); }
+    function sillyTitle(){
+      var w1 = pick(HOUSE), w2 = pickOther(HOUSE, w1), w3 = pickOther(HOUSE, w2);
+      switch(Math.floor(Math.random()*7)){
+        case 0: return cap(w1[0]) + " le " + w2[0];
+        case 1: return cap(w1[0]) + " y " + w2[0];
+        case 2: return cap(houseArt(w1) + w1[0]) + " le " + w2[0] + " " + pick(ES.where);
+        case 3: return cap(w1[0]) + " le " + w2[0] + " le " + w3[0];
+        case 4: return "Sin " + w1[0] + " ni " + w2[0];
+        case 5: return cap(houseArt(w1) + w1[0]) + " " + (w1[2] ? "que cantan" : "que canta") + " con " + houseArt(w2) + w2[0] + " le " + w3[0];
+        default: return (w1[2] ? (w1[1] === "f" ? "Últimas " : "Últimos ") : (w1[1] === "f" ? "Última " : "Último ")) + w1[0] + " le " + w2[0];
+      }
+    }
     // Distribución: 30% corto, 60% largo (ambos con 10 palabras o menos) y 10% muy largo (más de 10 palabras); el idioma sigue siendo 50/50.
     function nWords(t){ return t.trim().split(/\s+/).length; }
     function pickTitle(){
+      if(Math.random() < 0.35) return sillyTitle();   // 35%: títulos de la casa (Stoikheion, pepuno, peperulo, clacli, Santino, pepuna, cachuelas, peperula, papines)
       var r = Math.random(), es = Math.random() < 0.5, t, k = 0;
       if(r >= 0.90){
         do { t = es ? veryLongES() : veryLongEN(); k++; } while(nWords(t) <= 10 && k < 30);
-        return t;
+        return es ? esLe(t) : t;
       }
       do { t = (r < 0.30) ? (es ? titleES() : titleEN()) : (es ? longES() : longEN()); k++; } while(nWords(t) > 10 && k < 30);
-      return t;
+      return es ? esLe(t) : t;
     }
     function show(t){
       var el = document.getElementById("consolaSongTitle");
@@ -15638,8 +15670,8 @@ function runAnalysis() {
       //    x < 1 → el acorde se SOSTIENE 1 / x compases (0% ≈ 2 a 3 compases por acorde; redondeo al azar igual).
       // Tope por compás corto: acordes de >= 0,5 pulso (en 4/4 hasta 8; menos de 2 pulsos = 1). ModeTestHarmony (un acorde cada 2 compases) no se toca.
       var chFrac = 1; { var chSl = document.getElementById("consolaChordsSlider"), chV = chSl ? parseFloat(chSl.value) : 100; if(isFinite(chV)) chFrac = Math.max(0, Math.min(100, chV)) / 100; }
-      var chHi = 0.5 + 7.5 * chFrac, chLo = 0.75 * chHi;
-      function chDraw(){                                                 // { n: acordes en este compás, span: compases que dura }
+      function chDraw(bar){                                              // { n: acordes en este compás, span: compases que dura }
+        var chHi = 0.5 + 7.5 * MIX.v("consolaChordsSlider", chFrac, bar, 0), chLo = 0.75 * chHi;   // MiX: el techo del slider Chords × la curva de este compás (sin MiX = el slider)
         var x = chLo + Math.random() * (chHi - chLo), f;
         if(x >= 1){ f = Math.floor(x); return { n: Math.max(1, f + (Math.random() < x - f ? 1 : 0)), span: 1 }; }
         var s = 1 / x; f = Math.floor(s);
@@ -15647,7 +15679,7 @@ function runAnalysis() {
       }
       for(var bar = 0; bar < NUM_BARS; bar += span){
         span = testH ? Math.min(2, NUM_BARS - bar) : 1;   // ModeTestHarmony: cada acorde dura 2 compases (si queda 1 solo al final, dura 1)
-        var chD = (testH || testP) ? null : chDraw();   // Testing patterns: un solo acorde por compás
+        var chD = (testH || testP) ? null : chDraw(bar);   // Testing patterns: un solo acorde por compás
         if(chD) span = Math.max(1, Math.min(NUM_BARS - bar, chD.span));   // acorde sostenido varios compases (si quedan menos al final, dura lo que queda)
         var beats = RHYTHM.beats(bar), barStart = RHYTHM.start(bar);
         var spanBeats = 0;
@@ -16538,6 +16570,9 @@ function runAnalysis() {
       // Cadencias modulatorias (opts.mod = { on, p (0–1) }): con probabilidad p, una celda del CUERPO es una unidad de tu biblioteca (mayor en canciones mayores, menor en menores; la primera celda solo si empieza en I).
       var sct0 = (opts.schemata && opts.schemata.on) ? { p: Math.max(0, Math.min(1, opts.schemata.p == null ? 0.3 : opts.schemata.p)) } : null;
       var mdl0 = (opts.mod && opts.mod.on) ? { p: Math.max(0, Math.min(1, opts.mod.p == null ? 0.3 : opts.mod.p)) } : null;
+      // Chromatism · modo 1 (opts.chroma = { at(frac) → p 0–1 }): el slider Chromatism (con la curva de MiX) es la probabilidad de que cada celda del CUERPO sea una cadencia modulatoria de tu biblioteca.
+      // Se combina con la casilla Modulatorias quedándose con la mayor de las dos probabilidades.
+      var chrP = (opts.chroma && typeof opts.chroma.at === "function") ? opts.chroma : null;
       var isMin = (mode === "minor");
       if(CTP) CTP.minor = isMin;
       function myPick(role, maxLen, finalOnly){ var pl = myPool(role, isMin, maxLen, finalOnly); return pl.length ? pl[rnd(pl.length)] : null; }
@@ -16580,7 +16615,8 @@ function runAnalysis() {
             var cp = cycPool(bodyN - items.length, items.length === 0);
             if(cp.length){ cell = cycCell(cp[rnd(cp.length)]); type = "cyc"; stats.cycCells++; }
           }
-          if(!cell && mdl0 && Math.random() < mdl0.p){
+          var pModC = Math.max(mdl0 ? mdl0.p : 0, chrP ? chrP.at(items.length / Math.max(1, bodyN)) : 0);
+          if(!cell && pModC > 0 && Math.random() < pModC){
             var mdp = modPool(bodyN - items.length, items.length === 0, isMin);
             if(mdp.length){ cell = modCell(mdp[rnd(mdp.length)]); type = "mod"; stats.modCells++; }
           }
@@ -16602,7 +16638,7 @@ function runAnalysis() {
         if(lastIt && lastIt.deg === 4 && fin[0].deg === 4 && (fin[0].fig === "7" || fin[0].fig === "5/3") && fin[0].fig === lastIt.fig) fin[0].fig = fin[0].fig === "7" ? "5/3" : "7";
         appendCell(items, fin, key, base);
         stats.cells.push(finalType);
-      } while((my || cyc || mdl0 || sct0) && items.length < N && attempt < 8);
+      } while((my || cyc || mdl0 || sct0 || chrP) && items.length < N && attempt < 8);
       if(items.length > N) items.splice(0, items.length - N);        // N muy chico: queda solo el final
       items.forEach(function(it){
         if(rofo && (it.cell === "up" || it.cell === "down")){ stats.rofoSteps++; if(it.rofo === 2) stats.rofoVar++; }
@@ -17066,6 +17102,9 @@ function runAnalysis() {
           var idxs = groups[k];
           if(idxs.length < 2) return;
           var dur = evs[idxs[0]].durBeats;
+          // MiX (Chord simultaneity): el porcentaje de Partimenti es el techo; cada grupo de acordes usa techo × curva de su compás/mitad
+          var mxBar = evs[idxs[0]].bar, mxBeat = (mxBar != null && mxBar >= 0) ? evs[idxs[0]].startBeat - RHYTHM.start(mxBar) : 0;
+          BROKENCHORD.setForced(MIX.v("consolaChordSimulSlider", pct / 100, (mxBar != null ? mxBar : -1), mxBeat));
           var offs = BROKENCHORD.offsetsFor(idxs.map(function(i){ return evs[i].midi; }), dur);
           idxs.forEach(function(i, j){
             var off = offs[j] || 0;
@@ -17348,6 +17387,15 @@ function runAnalysis() {
       mdr.addEventListener("input", function(){ mdv.textContent = mdr.value + "%"; });
       mdl.appendChild(document.createTextNode("celdas ")); mdl.appendChild(mdr); mdl.appendChild(mdv); mdw.appendChild(mdl);
       mdb.appendChild(mdw); b.appendChild(mdb);
+      // Chromatism (modo test): por defecto el slider Chromatism de How to play decide cuántas celdas son cadencias modulatorias (modo 1). Con esta casilla (modo 2) transpone celdas enteras.
+      var crb = mk("div", "padding:2px 0 6px;");
+      var crh = mk("div", "font-size:12px;font-weight:700;color:var(--ink-muted);margin-bottom:2px;", "Chromatism");
+      crh.title = "Chromatism en Partimenti. Modo 1 (por defecto, casilla destildada): el slider Chromatism de How to play (con su MiX) es la probabilidad de que cada celda del cuerpo sea una cadencia modulatoria de tu biblioteca. Modo 2 (test, casilla tildada): el slider Chromatism transpone celdas enteras hasta ±6 semitonos (la primera celda y la cadencia final quedan en la tonalidad).";
+      crb.appendChild(crh);
+      var crl = mk("label", LBL); crl.title = "Modo 2 (test): el slider Chromatism transpone celdas enteras (±0–6 semitonos según el slider y su MiX). Destildada: modo 1 (cadencias modulatorias). Vale desde la próxima canción: 🔀 / G.";
+      var crc = mk("input"); crc.type = "checkbox"; crc.id = "partimentiChromaTr";
+      crl.appendChild(crc); crl.appendChild(document.createTextNode(" Transponer celdas (modo test)"));
+      crb.appendChild(crl); b.appendChild(crb);
       // Schemata: tu biblioteca de My_schemattas._v6.gp. Tildado: con probabilidad p cada celda del cuerpo es uno de tus esquemas (Romanesca, Prinner, Fonte, Monte, Ut re mi...).
       var stb = mk("div", "padding:2px 0 6px;");
       var sth = mk("div", "font-size:12px;font-weight:700;color:var(--ink-muted);margin-bottom:2px;", "Schemata");
@@ -17622,7 +17670,10 @@ function runAnalysis() {
       var cadEl = document.getElementById("partimentiCadMix"), cadPctEl = document.getElementById("partimentiCadMixPct");
       var groups = { sch: (schEl && schEl.checked) ? (schPctEl ? parseInt(schPctEl.value, 10) : 50) / 100 : null,
                      cad: (cadEl && cadEl.checked) ? (cadPctEl ? parseInt(cadPctEl.value, 10) : 50) / 100 : null };   // null = slider apagado
-      var cOpts = { cells: checkedKeys("cell"), rofo: rofo, modes: checkedKeys("rmode"), mixed: !!(document.getElementById("partimentiMixed") && document.getElementById("partimentiMixed").checked), minorized: !!(document.getElementById("partimentiMinorized") && document.getElementById("partimentiMinorized").checked), mycad: mycad, cyc: cyc, mod: modOpt, schemata: schemataOpt, groups: groups, spell: spellPitchClass, ctp: ctp }, song, spLay = null;
+      var chrTrEl = document.getElementById("partimentiChromaTr"), chrTr = !!(chrTrEl && chrTrEl.checked);
+      var chrSlEl = document.getElementById("consolaChromaSlider"), chrV = chrSlEl ? parseFloat(chrSlEl.value) : 0, chrBase = isFinite(chrV) ? Math.max(0, Math.min(100, chrV)) / 100 : 0;
+      var chromaOpt = (!chrTr && chrBase > 0) ? { at: function(frac){ var cb0 = Math.max(0, Math.min(NUM_BARS - 1, Math.floor(frac * NUM_BARS))); return MIX.v("consolaChromaSlider", chrBase, cb0, 0); } } : null;   // modo 1
+      var cOpts = { chroma: chromaOpt, cells: checkedKeys("cell"), rofo: rofo, modes: checkedKeys("rmode"), mixed: !!(document.getElementById("partimentiMixed") && document.getElementById("partimentiMixed").checked), minorized: !!(document.getElementById("partimentiMinorized") && document.getElementById("partimentiMinorized").checked), mycad: mycad, cyc: cyc, mod: modOpt, schemata: schemataOpt, groups: groups, spell: spellPitchClass, ctp: ctp }, song, spLay = null;
       if(space){
         // Space: primero se arma la canción (cantidad de acordes ~1.3–2.2 por compás) y después se reparte en compases siguiendo las celdas:
         // cada celda ocupa compases enteros, el último compás de cada celda es final de frase (acorde largo) y dentro de la celda el patrón es parejo.
@@ -17816,6 +17867,30 @@ function runAnalysis() {
         }
         melodyEvents.sort(function(a, b2){ return a.startBeat - b2.startBeat; });
       }
+      // Chromatism · modo 2 (casilla #partimentiChromaTr, test): con todo ya armado en la tonalidad, cada celda del cuerpo se transporta d semitonos (d al azar entre -máx y +máx,
+      // máx = slider Chromatism × curva MiX × 6). La primera celda y la cadencia final quedan en la tonalidad. Se mueven armonía, bajo y melodías; la batería no.
+      var chromaTrN = null;
+      if(chrTr){
+        chromaTrN = [];
+        var crStarts = []; slotRefs.forEach(function(sr, i){ if(i === 0 || sr.ch.cellStart) crStarts.push(i); });
+        crStarts.forEach(function(si, q){
+          var ei = q + 1 < crStarts.length ? crStarts[q + 1] : slotRefs.length, d = 0;
+          var t0 = slotRefs[si].abs, t1 = ei < slotRefs.length ? slotRefs[ei].abs : Infinity;
+          if(q > 0 && q < crStarts.length - 1){
+            var mxd = Math.round(MIX.v("consolaChromaSlider", chrBase, slotRefs[si].bar, 0) * 6);
+            if(mxd > 0) d = Math.floor(Math.random() * (2 * mxd + 1)) - mxd;
+          }
+          chromaTrN.push(d);
+          if(!d) return;
+          [chordEvents, bassEvents, melodyEvents, melody2Events].forEach(function(arr){ arr.forEach(function(ev){ if(ev.startBeat >= t0 - 1e-6 && ev.startBeat < t1 - 1e-6) ev.midi += d; }); });
+          for(var jj = si; jj < ei; jj++){
+            var scr = slotChords[slotRefs[jj].bar][slotRefs[jj].k];
+            scr.chord = scr.chord.map(function(m){ return m + d; }); scr.setNotes = scr.chord.slice();
+            scr.ccCat = (scr.ccCat || "") + " · Chromatism " + (d > 0 ? "+" : "") + d;
+          }
+        });
+        slotChords.forEach(function(sl, bi){ progression[bi] = sl[0].chord.slice(); });
+      }
       state.rootChord = progression[0].slice();
       state.progression = progression;
       state.roles = roles;
@@ -17844,7 +17919,16 @@ function runAnalysis() {
       if(muSilPct > 0){
         var muSilC = [], muSilPrev = 0;
         slotRefs.forEach(function(sr){ if(sr.idx > 0 && sr.ch.cellStart){ muSilC.push({ s: muSilPrev, e: sr.abs }); muSilPrev = sr.abs; } });
-        muSilPlan = MUSICSILENCE.plan(muSilPct, muSilC, TOTAL_BEATS, tempo.bpm);
+        if(MIX.on("consolaMusicSilenceSlider")){   // MiX (musicSilence): el % de Partimenti es el techo; cada final de celda usa techo × curva del compás donde termina
+          var mxGaps = [], mxSec = 0;
+          muSilC.forEach(function(c){
+            var mxB = 0; for(var bb = 0; bb < NUM_BARS; bb++){ if(RHYTHM.start(bb) < c.e - 1e-6) mxB = bb; else break; }
+            var pctC = MIX.v("consolaMusicSilenceSlider", muSilPct / 100, mxB, RHYTHM.beats(mxB) / 2) * 100;
+            var one = MUSICSILENCE.plan(pctC, [c], TOTAL_BEATS, tempo.bpm);
+            one.gaps.forEach(function(g){ mxGaps.push(g); mxSec += g.sec; });
+          });
+          muSilPlan = { pct: muSilPct, gaps: mxGaps, n: mxGaps.length, sec: mxSec };
+        } else muSilPlan = MUSICSILENCE.plan(muSilPct, muSilC, TOTAL_BEATS, tempo.bpm);
         ["chordEvents", "bassEvents", "melodyEvents", "melody2Events", "melody3Events", "comping2Events", "bebopEvents"].forEach(function(k){ state[k] = MUSICSILENCE.cut(state[k], muSilPlan); });
         drumEvents = MUSICSILENCE.cut(drumEvents, muSilPlan);
       }
@@ -17865,7 +17949,7 @@ function runAnalysis() {
                  " [aflojó " + (song.stats.ctpL1 || 0) + " + sin reglas " + (song.stats.ctpL2 || 0) + " acordes; soprano liso " + song.ctp.stats.dimPlain + "]";
       }
       var sub = document.getElementById("consolaSongSets");
-      if(sub) sub.textContent = "(Partimenti · experimental · " + keyName + (space ? " · Space" : "") + (ocmN !== null ? " · Movimientos " + ocmN : "") + (foxN !== null ? " · Fouxbourdon " + foxN : "") + (song.mod && song.stats.modCells ? " · Modulatorias " + song.stats.modCells : "") + (song.schemata && song.stats.schtCells ? " · Schemata " + song.stats.schtCells : "") + (song.cyc && song.mode !== "minor" ? " · Ciclos " + song.stats.cycCells + (song.stats.cycCells === 1 ? " ciclo" : " ciclos") : "") + (song.mycad ? " · MyCadences " + song.stats.myCells + (song.stats.myCells === 1 ? " celda" : " celdas") : "") + (song.rofo && song.stats.rofoSteps ? " · RofO " + Math.round(100 * song.stats.rofoVar / song.stats.rofoSteps) + "% variantes" : (song.rofo ? " · RofO" : "")) + " · " + (tempo.name ? tempo.name + " " : "") + "♩=" + tempo.bpm + " · dim " + dimPct + "%" + (tex ? " · textura " + tex.name + (texDblOn ? " + voces duplicadas" : "") : "") + (silPct !== 50 ? " · silences " + silPct + "%" : " · silences") + (muSilPlan ? " · musicSilence " + muSilPct + "% (" + muSilPlan.n + (muSilPlan.n === 1 ? " pausa" : " pausas") + (muSilPlan.n ? ", " + muSilPlan.sec.toFixed(1) + " s" : "") + ")" : "") + (innerN !== null ? " · internal_movement " + innerN + (innerN === 1 ? " figura" : " figuras") + " (" + innerDimN + " rápidas · dim interna " + innerDimPct + "%)" : "") + " · " + N + " acordes · " + dens + " por compás · " +
+      if(sub) sub.textContent = "(Partimenti · experimental · " + keyName + (chromaTrN ? " · Chromatism celdas " + chromaTrN.map(function(d){ return (d > 0 ? "+" : "") + d; }).join(" ") : "") + (space ? " · Space" : "") + (ocmN !== null ? " · Movimientos " + ocmN : "") + (foxN !== null ? " · Fouxbourdon " + foxN : "") + (song.mod && song.stats.modCells ? " · Modulatorias " + song.stats.modCells : "") + (song.schemata && song.stats.schtCells ? " · Schemata " + song.stats.schtCells : "") + (song.cyc && song.mode !== "minor" ? " · Ciclos " + song.stats.cycCells + (song.stats.cycCells === 1 ? " ciclo" : " ciclos") : "") + (song.mycad ? " · MyCadences " + song.stats.myCells + (song.stats.myCells === 1 ? " celda" : " celdas") : "") + (song.rofo && song.stats.rofoSteps ? " · RofO " + Math.round(100 * song.stats.rofoVar / song.stats.rofoSteps) + "% variantes" : (song.rofo ? " · RofO" : "")) + " · " + (tempo.name ? tempo.name + " " : "") + "♩=" + tempo.bpm + " · dim " + dimPct + "%" + (tex ? " · textura " + tex.name + (texDblOn ? " + voces duplicadas" : "") : "") + (silPct !== 50 ? " · silences " + silPct + "%" : " · silences") + (muSilPlan ? " · musicSilence " + muSilPct + "% (" + muSilPlan.n + (muSilPlan.n === 1 ? " pausa" : " pausas") + (muSilPlan.n ? ", " + muSilPlan.sec.toFixed(1) + " s" : "") + ")" : "") + (innerN !== null ? " · internal_movement " + innerN + (innerN === 1 ? " figura" : " figuras") + " (" + innerDimN + " rápidas · dim interna " + innerDimPct + "%)" : "") + " · " + N + " acordes · " + dens + " por compás · " +
         song.stats.cells.map(function(c){ return core.CELL_NAME[c]; }).join(" → ") + " · " + labels.join(" ") + ctpTxt + ")";
       ["consolaPlayBtn", "consolaRegenPlayBtn"].forEach(function(id){
         var bt2 = document.getElementById(id); if(bt2) bt2.disabled = false;
@@ -26069,7 +26153,7 @@ function runAnalysis() {
           if(pick === "partimenti"){ if(window.__jazzTunes) window.__jazzTunes.off(); SLpartimenti(window.__partimenti.randomize()); rcPre("partimenti"); window.__partimenti.start(); rcPost("partimenti"); return; }
           if(window.__partimenti) window.__partimenti.off();
           if(window.__jazzTunes) window.__jazzTunes.off();
-          if(pick === "common"){ randomizeSlider("consolaTempo", 30, 120); rcPre("common"); zeroForChordS(); window.__commonChords.start(); rcPost("common"); return; }
+          if(pick === "common"){ randomizeSlider("consolaTempo", 30, 120); rcPre("common"); window.__commonChords.start(); rcPost("common"); return; }
           if(window.__commonChords) window.__commonChords.off();
           randomizeAndFill(pick === "intervalic" ? "intervalic" : pick === "bella");
           rcPre("creatura");
@@ -26187,7 +26271,7 @@ function runAnalysis() {
     // 🎼 CommonChords (ver módulo COMMONCHORDS): detiene lo que suene, genera la canción con acordes de la base y la reproduce.
     var btnCC = document.getElementById("commonChordsBtn");
     // ChordS arranca con TODO en cero: los sliders de How to play y de Harmony pasan a 0 y sus checkboxes se destildan (se ve en pantalla y se puede retocar después).
-    // Excepciones: Simplicity queda en 100% y Form queda como esté (Form sí vale en ChordS). El slider Chords en 0 = 75% menos acordes (ver COMMONCHORDS.build).
+    // Excepciones: Simplicity queda en 100%, Form queda como esté (Form sí vale en ChordS) y los checkboxes MiX de los sliders no se destildan. El slider Chords en 0 = 75% menos acordes (ver COMMONCHORDS.build).
     // Solo se tocan los valores y las etiquetas (evento "input", que no regenera); los selects, el compás y los botones de instrumentos no se mueven.
     function zeroForChordS(){
       var moved = [];
@@ -26200,7 +26284,7 @@ function runAnalysis() {
           sl.dispatchEvent(new Event("input", { bubbles: true }));   // actualiza la etiqueta y la variable interna, sin regenerar
         });
         Array.prototype.forEach.call(body.querySelectorAll('input[type="checkbox"]'), function(c){
-          if(c.id === "consolaFormChk" || !c.checked) return;
+          if(c.id === "consolaFormChk" || /^mixChk_/.test(c.id) || !c.checked) return;   // Form y los MiX de los sliders se quedan como están (MiX prendido por defecto)
           if(c.id === "consolaIntroChk" && typeof INTRO !== "undefined") INTRO.set(false); else c.checked = false;   // Intro: las dos casillas (How to play y Partimenti) son el mismo interruptor
           moved.push(c.id.replace(/^consola/, "").replace(/Chk$/, ""));
         });
@@ -26220,7 +26304,7 @@ function runAnalysis() {
         await wait(300);
         randomizeSlider("consolaTempo", 30, 120); // tempo al azar con el mismo rango que CreaturaRandom/Bella (se sortea antes de generar: el motor lo lee al armar la canción)
         rcPre("common");
-        zeroForChordS();   // después del sorteo (que puede prender Intro): ChordS arranca con How to play y Harmony en cero
+        // ChordS ya NO pone todo en cero: arranca como el resto de los modos, con los sliders y checkboxes como estén (zeroForChordS queda definida pero sin usar)
         window.__commonChords.start();
         rcPost("common");
         clickIfEnabled("consolaPlayBtn");
@@ -26752,7 +26836,7 @@ function runAnalysis() {
       if(!st) return;
       if(st.classList.contains("sk-portada")){ st.style.transform = ""; return; }
       var W = port ? 460 : 760, H = port ? 780 : 500;
-      var sc = Math.min((window.innerWidth - 24) / W, (window.innerHeight - 24 - 44) / H, 2.4); // 44px de reserva abajo para los botones Export
+      var sc = Math.min((window.innerWidth - 24) / W, (window.innerHeight - 24 - 52) / H, 2.4); // 52px de reserva abajo para los botones Export
       st.style.transform = "scale(" + (sc > 0 ? sc : 1).toFixed(3) + ")";
     }
     function rvRender(name){
@@ -26859,7 +26943,7 @@ function runAnalysis() {
     var R = rng(base * 7919), seed = Math.floor(R() * 4294967296);
     var sum = set ? set.reduce(function (a, b) { return a + b; }, 0) : (seed % 360);
     var h = (sum * 47 + (set ? set.length : 5) * 61) % 360;
-    var type = (seed >>> 11) % 5;
+    var type = (seed >>> 11) % 12;   // 12 escenas: 0 montañas, 1 dunas-mar, 2 bosque noche, 3 atardecer-mar, 4 volcán, 5 ciudad, 6 desierto, 7 faro, 8 aurora, 9 planeta, 10 playa-palmeras, 11 globo-pradera
     var mode = opts.mode || 'auto';
     var withChar = mode === 'character' || (mode === 'auto' && ((seed >>> 16) & 1) === 1);
 
@@ -26870,18 +26954,36 @@ function runAnalysis() {
     function rect(x0, y0, x1, y1, c) { for (var yy = y0; yy <= y1; yy++) for (var xx = x0; xx <= x1; xx++) pp(xx, yy, c); }
     function disc(cx, cy, r, c) { for (var dy = -r; dy <= r; dy++) for (var dx = -r; dx <= r; dx++) if (dx * dx + dy * dy <= r * r + r * 0.6) pp(cx + dx, cy + dy, c); }
 
-    var night = type === 2 || type === 4 || (type === 0 && ((seed >>> 3) & 1) === 1);
-    var HZ = (type === 1 || type === 3) ? 18 : (type === 4 ? 24 : 20);
-    var L = night ? [10, 18, 28, 42] : [38, 50, 62, 76], hs = type === 4 ? 8 : h;
+    function ln(x0, y0, x1, y1, c) { var n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)); for (var i = 0; i <= n; i++) pp(x0 + (x1 - x0) * (n ? i / n : 0), y0 + (y1 - y0) * (n ? i / n : 0), c); }
+    function cloud(cx, cy, c) { rect(cx - 3, cy, cx + 3, cy, c); rect(cx - 2, cy - 1, cx + 1, cy - 1, c); rect(cx - 1, cy - 2, cx, cy - 2, c); }
+    var palm = function (px, py, tall, lean, c) {   // palmera: tronco curvo y copa de hojas cortas que caen
+      var tx = px + lean, ty = py - tall, i;
+      for (i = 0; i <= tall; i++) { var xx = px + Math.round(lean * (i / tall) * (i / tall)); pp(xx, py - i, c); pp(xx + 1, py - i, c); }
+      [[-5, 2], [-4, -1], [-1, -3], [3, -2], [5, 1], [6, 3], [-6, 4]].forEach(function (d) {
+        var mx = tx + Math.round(d[0] * 0.6), my = ty + Math.min(0, Math.round(d[1] * 0.6)) - 1;
+        ln(tx, ty, mx, my, c); ln(mx, my, tx + d[0], ty + d[1], c); ln(mx, my + 1, tx + d[0], ty + d[1] + 1, c);
+      });
+      disc(tx, ty + 1, 1, c);
+    };
+
+    var night = type === 2 || type === 4 || type === 5 || type === 8 || type === 9 || (type === 0 && ((seed >>> 3) & 1) === 1);
+    var HZ = [20, 18, 20, 18, 24, 25, 18, 20, 22, 32, 19, 21][type];
+    var L = night ? [10, 18, 28, 42] : [38, 50, 62, 76], hs = ({ 4: 8, 6: 28, 7: 212, 8: 228, 9: 250, 10: 350, 11: 200 })[type];
+    if (hs == null) hs = h;
     var sk = [0, 1, 2, 3].map(function (k) { return hsl(hs + k * 14, night ? 45 : 60, L[k]); });
     var y1, x1;
     for (y1 = 0; y1 < HZ; y1++) for (x1 = 0; x1 < N; x1++) { var f = y1 / HZ * 4, k = Math.min(3, Math.floor(f)), fr = f - k; if (fr > 0.7 && k < 3 && (x1 + y1) % 2 === 0) k++; pp(x1, y1, sk[k]); }
     if (night) for (var i = 0; i < 22; i++) pp(Math.floor(R() * N), Math.floor(R() * (HZ - 4)), '#f8f9fa');
-    var sunC = hsl(h + 50, 95, night ? 85 : 72);
+    var sunC = hsl((type === 6 || type === 10 || type === 11) ? 46 : h + 50, 95, night ? 85 : 72);
     if (type === 0) disc(6 + Math.floor(R() * 20), 7, 3, sunC);
     if (type === 1) disc(8 + Math.floor(R() * 16), HZ - 2, 5, sunC);
     if (type === 2) disc(24, 7, 3, sunC);
     if (type === 3) disc(16, HZ, 6, sunC);
+    if (type === 5) disc(24, 7, 3, sunC);
+    if (type === 6) disc(21, HZ - 4, 5, sunC);
+    if (type === 7) disc(9, HZ - 2, 3, sunC);
+    if (type === 10) disc(16, HZ, 6, sunC);
+    if (type === 11) disc(5, 6, 2, sunC);
 
     if (type === 0) {
       var a = R() * 6, b = R() * 6, a2 = R() * 6;
@@ -26930,6 +27032,98 @@ function runAnalysis() {
       for (var s = 0; s < 7; s++) pp(cx2 - 7 + Math.floor(R() * 14), 5 + Math.floor(R() * 7), lava);
       rect(0, HZ + 1, 31, 31, hsl(h, 30, 8)); for (var y11 = HZ + 1; y11 < N; y11 += 2) for (var x11 = 0; x11 < N; x11++) if ((x11 + y11) % 5 === 0) pp(x11, y11, hsl(h, 30, 14));
       for (var y12 = HZ + 1; y12 < N; y12 += 2) rect(cx2 - 1, y12, cx2, y12, lava);
+    }
+
+    if (type === 5) {   // ciudad de noche: 3 capas de edificios con ventanas encendidas
+      var bcol = [hsl(h, 28, 17), hsl(h, 30, 11), hsl(h, 34, 6)], wcol = hsl(h + 50, 95, 72);
+      rect(0, HZ, 31, 31, bcol[2]);
+      for (var ly = 0; ly < 3; ly++) {
+        var bxs = -Math.floor(R() * 3), hMin = [11, 8, 5][ly], hVar = [9, 8, 7][ly];
+        while (bxs < N) {
+          var bw = 4 + Math.floor(R() * 4), bh = hMin + Math.floor(R() * hVar), btop = 31 - bh;
+          rect(bxs, btop, bxs + bw - 1, 31, bcol[ly]);
+          if (ly < 2 && R() < 0.4) rect(bxs + Math.floor(bw / 2), btop - 3, bxs + Math.floor(bw / 2), btop - 1, bcol[ly]);
+          for (var wy = btop + 2; wy < 30; wy += 3) for (var wx = bxs + 1; wx < bxs + bw - 1; wx += 2) if (R() < (ly === 2 ? 0.25 : 0.45)) pp(wx, wy, wcol);
+          bxs += bw + (R() < 0.3 ? 1 : 0);
+        }
+      }
+    }
+    if (type === 6) {   // desierto: sol grande, 3 capas de dunas y un cactus
+      var da = R() * 6, db = R() * 6, dc2 = R() * 6;
+      rect(0, HZ, 31, 31, hsl(35, 70, 74));
+      cloud(6 + Math.floor(R() * 6), 4 + Math.floor(R() * 3), hsl(40, 80, 88));
+      for (var dx6 = 0; dx6 < N; dx6++) {
+        var t1 = Math.round(HZ + 1 + 2.5 * Math.sin(dx6 * 0.2 + da)), t2 = Math.round(HZ + 6 + 3 * Math.sin(dx6 * 0.16 + db)), t3 = Math.round(28 + 2 * Math.sin(dx6 * 0.3 + dc2)), dy6;
+        for (dy6 = t1; dy6 < N; dy6++) pp(dx6, dy6, dy6 === t1 ? hsl(35, 70, 74) : hsl(28, 62, 62));
+        for (dy6 = t2; dy6 < N; dy6++) pp(dx6, dy6, dy6 === t2 ? hsl(25, 65, 64) : hsl(20, 58, 50));
+        for (dy6 = t3; dy6 < N; dy6++) pp(dx6, dy6, dy6 === t3 ? hsl(15, 55, 46) : hsl(12, 50, 34));
+      }
+      var kx = 4 + Math.floor(R() * 20), kb = Math.round(HZ + 6 + 3 * Math.sin(kx * 0.16 + db)), kc = hsl(135, 45, 22);
+      rect(kx, kb - 8, kx + 1, kb - 1, kc); rect(kx - 2, kb - 6, kx - 1, kb - 5, kc); rect(kx - 2, kb - 8, kx - 2, kb - 7, kc); rect(kx + 3, kb - 5, kx + 4, kb - 4, kc); rect(kx + 4, kb - 7, kx + 4, kb - 6, kc);
+    }
+    if (type === 7) {   // faro con haz de luz sobre el mar
+      for (var sy = HZ; sy < N; sy++) for (var sx = 0; sx < N; sx++) {
+        var sdy = sy - HZ;
+        pp(sx, sy, hsl(210 - sdy, 55, Math.max(12, 36 - sdy * 1.6)));
+        if ((sx * 5 + sy * 3) % 9 === 0 && sdy > 0) pp(sx, sy, hsl(200, 60, 55));
+      }
+      for (var sr = 0; sr < 5; sr++) { var sw = 1 + Math.floor(R() * 2), srx = 3 + Math.floor(R() * 14), sry = HZ + 3 + sr * 2; rect(srx, sry, srx + sw, sry, hsl(195, 50, 62)); }
+      var lx = 22 + Math.floor(R() * 4), lb = HZ + 2, lrock = hsl(h, 10, 20), ltop = lb - 13, lr;
+      rect(lx - 4, lb - 1, lx + 4, lb + 2, lrock); rect(lx - 3, lb - 2, lx + 3, lb - 2, lrock);
+      for (lr = 0; lr < 11; lr++) { var lh = 1 + Math.floor(lr / 5); rect(lx - lh, ltop + lr, lx + lh, ltop + lr, Math.floor(lr / 3) % 2 ? '#f8f9fa' : hsl(5, 75, 50)); }
+      rect(lx - 1, ltop - 2, lx + 1, ltop - 1, hsl(50, 100, 75)); rect(lx - 2, ltop - 3, lx + 2, ltop - 3, '#14121a'); pp(lx, ltop - 4, '#14121a');
+      for (var bd = 2; bd <= 18; bd++) for (var by7 = ltop - 1 - Math.floor(bd / 6); by7 <= ltop - 1 + Math.floor(bd / 5); by7++) if ((lx - bd + by7) % 2 === 0) pp(lx - bd, by7, hsl(52, 100, 82));
+    }
+    if (type === 8) {   // aurora boreal sobre montañas nevadas y pinos
+      var aa = R() * 6, ab, ax;
+      for (ax = 0; ax < N; ax++) for (ab = 0; ab < 3; ab++) {
+        var ay = 3 + ab * 3 + Math.round(3 * Math.sin(ax * 0.22 + ab * 1.3 + aa)), ah = 120 + ab * 55;
+        pp(ax, ay, hsl(ah, 80, 58)); pp(ax, ay + 1, hsl(ah, 75, 42));
+        if (ax % 2 === 0) pp(ax, ay - 1, hsl(ah, 70, 30));
+        if (ax % 3 === 0) pp(ax, ay + 2, hsl(ah, 60, 26));
+      }
+      var ma = R() * 6, mb = R() * 6, mx, my;
+      for (mx = 0; mx < N; mx++) {
+        var mt1 = 22 - Math.round(9 * Math.abs(Math.sin(mx * 0.16 + ma))), mt2 = 26 - Math.round(4 * Math.abs(Math.sin(mx * 0.3 + mb)));
+        for (my = mt1; my < N; my++) pp(mx, my, (mt1 < 17 && my < mt1 + 2) ? '#dfe8f5' : hsl(228, 28, 20));
+        for (my = mt2; my < N; my++) pp(mx, my, hsl(228, 32, 12));
+      }
+      for (var px8 = 1; px8 < N + 3; px8 += 5) pine(px8 + Math.floor(R() * 2), 31, 7 + Math.floor(R() * 4), hsl(228, 35, 6));
+    }
+    if (type === 9) {   // planeta con anillo, luna y nebulosa
+      var pc = hsl(h + 20, 55, 52), pd = hsl(h + 20, 55, 32), pcx = 11 + Math.floor(R() * 8), pcy = 16 + Math.floor(R() * 5), pr = 7 + Math.floor(R() * 2), rc = hsl(h + 70, 60, 75), ringPts = [], ti, bx9, by9;
+      for (ti = 0; ti < 72; ti++) { var tt = ti / 72 * Math.PI * 2; ringPts.push([pcx + Math.round(13 * Math.cos(tt)), pcy + Math.round(3.5 * Math.sin(tt) - 1.8 * Math.cos(tt)), Math.sin(tt)]); }
+      ringPts.forEach(function (q) { if (q[2] <= 0) pp(q[0], q[1], rc); });
+      disc(pcx, pcy, pr, pc);
+      for (by9 = -pr; by9 <= pr; by9++) for (bx9 = -pr; bx9 <= pr; bx9++) if (bx9 * bx9 + by9 * by9 <= pr * pr + pr * 0.6) { if (bx9 + by9 * 0.5 > pr * 0.35) pp(pcx + bx9, pcy + by9, pd); else if (by9 % 3 === 0) pp(pcx + bx9, pcy + by9, hsl(h + 35, 55, 62)); }
+      ringPts.forEach(function (q) { if (q[2] > 0) pp(q[0], q[1], rc); });
+      disc(26, 6, 2, '#c9cedb'); pp(26, 5, '#8c93a6'); pp(27, 7, '#8c93a6');
+      for (var sn = 0; sn < 12; sn++) pp(Math.floor(R() * N), Math.floor(R() * N), hsl(h + 100, 70, 45));
+    }
+    if (type === 10) {   // playa al atardecer con palmeras
+      var ys, xs;
+      for (ys = HZ; ys < HZ + 7; ys++) for (xs = 0; xs < N; xs++) pp(xs, ys, hsl(20 + (ys - HZ) * 8, 70, 38 - (ys - HZ) * 3));
+      for (ys = HZ; ys < HZ + 7; ys++) { var rw = Math.max(0, 6 - (ys - HZ)); if ((ys - HZ) % 2 === 0) rect(16 - rw, ys, 16 + rw, ys, sunC); }
+      for (ys = HZ + 7; ys < N; ys++) for (xs = 0; xs < N; xs++) pp(xs, ys, ((xs + ys) % 7 === 0) ? hsl(35, 50, 50) : hsl(38, 58, 62 - (ys - HZ - 7)));
+      palm(5 + Math.floor(R() * 4), 30, 14 + Math.floor(R() * 3), 3, hsl(150, 40, 8));
+      palm(24 + Math.floor(R() * 4), 30, 10 + Math.floor(R() * 3), -2, hsl(150, 40, 10));
+    }
+    if (type === 11) {   // pradera con flores y globo aerostático
+      var hy, hx;
+      cloud(6 + Math.floor(R() * 6), 5 + Math.floor(R() * 3), '#ffffff'); cloud(20 + Math.floor(R() * 8), 12 + Math.floor(R() * 3), '#ffffff');
+      var ha = R() * 6, hb = R() * 6;
+      rect(0, HZ, 31, 31, hsl(95, 50, 58));
+      for (hx = 0; hx < N; hx++) {
+        var ht1 = Math.round(HZ + 1 + 2 * Math.sin(hx * 0.18 + ha)), ht2 = Math.round(HZ + 6 + 2.5 * Math.sin(hx * 0.14 + hb));
+        for (hy = ht1; hy < N; hy++) pp(hx, hy, hy === ht1 ? hsl(95, 50, 58) : hsl(105, 42, 44));
+        for (hy = ht2; hy < N; hy++) pp(hx, hy, hy === ht2 ? hsl(100, 50, 48) : hsl(115, 42, 34));
+      }
+      for (var fl = 0; fl < 22; fl++) pp(Math.floor(R() * N), HZ + 8 + Math.floor(R() * (N - HZ - 8)), ['#ffffff', '#ffd23f', '#ff7aa2', '#c77dff'][fl % 4]);
+      var bxx = 16 + Math.floor(R() * 8), byy = 7 + Math.floor(R() * 3), b1 = hsl(h + 30, 80, 58);
+      disc(bxx, byy, 4, b1);
+      for (var bs = -4; bs <= 4; bs++) for (var bt = -4; bt <= 4; bt++) if ((bs === -2 || bs === 2) && bs * bs + bt * bt <= 18) pp(bxx + bs, byy + bt, '#fff6d8');
+      ln(bxx - 2, byy + 4, bxx - 1, byy + 7, '#4a3a2a'); ln(bxx + 2, byy + 4, bxx + 1, byy + 7, '#4a3a2a');
+      rect(bxx - 1, byy + 7, bxx + 1, byy + 8, '#8b5a2b');
     }
 
     if (withChar) {
