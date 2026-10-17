@@ -1745,7 +1745,7 @@
       </div>
       <div class="consola-field" title="Norepetitions: la melodía evita repetir la misma nota seguida (solo el 30% de las veces deja pasar 2 iguales; 3 nunca; la repetida se cambia por otra nota que el set permite en ese momento, la más cercana: C C C C pasa a C D C D) y la armonía evita repetir el mismo acorde seguido (idem: 30% deja pasar 2, 3 nunca; en la repetición se cambia una nota por su octava, así sigue siendo del set pero no suena a máquina). Vale para Melody principal, Melody n2 y Armonía del motor libre. Tildado por defecto; apagado = como siempre."><span class="consola-inst-toggle"><input type="checkbox" id="consolaNoRepChk" checked><label for="consolaNoRepChk">Norepetitions</label></span></div>
       <div class="consola-field" title="Intro: apagado por defecto. Antes de la canción suena UNA vez una introducción de 2 a 12 compases (el largo se sortea en cada Play, nunca mayor que la canción) hecha con los primeros compases de la propia canción pero más tranquila: solo algunas de las pistas (solo armonía, solo batería, bajo + batería, armonía + melodía…) y aligeradas (un acorde y una nota de bajo por compás, menos notas de melodía, batería solo sobre el pulso), un poco más suave y en tempo estricto. Es el mismo interruptor que el Intro de Partimenti. Los sorteos RANDOM CHOOSE (CreaturaRandom / CreaturA / Intervalic / ChordS / Partimenti / Radio) lo pueden prender o apagar. No entra en el export MIDI/MP3."><span class="consola-inst-toggle"><input type="checkbox" id="consolaIntroChk"><label for="consolaIntroChk">Intro</label></span></div>
-      <div class="consola-field" title="Form: apagado por defecto. La canción se arma con SECCIONES: Intro, A y, al azar, B / C / D (una, dos, tres o ninguna) y Coda. Los compases se AGREGAN: A es el largo de siempre (12 / 24 / 4–48 / el número a mano) y suman Intro y Coda (2 a 4 compases cada una) y cada parte B / C / D (4 a 12), con tope de 96 en total. Cada sección tiene su propia instrumentación (armonía / bajo / melodía / batería): el Intro arranca con un solo instrumento, en A entran otros, B / C / D alternan banda completa y versión reducida (baja la intensidad, a veces sin melodía o sin batería) y la sección siguiente vuelve, y la Coda cierra con 1–2 instrumentos más suave. Dos secciones seguidas nunca suenan igual. No se escribe ninguna nota nueva: el set no se traiciona. El piano roll marca cada sección en celeste (Intro, A, B…). Si Form se aplica, el Intro suelto no suena (la intro es una sección de Form). Vale en el motor libre (CreaturaRandom / CreaturA / Intervalic.Creature), en Simplicity, en ChordS y en Partimenti (ahí es el mismo interruptor que el Form de Partimenti); en JazzTunes no se aplica. En los RANDOM CHOOSE, con Form tildado lo llevan el 100% de las canciones."><span class="consola-inst-toggle"><input type="checkbox" id="consolaFormChk"><label for="consolaFormChk">Form</label></span></div>
+      <div class="consola-field" title="Form: prendido por defecto. La canción se arma con SECCIONES: Intro, A y, al azar, B / C / D (una, dos, tres o ninguna) y Coda. Los compases se AGREGAN: A es el largo de siempre (12 / 24 / 4–48 / el número a mano) y suman Intro y Coda (2 a 4 compases cada una) y cada parte B / C / D (4 a 12), con tope de 96 en total. Cada sección tiene su propia instrumentación (armonía / bajo / melodía / batería): el Intro arranca con un solo instrumento, en A entran otros, B / C / D alternan banda completa y versión reducida (baja la intensidad, a veces sin melodía o sin batería) y la sección siguiente vuelve, y la Coda cierra con 1–2 instrumentos más suave. Dos secciones seguidas nunca suenan igual. No se escribe ninguna nota nueva: el set no se traiciona. El piano roll marca cada sección en celeste (Intro, A, B…). Si Form se aplica, el Intro suelto no suena (la intro es una sección de Form). Vale en el motor libre (CreaturaRandom / CreaturA / Intervalic.Creature), en Simplicity, en ChordS y en Partimenti (ahí es el mismo interruptor que el Form de Partimenti); en JazzTunes no se aplica. En los RANDOM CHOOSE, con Form tildado lo llevan el 100% de las canciones."><span class="consola-inst-toggle"><input type="checkbox" id="consolaFormChk" checked><label for="consolaFormChk">Form</label></span></div>
       <div class="consola-field" title="Dynamics: aplica dinámicas de volumen (pp, p, mp, mf, f, ff) a cada evento MIDI con lógica musical: crescendos/diminuendos y terrazas de 2-4 compases que vuelven al nivel inicial del loop, acento en el tiempo 1, melodía por encima del acompañamiento y nota aguda un poco más fuerte que la grave. 0% = como siempre (velocity original). 100% = pp a ff. Mover el slider no regenera: re-aplica sobre las mismas notas. Ver el resultado en Mini mixer > Velocity por track.">
         <label for="consolaDynamicsSlider">Dynamics</label>
         <input type="range" id="consolaDynamicsSlider" min="0" max="100" value="50" step="1">
@@ -1782,7 +1782,6 @@
         <label>Engine options</label>
         <div class="consola-inst-row">
           <span class="consola-inst-toggle" title="Además del subset de siempre (el set completo o casi completo), a veces usa un subconjunto MÁS CHICO del mismo set elegido — más variedad de tamaños de acorde por compás, sin salir nunca del set."><input type="checkbox" id="consolaSubsetsChk"><label for="consolaSubsetsChk">&#8681; Subsets (variety)</label></span>
-          <span class="consola-inst-toggle" title="Además del subset de siempre, a veces usa el COMPLEMENTO del set elegido (las notas que el set deja afuera dentro de la octava) — más variedad armónica, siempre derivada del mismo set."><input type="checkbox" id="consolaSupersetsChk"><label for="consolaSupersetsChk">&#8679; Supersets (variety)</label></span>
           <span class="consola-inst-toggle" title="En cada reataque de armonía se sortean varias combinaciones válidas de subconjunto/transposición/inversión dentro del MISMO acorde/grado elegido (nunca de otro) y se elige la que comparte más notas con el acorde anterior — el doble de notas comunes en promedio que al azar puro, con la misma restricción de conjunto de siempre."><input type="checkbox" id="consolaCommonNotesChk"><label for="consolaCommonNotesChk">&#128279; Common notes</label></span>
         </div>
       </div>
@@ -1879,6 +1878,9 @@
         </div>
         <div class="collapsible-content collapsed" id="harmTestBody">
         <div class="consola-inst-row">
+          <span class="consola-inst-toggle" title="SupersetHarmony (antes &quot;Supersets (variety)&quot;): además del subset de siempre, a veces la ARMONÍA usa el COMPLEMENTO del set elegido (las notas que el set deja afuera dentro de la octava). Afecta SOLO a Harmony y al Bajo (que toca notas del acorde en curso). La melodía (Melody, n2, n3) no lo sigue: sigue tocando notas del set — para sacarla del set usá SupersetMelody (sección Melody)."><input type="checkbox" id="consolaSupersetsChk"><label for="consolaSupersetsChk">&#8679; SupersetHarmony</label></span>
+        </div>
+        <div class="consola-inst-row">
           <span class="consola-inst-toggle" title="More repetition · Harmony: cada compás (salvo el primero) tiene ~50% de repetir al anterior, sorteando UNO de tres modos: el MISMO ACORDE (mismo voicing, ritmo nuevo), el mismo PATRÓN RÍTMICO (acordes nuevos) o LOS DOS a la vez (compás idéntico). El bajo repite su ritmo junto con la armonía cuando toca patrón rítmico. No cambia cómo se toca: solo repite lo que ya sorteó el motor, siempre dentro del set."><input type="checkbox" id="consolaMoreRepHarmChk"><label for="consolaMoreRepHarmChk">&#128257; More repetition · Harmony</label></span>
           <span class="consola-inst-toggle" title="Sustain (pedal de la Armonía, motor libre y Simplicity): 0% = apagado. En cada cambio de acorde se tira un dado con probabilidad = el slider; si sale, el pedal se pisa antes de que termine el acorde y las notas siguen sonando por encima del ataque siguiente (legato; una nota que se repite igual en el acorde siguiente se vuelve a atacar, no se estira). Hasta 50% es el sustain de siempre (50% = el default de antes: pedal que se suelta un instante después del próximo ataque). De 50% a 100% se vuelve RADICAL: el pedal se mantiene apretado a lo largo de 1 a 4 acordes seguidos (más acordes y más cola de resonancia a mayor %), así las armonías se acumulan y se mezclan. 100% = uso radical del pedal en todos los cambios de acorde. No cambia QUÉ notas suenan, solo cuánto duran. Vale también con las casillas de Harmony tildadas."><label for="consolaSustainSlider">&#127929; Sustain</label><input type="range" class="consola-mini-range" id="consolaSustainSlider" min="0" max="100" value="50" step="1"><span class="consola-val" id="consolaSustainVal">50%</span></span>
         </div>
@@ -1924,6 +1926,9 @@
           <button type="button" class="subfield-toggle" aria-expanded="false" aria-controls="melodyBody" onclick="toggleModule(this)" title="Mostrar/ocultar Melody"></button>
         </div>
         <div class="collapsible-content collapsed" id="melodyBody">
+        <div class="consola-inst-row">
+          <span class="consola-inst-toggle" title="SupersetMelody: en cada variación se sortea un grupo de melodías — SOLO Melody, Melody + n2, o Melody + n2 + n3 (nunca n2 o n3 solas) — y en ~50% de los compases (los mismos para todo el grupo) esas melodías tocan notas del COMPLEMENTO del set (las que el set deja afuera), en vez de notas del acorde. Afecta SOLO a las melodías; Harmony y Bajo no lo siguen. Motor libre."><input type="checkbox" id="consolaSupersetMelodyChk"><label for="consolaSupersetMelodyChk">&#8679; SupersetMelody</label></span>
+        </div>
         <div class="consola-inst-row">
           <span class="consola-inst-toggle" title="More repetition · Melody: cada compás (salvo el primero) tiene ~50% de repetir al anterior, sorteando UNO de tres modos: el mismo MOTIVO MELÓDICO (mismas posiciones/contorno de notas, adaptado al acorde vigente; ritmo nuevo), el mismo MOTIVO RÍTMICO (notas nuevas) o LAS DOS cosas a la vez. Solo notas del acorde en curso (el set no se traiciona)."><input type="checkbox" id="consolaMoreRepMelChk"><label for="consolaMoreRepMelChk">&#128257; More repetition · Melody</label></span>
           <span class="consola-inst-toggle" title="Mezcla figuras largas y cortas DENTRO del mismo compás de melodía, en vez del comportamiento de siempre (un compás entero de figuras largas y, cada tanto, un compás entero de fill de notas cortas). No cambia qué nota suena, solo el ritmo."><input type="checkbox" id="consolaMixDurChk" checked><label for="consolaMixDurChk">&#127925; Mix melody duration</label></span>
@@ -9643,7 +9648,7 @@ function runAnalysis() {
   })();
 
   /* ================================================================
-     MÓDULO FORM — checkbox #consolaFormChk (How to play, apagado por defecto).
+     MÓDULO FORM — checkbox #consolaFormChk (How to play, prendido por defecto).
      La canción deja de ser un bloque parejo y pasa a tener SECCIONES: Intro, A, al azar B / C / D (una, dos, tres o ninguna) y Coda.
      Los compases se AGREGAN: A es el largo de siempre (12 / 24 / 4–48 / el número a mano) y suman su largo Intro y Coda (2 a 4
      compases; 1 en canciones muy cortas) y cada parte B / C / D (4 a 12, nunca más que A); tope de 96 compases en total.
@@ -13284,6 +13289,50 @@ function runAnalysis() {
     CYCLEHOLD.end();
     return { events: events, slotChords: slotChords };
   }
+  // SupersetMelody (#consolaSupersetMelodyChk, sección Melody) + desacople de SupersetHarmony.
+  //  - SupersetHarmony (#consolaSupersetsChk) afecta SOLO a Harmony y Bajo: cuando la armonía de un reataque
+  //    usa el complemento del set, la melodía NO lo sigue; toca el set de ese reataque (melodyChordAt).
+  //  - SupersetMelody: en cada variación (motor libre) se sortea el grupo de melodías que lo usa — Melody sola,
+  //    Melody + n2, o Melody + n2 + n3, NUNCA n2 o n3 aisladas (pista 0 = Melody, 1 = n2, 2 = n3) — y ~50% de los
+  //    compases (los mismos para todo el grupo) esas melodías tocan notas del COMPLEMENTO del set (las que el set deja afuera).
+  //    n3 sale de la principal y n2 puede copiarla (melody_2follows): si no están en el grupo, callan / no copian en esos compases.
+  var SUPMEL = (function(){
+    var cfg = { on:false, count:0, bars:[] };
+    var cur = -1; // pista que se está armando ahora (-1 = ninguna del grupo)
+    function checked(){ var c = document.getElementById("consolaSupersetMelodyChk"); return !!(c && c.checked); }
+    function begin(numBars){
+      cfg = { on:false, count:0, bars:[] };
+      cur = -1;
+      if(!checked()) return;
+      cfg.on = true;
+      cfg.count = 1 + Math.floor(Math.random()*3); // 1, 2 o 3 primeras melodías
+      for(var b=0; b<numBars; b++) cfg.bars.push(Math.random() < 0.5);
+    }
+    function finish(){ cfg.on = false; cur = -1; }
+    function use(trackIdx){ cur = trackIdx; }
+    function applies(bar){ return cfg.on && cur >= 0 && cur < cfg.count && !!cfg.bars[bar]; }
+    function skipBar(bar, trackIdx){ return cfg.on && !!cfg.bars[bar] && trackIdx >= cfg.count; }
+    return { begin:begin, finish:finish, use:use, applies:applies, skipBar:skipBar };
+  })();
+  // Acorde que usa la MELODÍA en `offset` del compás `bar` (reemplaza a currentChordAt solo en las líneas melódicas).
+  function melodyChordAt(slots, offset, bar){
+    var sl = currentSlotAt(slots, offset), ch = sl.chord, set = sl.setNotes;
+    if(!set || !set.length) return ch;
+    var pcs = {}; set.forEach(function(m){ pcs[mod12(m)] = true; });
+    var low = Math.min.apply(null, ch);
+    function voice(list){
+      return list.sort(function(a, b){ return mod12(a - low) - mod12(b - low); }).map(function(pc){ return low + mod12(pc - low); });
+    }
+    if(supersetVarietyEnabled && !ch.every(function(m){ return pcs[mod12(m)]; })){
+      ch = voice(Object.keys(pcs).map(Number)); // SupersetHarmony: la armonía salió del set, la melodía se queda en el set
+    }
+    if(SUPMEL.applies(bar)){
+      var out = [];
+      for(var pc=0; pc<12; pc++) if(!pcs[pc]) out.push(pc);
+      if(out.length) ch = voice(out);
+    }
+    return ch;
+  }
   // Busca, dentro de los reataques de un compás (slots, con
   // {chord,startBeat,durBeats}), cuál está sonando en el instante
   // `offset` (beats desde el inicio del compás) — usado por la melodía
@@ -13815,7 +13864,7 @@ function runAnalysis() {
           // Rapid runs: sin silencios, paso a paso por las notas del acorde vigente
           var RR = runMod[bar] === 2 ? RAPIDRUNS2 : RAPIDRUNS;
           if(k === 0 || !runMasks[bar][k-1]) RR.startRun(lastMelodyMidi);
-          var runMidi = RR.nextPitch(currentChordAt(slotChords[bar], mOffset));
+          var runMidi = RR.nextPitch(melodyChordAt(slotChords[bar], mOffset, bar));
           melodyEvents.push({midi: runMidi, startBeat: barStart+mOffset, durBeats:dur, bar:bar, vel: RR.accentVel()}); // acento: 1ra nota de cada célula
           lastMelodyMidi = runMidi;
           mOffset += dur;
@@ -13825,7 +13874,7 @@ function runAnalysis() {
           mOffset += dur;
           return;
         }
-        var currentSlotChord = currentChordAt(slotChords[bar], mOffset);
+        var currentSlotChord = melodyChordAt(slotChords[bar], mOffset, bar);
         var base, octAdd, midi;
         if(prevMotif){
           // More repetition · Melody (motivo melódico): misma posición dentro del acorde y misma octava
@@ -14642,7 +14691,7 @@ function runAnalysis() {
       return 0;
     }
     var follow = {};
-    for (var b=0; b<NUM_BARS; b++) follow[b] = !melody2RestCur[b] && Math.random() < 0.5;
+    for (var b=0; b<NUM_BARS; b++) follow[b] = !melody2RestCur[b] && !SUPMEL.skipBar(b, 1) && Math.random() < 0.5;
     var mainByBar = {};
     state.melodyEvents.forEach(function(e){ var b = barOf(e.startBeat); (mainByBar[b] = mainByBar[b] || []).push(e); });
     var out = state.melody2Events.filter(function(e){ var b = barOf(e.startBeat); return !(follow[b] && mainByBar[b]); });
@@ -14684,6 +14733,7 @@ function runAnalysis() {
     for (var b=0; b<NUM_BARS; b++){
       var evs = byBar[b];
       if(!evs || !evs.length) continue;
+      if(SUPMEL.skipBar(b, 2)) continue; // SupersetMelody: n3 solo entra si el grupo es Melody + n2 + n3
       evs = evs.slice().sort(function(x, y){ return x.startBeat - y.startBeat; });
       if (Math.random() < 0.3){                       // sigue a la principal, octava abajo
         evs.forEach(function(e){ out.push({ midi: e.midi - 12, startBeat: e.startBeat, durBeats: e.durBeats, bar: b }); });
@@ -15038,6 +15088,7 @@ function runAnalysis() {
     }
     state.rootChord = rootChord;
     if(SONGTITLE) { SONGTITLE.next(); SONGTITLE.sets(multi); } // título nuevo por cada generación de música, con el nombre del set debajo
+    SUPMEL.finish(); // SupersetMelody: apagado hasta el sorteo del motor libre
     // Simplicity al 100%: en vez del motor libre, arma la versión simple (con MULTI SETS: cada compás, el set entero que le tocó).
     if(normalitoProb() >= 1 && !MIX.on("consolaNormalSlider")){ normalizeConsola(); return; }
     fixedIntervalOffset = 0; // modo test de intervalos fijos: cada variación nueva arranca el ciclo en C (offset 0)
@@ -15059,15 +15110,17 @@ function runAnalysis() {
     var chordBuilt = MOREREP.harmEnabled() ? MOREREP.applyHarmony(chordBuilt0, NUM_BARS) : chordBuilt0; // More repetition · Harmony
     state.chordEvents = SUSTAINPEDAL.apply(chordBuilt.events, chordBuilt.slotChords); // Sustain (Harmony): pedal con probabilidad = slider (0% apagado, 100% radical); vale también con casillas de Harmony
     state.slotChords = chordBuilt.slotChords;
+    SUPMEL.begin(NUM_BARS); SUPMEL.use(0); // SupersetMelody: sorteo del grupo y de los compases; pista 0 = Melody
     var bm = buildBassMelodyEventsRandom(state.progression, built.meta, chordBuilt.slotChords);
+    SUPMEL.use(-1);
     state.bassEvents = TRIPLETS.applyLine(bm.bassEvents, chordBuilt.slotChords);
     var melodyPlain = TRIPLETS.applyLine(bm.melodyEvents, chordBuilt.slotChords);
     state.melodyEvents = ORNAMENTS.apply(melodyPlain, chordBuilt.slotChords); // Ornaments: adornos sobre la melodía principal (moreComping sigue a las notas sin adornar)
     state.comping2Events = MORECOMPING.enabled()
-      ? MORECOMPING.buildEvents(melodyPlain, function(bar, offset){ return currentChordAt(chordBuilt.slotChords[bar], offset); })
+      ? MORECOMPING.buildEvents(melodyPlain, function(bar, offset){ return melodyChordAt(chordBuilt.slotChords[bar], offset, bar); })
       : [];
     state.bebopEvents = BEBOPMELODY.enabled()
-      ? TRIPLETS.applyLine(BEBOPMELODY.buildEvents(NUM_BARS, function(bar, offset){ return currentChordAt(chordBuilt.slotChords[bar], offset); }), chordBuilt.slotChords)
+      ? TRIPLETS.applyLine(BEBOPMELODY.buildEvents(NUM_BARS, function(bar, offset){ return melodyChordAt(chordBuilt.slotChords[bar], offset, bar); }), chordBuilt.slotChords)
       : [];
     // Melody n2: segunda melodía independiente (nuevo sorteo de ritmo y notas) en TODOS los
     // compases, salvo silencios random de 1, 2 o 4 compases (ver melody2RestBars)
@@ -15079,7 +15132,10 @@ function runAnalysis() {
             for (var b=NUM_BARS-1; b>=0; b--) if (beat >= RHYTHM.start(b) - 1e-6) return b;
             return 0;
           }
-          return TRIPLETS.applyLine(buildBassMelodyEventsRandom(state.progression, built.meta, chordBuilt.slotChords).melodyEvents, chordBuilt.slotChords)
+          SUPMEL.use(1); // pista 1 = Melody n2
+          var n2raw = buildBassMelodyEventsRandom(state.progression, built.meta, chordBuilt.slotChords).melodyEvents;
+          SUPMEL.use(-1);
+          return TRIPLETS.applyLine(n2raw, chordBuilt.slotChords)
             .filter(function(e){ return !restBars[barOf(e.startBeat)]; });
         })()
       : [];
@@ -15117,7 +15173,7 @@ function runAnalysis() {
       state.progression = state.progression.map(function(c, b){ return useN[b] ? nProg.progression[b] : c; });
       state.roles = state.roles.map(function(r, b){ return useN[b] ? nProg.roles[b] : r; });
       state.melodyEvents = ORNAMENTS.apply(melodyPlainMix, state.slotChords);
-      var chordAtMix = function(bar, offset){ return currentChordAt(state.slotChords[bar], offset); };
+      var chordAtMix = function(bar, offset){ return melodyChordAt(state.slotChords[bar], offset, bar); };
       state.comping2Events = MORECOMPING.enabled() ? MORECOMPING.buildEvents(melodyPlainMix, chordAtMix) : [];
       if(BEBOPMELODY.enabled()){
         var bebopRaw = BEBOPMELODY.buildEvents(NUM_BARS, chordAtMix);
@@ -15141,6 +15197,7 @@ function runAnalysis() {
     state.chordEvents = OSTINATOV2.apply(HARMTEXTURES.apply(WIDERANGE.apply(state.chordEvents), state.slotChords), state.slotChords); // wide.range (Harmony): acordes largos duplicados en varias octavas, capas escalonadas
     state.chordEvents = staggerBigChordAttacks(state.chordEvents); // Armonía: 6+ notas nunca atacan simultáneas
     applyMelody2Follows(); // melody_2follows: Melody n2 copia la melodía principal en ~50% de los compases
+    SUPMEL.finish(); // SupersetMelody: ya no hace falta el sorteo (n3 y melody_2follows lo usaron arriba)
     NOREPEAT.melody(state.melody2Events, "consolaNoRepChk"); // Norepetitions: también en Melody n2
     PITCHFX.mark(state.melodyEvents); PITCHFX.mark(state.melody2Events); // glissando / bend↓ (Ornaments): marcas para el audio
     DYNAMICS.applyPitched(state); // Dynamics (0% = no-op)
@@ -23707,6 +23764,9 @@ function runAnalysis() {
     subsetVarietyEnabled = this.checked;
     if(state.rootChord.length) regenerateConsola();
   });
+  document.getElementById("consolaSupersetMelodyChk").addEventListener("change", function(){
+    if(state.rootChord.length) regenerateConsola();
+  });
   document.getElementById("consolaSupersetsChk").addEventListener("change", function(){
     supersetVarietyEnabled = this.checked;
     if(state.rootChord.length) regenerateConsola();
@@ -25775,6 +25835,14 @@ function runAnalysis() {
         randomizeSlider("consolaHarmonicSpaceSlider", 0, 100);
         randomizeSlider("consolaRhythmSpaceSlider", 0, 100);
         randomizeSlider("consolaRapidRunsSlider", 0, 30);
+        // Swing: checkbox on/off al azar (50/50); si queda on, el slider sale al azar entre 30% y 100%.
+        var swC = document.getElementById("consolaSwingChk"), swS = document.getElementById("consolaSwingSlider");
+        if(swC && swS){
+          swC.checked = Math.random() < 0.5;
+          if(swC.checked) randomizeSlider("consolaSwingSlider", 30, 100);
+          swC.dispatchEvent(new Event("change", { bubbles: true })); // sincroniza slider habilitado/etiqueta; ese handler no regenera
+          SL("Swing", swC.checked ? "on · " + swS.value + "%" : "off");
+        }
     }
     function randomizeAndFill(bella){
         randomizeSliders();
@@ -25790,8 +25858,8 @@ function runAnalysis() {
           maxSlider.dispatchEvent(new Event("input", { bubbles: true }));
         }
         setChecked("multiSetsModeMixed", true);
-        // Cantidad de sets al azar: 5 o 2 (multi set).
-        var nSets = Math.random() < 0.5 ? 5 : 2;
+        // Cantidad de sets al azar: 2, 3, 4 o 5 (multi set), con igual probabilidad (25% cada uno).
+        var nSets = 2 + Math.floor(Math.random() * 4);
         SL("Sets al azar", nSets + " sets · máx " + maxN + " notas");
         // bella: false = CreaturaRandom, true = CreaturA, "intervalic" = CreaturaIntervalic.
         var fillFn = bella === "intervalic" ? window.__multiSetsIntervalicFillCount
