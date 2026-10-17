@@ -24823,6 +24823,59 @@ function runAnalysis() {
           if(sl && Number(sl.value) > 0){ stDr.drumVol = { prev: sl.value, set: 0 }; setDrumVol(0); }
         }
       }
+      // ---- Voces random por criterio (rol + modo) ----
+      // Cada pista sortea (con su probabilidad; si no sale, queda el preset actual) un .sf2 de las carpetas de Extra v2/ que le corresponden:
+      //   creatura / common : Armonía = teclados + guitarras + percusivos melódicos (75%) · Melodía y Melody n2/n3 = LEAD + Brass & Strings + Synth Leads + percusivos + acordeón/flauta de Keys (75%/50%)
+      //                       Doble armonía = pads + cuerdas + órganos · Doble melodía = LEAD + Brass & Strings + percusivos · Bebop = vientos de LEAD
+      //                       Bajo y Bajo doble = carpeta BASS (40%/40%) · comping2 = teclados + guitarras + pads · Drums = Brush Kit / Perfected Drums (30%; ETHNIC/ORCHESTRA quedan para el 5% de Drums especial)
+      //   partimenti        : solo sonidos de época: clavecines + órgano (armonía, bajo y melodías), melodías también con cuerdas, oboe y flautas
+      //   jazz (JazzTunes)  : armonía = pianos/eléctricos/órgano jazz/Jazz guitar · melodía y bebop = saxos, trompeta, clarinete, oboe, flautas · bajo = Acoustic Bass/Contrabass · Drums = Brush/Perfected
+      // Los dobles que están en "mute" siguen apagados. No corre si 8bits está tildado (8bits manda). Se deshace en pre() (como 8bits / Drums especial).
+      var stV = { saved: {}, drumVol: null };
+      function vPool(folder, only, not){
+        return extraFiles().filter(function(e){
+          var n = e.path.split("/").pop();
+          return folder.test(e.path) && (!only || only.test(n)) && (!not || !not.test(n));
+        });
+      }
+      function voiceRoles(kind){
+        var keyb = vPool(/\/Keys\//, null, /Accordion|Flute/i), keyWind = vPool(/\/Keys\//, /Accordion|Flute/i),
+            organs = vPool(/\/Keys\//, /organ/i), harpsi = vPool(/\/Keys\//, /Harpsichord/i),
+            gtr = vPool(/\/Guitars\//), perc = vPool(/\/Percusive melodic\//), lead = vPool(/\/LEAD\//),
+            brass = vPool(/\/Brass & Strings\//), strings = vPool(/\/Brass & Strings\//, /strings|Violin|Lyrical/i),
+            pads = vPool(/\/Polysynths\//), synth = vPool(/\/Synth Leads\//), bass = vPool(/\/BASS\//),
+            winds = vPool(/\/LEAD\//, /Sax|Trumpet|Clarinet|Oboe|Flute|Ocarina|Harmonica|Armonica/i, /Overdrive/i),
+            kits = vPool(/\/Drums\//, null, /ETHNIC|ORCHESTRA/i);
+        if(kind === "partimenti"){
+          var baroque = harpsi.concat(organs);
+          var baroqueMel = baroque.concat(strings, vPool(/\/LEAD\//, /oboe|Flute/i), vPool(/\/Brass & Strings\//, /Oboe|Reed|Flute/i));
+          return [["harmony", baroque, 0.75], ["bass", baroque.concat(vPool(/\/BASS\//, /Contrabass/i)), 0.5],
+                  ["melody", baroqueMel, 0.75], ["melody2", baroqueMel, 0.5], ["melody3", baroqueMel, 0.5]];
+        }
+        if(kind === "jazz"){
+          return [["harmony", vPool(/\/Keys\//, null, /Accordion|Flute|Harpsichord|Church/i).concat(vPool(/\/Guitars\//, /Jazz/i)), 0.6],
+                  ["melody", winds, 0.6], ["bebop", winds, 0.5], ["bass", vPool(/\/BASS\//, /Acoustic|Contrabass/i), 0.5], ["drum", kits, 0.4]];
+        }
+        return [["harmony", keyb.concat(gtr, perc), 0.75], ["chordDouble", pads.concat(strings, organs), 0.5],
+                ["melody", lead.concat(brass, synth, perc, keyWind), 0.75], ["melodyDouble", lead.concat(brass, perc), 0.5],
+                ["melody2", lead.concat(brass, synth, perc, keyWind), 0.5], ["melody3", lead.concat(brass, synth, perc, keyWind), 0.5],
+                ["bebop", winds, 0.5], ["bass", bass, 0.4], ["bassDouble", bass, 0.4],
+                ["comping2", keyb.concat(gtr, pads), 0.5], ["drum", kits, 0.3]];
+      }
+      function rollVoices(kind){
+        if(!extraFiles().some(function(e){ return /\/Extra v2\//i.test(e.path); })){ SL("Voces (RANDOM CHOOSE)", "no se sortea: loadExtra todavía no cargó las carpetas"); return; }
+        var out = [];
+        voiceRoles(kind).forEach(function(r){
+          var k = r[0], pool = r[1], prob = r[2];
+          if(!pool.length || !SEL_ID[k]) return;
+          if((k === "chordDouble" || k === "melodyDouble" || k === "bassDouble") && mixPresets[k] === "mute") return;
+          if(Math.random() >= prob) return;
+          var e = pool[rnd(pool.length)];
+          remember(stV, k, keyOf(e), e.label);
+          out.push(k + "=" + e.label);
+        });
+        SL("Voces (RANDOM CHOOSE, " + kind + ")", out.length ? out.join(" · ") : "se dejan los presets actuales");
+      }
       // ---- largo del segmento ----
       function rollBars(){
         var num = document.getElementById("consolaBarsNum");
@@ -24880,6 +24933,7 @@ function runAnalysis() {
           if(kind !== "partimenti" && window.__radioPlayer && window.__radioPlayer.isOn && window.__radioPlayer.isOn() && typeof window.__undoPartimentiSet === "function") window.__undoPartimentiSet();
           restore(stDr);
           if(auto8){ auto8 = false; if(chk8){ chk8.checked = false; } restore(st8); }
+          restore(stV);   // voces sorteadas en la canción anterior
           rollBars();
           rollMelodies();
           rollBeats();
@@ -24887,6 +24941,7 @@ function runAnalysis() {
           rollForm();
         },
         post: function(kind){
+          if(!(chk8 && chk8.checked)) rollVoices(kind);   // voces por criterio (antes del 8bits/Drums 5%, que las pisan)
           if(chk8 && !chk8.checked){
             var r = Math.random();
             if(r < 0.05){
