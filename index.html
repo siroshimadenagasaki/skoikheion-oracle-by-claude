@@ -8940,6 +8940,212 @@ function runAnalysis() {
   ];
 
   /* ================================================================
+     MÓDULO MIX — checkbox "MiX" (prendido por defecto) junto a cada uno de los sliders de How to play:
+     Simplicity, Chromatism, Chords, Jazz, Chord simultaneity, Notes complexity, Triplets, musicSilence y Syncopation.
+     Con MiX prendido, el slider NO es el estado de cada instante sino el TECHO de una automatización que se
+     calcula UNA vez al generar la canción (regenerateConsola → MIX.regenerate) y queda reflejada en las notas del
+     piano roll. El valor efectivo en cada punto es  slider × f  con f continuo entre 0 y 1 (0 = nada, 1 = el máximo
+     del slider; ej. Chords en 100% → algunas secciones al máximo, otras a la mitad, otras a 0%).
+     Plan: una curva por slider con resolución de MEDIO COMPÁS, armada en capas:
+       · SECCIÓN (alineada con la Form si está tildada; si no, bloques de 8 compases): nivel de la sección — sorteado
+         continuo (con ~27% de caer en el máximo y ~15% en 0), a veces eco del nivel de 2 secciones atrás;
+       · estilo de la sección: "flat" (nivel por frase de 4 compases, con variación), "arc" (rampa de un nivel a otro),
+         "contrast" (compases alternados entre dos niveles) o "random" (un sorteo por compás);
+       · MITAD DE COMPÁS: a veces la 2ª mitad cambia (espejo 1-f, p. ej. 0% / 100%, o un nivel nuevo), más seguido al
+         final de frase.
+     Semilla: cada generación sortea una semilla maestra y cada slider deriva la suya (repetible: MIX.seed()).
+     Notes complexity es un slider maestro sin lógica propia: su curva actúa como envolvente que se mezcla (25%) con la
+     curva propia de Chromatism, Chords, Jazz y Chord simultaneity cuando éstos tienen MiX prendido.
+     MiX se IGNORA mientras esté activo ChordS (CommonChords), Partimenti, JazzTunes u Ostinatov2: ahí cada slider vale
+     lo que marca. Sin MiX (checkbox destildado) cada slider se comporta exactamente como antes.
+     ================================================================ */
+  var MIX = (function(){
+    var IDS = ["consolaNormalSlider", "consolaChromaSlider", "consolaChordsSlider", "consolaJazzSlider", "consolaChordSimulSlider",
+               "consolaNotesComplexitySlider", "consolaTripletsSlider", "consolaMusicSilenceSlider", "consolaSyncopationSlider"];
+    var NAMES = { consolaNormalSlider: "Simplicity", consolaChromaSlider: "Chromatism", consolaChordsSlider: "Chords", consolaJazzSlider: "Jazz",
+                  consolaChordSimulSlider: "Chord simultaneity", consolaNotesComplexitySlider: "Notes complexity",
+                  consolaTripletsSlider: "Triplets", consolaMusicSilenceSlider: "musicSilence", consolaSyncopationSlider: "Syncopation" };
+    var MASTER = "consolaNotesComplexitySlider";
+    var CHILDREN = ["consolaChromaSlider", "consolaChordsSlider", "consolaJazzSlider", "consolaChordSimulSlider"];
+    var MASTER_W = 0.25;  // peso de la envolvente de Notes complexity sobre sus 4 sliders (poco: así las curvas propias conservan sus extremos 0 / máximo)
+    var PHRASE = 4, SECTION_FALLBACK = 8;
+    var plans = {}, means = {}, nBars = 0, seedMaster = 1, pos = { bar: -1, beat: 0 }, secsNow = [], forcedSeed = null, seedCounter = 1;
+
+    function mulberry32(a){
+      return function(){
+        var t = a += 0x6D2B79F5;
+        t = Math.imul(t ^ t >>> 15, t | 1);
+        t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+      };
+    }
+    function hash(s){ var h = 2166136261; for(var i = 0; i < s.length; i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+    function clamp01(x){ return x < 0 ? 0 : (x > 1 ? 1 : x); }
+
+    function chk(id){ return document.getElementById("mixChk_" + id); }
+    function checked(id){ var c = chk(id); return !c || c.checked; }   // sin checkbox en el DOM (todavía) = prendido
+    function suspended(){
+      return !!((typeof COMMONCHORDS !== "undefined" && COMMONCHORDS && COMMONCHORDS.active) ||
+                (typeof PARTIMENTI !== "undefined" && PARTIMENTI && PARTIMENTI.active) ||
+                (typeof JAZZTUNES !== "undefined" && JAZZTUNES && JAZZTUNES.active) ||
+                (typeof OSTINATOV2 !== "undefined" && OSTINATOV2 && OSTINATOV2.enabled && OSTINATOV2.enabled()));
+    }
+    function on(id){ return !!(plans[id] && nBars > 0 && checked(id) && !suspended()); }
+
+    // Secciones del plan: las de la Form (si hay y cierran el largo de la canción) o bloques de 8 compases.
+    function sections(){
+      var fs = (typeof FORM !== "undefined" && FORM && FORM.sections) ? FORM.sections() : null, out = [], b;
+      if(fs && fs.length){
+        var tot = 0; fs.forEach(function(s){ tot += s.n; });
+        if(tot === nBars) return fs;
+      }
+      for(b = 0; b < nBars; b += SECTION_FALLBACK) out.push({ name: "", b0: b, n: Math.min(SECTION_FALLBACK, nBars - b) });
+      return out;
+    }
+
+    function genPlan(id, secs, nb, seed){
+      var rng = mulberry32((seed ^ hash(id)) >>> 0), out = new Float32Array(nb * 2), levels = [];
+      function lvl(){ var r = rng(); return r < 0.27 ? 1 : (r < 0.42 ? 0 : rng()); }
+      secs.forEach(function(s, si){
+        var L = (si >= 2 && rng() < 0.3) ? clamp01(levels[si - 2] + (rng() - 0.5) * 0.3) : lvl();
+        levels.push(L);
+        var r = rng(), style = r < 0.35 ? "flat" : (r < 0.55 ? "arc" : (r < 0.75 ? "contrast" : "random"));
+        var other = lvl(), pl = L;
+        for(var k = 0; k < s.n; k++){
+          var bar = s.b0 + k;
+          if(bar >= nb) break;
+          var val;
+          if(style === "flat"){ if(k % PHRASE === 0) pl = clamp01(L + (rng() - 0.5) * 0.4); val = pl; }
+          else if(style === "arc"){ var t = s.n > 1 ? k / (s.n - 1) : 0; val = L + (other - L) * t; }
+          else if(style === "contrast"){ val = (k % 2 === 0) ? L : other; }
+          else { val = lvl(); }
+          var psplit = (k % PHRASE === PHRASE - 1 ? 0.35 : 0.15) + (style === "contrast" ? 0.1 : 0);
+          var second = val;
+          if(rng() < psplit) second = rng() < 0.5 ? 1 - val : lvl();
+          out[bar * 2] = val;
+          out[bar * 2 + 1] = second;
+        }
+      });
+      return out;
+    }
+
+    function regenerate(){
+      pos.bar = -1; pos.beat = 0;
+      nBars = Math.max(0, NUM_BARS | 0);
+      // semilla maestra SIN consumir Math.random (así, con MiX apagado, el resto del motor sortea exactamente igual que antes)
+      if(forcedSeed != null) seedMaster = forcedSeed >>> 0;
+      else if(typeof crypto !== "undefined" && crypto.getRandomValues) seedMaster = crypto.getRandomValues(new Uint32Array(1))[0];
+      else seedMaster = (Date.now() ^ (seedCounter++ * 2654435761)) >>> 0;
+      secsNow = sections();
+      plans = {}; means = {};
+      IDS.forEach(function(id){
+        var p = genPlan(id, secsNow, nBars, seedMaster), s = 0;
+        for(var i = 0; i < p.length; i++) s += p[i];
+        plans[id] = p; means[id] = p.length ? s / p.length : 1;
+      });
+      drawAll();
+    }
+
+    // Fracción 0..1 de la curva propia de `id` en (bar, beat); bar < 0 / null = posición desconocida → promedio de la curva.
+    function planAt(id, bar, beat){
+      var p = plans[id];
+      if(!p || !p.length) return 1;
+      if(bar == null || bar < 0) return means[id];
+      var beats = RHYTHM.beats(bar), half = (beat || 0) >= beats / 2 - 1e-6 ? 1 : 0;
+      var i = Math.min(p.length - 1, bar * 2 + half);
+      return p[i];
+    }
+    function frac(id, bar, beat){
+      if(bar === undefined){ bar = pos.bar; beat = pos.beat; }
+      var f = planAt(id, bar, beat);
+      if(CHILDREN.indexOf(id) >= 0 && on(MASTER)) f = (1 - MASTER_W) * f + MASTER_W * planAt(MASTER, bar, beat);
+      return f;
+    }
+    // Valor efectivo (0..1) de un slider cuyo valor es `base` (0..1): techo × curva. Sin MiX = `base` tal cual.
+    function v(id, base, bar, beat){
+      if(!on(id)) return base;
+      return base * frac(id, bar, beat);
+    }
+    function at(bar, beat){ pos.bar = bar; pos.beat = beat || 0; }
+
+    // ---------- UI: checkbox MiX + mini gráfico debajo de cada slider ----------
+    function sliderFrac(id){
+      var sl = document.getElementById(id), x = sl ? parseFloat(sl.value) : 0;
+      return isFinite(x) ? clamp01(x / 100) : 0;
+    }
+    function drawOne(id){
+      var cv = document.getElementById("mixGraph_" + id);
+      if(!cv || !cv.getContext) return;
+      var ctx = cv.getContext("2d"), W = cv.width, H = cv.height;
+      var css = (typeof getComputedStyle === "function") ? getComputedStyle(document.documentElement) : null;
+      var gold = (css && css.getPropertyValue("--gold").trim()) || "#d4af37", muted = (css && css.getPropertyValue("--ink-muted").trim()) || "#888";
+      ctx.clearRect(0, 0, W, H);
+      var ceil = sliderFrac(id), active = on(id), n = plans[id] ? plans[id].length : 0;
+      ctx.globalAlpha = 0.35; ctx.fillStyle = muted; ctx.fillRect(0, H - 1, W, 1); ctx.globalAlpha = 1;
+      if(!active || !n){
+        ctx.globalAlpha = 0.5; ctx.fillStyle = muted;
+        var h0 = Math.round(ceil * (H - 2));
+        ctx.fillRect(0, H - 1 - h0, W, Math.max(1, h0));   // MiX apagado o suspendido: línea plana = el valor del slider
+        ctx.globalAlpha = 1;
+        return;
+      }
+      ctx.fillStyle = gold;
+      var cw = W / n;
+      for(var i = 0; i < n; i++){
+        var bar = i >> 1, beat = (i & 1) ? RHYTHM.beats(bar) / 2 : 0;
+        var h = Math.round(ceil * frac(id, bar, beat) * (H - 2));
+        if(h > 0) ctx.fillRect(Math.floor(i * cw), H - 1 - h, Math.max(1, Math.ceil(cw) - (cw > 3 ? 1 : 0)), h);
+      }
+      // separadores de frase (cada 4 compases)
+      ctx.globalAlpha = 0.25; ctx.fillStyle = muted;
+      for(var b = PHRASE; b < nBars; b += PHRASE) ctx.fillRect(Math.floor(b * 2 * cw), 0, 1, H);
+      ctx.globalAlpha = 1;
+    }
+    function drawAll(){ IDS.forEach(drawOne); }
+    function initUI(){
+      IDS.forEach(function(id){
+        var sl = document.getElementById(id);
+        if(!sl || chk(id)) return;
+        var field = sl.parentNode;
+        var row = document.createElement("div");
+        row.style.cssText = "display:flex;align-items:center;gap:6px;";
+        var lab = document.createElement("label");
+        lab.title = NAMES[id] + " MiX: prendido (default), el slider es el TECHO de una automatización que se calcula al generar la canción " +
+          "(secciones, frases, compases y mitades de compás con valores entre 0 y el slider) y queda reflejada en el piano roll; el gráfico muestra esa curva. " +
+          "Destildado: el slider vale lo mismo en toda la canción, como siempre. Se ignora con ChordS, Partimenti, JazzTunes y Ostinatov2.";
+        lab.style.cssText = "display:inline-flex;align-items:center;gap:3px;font-size:10px;cursor:pointer;white-space:nowrap;";
+        var cb = document.createElement("input");
+        cb.type = "checkbox"; cb.id = "mixChk_" + id; cb.checked = true;
+        lab.appendChild(cb); lab.appendChild(document.createTextNode("MiX"));
+        var cv = document.createElement("canvas");
+        cv.id = "mixGraph_" + id; cv.width = 118; cv.height = 18; cv.className = "mix-graph";
+        cv.style.cssText = "width:118px;height:18px;flex:none;";
+        cv.title = NAMES[id] + ": curva de MiX de esta canción (cada barra = medio compás; líneas = cada 4 compases).";
+        row.appendChild(lab); row.appendChild(cv);
+        field.appendChild(row);
+        cb.addEventListener("change", function(){
+          drawOne(id);
+          if(typeof state !== "undefined" && state.rootChord && state.rootChord.length && typeof regenerateConsola === "function") regenerateConsola();
+        });
+        sl.addEventListener("input", function(){ drawOne(id); });
+      });
+      drawAll();
+    }
+
+    return {
+      IDS: IDS, regenerate: regenerate, on: on, v: v, at: at, frac: frac, initUI: initUI, drawAll: drawAll,
+      seed: function(){ return seedMaster; }, setSeed: function(n){ forcedSeed = (n == null) ? null : n; }, plan: function(id){ return plans[id] ? Array.prototype.slice.call(plans[id]) : null; },
+      suspended: suspended, planFor: function(id){ return plans[id] || null; },
+      // dado Jazz por compás/mitad (pools por compás)
+      rollJazz: function(bar, beat){
+        var sl = document.getElementById("consolaJazzSlider"), x = sl ? Number(sl.value) : 0;
+        if(isNaN(x)) x = 0;
+        return Math.random() < v("consolaJazzSlider", Math.max(0, Math.min(100, x)) / 100, bar, beat);
+      }
+    };
+  })();
+
+  /* ================================================================
      MÓDULO JAZZ — separado a propósito del motor de arriba/abajo.
      Se controla con el slider #consolaJazzSlider, 0-100% (0% por
      defecto). Ya NO es un interruptor binario: JAZZ.roll() tira un
@@ -8972,7 +9178,7 @@ function runAnalysis() {
       var sl = document.getElementById("consolaJazzSlider");
       var v = sl ? Number(sl.value) : 0;
       if (isNaN(v)) v = 0;
-      return Math.max(0, Math.min(100, v)) / 100;
+      return MIX.v("consolaJazzSlider", Math.max(0, Math.min(100, v)) / 100); // MiX: techo × curva en la posición actual (sin MiX = el slider)
     }
     // Dado independiente por punto de decisión — ver comentario del
     // módulo. Reemplaza al viejo enabled() (checkbox binario).
@@ -9621,7 +9827,8 @@ function runAnalysis() {
         svg.appendChild(tx);
       });
     }
-    return { on: on, begin: begin, reset: reset, apply: apply, active: active, summary: summary, save: save, load: load, drawLabels: drawLabels, color: function(){ return COLOR; },
+    return { on: on, begin: begin, reset: reset, apply: apply, active: active, summary: summary,
+       sections: function(){ return cur && cur.sections ? cur.sections.map(function(s){ return { name: s.name, b0: s.b0, n: s.n }; }) : null; }, save: save, load: load, drawLabels: drawLabels, color: function(){ return COLOR; },
              sections: function(){ return cur ? cur.sections : null; },
              // (para pruebas) cuántos eventos de cada grupo caen en cada sección
              counts: function(){
@@ -9886,22 +10093,23 @@ function runAnalysis() {
      ================================================================ */
   var TRIPLETS = (function(){
     var EPS = 1e-6, active = true, MAX_COVER = 1;
-    function prob(){
+    function prob(bar, beat){
       var sl = document.getElementById("consolaTripletsSlider");
       var v = sl ? parseFloat(sl.value) : 0;
-      return isFinite(v) ? Math.max(0, Math.min(100, v)) / 100 * MAX_COVER : 0;
+      var p0 = isFinite(v) ? Math.max(0, Math.min(100, v)) / 100 * MAX_COVER : 0;
+      return bar === undefined ? p0 : MIX.v("consolaTripletsSlider", p0, bar, beat); // MiX: techo × curva por compás/mitad
     }
     function on(){ return active && prob() > 0; }
     function setActive(b){ active = !!b; }
     function planBar(bar){
-      var p = prob(), beats = RHYTHM.beats(bar), wins = [], x = 0;
+      var beats = RHYTHM.beats(bar), wins = [], x = 0;
       while(x < beats - EPS){
         var opts = [4, 2, 1].filter(function(W){
           return Math.abs(x/W - Math.round(x/W)) < EPS && x + W <= beats + EPS;
         });
         if(!opts.length) break; // resto del compás (< 1 tiempo): queda como estaba
         var W = opts[randomInt(0, opts.length - 1)];
-        if(Math.random() < p) wins.push({ w0:x, w1:x + W, W:W });
+        if(Math.random() < prob(bar, x)) wins.push({ w0:x, w1:x + W, W:W });
         x += W;
       }
       return wins.length ? wins : null;
@@ -11745,7 +11953,7 @@ function runAnalysis() {
         // así "5ta ascendente" daba C→F→Bb. El modo TEST viejo (arriba) no se toca.
         d = pick.direction === "up" ? pick.semitones : -pick.semitones;
       } else {
-        var cMaxDist = Math.round(chromaVariety * 6);
+        var cMaxDist = Math.round(MIX.v("consolaChromaSlider", chromaVariety) * 6);
         d = cMaxDist <= 0 ? 0 : randomInt(-cMaxDist, cMaxDist);
       }
       if (cyclesAccumulate){
@@ -11754,12 +11962,12 @@ function runAnalysis() {
       }
       return mod12(d);
     }
-    var maxDist = Math.round(chromaVariety * 6); // 0..6 semitonos de distancia circular
+    var maxDist = Math.round(MIX.v("consolaChromaSlider", chromaVariety) * 6); // 0..6 semitonos de distancia circular (MiX: techo × curva)
     if(maxDist <= 0) return 0;
     return mod12(randomInt(-maxDist, maxDist));
   }
   function currentSubsetGap(){
-    return Math.round(chromaVariety * MAX_SUBSET_GAP);
+    return Math.round(MIX.v("consolaChromaSlider", chromaVariety) * MAX_SUBSET_GAP);
   }
   // Función auxiliar: genera todos los subsets posibles de un conjunto
   // (mínimo 2 notas, máximo arr.length-1 — el set completo no cuenta
@@ -11870,6 +12078,7 @@ function runAnalysis() {
   function buildProgressionRandom(rootChord, numBars){
     var progression = [], roles = [], meta = [], prevKey = null;
     for(var bar=0; bar<numBars; bar++){
+      MIX.at(bar, 0); // MiX: posición para Chromatism
       var picked, t, key, guard = 0;
       var rcBar = MULTISETS.rootForBar(bar, rootChord); // MULTI SETS INPUT: set de este compás (= rootChord si no hay multi)
       do{
@@ -11899,6 +12108,7 @@ function runAnalysis() {
     progression.forEach(function(chordRaw, bar){
       var chord = chordRaw.slice().sort(function(a,b){return a-b;});
       var cell = cellForBar(cells, bar, 0.75);
+      MIX.at(bar, 0); // MiX: posición para Chord simultaneity
       var barStart = RHYTHM.start(bar);
       var offset = 0;
       var slots = [];
@@ -12696,7 +12906,7 @@ function runAnalysis() {
       var sl = document.getElementById("consolaChordSimulSlider");
       var v = sl ? Number(sl.value) : 50;
       if (isNaN(v)) v = 50;
-      return Math.max(0, Math.min(100, v)) / 100;
+      return MIX.v("consolaChordSimulSlider", Math.max(0, Math.min(100, v)) / 100); // MiX: techo × curva en la posición actual
     }
     // Dado independiente por reataque — ver comentario del módulo.
     function roll(){
@@ -12868,7 +13078,7 @@ function runAnalysis() {
       events.forEach(function(ev){ byBar[barOfBeat(ev.startBeat, n)].push(ev); });
       for(var b=0; b<n; b++){
         if(skipBars && skipBars[b]) continue;
-        if(Math.random() >= p) continue;
+        if(Math.random() >= MIX.v("consolaSyncopationSlider", p, b, 0)) continue; // MiX: techo × curva del compás
         var slots = slotChords[b];
         if(!slots || !slots.length) continue;
         var bs = RHYTHM.start(b), lo = bs + slots[0].startBeat, hi = lo + slots[0].durBeats;
@@ -12942,10 +13152,17 @@ function runAnalysis() {
     return best < 0 ? 0 : best;
   }
   function buildChordEventsRandom(rootChord, numBars){
-    var chordPool = JAZZ.roll() ? JAZZ.CHORD_RHYTHM_POOL : CHORD_RHYTHM_POOL;
-    var cellsByBar = avoidAdjacentDuplicates(
-      distributeWeighted(chordPool, numBars, function(cell){ return cell.length; })
-    );
+    var cellsByBar;
+    if(MIX.on("consolaJazzSlider")){ // MiX · Jazz: el pool (comping jazz o base) se sortea compás a compás, no uno para toda la canción
+      var mixCj = distributeWeighted(JAZZ.CHORD_RHYTHM_POOL, numBars, function(cell){ return cell.length; });
+      var mixCb = distributeWeighted(CHORD_RHYTHM_POOL, numBars, function(cell){ return cell.length; });
+      cellsByBar = avoidAdjacentDuplicates(mixCj.map(function(c, b){ return MIX.rollJazz(b, 0) ? c : mixCb[b]; }));
+    } else {
+      var chordPool = JAZZ.roll() ? JAZZ.CHORD_RHYTHM_POOL : CHORD_RHYTHM_POOL;
+      cellsByBar = avoidAdjacentDuplicates(
+        distributeWeighted(chordPool, numBars, function(cell){ return cell.length; })
+      );
+    }
     // Rhythm: los compases que no estén en 4/4 llano (ver RHYTHM más
     // arriba) descartan la celda del pool de siempre — pensada para
     // sumar justo 4 — y arman la suya propia a la medida de su compás.
@@ -12962,9 +13179,21 @@ function runAnalysis() {
     // (redonda, todo el compás = un solo acorde) en vez de la que haya
     // tocado el pool/MOREREP — así 0% = siempre un acorde por compás,
     // 100% = nunca se fuerza nada (variedad de siempre, sin cambios).
-    if (chordDensityVariety < 1){
-      cellsByBar = cellsByBar.map(function(cell){
-        return Math.random() < chordDensityVariety ? cell : [4];
+    if (chordDensityVariety < 1 || MIX.on("consolaChordsSlider")){
+      cellsByBar = cellsByBar.map(function(cell, bar){
+        if(!MIX.on("consolaChordsSlider")) return Math.random() < chordDensityVariety ? cell : [4];
+        // MiX · Chords: probabilidad por compás y, en 4/4, por mitad (una mitad puede quedar en un solo acorde y la otra con la célula)
+        var mp1 = MIX.v("consolaChordsSlider", chordDensityVariety, bar, 0);
+        if(!(RHYTHM.isDefault4_4(bar) && RHYTHM.beats(bar) === 4)) return Math.random() < mp1 ? cell : [4];
+        var mk1 = Math.random() < mp1, mk2 = Math.random() < MIX.v("consolaChordsSlider", chordDensityVariety, bar, 2);
+        if(mk1 && mk2) return cell;
+        if(!mk1 && !mk2) return [4];
+        var mout = [], mt = 0;
+        if(mk1){ cell.forEach(function(d){ var s0 = mt, e0 = mt + d; mt = e0; if(s0 < 2 - 1e-9) mout.push(Math.min(e0, 2) - s0); }); }
+        else { mout.push(2); }
+        if(mk2){ mt = 0; cell.forEach(function(d){ var s0 = mt, e0 = mt + d; mt = e0; if(e0 > 2 + 1e-9) mout.push(e0 - Math.max(s0, 2)); }); }
+        else { mout.push(2); }
+        return mout;
       });
     }
     // HarmonicSpace: si esta variación sorteó un tramo de respiro, esos
@@ -12989,6 +13218,7 @@ function runAnalysis() {
       var offset = 0;
       var slots = [];
       cellsByBar[bar].forEach(function(dur){
+        MIX.at(bar, offset); // MiX: posición de este reataque (Chromatism, Jazz, Chord simultaneity)
         var picked, t, inv, combo, voiced, strum;
         CYCLEHOLD.beginAttack(); // ChangeDuration: ¿este ataque estrena transposición o sigue la del tramo?
         var rcAtk = MULTISETS.rootForAttack(bar, rootChord); // MULTI SETS INPUT: set de ESTE reataque (= rootChord si no hay multi)
@@ -13127,10 +13357,17 @@ function runAnalysis() {
   // quietos se intercalen en vez de juntarse por azar, manteniendo el
   // mismo promedio general de siempre.
   function buildBassRhythmRandom(numBars){
-    var bassPool = JAZZ.roll() ? JAZZ.BASS_RHYTHM_POOL : BASS_RHYTHM_POOL;
-    var cellsByBar = avoidAdjacentDuplicates(
-      distributeWeighted(bassPool, numBars, function(cell){ return cell.length; })
-    );
+    var cellsByBar;
+    if(MIX.on("consolaJazzSlider")){ // MiX · Jazz: pool de ritmo de bajo (walking o base) sorteado compás a compás
+      var mixBj = distributeWeighted(JAZZ.BASS_RHYTHM_POOL, numBars, function(cell){ return cell.length; });
+      var mixBb = distributeWeighted(BASS_RHYTHM_POOL, numBars, function(cell){ return cell.length; });
+      cellsByBar = avoidAdjacentDuplicates(mixBj.map(function(c, b){ return MIX.rollJazz(b, 0) ? c : mixBb[b]; }));
+    } else {
+      var bassPool = JAZZ.roll() ? JAZZ.BASS_RHYTHM_POOL : BASS_RHYTHM_POOL;
+      cellsByBar = avoidAdjacentDuplicates(
+        distributeWeighted(bassPool, numBars, function(cell){ return cell.length; })
+      );
+    }
     return cellsByBar.map(function(cell, bar){
       return RHYTHM.isDefault4_4(bar) ? cell : genericBarCell(RHYTHM.beats(bar), RHYTHM.compound(bar), 0.8);
     });
@@ -13235,6 +13472,7 @@ function runAnalysis() {
     var cells = [];
     var halfPtr = 0;
     for(var bar=0; bar<numBars; bar++){
+      MIX.at(bar, 0); // MiX: posición para Jazz (fill swingueado)
       if(!RHYTHM.isDefault4_4(bar)){
         cells.push(genericBarCell(RHYTHM.beats(bar), RHYTHM.compound(bar), 0.6));
         continue;
@@ -13495,6 +13733,7 @@ function runAnalysis() {
 
       var bOffset = 0;
       bassCells[bar].forEach(function(dur, bk){
+        MIX.at(bar, bOffset); // MiX: posición para Jazz (registro del bajo)
         var pick;
         if (bassPatIdx){
           // Bass Patterns (groove): raíz/quinta/pentatónica del set del reataque en curso; ghost notes con vel baja
@@ -13570,6 +13809,7 @@ function runAnalysis() {
       var mOffset = 0;
       var lastChordRef = null, segShift = 0;
       melodyCells[bar].forEach(function(dur, k){
+        MIX.at(bar, mOffset); // MiX: posición para Jazz (forma del arpegio)
         var isRun = !!runMasks[bar][k];
         if(isRun){
           // Rapid runs: sin silencios, paso a paso por las notas del acorde vigente
@@ -14338,6 +14578,7 @@ function runAnalysis() {
     function prob(){ var e = document.getElementById("consolaBassBwmSlider"); var v = e ? parseFloat(e.value) : 0; return isNaN(v) ? 0 : Math.max(0, Math.min(1, v/100)); }
     // free = true en el motor libre (Bass function superset y Jazz aplican); false en Simplicity (bajo fijo: solo notas del acorde)
     function apply(free){
+      MIX.at(-1, 0); // MiX: acá no hay compás a mano → Jazz usa el promedio de su curva
       var p = prob(), mel = state.melodyEvents, slots = state.slotChords;
       if(p <= 0 || !mel || !mel.length || !state.bassEvents || !slots || !slots.length) return;
       var chosen = BLOCKWITHMELODY.chooseSegs(p, mel);
@@ -14755,6 +14996,7 @@ function runAnalysis() {
     RHYTHM.recompute();
     TOTAL_BEATS = RHYTHM.total();
     DYNAMICS.newPlan(); // Dynamics: curva nueva por generación
+    MIX.regenerate(); // MiX: automatización de los sliders de How to play (se calcula una vez por generación)
     var playBtn = document.getElementById("consolaPlayBtn");
     var regenPlayBtn = document.getElementById("consolaRegenPlayBtn");
     var normalBtn = document.getElementById("consolaNormalSlider"); // slider Simplicity (0% = motor libre)
@@ -14797,7 +15039,7 @@ function runAnalysis() {
     state.rootChord = rootChord;
     if(SONGTITLE) { SONGTITLE.next(); SONGTITLE.sets(multi); } // título nuevo por cada generación de música, con el nombre del set debajo
     // Simplicity al 100%: en vez del motor libre, arma la versión simple (con MULTI SETS: cada compás, el set entero que le tocó).
-    if(normalitoProb() >= 1){ normalizeConsola(); return; }
+    if(normalitoProb() >= 1 && !MIX.on("consolaNormalSlider")){ normalizeConsola(); return; }
     fixedIntervalOffset = 0; // modo test de intervalos fijos: cada variación nueva arranca el ciclo en C (offset 0)
     cyclesOffset = 0; // módulo Cycles (Modo A acumulativo): cada variación nueva arranca el ciclo en C también
     MELODICPATTERNS.reset(); // melodicPatterns: un contorno nuevo por variación, compartido por melodía principal y bebopMelody
@@ -14848,7 +15090,7 @@ function runAnalysis() {
     // (que no existe en Simplicity) calla en los compases Simplicity. La batería no cambia.
     var pN = normalitoProb();
     var simpBars = null; // compases que salen de Simplicity (mezcla): Syncopation no los toca
-    if(pN > 0 && pN < 1){
+    if((pN > 0 && pN < 1) || (pN > 0 && MIX.on("consolaNormalSlider"))){ // MiX: con pN = 100% también mezcla (techo de la automatización)
       var nProg = simplicityProgression(rootChord, NUM_BARS); // con MULTI SETS: set de referencia de cada compás
       var nChord = buildChordEvents(nProg.progression);
       var nChordEv = SUSTAINPEDAL.apply(nChord.events, nChord.slotChords);
@@ -14856,7 +15098,7 @@ function runAnalysis() {
       var nMel = buildMelodyEvents(nProg.progression);
       var useN = [];
       for(var ub=0; ub<NUM_BARS; ub++){
-        useN.push(Math.random() < pN);
+        useN.push(Math.random() < MIX.v("consolaNormalSlider", pN, ub, 0)); // MiX: probabilidad Simplicity de este compás
         if(multi && useN[ub]) MULTISETS.forceBar(ub); // compás Simplicity = un solo set entero (etiqueta "S#", no "mix")
       }
       simpBars = useN;
@@ -14909,7 +15151,18 @@ function runAnalysis() {
     if(muSilF > 0){
       var muSilCF = [];
       for(var muB = 4; muB < NUM_BARS; muB += 4) muSilCF.push({ s: RHYTHM.start(muB - 4), e: RHYTHM.start(muB) });
-      var muSilPF = MUSICSILENCE.plan(muSilF, muSilCF, TOTAL_BEATS, MUSICSILENCE.bpm());
+      var muSilPF;
+      if(MIX.on("consolaMusicSilenceSlider")){ // MiX: cada final de frase tiene su propio % (techo × curva en la 2ª mitad del último compás)
+        var muGaps = [], muSec = 0;
+        muSilCF.forEach(function(c, ci){
+          var mb = 4 * (ci + 1) - 1, pctC = MIX.v("consolaMusicSilenceSlider", muSilF / 100, mb, RHYTHM.beats(mb) / 2) * 100;
+          var one = MUSICSILENCE.plan(pctC, [c], TOTAL_BEATS, MUSICSILENCE.bpm());
+          one.gaps.forEach(function(g){ muGaps.push(g); muSec += g.sec; });
+        });
+        muSilPF = { pct: muSilF, gaps: muGaps, n: muGaps.length, sec: muSec };
+      } else {
+        muSilPF = MUSICSILENCE.plan(muSilF, muSilCF, TOTAL_BEATS, MUSICSILENCE.bpm());
+      }
       ["chordEvents", "bassEvents", "melodyEvents", "melody2Events", "melody3Events", "comping2Events", "bebopEvents"].forEach(function(k){ state[k] = MUSICSILENCE.cut(state[k], muSilPF); });
       drumEvents = MUSICSILENCE.cut(drumEvents, muSilPF);
       MUSICSILENCE.last = muSilPF;
@@ -21157,15 +21410,22 @@ function runAnalysis() {
     // JAZZ: patrón de ride "spang-a-lang" en vez del hi-hat parejo —
     // la batería no tiene altura definida, así que acá no hay ninguna
     // restricción de set que respetar, es variedad rítmica pura.
+    var styleByBar;
+    if(MIX.on("consolaJazzSlider")){ // MiX · Jazz: estilo de batería (ride jazz o base) sorteado compás a compás
+      var mixDj = distributeWeighted(complexityReweight(JAZZ.DRUM_STYLE_POOL, rhythmComplexity), numBars, function(style){ return style.tier; });
+      var mixDb = distributeWeighted(complexityReweight(DRUM_STYLE_POOL, rhythmComplexity), numBars, function(style){ return style.tier; });
+      styleByBar = avoidAdjacentDuplicates(mixDj.map(function(s, b){ return MIX.rollJazz(b, 0) ? s : mixDb[b]; }));
+    } else {
     var basePool = JAZZ.roll() ? JAZZ.DRUM_STYLE_POOL : DRUM_STYLE_POOL;
     // Rhythm complexity re-pesa el pool de estilos y el de subdivisión de
     // hi-hat (favorece tiers/feels densos a mayor %, sin descartar el
     // resto) — ver complexityReweight() más arriba, junto a
     // rhythmComplexity.
     var pool = complexityReweight(basePool, rhythmComplexity);
-    var styleByBar = avoidAdjacentDuplicates(
+    styleByBar = avoidAdjacentDuplicates(
       distributeWeighted(pool, numBars, function(style){ return style.tier; })
     );
+    }
     var hihatPool = complexityReweight(HIHAT_RHYTHM_POOL, rhythmComplexity);
     var hihatVarietyByBar = avoidAdjacentDuplicates(
       distributeWeighted(hihatPool, numBars, function(v){ return v.feel; })
@@ -21181,6 +21441,7 @@ function runAnalysis() {
     // repetir el patrón de batería del compás anterior.
     var events = [];
     for(var bar=0; bar<numBars; bar++){
+      MIX.at(bar, 0); // MiX: posición para Jazz (hi-hat)
       var base = RHYTHM.start(bar);
       // RythmSpace: tramo de respiro sorteado (independiente de
       // MelodicSpace/HarmonicSpace) — pisa TODO lo demás del compás con
@@ -23825,6 +24086,7 @@ function runAnalysis() {
   document.getElementById("consolaSyncopationSlider").addEventListener("change", function(){
     if(state.rootChord.length) regenerateConsola();
   });
+  MIX.initUI(); // MiX: checkbox + mini gráfico debajo de cada uno de los 9 sliders
   document.getElementById("consolaCommonNotesChk").addEventListener("change", function(){
     if(state.rootChord.length) regenerateConsola();
   });
