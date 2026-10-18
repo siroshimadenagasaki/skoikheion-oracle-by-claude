@@ -1763,7 +1763,7 @@
       </div>
       <div class="consola-field" title="Norepetitions: la melodía evita repetir la misma nota seguida (solo el 30% de las veces deja pasar 2 iguales; 3 nunca; la repetida se cambia por otra nota que el set permite en ese momento, la más cercana: C C C C pasa a C D C D) y la armonía evita repetir el mismo acorde seguido (idem: 30% deja pasar 2, 3 nunca; en la repetición se cambia una nota por su octava, así sigue siendo del set pero no suena a máquina). Vale para Melody principal, Melody n2 y Armonía del motor libre. Tildado por defecto; apagado = como siempre."><span class="consola-inst-toggle"><input type="checkbox" id="consolaNoRepChk" checked><label for="consolaNoRepChk">Norepetitions</label></span></div>
       <div class="consola-field" title="Intro: apagado por defecto. Antes de la canción suena UNA vez una introducción de 2 a 12 compases (el largo se sortea en cada Play, nunca mayor que la canción) hecha con los primeros compases de la propia canción pero más tranquila: solo algunas de las pistas (solo armonía, solo batería, bajo + batería, armonía + melodía…) y aligeradas (un acorde y una nota de bajo por compás, menos notas de melodía, batería solo sobre el pulso), un poco más suave y en tempo estricto. Es el mismo interruptor que el Intro de Partimenti. Los sorteos RANDOM CHOOSE (CreaturaRandom / CreaturA / Intervalic / ChordS / Partimenti / Radio) lo pueden prender o apagar. No entra en el export MIDI/MP3."><span class="consola-inst-toggle"><input type="checkbox" id="consolaIntroChk"><label for="consolaIntroChk">Intro</label></span></div>
-      <div class="consola-field" title="Form: prendido por defecto. La canción se arma con SECCIONES: Intro, A y, al azar, B / C / D (una, dos, tres o ninguna) y Coda. Los compases se AGREGAN: A es el largo de siempre (12 / 24 / 4–48 / el número a mano) y suman Intro y Coda (2 a 4 compases cada una) y cada parte B / C / D (4 a 12), con tope de 96 en total. Cada sección tiene su propia instrumentación (armonía / bajo / melodía / batería): el Intro arranca con un solo instrumento, en A entran otros, B / C / D alternan banda completa y versión reducida (baja la intensidad, a veces sin melodía o sin batería) y la sección siguiente vuelve, y la Coda cierra con 1–2 instrumentos más suave. Dos secciones seguidas nunca suenan igual. No se escribe ninguna nota nueva: el set no se traiciona. El piano roll marca cada sección en celeste (Intro, A, B…). Si Form se aplica, el Intro suelto no suena (la intro es una sección de Form). Vale en el motor libre (CreaturaRandom / CreaturA / Intervalic.Creature), en Simplicity, en ChordS y en Partimenti (ahí es el mismo interruptor que el Form de Partimenti); en JazzTunes no se aplica. En los RANDOM CHOOSE, con Form tildado lo llevan el 100% de las canciones."><span class="consola-inst-toggle"><input type="checkbox" id="consolaFormChk" checked><label for="consolaFormChk">Form</label></span></div>
+      <div class="consola-field" title="Form: prendido por defecto. La canción se arma con SECCIONES: Intro, A y, al azar, B / C / D (una, dos, tres o ninguna) y Coda. Los compases se AGREGAN: A es el largo de siempre (12 / 24 / 4–48 / el número a mano) y suman Intro y Coda (2 a 4 compases cada una) y cada parte B / C / D (4 a 12), con tope de 96 en total. Cada sección tiene su propia instrumentación (armonía / bajo / melodía / batería): el Intro arranca con un solo instrumento, en A entran otros, B / C / D alternan banda completa y versión reducida (baja la intensidad, a veces sin melodía o sin batería) y la sección siguiente vuelve, y la Coda cierra con 1–2 instrumentos más suave. Dos secciones seguidas nunca suenan igual. No se escribe ninguna nota nueva: el set no se traiciona. El piano roll marca cada sección en celeste (Intro, A, B…). Si Form se aplica, el Intro suelto no suena (la intro es una sección de Form). Vale en el motor libre (CreaturaRandom / CreaturA / Intervalic.Creature), en Simplicity, en ChordS y en Partimenti (ahí es el mismo interruptor que el Form de Partimenti); en JazzTunes no se aplica. En los RANDOM CHOOSE (menos JazzTunes) Form se sortea solo: 75% prendido / 25% apagado."><span class="consola-inst-toggle"><input type="checkbox" id="consolaFormChk" checked><label for="consolaFormChk">Form</label></span></div>
       <div class="consola-field" title="Dynamics: aplica dinámicas de volumen (pp, p, mp, mf, f, ff) a cada evento MIDI con lógica musical: crescendos/diminuendos y terrazas de 2-4 compases que vuelven al nivel inicial del loop, acento en el tiempo 1, melodía por encima del acompañamiento y nota aguda un poco más fuerte que la grave. 0% = como siempre (velocity original). 100% = pp a ff. Mover el slider no regenera: re-aplica sobre las mismas notas. Ver el resultado en Mini mixer > Velocity por track.">
         <label for="consolaDynamicsSlider">Dynamics</label>
         <input type="range" id="consolaDynamicsSlider" min="0" max="100" value="50" step="1">
@@ -25267,11 +25267,15 @@ function runAnalysis() {
         else SL("Intro (RANDOM CHOOSE)", "no (50%)");
       }
       // ---- Form ----
-      // Checkbox "Form" (How to play): no se sortea, lo decide el usuario. Tildado = el 100% de las canciones del random llevan secciones
-      // (Intro, A, B / C / D al azar, Coda; compases agregados). Solo motor libre y Simplicity.
-      function rollForm(){
-        if(FORM.on()) SL("Form (RANDOM CHOOSE)", "tildado: la canción lleva secciones, 100% (motor libre, Simplicity, ChordS y Partimenti; en JazzTunes no se aplica)");
-        else SL("Form (RANDOM CHOOSE)", "apagado: no se sortea");
+      // Checkbox "Form" (How to play / Partimenti, el mismo interruptor): en cada RANDOM CHOOSE se sortea, 75% prendido / 25% apagado.
+      // Se cambia sin disparar "change" (la generación que sigue ya lo lee). JazzTunes no aplica Form: ahí no se sortea.
+      // Los modos test (Creatura+Partimenti) lo apagan a propósito y marcan window.__formNoRoll para que el sorteo no lo vuelva a prender.
+      function rollForm(kind){
+        if(kind === "jazz"){ SL("Form (RANDOM CHOOSE)", "no se aplica en JazzTunes / Jazz.i.Tunes"); return; }
+        if(window.__formNoRoll){ SL("Form (RANDOM CHOOSE)", "apagado (modo test): no se sortea"); return; }
+        var onNow = Math.random() < 0.75;
+        ["consolaFormChk", "partimentiFormChk"].forEach(function(id){ var c = document.getElementById(id); if(c) c.checked = onNow; });
+        SL("Form (RANDOM CHOOSE)", onNow ? "sí (75%): la canción lleva secciones (Intro, A, B / C / D, Coda)" : "no (25%)");
       }
       // ---- reverb ----
       function hasSpaceAndSilence(kind){
@@ -25293,7 +25297,7 @@ function runAnalysis() {
           rollMelodies();
           rollBeats();
           rollIntro();
-          rollForm();
+          rollForm(kind);
         },
         post: function(kind){
           if(!(chk8 && chk8.checked)) rollVoices(kind);   // voces por criterio (antes del 8bits/Drums 5%, que las pisan)
@@ -26408,7 +26412,7 @@ function runAnalysis() {
             if(window.__commonChords) window.__commonChords.off();
             setChecked("consolaFormChk", false); setChecked("consolaMixTimeSigChk", false);   // modo test: misma grilla de compases
             randomizeAndFill(false);
-            rcPre("creatura");
+            window.__formNoRoll = true; try{ rcPre("creatura"); } finally { window.__formNoRoll = false; }
             randomizeVoices(true);
             randomizeExtras();
             randomizeSlider("consolaTempo", 30, 120);
@@ -26493,7 +26497,7 @@ function runAnalysis() {
         setChecked("consolaFormChk", false);              // modo test: Form y Mix time signatures apagados (grilla de compases común)
         setChecked("consolaMixTimeSigChk", false);
         randomizeAndFill(false);
-        rcPre("creatura");
+        window.__formNoRoll = true; try{ rcPre("creatura"); } finally { window.__formNoRoll = false; }
         randomizeVoicesAndTempo();
         rcPost("creatura");
         clickIfEnabled("multiSetsComposeBtn");
