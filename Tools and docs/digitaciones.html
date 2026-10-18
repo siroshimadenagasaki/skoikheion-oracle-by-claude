@@ -1291,7 +1291,12 @@
     });
     syncNoteButtons();
     syncBassOptions();
+    // Auto-cálculo: cada cambio del set del reloj/piano/guitarra recalcula las digitaciones
+    // (con un pequeño retardo para no recalcular en cada nota si se eligen varias seguidas).
+    clearTimeout(autoCalcTimer);
+    autoCalcTimer = setTimeout(function () { calcular(); }, 150);
   });
+  var autoCalcTimer = null;
 
   function bindParamInputs() {
     document.getElementById("p_spanMax").value = params.spanMax;
