@@ -4016,7 +4016,7 @@ var MGU = (function () {
     <h2 style="margin:0 0 12px;text-align:center;">Tools</h2>
     <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;">
       <a class="chip primary" id="soundfontTesterBtn" href="soundfont-tester.html" target="_blank" rel="noopener" title="Abre el SoundFont Tester en otra pestaña" style="text-decoration:none;">🎹 Soundfont tester</a>
-      <button type="button" class="chip" id="reloadAllBtn" title="Modo offline: la app se carga una vez y después no usa internet. Este botón baja la última versión del código y vuelve a bajar los sonidos (borra los guardados). Necesita conexión; antes de borrar nada comprueba que la versión nueva se pueda bajar.">🔄 Reload sounds and code</button>
+      <button type="button" class="chip" id="reloadAllBtn" title="Modo offline: la app se carga una vez y después no usa internet. Este botón es lo único que baja cosas: trae la última versión del código y vuelve a bajar y guardar TODOS los archivos (sonidos, MIDIs, fondos, avatares, canciones; cientos de MB). Necesita conexión; antes de borrar nada comprueba que la versión nueva se pueda bajar.">🔄 Reload sounds and code</button>
     </div>
     <div id="offlineStatus" title="Tocá para actualizar este estado" style="text-align:center;margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:10.5px;opacity:.75;cursor:pointer;"></div>
   </div>
@@ -27897,7 +27897,7 @@ function runAnalysis() {
 <script>
 /* PWA OFFLINE-FIRST: el service worker (sw.js) sirve todo desde el caché y solo va a la red por lo que todavía no está guardado;
    los .sf2 los guarda IndexedDB (sf2CachePut). persist() pide a iOS no borrarlos.
-   La versión nueva (código + sonidos) se trae a mano con el botón "Reload sounds and code" de la pestaña Tools. */
+   La versión nueva (código + TODOS los archivos) se trae a mano con el botón "Reload sounds and code" de la pestaña Tools. */
 (function () {
   var swOk = "serviceWorker" in navigator && location.protocol.indexOf("http") === 0;
   var SHELL = ["./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
@@ -27962,6 +27962,7 @@ function runAnalysis() {
       return Promise.all(ks.map(function (k) { return caches.open(k).then(function (c) { return c.match("./index.html"); }); }));
     }).then(function (r) { parts.push(r.some(Boolean) ? "Code ✔ saved" : "Code ✗ not saved yet"); }) : Promise.resolve()).catch(function () { parts.push("Code: n/a"); });
     return codeP
+      .then(function () { return caches.open(CACHE).then(function (c) { return c.keys(); }).then(function (k) { parts.push("Files saved: " + k.length); }).catch(function () {}); })
       .then(function () { return countSounds().then(function (n) { if (n !== null) parts.push("Sounds saved: " + n); }).catch(function () {}); })
       .then(function () { return (navigator.storage && navigator.storage.estimate) ? navigator.storage.estimate().then(function (e) { parts.push("Storage " + mb(e.usage) + " / " + mb(e.quota) + (e.quota && e.usage / e.quota > 0.9 ? " ⚠ nearly full: some sounds may not stay saved" : "")); }).catch(function () {}) : null; })
       .then(function () { say(parts.join(" · ")); });
@@ -27981,62 +27982,136 @@ function runAnalysis() {
       } catch (e) { resolve(); }
     });
   }
+  // Qué baja el botón además del código: TODO lo que la app lee de GitHub Pages ("sf2" va a IndexedDB, "file" al caché del service worker).
+  var CACHE = "stk-offline";
+  var TREE_URL = "https://api.github.com/repos/" + SF_GH_OWNER + "/" + SF_GH_REPO + "/git/trees/main?recursive=1";
+  var LIST_KEYS = ["mguListCache", "jazzTunesListCache2", "beatsDiscoverV1", "stoikheionFavRemote.v1", "sfDiscoverCacheV2"];   // listas de archivos que los módulos guardan en localStorage
+  function enc(p) { return p.split("/").map(encodeURIComponent).join("/"); }
+  function wanted(p) {
+    if (/(^|\/)\.DS_Store$/.test(p)) return null;
+    if (/^Soundfonts v2\/.+\.sf2$/i.test(p)) return "sf2";
+    if (/^(Soundfonts v2|Midi|Avatar(e?s)?|BAckgrounds|Favorites|Band in a box SONGS)\//i.test(p) && !/\.pdf$/i.test(p)) return "file";
+    if (/^Tools and docs\/ireal(\.html|-default\.txt)$/.test(p)) return "file";
+    return null;
+  }
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
   async function reloadAll() {
     var btn = document.getElementById("reloadAllBtn");
     if (btn && btn.disabled) return;
     if (!swOk) { holdUntil = Date.now() + 20000; say("⚠ Offline mode needs the https page (service worker not available here)."); return; }
     if (navigator.onLine === false) { holdUntil = Date.now() + 20000; say("⚠ No connection — nothing was changed."); return; }
-    if (!confirm("¿Actualizar código y sonidos a la última versión?\n\nSe vuelve a bajar la página y se borran los sonidos guardados (se bajan de nuevo; pueden ser cientos de MB).\nHacelo con buena conexión: antes de borrar nada se comprueba que la versión nueva se pueda bajar.")) return;
     if (btn) btn.disabled = true;
     holdUntil = Date.now() + 120000;
-    var changed = false;
+    var changed = false, wake = null;
     try {
-      say("⏳ Checking connection and downloading the latest code…");
+      // 1) Todo lo que puede fallar por red se hace ANTES de borrar nada: lista de archivos + código nuevo.
+      say("⏳ Checking connection and reading the file list…");
+      var tr = await fetch(TREE_URL + "&stknet=" + Date.now(), { headers: { Accept: "application/vnd.github+json" }, cache: "no-store" });   // ?stknet: el service worker lo manda a la red
+      if (!tr.ok) throw new Error("GitHub file list → HTTP " + tr.status + (tr.status === 403 ? " (límite de pedidos de GitHub: probá de nuevo en una hora)" : ""));
+      var treeText = await tr.text(), tree = JSON.parse(treeText);
+      if (tree.truncated) throw new Error("la lista de archivos de GitHub llegó incompleta");
+      var items = (tree.tree || []).filter(function (it) { return it.type === "blob"; }).map(function (it) { return { p: it.path, k: wanted(it.path), n: it.size || 0 }; }).filter(function (it) { return it.k; });
+      var sf = items.filter(function (it) { return it.k === "sf2"; }), rest = items.filter(function (it) { return it.k === "file"; });
+      var total = items.reduce(function (s, it) { return s + it.n; }, 0);
+      if (!sf.length) throw new Error("la lista de archivos no trae ningún .sf2");
+      holdUntil = 0;
+      if (!confirm("¿Actualizar y dejar TODO guardado en este dispositivo?\n\nSe baja de nuevo el código y " + items.length + " archivos (" + sf.length + " sonidos + MIDIs, fondos, avatares y canciones): ≈ " + mb(total) + ".\nUsá Wi‑Fi y dejá la app abierta con la pantalla encendida hasta que termine.\nAntes de borrar nada se comprueba que la versión nueva se pueda bajar.")) { if (btn) btn.disabled = false; refreshStatus(true); return; }
+      holdUntil = Date.now() + 120000;
+      say("⏳ Downloading the latest code…");
       var fresh = [];
       for (var i = 0; i < SHELL.length; i++) {
         var ctl = new AbortController(), to = setTimeout(function () { ctl.abort(); }, 30000);
-        var res = await fetch(SHELL[i] + "?stknet=" + Date.now(), { cache: "reload", signal: ctl.signal });   // ?stknet: el service worker lo manda siempre a la red
+        var res = await fetch(SHELL[i] + "?stknet=" + Date.now(), { cache: "reload", signal: ctl.signal });
         clearTimeout(to);
         if (!res.ok) throw new Error(SHELL[i] + " → HTTP " + res.status);
         fresh.push({ u: new URL(SHELL[i], location.href).href, ct: res.headers.get("Content-Type") || "", buf: await res.arrayBuffer() });
       }
       if (!fresh[0] || fresh[0].buf.byteLength < 100000) throw new Error("index.html llegó incompleto");
-      // La versión nueva ya está bajada (en memoria). Primero se liberan los sonidos (si el almacenamiento está casi lleno, el código nuevo no entraría) y después se guarda el código.
-      say("⏳ Clearing the saved sounds…");
+      // 2) Recién ahora se borra lo viejo (si el almacenamiento está casi lleno, lo nuevo no entraría) y se guarda el código nuevo.
+      say("⏳ Clearing the saved files…");
       changed = true;
       await wipeSounds();
-      try { if (typeof SF_DISCOVER_CACHE_KEY !== "undefined") localStorage.removeItem(SF_DISCOVER_CACHE_KEY); } catch (e) {}
-      say("⏳ Replacing the saved code…");
-      var names = (await caches.keys()).filter(function (k) { return /^shell-/.test(k); });
-      var target = names.length ? names[names.length - 1] : "shell-v2";
-      var c = await caches.open(target);
-      var dirUrl = new URL("./", location.href).href, keep = {};
-      // El navegador libera la cuota de forma asíncrona tras borrar los sonidos: si el guardado falla por cuota, se reintenta.
+      try { sf2CacheDbPromise = null; } catch (e) {}   // wipeSounds cerró la conexión: la app abre una nueva
+      LIST_KEYS.forEach(function (k) { try { localStorage.removeItem(k); } catch (e) {} });
+      var c = await caches.open(CACHE);
+      var dirUrl = new URL("./", location.href).href;
+      var isQuota = function (e) { return /quota/i.test(((e && e.name) || "") + " " + ((e && e.message) || "")); };
+      // El navegador libera la cuota de forma asíncrona tras borrar: si el guardado falla por cuota, se reintenta.
       var putTry = async function (req, mk) {
         for (var a = 0; ; a++) {
           try { await c.put(req, mk()); return; }
-          catch (e) { if (a < 5 && /quota/i.test(((e && e.name) || "") + " " + ((e && e.message) || ""))) { await new Promise(function (r) { setTimeout(r, 1200); }); continue; } throw e; }
+          catch (e) { if (a < 5 && isQuota(e)) { await sleep(1200); continue; } throw e; }
         }
       };
+      (await c.keys()).forEach(function (r) { if (!FONT_RE.test(new URL(r.url).hostname)) c.delete(r); });   // se vacía todo menos las fuentes
+      (await caches.keys()).forEach(function (k) { if (k !== CACHE) caches.delete(k); });
+      say("⏳ Replacing the saved code…");
       for (var j = 0; j < fresh.length; j++) {
         var mk = function () { return new Response(fresh[j].buf.slice(0), { headers: { "Content-Type": fresh[j].ct } }); };
-        await putTry(new Request(fresh[j].u), mk); keep[fresh[j].u] = 1;
-        if (/index\.html$/.test(fresh[j].u)) { await putTry(new Request(dirUrl), mk); keep[dirUrl] = 1; }
+        await putTry(new Request(fresh[j].u), mk);
+        if (/index\.html$/.test(fresh[j].u)) { await putTry(new Request(dirUrl), mk); }
       }
-      (await c.keys()).forEach(function (r) { if (!keep[r.url]) c.delete(r); });   // catálogos, fuentes, MIDIs… se vuelven a guardar al usarse
-      (await caches.keys()).forEach(function (k) { if (k !== target) caches.delete(k); });
+      await putTry(new Request(TREE_URL), function () { return new Response(treeText, { headers: { "Content-Type": "application/json" } }); });   // la lista de archivos queda fija hasta el próximo Reload
+      // 3) Se baja todo, para que quede guardado y la app ya no necesite internet.
+      try { if (navigator.wakeLock) wake = await navigator.wakeLock.request("screen"); } catch (e) {}   // iOS frena las descargas si se apaga la pantalla
+      var count = 0, bytes = 0, missing = [], lastSay = 0;
+      function prog() {
+        var now = Date.now();
+        if (now - lastSay < 250) return;
+        lastSay = now; holdUntil = now + 120000;
+        say("⏳ Downloading " + count + " / " + items.length + " · " + mb(bytes) + " / " + mb(total) + " — keep the app open");
+      }
+      async function withRetry(fn) {
+        for (var a = 0; ; a++) {
+          try { return await fn(); }
+          catch (e) { if (a < 3 && !isQuota(e)) { await sleep(1500 * (a + 1)); continue; } throw e; }
+        }
+      }
+      // Sonidos (grandes): de a uno, directo a IndexedDB con la misma clave que usa la app. Sin parsear: así no ocupan memoria.
+      for (var s = 0; s < sf.length; s++) {
+        var surl = enc(sf[s].p);
+        var sr = await withRetry(async function () {
+          var r = await fetch(surl, { cache: "no-store" });
+          if (r.status === 404) return null;
+          if (!r.ok) throw new Error(sf[s].p + " → HTTP " + r.status);
+          return r.arrayBuffer();
+        });
+        if (sr) await sf2CachePut(surl, sr); else missing.push(sf[s].p);
+        count++; bytes += sf[s].n; prog();
+      }
+      // Resto (muchos archivos chicos): 6 en paralelo, al caché del service worker.
+      var idx = 0;
+      async function worker() {
+        while (idx < rest.length) {
+          var it = rest[idx++];
+          var url = new URL(enc(it.p), location.href).href;
+          var got = await withRetry(async function () {
+            var r = await fetch(url + "?stknet=" + Date.now(), { cache: "no-store" });
+            if (r.status === 404) return null;
+            if (!r.ok) throw new Error(it.p + " → HTTP " + r.status);
+            return { ct: r.headers.get("Content-Type") || "", buf: await r.arrayBuffer() };
+          });
+          if (got) await putTry(new Request(url), function () { return new Response(got.buf.slice(0), { headers: { "Content-Type": got.ct } }); });
+          else missing.push(it.p);
+          count++; bytes += it.n; prog();
+        }
+      }
+      await Promise.all([1, 2, 3, 4, 5, 6].map(worker));
       try { var reg = await navigator.serviceWorker.getRegistration(); if (reg) await reg.update(); } catch (e) {}
-      dbg("offline: Reload sounds and code OK");
-      say("✔ Done — reloading…");
-      setTimeout(function () { location.reload(); }, 600);
+      dbg("offline: Reload sounds and code OK · " + count + " archivos" + (missing.length ? " · sin publicar todavía: " + missing.join(", ") : ""));
+      holdUntil = Date.now() + 30000;
+      say("✔ Done — " + (count - missing.length) + " files saved (" + mb(bytes) + ")" + (missing.length ? " · " + missing.length + " not published on the site yet" : "") + ". Reloading…");
+      setTimeout(function () { location.reload(); }, 1500);
     } catch (err) {
       dbg("offline: Reload sounds and code FALLÓ: " + (err && err.message || err));
-      holdUntil = Date.now() + 30000;
+      holdUntil = Date.now() + 60000;
       var quotaErr = /quota/i.test(((err && err.name) || "") + " " + ((err && err.message) || ""));
-      say(changed && quotaErr ? "⚠ Storage is full or not yet freed by the browser (Quota exceeded). The saved sounds were cleared; the previous version still works. Close and reopen the app, then press the button again."
-        : changed ? "⚠ Stopped midway (" + (err && err.message || err) + "): the saved sounds were cleared. Connect and press the button again."
+      say(changed && quotaErr ? "⚠ Storage is full (Quota exceeded). The saved files were cleared; the code still works. Free space on the device, then press the button again."
+        : changed ? "⚠ Stopped midway (" + (err && err.message || err) + "): the app works, but part of the sounds/files is not saved yet. Connect and press the button again."
                   : "⚠ Could not reach the server (" + (err && err.message || err) + ") — nothing was deleted.");
       if (btn) btn.disabled = false;
+    } finally {
+      try { if (wake) wake.release(); } catch (e) {}
     }
   }
   window.addEventListener("load", function () {
