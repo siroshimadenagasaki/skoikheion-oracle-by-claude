@@ -1342,7 +1342,8 @@
   function renderSection(key, results, cardsElId, countElId, moreWrapId, moreBtnId) {
     var cardsEl = document.getElementById(cardsElId);
     var countEl = document.getElementById(countElId);
-    countEl.textContent = results.length + (results.length === 1 ? " fingering" : " fingerings");
+    var countTxt = results.length + (results.length === 1 ? " fingering" : " fingerings");
+    countEl.textContent = countTxt;
     if (!results.length) {
       cardsEl.innerHTML = '<div class="empty">No playable fingering with the current parameters.</div>';
       document.getElementById(moreWrapId).hidden = true;
@@ -1361,6 +1362,15 @@
     var moreWrap = document.getElementById(moreWrapId);
     var moreBtn = document.getElementById(moreBtnId);
     if (results.length > shown) {
+      // "+" junto a la cantidad: abre todos los fingerings encontrados
+      var allBtn = document.createElement("button");
+      allBtn.type = "button";
+      allBtn.className = "more-btn";
+      allBtn.textContent = "+";
+      allBtn.title = "Show all " + results.length + " fingerings";
+      allBtn.style.cssText = "margin-left:8px;padding:0 8px;line-height:1.4;";
+      allBtn.onclick = function () { revealed[key] = results.length; renderAll(); };
+      countEl.appendChild(allBtn);
       moreWrap.hidden = false;
       moreBtn.textContent = "show more (" + (results.length - shown) + " remaining)";
       moreBtn.onclick = function () { revealed[key] += 24; renderAll(); };
