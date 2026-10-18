@@ -1062,7 +1062,7 @@
     ROW_STRINGS.forEach(function (s, i) {
       var y = marginY + i * rowGap;
       parts.push('<line x1="' + marginX + '" y1="' + y + '" x2="' + (marginX + neckW) + '" y2="' + y + '" stroke="var(--string-line)" stroke-width="' + (i === 0 || i === 5 ? 2 : 1.4) + '"/>');
-      parts.push('<text x="' + (marginX - 26) + '" y="' + (y + 5) + '" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="16" fill="var(--text-muted)">' + STRING_LABEL[s] + '</text>');
+      parts.push('<text x="' + (marginX - 56) + '" y="' + (y + 5) + '" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="16" fill="var(--text-muted)">' + STRING_LABEL[s] + '</text>');
     });
 
     // Cada digitación elegida es el acorde COMPLETO calculado arriba (todas
@@ -1076,15 +1076,14 @@
     var posMap = {}, orderKeys = [];
     resultados.forEach(function (r, ri) {
       var color = chordColor(ri);
-      var pressedFrets = r.grid.filter(function (g) { return g.fret > 0; }).map(function (g) { return g.fret; });
-      var localMin = pressedFrets.length ? Math.min.apply(null, pressedFrets) : 1;
-      var openCol = Math.max(1, localMin - 1);
       r.grid.forEach(function (g) {
-        var col = g.fret === 0 ? openCol : g.fret;
+        // Posición REAL según la afinación estándar (STRING_OPEN_PC): traste g.fret de la cuerda g.string.
+        // La cuerda al aire (traste 0) va junto a la cejuela, nunca en un traste que no le corresponde.
+        var col = g.fret;
         if (col > FRET_RANGE) return;
         var key = g.string + ":" + col;
         if (!posMap[key]) { posMap[key] = []; orderKeys.push(key); }
-        posMap[key].push({ color: color, open: g.fret === 0 });
+        posMap[key].push({ color: color, open: g.fret === 0, pc: g.pc });
       });
     });
 
@@ -1095,7 +1094,7 @@
       var entries = posMap[key];
       var rowIdx = ROW_STRINGS.indexOf(stringNum);
       var y = marginY + rowIdx * rowGap;
-      var x = marginX + (col - 0.5) * colGap;
+      var x = col === 0 ? marginX - 24 : marginX + (col - 0.5) * colGap;
       parts.push('<circle cx="' + x + '" cy="' + y + '" r="' + R0 + '" fill="' + entries[0].color + '" opacity="0.9"/>');
       if (entries[0].open) {
         parts.push('<circle cx="' + x + '" cy="' + y + '" r="' + (R0 - 5) + '" fill="var(--surface)" opacity="0.9"/>');
@@ -1105,6 +1104,8 @@
       for (var k = 1; k < entries.length; k++) {
         parts.push('<circle cx="' + x + '" cy="' + y + '" r="' + (R0 + ringGap * k) + '" fill="none" stroke="' + entries[k].color + '" stroke-width="6" opacity="0.9"/>');
       }
+      // nombre de la nota en esa posición (verifica a ojo contra la afinación E A D G B e)
+      parts.push('<text x="' + x + '" y="' + (y + 4) + '" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="600" fill="' + (entries[0].open ? "var(--text)" : NOTE_LABEL_INK) + '">' + NOTE_LETTERS[entries[0].pc] + '</text>');
     });
 
     svg.innerHTML = parts.join("");
