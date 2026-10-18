@@ -178,10 +178,10 @@
     font-family:'Cormorant Garamond',serif;font-style:italic;font-size:13.5px;line-height:1.2;color:var(--ink-muted);
     display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;
   }
-  #clockCenter .clock-center-cifrado, #pianoSummary .clock-center-cifrado{
+  #clockCenter .clock-center-cifrado, #pianoSummary .clock-center-cifrado, #guitarSummary .clock-center-cifrado{
     font-size:26px;line-height:1.1;color:var(--ink);font-weight:700;white-space:normal;overflow-wrap:anywhere;
   }
-  #clockCenter .clock-center-cifrado *, #pianoSummary .clock-center-cifrado *{font-weight:700;}
+  #clockCenter .clock-center-cifrado *, #pianoSummary .clock-center-cifrado *, #guitarSummary .clock-center-cifrado *{font-weight:700;}
 
   .input-toggle{
     display:flex;justify-content:center;gap:6px;margin-bottom:18px;
@@ -473,6 +473,9 @@
   .toggle-btn.active{background:var(--gold);color:#1a1622;border-color:var(--gold);font-weight:700;}
 
   .piano-wrap{width:100%;max-width:320px;margin:0 auto;}
+  .guitar-wrap{width:100%;max-width:320px;margin:0 auto;}
+  svg.guitar{width:100%;height:auto;overflow:visible;}
+  svg.guitar .fret-note text{font-size:8px;}
   svg.piano{width:100%;height:auto;overflow:visible;}
   .key{cursor:pointer;}
   .key rect{stroke:var(--line);transition:fill .15s ease;}
@@ -1509,6 +1512,7 @@
       <div class="input-toggle">
         <button class="toggle-btn active" id="tabClock" type="button">Clock</button>
         <button class="toggle-btn" id="tabPiano" type="button">Piano</button>
+        <button class="toggle-btn" id="tabGuitar" type="button" title="Guitar: diapasón básico de guitarra (afinación estándar E A D G B E) con la cuerda al aire y 6 trastes. Toca notas que quedan seleccionadas igual que en Clock y Piano (mismas notas, mismo set).">Guitar</button>
       </div>
       <div class="clock-stage">
       <button class="chip rot-side rot-left" id="rotateMinusBtn" type="button" title="Rotate set −: rota los intervalos del set hacia atrás (modo anterior), manteniendo la primera nota. Ej. C E G = 4-3-5 → 3-5-4: C D# G#. Tras una vuelta completa regresa al set original.">Rotate<br>set −</button>
@@ -1525,6 +1529,13 @@
           <g id="pianoKeys"></g>
         </svg>
         <div class="clock-center clock-center-static" id="pianoSummary"></div>
+      </div>
+      <div class="guitar-wrap" id="guitarWrap" hidden>
+        <svg class="guitar" viewBox="0 0 280 150" preserveAspectRatio="xMidYMid meet">
+          <g id="guitarGrid"></g>
+          <g id="guitarNotes"></g>
+        </svg>
+        <div class="clock-center clock-center-static" id="guitarSummary"></div>
       </div>
       </div>
       <div class="clock-actions">
@@ -7309,24 +7320,70 @@ FB_STRINGS.forEach((s, i) => {
   }
 });
 
-// ---- Toggle entre reloj y piano ----
+// ---- Guitar: tercer método de entrada (diapasón básico, afinación estándar E A D G B E, cuerda al aire + 6 trastes) ----
+// Reusa FB_OPEN_PC y pcElements: tocar una nota = toggleNote(pc), igual que Clock, Piano y el módulo Fretboard.
+(function buildGuitarInput(){
+  const grid = document.getElementById("guitarGrid");
+  const notesG = document.getElementById("guitarNotes");
+  if (!grid || !notesG) return;
+  const STR = [1, 2, 3, 4, 5, 6];            // de arriba (aguda) a abajo (grave)
+  const FRETS = 6;
+  const X_OPEN = 26, X_NUT = 44, FRET_W = 38;
+  const Y0 = 22, ROW_H = 21;
+  const xFret = f => X_NUT + f * FRET_W;      // línea del traste f (f = 0 es la cejuela)
+  const yStr = i => Y0 + i * ROW_H;
+  const add = (parent, tag, attrs) => {
+    const e = document.createElementNS(svgNS, tag);
+    Object.keys(attrs).forEach(k => e.setAttribute(k, attrs[k]));
+    parent.appendChild(e);
+    return e;
+  };
+  for (let f = 0; f <= FRETS; f++) {
+    add(grid, "line", { "class": f === 0 ? "fret-line fret-nut" : "fret-line", x1: xFret(f), x2: xFret(f), y1: yStr(0), y2: yStr(5) });
+  }
+  STR.forEach((s, i) => {
+    add(grid, "line", { "class": "fret-line", x1: X_NUT, x2: xFret(FRETS), y1: yStr(i), y2: yStr(i) });
+    const lab = add(grid, "text", { "class": "string-label", x: 8, y: yStr(i) + 0.5, "dominant-baseline": "middle" });
+    lab.textContent = spellPitchClass(FB_OPEN_PC[s]);
+  });
+  for (let f = 1; f <= FRETS; f++) {
+    const lab = add(grid, "text", { "class": "fret-label", x: xFret(f) - FRET_W / 2, y: 143, style: "text-anchor:middle" });
+    lab.textContent = f;
+  }
+  const addNote = (pc, cx, cy, open) => {
+    const g = add(notesG, "g", { "class": open ? "fret-note fret-open" : "fret-note" });
+    g.dataset.pc = pc;
+    add(g, "circle", { cx: cx, cy: cy, r: 8 });
+    const t = add(g, "text", { x: cx, y: cy + 0.5 });
+    t.textContent = spellPitchClass(pc);
+    g.addEventListener("click", () => toggleNote(pc));
+    pcElements[pc].push(g);
+  };
+  STR.forEach((s, i) => {
+    addNote(FB_OPEN_PC[s], X_OPEN, yStr(i), true);
+    for (let f = 1; f <= FRETS; f++) addNote(mod12(FB_OPEN_PC[s] + f), xFret(f) - FRET_W / 2, yStr(i), false);
+  });
+})();
+
+// ---- Toggle entre reloj, piano y guitarra ----
 const clockWrap = document.getElementById("clockWrap");
 const pianoWrap = document.getElementById("pianoWrap");
+const guitarWrap = document.getElementById("guitarWrap");
 const tabClock = document.getElementById("tabClock");
 const tabPiano = document.getElementById("tabPiano");
+const tabGuitar = document.getElementById("tabGuitar");
 
-tabClock.addEventListener("click", () => {
-  clockWrap.hidden = false;
-  pianoWrap.hidden = true;
-  tabClock.classList.add("active");
-  tabPiano.classList.remove("active");
-});
-tabPiano.addEventListener("click", () => {
-  clockWrap.hidden = true;
-  pianoWrap.hidden = false;
-  tabPiano.classList.add("active");
-  tabClock.classList.remove("active");
-});
+function showInputMethod(which) {
+  clockWrap.hidden = which !== "clock";
+  pianoWrap.hidden = which !== "piano";
+  if (guitarWrap) guitarWrap.hidden = which !== "guitar";
+  tabClock.classList.toggle("active", which === "clock");
+  tabPiano.classList.toggle("active", which === "piano");
+  if (tabGuitar) tabGuitar.classList.toggle("active", which === "guitar");
+}
+tabClock.addEventListener("click", () => showInputMethod("clock"));
+tabPiano.addEventListener("click", () => showInputMethod("piano"));
+if (tabGuitar) tabGuitar.addEventListener("click", () => showInputMethod("guitar"));
 
 document.getElementById("clearBtn").addEventListener("click", clearNotes);
 var composePickedKey = null; // set (pcs ordenados) que puso Compose la última vez; null si el set del reloj lo eligió el usuario
@@ -7392,7 +7449,7 @@ function renderClockCenter(r) {
     '<button type="button" class="subfield-toggle" data-results-toggle aria-expanded="' + open + '" aria-controls="results" title="Mostrar/ocultar los detalles del set (cuadro de la derecha)"></button></div>' +
     (name ? '<div class="clock-center-name" title="' + esc(name) + '">' + esc(name) + '</div>' : '') +
     (cif ? '<div class="clock-center-cifrado cifrado-acorde">' + cif + '</div>' : '');
-  ["clockCenter", "pianoSummary"].forEach((id) => { const el = document.getElementById(id); if (el) el.innerHTML = html; });
+  ["clockCenter", "pianoSummary", "guitarSummary"].forEach((id) => { const el = document.getElementById(id); if (el) el.innerHTML = html; });
 }
 document.addEventListener("click", (e) => {
   const btn = e.target.closest && e.target.closest("[data-results-toggle]");
@@ -11713,14 +11770,15 @@ function runAnalysis() {
       openMultiSetsCard();
       return { ok: true, message: msg };
     }
-    function compose(){
+    function compose(show){
       if(!slots.length){ status("Save at least one set with To Memory."); return; }
       status("");
       active = true;
       stopPlayback();
       regenerateConsola();
       // Mismo gesto que el botón 🎹 Compose del reloj: mostrar SetMusicBox.
-      var consolaCard = el("consolaCard");
+      // Solo con clic a mano: los random choose (clic por código) NO expanden ni llevan a Composer Configuration.
+      var consolaCard = show ? el("consolaCard") : null;
       if(consolaCard){
         var tb = consolaCard.querySelector("button[aria-expanded]");
         if(tb && tb.getAttribute("aria-expanded") === "false") tb.click();
@@ -11731,7 +11789,7 @@ function runAnalysis() {
     function init(){
       el("multiSetsMemBtn").addEventListener("click", toMemory);
       if(el("multiSetsMemBtn2")) el("multiSetsMemBtn2").addEventListener("click", toMemory);
-      el("multiSetsComposeBtn").addEventListener("click", function(ev){ if(ev && ev.isTrusted) window.__oneSet = false; compose(); });   // click a mano = Compose normal; One.Set lo dispara por código
+      el("multiSetsComposeBtn").addEventListener("click", function(ev){ if(ev && ev.isTrusted) window.__oneSet = false; compose(!!(ev && ev.isTrusted)); });   // click a mano = Compose normal; One.Set lo dispara por código
       el("multiSetsClearBtn").addEventListener("click", clearMemory);
       if(el("multiSetsRandomFillBtn")) el("multiSetsRandomFillBtn").addEventListener("click", function(){ window.__oneSet = false; randomFill(); });
       window.__multiSetsRandomFillCount = randomFill; // creatura: llena solo N casilleros (1-5)
@@ -19161,7 +19219,7 @@ function runAnalysis() {
       svg.appendChild(svgEl("line", {x1:xb, x2:xb, y1:MARGIN_T, y2:height-MARGIN_B, stroke:"var(--line)", "stroke-width":0.6, "stroke-dasharray":"2,3"}));
     }
 
-    state.chordEvents.forEach(function(ev){ drawEventRect(svg, ev, rowOf, BAR_COLORS[ev.bar % BAR_COLORS.length], 0.55, 0.95); });
+    state.chordEvents.forEach(function(ev){ drawEventRect(svg, ev, rowOf, "var(--c-bar1)", 0.55, 0.95); });   // armonía: un solo color (dorado) en todo el roll
     state.bassEvents.forEach(function(ev){ drawEventRect(svg, ev, rowOf, "var(--c-bass)", 0.65, 0.95); });
     state.comping2Events.forEach(function(ev){ drawEventRect(svg, ev, rowOf, "var(--c-comping2)", 0.55, 0.7); });
     // bebopEvents se dibuja en su propio roll (renderBebopRoll), no acá.
@@ -19180,10 +19238,7 @@ function runAnalysis() {
     var wrap = document.createElement("div");
     wrap.className = "consola-legend";
     var items = [
-      ["var(--c-bar1)","Bars 1·5·9"],
-      ["var(--c-bar2)","Bars 2·6·10"],
-      ["var(--c-bar3)","Bars 3·7·11"],
-      ["var(--c-bar4)","Bars 4·8·12"],
+      ["var(--c-bar1)","Harmony"],
       ["var(--c-bass)","Bass"],
       ["var(--c-melody)","Melody"]
     ];
