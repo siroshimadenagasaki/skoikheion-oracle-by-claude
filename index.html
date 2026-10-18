@@ -23187,6 +23187,7 @@ function runAnalysis() {
     if(!ctx) return;
     var dest = ensureMasterGain(ctx);
     voices = new Set();
+    try{ window.__perf.begin(ctx); }catch(eP0){}   // ⏱ diagnóstico de rendimiento
     var tempoEl = document.getElementById("consolaTempo");
     var bpm = parseInt(tempoEl.value, 10);
     var spb = 60/bpm;
@@ -23238,6 +23239,7 @@ function runAnalysis() {
       // viejas — Web Audio las tocaría todas juntas. Se salta al presente,
       // manteniendo la grilla de vueltas (loopAnchor + k*loopDur).
       if(schedLoopStart + snap.tw.f(schedBeat)*spb < now - 0.02){
+        try{ window.__perf.skip(now - (schedLoopStart + snap.tw.f(schedBeat)*spb)); }catch(eP1){}
         var nowBeatAbs = snap.tw.inv((now - schedLoopStart) / spb);
         if(window.__radioKind && nowBeatAbs >= LOOP_BEATS){
           nowBeatAbs = LOOP_BEATS; // RadioMode: el bloque de fin de vuelta de abajo avanza UNA vuelta y genera la nueva
@@ -23299,8 +23301,9 @@ function runAnalysis() {
       }
     }
     var tw0 = snap.tw;   // mapa de la primera vuelta (el pump puede avanzar de vuelta antes de que arranque el playhead)
-    pump();
-    if(playing && !ending) schedulerTimer = setInterval(pump, TICK_MS);
+    function pumpTimed(){ var a = performance.now(); try{ window.__perf.tick(); }catch(eP2){} pump(); try{ window.__perf.dur(performance.now() - a); }catch(eP3){} }
+    pumpTimed();
+    if(playing && !ending) schedulerTimer = setInterval(pumpTimed, TICK_MS);
 
     tickPlayhead(ctx, loopAnchor, spb, loopDur, clk, tw0, introP ? introP.beats : 0);
   }
@@ -23329,6 +23332,68 @@ function runAnalysis() {
   // 📝 SongLog — "blog" de cada canción: qué se sorteó (compases, reverb, presets, sliders, 5% especiales...) para rastrear qué perjudica la sonoridad.
   // begin() abre la entrada al empezar a armar una canción; add() anota cada sorteo; stamp() (al empezar a sonar) le pone título y el estado
   // final (compases, tempo, reverb, presets). Últimas 20. Se muestra en el panel "📝 Log" del Player vintage (comprimido por defecto).
+  // ⏱ __perf — diagnóstico de rendimiento del audio (solo mide; no cambia lo que suena).
+  // Qué mide: (1) atraso del scheduler (el setInterval de 50 ms llega tarde = hilo principal ocupado),
+  // (2) cuánto tarda cada pasada del scheduler, (3) notas que se saltaron por llegar tarde, (4) tareas largas del navegador
+  // (Chrome/Android; Safari iOS no las expone), (5) voces vivas a la vez, (6) cambios de estado del AudioContext,
+  // (7) deriva del reloj de audio contra el reloj real. Se agrega al final del texto que copia el botón "Copy" del 📝 Log.
+  window.__perf = (function(){
+    var P = {}, S = null, MAXN = 4000;
+    function pct(a, q){ if(!a.length) return 0; var b = a.slice().sort(function(x, y){ return x - y; }); return b[Math.min(b.length - 1, Math.floor(q * b.length))]; }
+    function r1(x){ return Math.round(x * 10) / 10; }
+    function fresh(ctx){
+      return { t0: performance.now(), a0: ctx ? ctx.currentTime : 0, last: 0, lag: [], dur: [], ticks: 0, hiddenTicks: 0,
+               skips: 0, skipMax: 0, skipTot: 0, longN: 0, longMax: 0, longTot: 0, vMax: 0, states: [], loops: 0, ctx: ctx };
+    }
+    P.begin = function(ctx){
+      S = fresh(ctx);
+      try{
+        if(ctx && !ctx.__perfHook){
+          ctx.__perfHook = true;
+          ctx.addEventListener("statechange", function(){ if(S) S.states.push(r1((performance.now() - S.t0) / 1000) + "s→" + ctx.state); });
+        }
+      }catch(e){}
+      try{
+        if(!P.__po && window.PerformanceObserver && PerformanceObserver.supportedEntryTypes && PerformanceObserver.supportedEntryTypes.indexOf("longtask") >= 0){
+          P.__po = new PerformanceObserver(function(list){
+            if(!S) return;
+            list.getEntries().forEach(function(en){ S.longN++; S.longTot += en.duration; if(en.duration > S.longMax) S.longMax = en.duration; });
+          });
+          P.__po.observe({ entryTypes: ["longtask"] });
+        }
+      }catch(e){}
+    };
+    P.tick = function(){
+      if(!S) return;
+      var n = performance.now();
+      S.ticks++;
+      if(document.hidden){ S.hiddenTicks++; S.last = n; return; }
+      if(S.last){ var lag = n - S.last - 50; if(S.lag.length < MAXN) S.lag.push(lag < 0 ? 0 : lag); }
+      S.last = n;
+      try{ var v = voices ? voices.size : 0; if(v > S.vMax) S.vMax = v; }catch(e){}
+    };
+    P.dur = function(ms){ if(S && S.dur.length < MAXN) S.dur.push(ms); };
+    P.skip = function(lateSec){ if(!S) return; S.skips++; var ms = lateSec * 1000; S.skipTot += ms; if(ms > S.skipMax) S.skipMax = ms; };
+    P.report = function(){
+      if(!S) return "⏱ PERF: sin datos (todavía no se reprodujo nada)";
+      var ctx = S.ctx, secs = (performance.now() - S.t0) / 1000, L = [];
+      L.push("⏱ PERF — " + r1(secs) + " s de reproducción");
+      L.push("   scheduler: " + S.ticks + " pasadas (" + S.hiddenTicks + " con la pestaña oculta)");
+      L.push("   atraso del timer ms  p50/p95/max: " + r1(pct(S.lag, 0.5)) + " / " + r1(pct(S.lag, 0.95)) + " / " + r1(pct(S.lag, 1)) + "   (>100 ms = hilo principal ocupado)");
+      L.push("   duración de cada pasada ms  p50/p95/max: " + r1(pct(S.dur, 0.5)) + " / " + r1(pct(S.dur, 0.95)) + " / " + r1(pct(S.dur, 1)));
+      L.push("   notas saltadas por tarde: " + S.skips + " (atraso máx " + Math.round(S.skipMax) + " ms)");
+      L.push("   tareas largas >50 ms: " + (P.__po ? S.longN + " (máx " + Math.round(S.longMax) + " ms, total " + Math.round(S.longTot) + " ms)" : "no disponible en este navegador"));
+      L.push("   voces vivas a la vez (máx): " + S.vMax);
+      if(ctx){
+        var drift = ((ctx.currentTime - S.a0) - secs) * 1000;
+        L.push("   AudioContext: " + ctx.state + " · " + ctx.sampleRate + " Hz · baseLatency " + (ctx.baseLatency != null ? r1(ctx.baseLatency * 1000) : "?") + " ms · outputLatency " + (ctx.outputLatency != null ? r1(ctx.outputLatency * 1000) : "?") + " ms");
+        L.push("   deriva reloj de audio vs real: " + Math.round(drift) + " ms (cambios de estado: " + (S.states.length ? S.states.join(", ") : "ninguno") + ")");
+      }
+      L.push("   modo: " + (window.matchMedia && matchMedia("(display-mode: standalone)").matches ? "app instalada" : "navegador") + " · " + (navigator.userAgent.indexOf("iPhone") >= 0 ? "iPhone" : navigator.userAgent.indexOf("Android") >= 0 ? "Android" : "PC"));
+      return L.join("\n");
+    };
+    return P;
+  })();
   window.__songLog = (function(){
     var L = { list: [], cur: null, frozen: false, ver: 0 }, MAX = 20, seq = 0, WINDOW_MS = 10000;
     var PRESETS = [["harmonyPresetSelect","harmony","Armonía"],["chordDoublePresetSelect","chordDouble","Armonía doble"],["melodyPresetSelect","melody","Melodía"],
@@ -27004,6 +27069,7 @@ function runAnalysis() {
     function rvLogEsc(t){ return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
     function rvLogCopy(btnEl){
       var L = window.__songLog, text = L ? L.text() : "";
+      try{ if(window.__perf) text += "\n\n" + window.__perf.report(); }catch(eP4){}
       function done(ok){ if(btnEl){ var old = btnEl.textContent; btnEl.textContent = ok ? "¡Copiado!" : "No se pudo"; setTimeout(function(){ btnEl.textContent = old; }, 1400); } }
       if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(text).then(function(){ done(true); }, function(){ done(false); }); return; }
       try{
