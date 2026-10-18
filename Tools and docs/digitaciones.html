@@ -361,6 +361,7 @@
   }
   .chip.barre { background: var(--barre-soft); color: var(--barre); }
   .chip.thumb { background: var(--thumb-soft); color: var(--thumb); }
+  .chip.open { background: var(--bass-soft); color: var(--bass); }
 
   .more-wrap { text-align: center; margin-top: 14px; }
   .more-btn {
@@ -839,12 +840,18 @@
       return v.pc === bass.pc && s === bass.string ? "<b>" + name + "</b>" : name;
     }).join(" · ");
     var chips = "";
+    var abiertasEnAcorde = result.grid.filter(function (g) { return g.fret === 0; }).sort(function (a, b) { return b.string - a.string; });
+    if (abiertasEnAcorde.length) chips += '<span class="chip open">open strings: ' + abiertasEnAcorde.map(function (g) { return STRING_LABEL[g.string]; }).join(" · ") + '</span>';
     if (result.solucion.thumb) chips += '<span class="chip thumb">thumb</span>';
     if ((result.solucion.slots || []).some(function (s) { return s.cejilla; })) chips += '<span class="chip barre">barre</span>';
     return '<div class="card">' + diagramSVG(result) +
       '<div class="notes">' + notas + '</div>' +
       (chips ? '<div class="chips">' + chips + '</div>' : '') +
       '</div>';
+  }
+
+  function tieneAbiertas(result) {
+    return result.grid.some(function (g) { return g.fret === 0; });
   }
 
   function positionOf(result) {
@@ -863,7 +870,9 @@
       grupos[key].push(r);
     });
     orderKeys.forEach(function (key) {
-      grupos[key].sort(function (a, b) { return positionOf(a) - positionOf(b); });
+      // Primero las posiciones SIN cuerdas al aire (recorriendo el mástil de abajo hacia arriba, una octava);
+      // al final las que usan cuerdas al aire (cada una lo aclara en su tarjeta).
+      grupos[key].sort(function (a, b) { return (tieneAbiertas(a) ? 1 : 0) - (tieneAbiertas(b) ? 1 : 0) || positionOf(a) - positionOf(b); });
     });
     return orderKeys.map(function (key) { return { cuerdas: key, items: grupos[key] }; });
   }
@@ -969,7 +978,7 @@
 
   var lastCompletoResultados = [];
   function renderBackgroundFretboard(resultadosCompletos) {
-    var resultados = elegirPorZona(resultadosCompletos);
+    var resultados = elegirPorZona(resultadosCompletos.filter(function (r) { return !tieneAbiertas(r); }));
     lastCompletoResultados = resultados;
     drawFretboard(document.getElementById("bgFretboard"), resultados);
   }
