@@ -27108,7 +27108,7 @@ function runAnalysis() {
             '<div class="rv-sets" id="rvSets"></div>' +
             '<div class="rv-scale">' + ticks + '<b class="rv-needle" id="rvNeedle"></b></div>' +
           '</div></div>' +
-          '<div class="rv-grille"><div class="rv-lamp"><em></em>ON AIR</div><canvas class="rv-art" id="rvArt" width="288" height="288" aria-hidden="true"></canvas></div>' +
+          '<div class="rv-grille"><div class="rv-lamp"><em></em>ON AIR</div><canvas class="rv-art" id="rvArt" width="256" height="256" aria-hidden="true"></canvas></div>' +
           '<div class="rv-keys">' +
             key("prev", "&#9198;&#65038;", "Previous") + key("play", "&#9654;&#65038;", "Play") +
             key("pause", "&#9208;&#65038;", "Pause") + key("next", "&#9197;&#65038;", "Next") +
@@ -27254,7 +27254,7 @@ function runAnalysis() {
   })();
 </script>
 <script>
-/* pixelart.js - imagen 8 bits (se arma en 32x32 y se muestra a 96x96 con Scale3x) por cancion: paisaje + personaje opcional.
+/* pixelart.js - imagen 8 bits (se arma en 32x32, se pasa a 64x64 con Scale2x + acabado fino) por cancion: paisaje + personaje opcional.
    API: PixelArt.render(canvas, {set:[0,4,7], seed:'titulo', mode:'auto'|'landscape'|'character'})
    - Misma entrada => misma imagen (determinista).
    - set: pitch classes de la cancion. Si no hay set se usa seed (texto o numero).
@@ -27485,32 +27485,84 @@ function runAnalysis() {
       for (var y7 = 0; y7 < N; y7++) for (var x7b = 0; x7b < N; x7b++) { if (!cp[y7][x7b]) { var nb = [[0, -1], [0, 1], [-1, 0], [1, 0]].some(function (d) { var yy = y7 + d[1], xx = x7b + d[0]; return yy >= 0 && yy < N && xx >= 0 && xx < N && cp[yy][xx]; }); if (nb) S[y7][x7b] = C.ol; } }
     }
     var out = []; for (var yo = 0; yo < N; yo++) { out[yo] = []; for (var xo = 0; xo < N; xo++) out[yo][xo] = S[yo][xo] || P[yo][xo]; }
-    return { pixels: out, type: type, character: withChar };
+    return { pixels: out, type: type, character: withChar, seed: seed };
   }
 
-  // Scale3x (AdvMAME3x): triplica la resolución (32 -> 96) suavizando los escalones de las diagonales sin inventar colores ni difuminar.
-  function scale3x(g) {
-    var n = g.length, o = [], y, x, k;
-    for (y = 0; y < n * 3; y++) o[y] = [];
+  function rgbOf(c) {
+    var m = /^hsl\(([-\d.]+),([\d.]+)%,([\d.]+)%\)$/.exec(c);
+    if (m) { var h = ((+m[1] % 360) + 360) % 360 / 360, s = +m[2] / 100, l = +m[3] / 100, q = l < .5 ? l * (1 + s) : l + s - l * s, p = 2 * l - q;
+      var f = function (t) { t = (t + 1) % 1; return t < 1/6 ? p + (q - p) * 6 * t : t < .5 ? q : t < 2/3 ? p + (q - p) * (2/3 - t) * 6 : p; };
+      return [f(h + 1/3) * 255, f(h) * 255, f(h - 1/3) * 255]; }
+    if (c.charAt(0) === '#') { var v = c.length === 4 ? c.replace(/[^#]/g, function (d) { return d + d; }).slice(1) : c.slice(1); return [parseInt(v.substr(0,2),16), parseInt(v.substr(2,2),16), parseInt(v.substr(4,2),16)]; }
+    return [0, 0, 0];
+  }
+  function lumOf(c) { return (0.3 * c[0] + 0.59 * c[1] + 0.11 * c[2]) / 255; }
+
+  // Scale2x (AdvMAME2x): 32 -> 64, suaviza diagonales sin inventar colores.
+  function scale2x(g) {
+    var n = g.length, o = [], y, x;
+    for (y = 0; y < n * 2; y++) o[y] = [];
     function at(yy, xx) { return g[yy < 0 ? 0 : yy >= n ? n - 1 : yy][xx < 0 ? 0 : xx >= n ? n - 1 : xx]; }
     for (y = 0; y < n; y++) for (x = 0; x < n; x++) {
-      var A = at(y - 1, x - 1), B = at(y - 1, x), C = at(y - 1, x + 1),
-          D = at(y, x - 1),     E = at(y, x),     F = at(y, x + 1),
-          G = at(y + 1, x - 1), H = at(y + 1, x), I = at(y + 1, x + 1), e;
-      if (B !== H && D !== F) {
-        e = [D === B ? D : E, ((D === B && E !== C) || (B === F && E !== A)) ? B : E, B === F ? F : E,
-             ((D === B && E !== G) || (D === H && E !== A)) ? D : E, E, ((B === F && E !== I) || (H === F && E !== C)) ? F : E,
-             D === H ? D : E, ((D === H && E !== I) || (H === F && E !== G)) ? H : E, H === F ? F : E];
-      } else e = [E, E, E, E, E, E, E, E, E];
-      for (k = 0; k < 9; k++) o[3 * y + ((k / 3) | 0)][3 * x + (k % 3)] = e[k];
+      var B = at(y - 1, x), D = at(y, x - 1), E = at(y, x), F = at(y, x + 1), H = at(y + 1, x);
+      var e0 = E, e1 = E, e2 = E, e3 = E;
+      if (B !== H && D !== F) { e0 = D === B ? D : E; e1 = B === F ? F : E; e2 = D === H ? D : E; e3 = H === F ? F : E; }
+      o[2 * y][2 * x] = e0; o[2 * y][2 * x + 1] = e1; o[2 * y + 1][2 * x] = e2; o[2 * y + 1][2 * x + 1] = e3;
     }
     return o;
   }
 
+  function h2(x, y, s) { var h = Math.imul(x * 374761393 + y * 668265263 + s, 1274126177); h = Math.imul(h ^ h >>> 13, 1103515245); return ((h ^ h >>> 16) >>> 0) / 4294967296; }
+  var BAYER = [0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5].map(function (v) { return (v + 0.5) / 16; });
+
+  // Detalle fino a 64x64: estrellas finas con destello, luz de borde en siluetas, grano, brillo de sol/luna, viñeta y contraste. Determinista (depende solo de la semilla).
+  function detail(g, seed) {
+    var n = g.length, c = [], L = [], x, y, k;
+    for (y = 0; y < n; y++) { c[y] = []; L[y] = []; for (x = 0; x < n; x++) { c[y][x] = rgbOf(g[y][x]); L[y][x] = lumOf(c[y][x]); } }
+    function gl(yy, xx) { return (yy < 0 || yy >= n || xx < 0 || xx >= n) ? 0 : L[yy][xx]; }
+    var o = []; for (y = 0; y < n; y++) { o[y] = []; for (x = 0; x < n; x++) o[y][x] = c[y][x].slice(); }
+    // 1) estrellas: bloque 2x2 brillante y aislado -> punto fino; algunas con destello en cruz
+    for (y = 0; y < n; y += 2) for (x = 0; x < n; x += 2) {
+      if (L[y][x] > 0.88 && L[y][x + 1] > 0.88 && L[y + 1][x] > 0.88 && L[y + 1][x + 1] > 0.88 &&
+          gl(y - 1, x) < 0.6 && gl(y - 1, x + 1) < 0.6 && gl(y + 2, x) < 0.6 && gl(y + 2, x + 1) < 0.6 && gl(y, x - 1) < 0.6 && gl(y + 1, x - 1) < 0.6 && gl(y, x + 2) < 0.6 && gl(y + 1, x + 2) < 0.6) {
+        var r = h2(x, y, seed), bright = c[y][x], bg = c[y][x - 1 >= 0 ? x - 1 : x + 2];
+        if (r < 0.6) { o[y][x + 1] = bg.slice(); o[y + 1][x] = bg.slice(); o[y + 1][x + 1] = bg.slice(); }
+        else if (r < 0.82) { [[y - 1, x], [y + 2, x], [y, x - 1], [y, x + 2]].forEach(function (q) { if (q[0] >= 0 && q[0] < n && q[1] >= 0 && q[1] < n) for (k = 0; k < 3; k++) o[q[0]][q[1]][k] = o[q[0]][q[1]][k] * 0.55 + bright[k] * 0.45; }); }
+      }
+    }
+    // 2) luz de borde: el píxel de una silueta que toca un cielo mucho más claro se aclara hacia él
+    for (y = 1; y < n; y++) for (x = 0; x < n; x++) {
+      var up = L[y - 1][x], me = L[y][x];
+      if (up - me > 0.16 && up < 0.85 && me < 0.5) for (k = 0; k < 3; k++) o[y][x][k] = o[y][x][k] * 0.62 + c[y - 1][x][k] * 0.38;
+    }
+    // 3) brillo suave alrededor de zonas grandes y luminosas (sol, luna, ventanas): mezcla con dither
+    var R = 6;
+    for (y = 0; y < n; y++) for (x = 0; x < n; x++) if (L[y][x] > 0.8) {
+      var cnt = 0, a, b; for (a = -2; a <= 2; a++) for (b = -2; b <= 2; b++) if (gl(y + a, x + b) > 0.8) cnt++;
+      if (cnt < 15) continue;
+      for (a = -R; a <= R; a++) for (b = -R; b <= R; b++) {
+        var yy = y + a, xx = x + b; if (yy < 0 || yy >= n || xx < 0 || xx >= n || L[yy][xx] > 0.62) continue;
+        var d = Math.sqrt(a * a + b * b); if (d > R) continue;
+        var t = 1 - d / R; if (t > BAYER[(yy & 3) * 4 + (xx & 3)] + 0.1) for (k = 0; k < 3; k++) o[yy][xx][k] += (c[y][x][k] - o[yy][xx][k]) * 0.22;
+      }
+    }
+    // 4) grano fino, viñeta y curva de contraste
+    var res = [];
+    for (y = 0; y < n; y++) { res[y] = []; for (x = 0; x < n; x++) {
+      var ux = (x + .5) / n * 2 - 1, uy = (y + .5) / n * 2 - 1, vg = 1 - 0.2 * Math.pow(Math.max(0, (ux * ux + uy * uy) / 2), 1.3), gr = 1 + (h2(x, y, seed ^ 0x9e37) - 0.5) * 0.025, r = [];
+      for (k = 0; k < 3; k++) { var v = Math.max(0, Math.min(1, o[y][x][k] / 255)); v = v * v * (3 - 2 * v) * 0.35 + v * 0.65; r[k] = Math.max(0, Math.min(255, Math.round(v * vg * gr * 255))); }
+      res[y][x] = 'rgb(' + r[0] + ',' + r[1] + ',' + r[2] + ')';
+    } }
+    return res;
+  }
+
   function render(canvas, opts) {
-    var img = build(opts), ctx = canvas.getContext('2d'), g = scale3x(img.pixels), M = g.length, px = canvas.width / M;
-    ctx.imageSmoothingEnabled = false;
-    for (var y = 0; y < M; y++) for (var x = 0; x < M; x++) { ctx.fillStyle = g[y][x]; ctx.fillRect(x * px, y * px, Math.ceil(px), Math.ceil(px)); }
+    var img = build(opts), g = detail(scale2x(img.pixels), img.seed), M = g.length;
+    var off = document.createElement('canvas'); off.width = M; off.height = M;
+    var oc = off.getContext('2d');
+    for (var y = 0; y < M; y++) for (var x = 0; x < M; x++) { oc.fillStyle = g[y][x]; oc.fillRect(x, y, 1, 1); }
+    var ctx = canvas.getContext('2d'); ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(off, 0, 0, canvas.width, canvas.height);
     canvas.style.imageRendering = 'pixelated';
     return { type: img.type, character: img.character };
   }
@@ -27531,7 +27583,7 @@ function runAnalysis() {
     close: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12"/><path d="M18 6L6 18"/></svg>'
   };
   var X = '<button type="button" class="x" id="rvClose" aria-label="Cerrar">' + IC.close + '</button>';
-  var ART = '<canvas class="art" id="rvArt" width="288" height="288" aria-hidden="true"></canvas>';
+  var ART = '<canvas class="art" id="rvArt" width="256" height="256" aria-hidden="true"></canvas>';
   var K = '<div class="k" id="rvKind">RADIO !</div>', T = '<div class="t" id="rvTitle">&nbsp;</div>', S = '<div class="s" id="rvSets"></div>';
   var NEEDLE = '<div class="scale"><b class="sk-needle" id="rvNeedle"></b></div>';
   function keys(){
@@ -27730,15 +27782,15 @@ function runAnalysis() {
   function coverFor(seedKey){
     try {
       if (!window.PixelArt) return [];
-      // 512x512 con la imagen ENTERA (480x480 = 5x de 96, 16 px de aire alrededor y marco fino): si CarPlay / la pantalla de bloqueo
+      // 512x512 con la imagen ENTERA (448x448 = 7x de 64, 32 px de aire alrededor y marco fino): si CarPlay / la pantalla de bloqueo
       // recorta o redondea los bordes, no se corta nada de la imagen.
       var c = document.createElement("canvas"); c.width = 512; c.height = 512;
-      var a = document.createElement("canvas"); a.width = 480; a.height = 480;
+      var a = document.createElement("canvas"); a.width = 448; a.height = 448;
       window.PixelArt.render(a, { seed: seedKey, mode: "auto" });
       var cx = c.getContext("2d");
       cx.fillStyle = "#111"; cx.fillRect(0, 0, 512, 512);
-      cx.imageSmoothingEnabled = false; cx.drawImage(a, 16, 16);
-      cx.strokeStyle = "rgba(255,255,255,.9)"; cx.lineWidth = 2; cx.strokeRect(15, 15, 482, 482);
+      cx.imageSmoothingEnabled = false; cx.drawImage(a, 32, 32);
+      cx.strokeStyle = "rgba(255,255,255,.9)"; cx.lineWidth = 2; cx.strokeRect(31, 31, 450, 450);
       var u = c.toDataURL("image/png");
       return [{ src: u, sizes: "512x512", type: "image/png" }];
     } catch(e){ return []; }
