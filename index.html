@@ -1529,11 +1529,15 @@
       </div>
       <div class="clock-actions">
         <div style="display:flex;flex-direction:column;align-items:stretch;gap:6px;">
+          <div id="consolaTransportRow" style="display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;gap:8px;">
+            <button type="button" class="chip primary" id="consolaPlayBtn" title="Reproduce el segmento en loop — repite siempre la misma secuencia (la última generada) hasta que la cambies con 🔀 o elijas otras notas.">&#9658; Play</button>
+            <button type="button" class="chip chip-small" id="consolaRegenPlayBtn" disabled title="Atajo: tecla G. Detiene lo que suene, sortea una variación nueva del segmento (mismo set de notas elegido) y la reproduce de una — funciona también mientras está sonando.">&#128256;</button>
+            <button type="button" class="chip" id="consolaStopBtn" disabled>&#9632; Stop</button>
+          </div>
           <div style="display:flex;align-items:stretch;gap:6px;"><button class="chip primary" style="flex:1;" id="creaturaBtn" type="button" title="Corre sola la secuencia: sortea Chromatism (2–40%), Chords (20–60%), Triplets (0–100%), Melodic/Harmonic/RythmSpace (0–100%) y Rapid runs (0–30%), Simplicity (0–50%), Melody n2 (on/off al azar) y una combinación totalmente al azar de Cycles (intervalos + Chromatism; prende Cycles) → Random Fill (5 o 2 sets al azar; 2–3/2–4/2–5 notas, modo Mezcla) → Compose → tilda Mix time signatures → Detener → espera 2s → 🔀 Regenerar. Una sola pasada por click.">🪄 CreaturaRandom</button><button type="button" class="chip" data-radio-only="random" style="flex:0 0 auto;padding-left:8px;padding-right:8px;" aria-label="Radio: solo CreaturaRandom" title="Radio (player): abre el mismo player del RADIO! pero limitado a CreaturaRandom: cada canción nueva es de CreaturaRandom (Next / Previous / Stop, historial, log y export iguales). Con la radio prendida en este modo, apretarlo de nuevo la detiene; para volver al sorteo entre todos los modos usá el botón RADIO!.">📻</button></div>
           <div style="display:flex;align-items:stretch;gap:6px;"><button class="chip primary" style="flex:1;" id="creaturaBellaBtn" type="button" title="Igual que CreaturaRandom (mismos sliders, incluidos Simplicity 0–50%, Melody n2 on/off y Cycles al azar; Compose, Mix time signatures, Detener, espera 2s y Regenerar), pero los 5 o 2 sets salen SOLO del índice del libro (jerarquías de sets) y con más probabilidad cuanto mayor es su jerarquía: dentro de cada cardinalidad (3 hasta el máximo del slider, el índice no tiene sets de 2 notas) el set 1 del índice es el más probable y el último el menos probable. Cada set sale transportado a una tónica al azar.">🪄 CreaturA</button><button type="button" class="chip" data-radio-only="bella" style="flex:0 0 auto;padding-left:8px;padding-right:8px;" aria-label="Radio: solo CreaturA" title="Radio (player): abre el mismo player del RADIO! pero limitado a CreaturA: cada canción nueva es de CreaturA (Next / Previous / Stop, historial, log y export iguales). Con la radio prendida en este modo, apretarlo de nuevo la detiene; para volver al sorteo entre todos los modos usá el botón RADIO!.">📻</button></div>
           <div style="display:flex;align-items:center;gap:8px;"><button class="chip primary" id="commonChordsBtn" type="button" style="flex:1;" title="ChordS: en vez de sets, compone una canción con acordes de la base de acordes (tríadas, sextas, séptimas, add, extendidos, alterados), en cualquier tónica y siempre en inversión: el bajo toca la tónica, la tercera, la quinta o la séptima. Cantidad de acordes al azar (1, 2 o 4 por compás; se pueden repetir o no). La melodía toca solo notas del modo del acorde en curso (Cmaj7 sin #11 = Jónico o Lidio). 🔀 / tecla G sortean otra canción ChordS.">🎼 ChordS</button><button type="button" class="chip" data-radio-only="common" style="flex:0 0 auto;padding-left:8px;padding-right:8px;" aria-label="Radio: solo ChordS" title="Radio (player): abre el mismo player del RADIO! pero limitado a ChordS: cada canción nueva es de ChordS (Next / Previous / Stop, historial, log y export iguales). Con la radio prendida en este modo, apretarlo de nuevo la detiene; para volver al sorteo entre todos los modos usá el botón RADIO!.">📻</button></div><details id="chordsConfig" style="margin-top:4px;"><summary style="font-size:12px;color:var(--ink-muted);cursor:pointer;font-weight:700;" title="Config: opciones de ChordS (Test, Familias de acordes y Escalas de la melodía). Cerrado por defecto.">⚙️ Config</summary><div style="padding:2px 0 2px 8px;"><label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;padding:2px 0 2px;font-weight:700;" title="Composer Configuration (ChordS): prendido por defecto. Tildado, la canción ChordS obedece los controles de la tarjeta Composer Configuration que sirven con acordes, con los valores que tengan ahí: Chords (cuántos compases llevan más de un acorde), Triplets, Syncopation, Sustain, Ornaments (+ glissando / bend), Melody silences, Norepetitions, BlockwithMelody (Harmony y Bass), musicSilence, MelodicSpace / HarmonicSpace / RythmSpace, moreComping y bebopMelody (si sus botones están prendidos). Dynamics, Tempo &amp; Expression, Melody n3, wide.range, Harmony textures, Chord simultaneity y los controles de la batería ya valen siempre en ChordS. No aplican (trabajan sobre sets): Chromatism, Subsets, Supersets, Cycles, Notas comunes, Simplicity, Melody n2 y Form. Para probar una función sola, poné las demás en 0% / destildadas en la tarjeta."><input type="checkbox" id="commonChordsComposerCfg" checked> Composer Configuration</label><details style="margin-top:4px;"><summary style="font-size:12px;color:var(--ink-muted);cursor:pointer;" title="Test (ChordS): ModeTestHarmony, ModeTestMelody y narrowregister.">🧪 Test</summary><div style="display:flex;flex-wrap:wrap;gap:4px 10px;padding:4px 0;"><label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="ModeTestHarmony: la armonía del ModeTest — un solo acorde cada 2 compases, con todas las notas atacando juntas (simultáneo) y sonando los 2 compases completos. La melodía queda normal. Con ModeTestMelody también tildado = ModeTest completo."><input type="checkbox" id="commonChordsModeTestH"> ModeTestHarmony</label><label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="ModeTestMelody: la melodía del ModeTest — toca únicamente la escala (el modo) de cada acorde, de la tónica hacia arriba o abajo, 1–3 octavas. La armonía queda normal (1, 2 o 4 acordes por compás). Con ModeTestHarmony también tildado = ModeTest completo."><input type="checkbox" id="commonChordsModeTestM"> ModeTestMelody</label><label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="narrowregister: el registro de un acorde al siguiente no se aleja más de una octava (la nota más grave y la más aguda de cada acorde quedan a no más de 12 semitonos de las del acorde anterior)."> <input type="checkbox" id="commonChordsNarrow"> narrowregister</label><label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="Testing patterns: un acorde random y una escala (modo de ese acorde, de las de Escalas de la melodía) para toda la reproducción; 160 BPM, 100 compases. Cada compás toca un patrón melódico distinto (2 a 4 movimientos de 1 a 8 pasos diatónicos, ↑ y ↓) arrancando en la tónica de la escala; no se repite ningún patrón. La melodía va al doble de velocidad: el patrón suena 2 veces por compás. El piano roll rotula el patrón de cada compás (ej. 2↑ 1↓ 3↑)."><input type="checkbox" id="commonChordsTestPat"> Testing patterns</label></div></details><details style="margin-top:4px;"><summary style="font-size:12px;color:var(--ink-muted);cursor:pointer;" title="Categoría: limita los acordes que se sortean a las familias tildadas. Sin tildar ninguna = todas.">🧬 Familias de acordes</summary><div id="commonChordsFamilies" style="display:flex;flex-wrap:wrap;gap:4px 10px;padding:4px 0;"><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;font-weight:700;" title="All: tilda o destilda todas las familias."><input type="checkbox" id="commonChordsFamiliesAll"> All</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Maj7"> Maj7</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="m7"> m7</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="7"> 7</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="7Alt"> 7Alt</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Sus 2b"> Sus 2b</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Semidisminuido"> Semidisminuido</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Disminuida"> Disminuida</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Aumentada"> Aumentada</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Díada"> Díada</label></div></details><details style="margin-top:4px;"><summary style="font-size:12px;color:var(--ink-muted);cursor:pointer;" title="Escalas: con una o más tildadas, la melodía de cada acorde toca solo modos de esas escalas (solo se sortean acordes que tengan algún modo en esas escalas; si la combinación con las familias no deja ninguno, usa cualquier modo y se marca con * en el subtítulo). Sin tildar = todas (menos las 4 de Barry Harris, que solo entran si se tildan y cuyas corridas de escala siempre bajan).">🎼 Escalas de la melodía</summary><div id="commonChordsScales" style="display:flex;flex-wrap:wrap;gap:4px 10px;padding:4px 0;"><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;font-weight:700;" title="All: tilda o destilda todas las escalas."><input type="checkbox" id="commonChordsScalesAll"> All</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Diatónica"> Diatónica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Menor melódica"> Menor melódica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Menor armónica"> Menor armónica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Mayor armónica"> Mayor armónica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Enigmática"> Enigmática</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Aumentada"> Aumentada</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Octatónica"> Octatónica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-35"> Pent. 5-35 (tradicional)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-34"> Pent. 5-34 (Prometeo)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-29B"> Pent. 5-29B (Kumoi I)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-29"> Pent. 5-29 (Kumoi II)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-30"> Pent. 5-30 (Enigmática)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-30B"> Pent. 5-30B (Enigmática II)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="Barry Harris: sexta mayor + disminuido (C D E F G Ab A B). Solo entra si la tildás; la corrida de escala (ModeTestMelody / Semis) siempre baja."><input type="checkbox" value="Harris Major 6th dim"> Harris Major 6th dim (8-26)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="Barry Harris: sexta menor + disminuido (C D Eb F G Ab A B). Solo entra si la tildás; la corrida de escala siempre baja."><input type="checkbox" value="Harris Minor 6th dim"> Harris Minor 6th dim (8-27)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="Barry Harris: séptima dominante + disminuido (C D E F G Ab Bb B). Solo entra si la tildás; la corrida de escala siempre baja."><input type="checkbox" value="Harris Dominant dim"> Harris Dominant dim (8-27B)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="Barry Harris: séptima dominante b5 + disminuido (C D E F Gb Ab Bb B). Solo entra si la tildás; la corrida de escala siempre baja."><input type="checkbox" value="Harris Dominant b5 dim"> Harris Dominant b5 dim (8-25)</label></div><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;padding-bottom:4px;" title="Semis: la melodía toca la escala del modo de cada acorde, de la tónica hacia arriba, al doble de velocidad que ModeTest (cada nota dura la mitad y la escala se repite desde la tónica hasta llenar el acorde). Funciona con o sin ModeTestMelody."><input type="checkbox" id="commonChordsSemis"> Semis (escalas al doble de velocidad)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;padding-bottom:4px;" title="MelodicPatternsV2: la melodía recorre las notas del modo del acorde con patrones del tester (1 a 8 pasos diatónicos, 2 a 4 movimientos, hacia arriba o abajo; ej. 2↑ 1↓ = C E D). Cada patrón se usa una sola vez y le sigue otro nuevo. No aplica con ModeTestMelody ni Semis (corridas de escala)."><input type="checkbox" id="commonChordsPatV2"> MelodicPatternsV2 (patrones del tester)</label></details></div></details>
           <div style="display:flex;align-items:stretch;gap:6px;"><button class="chip primary" style="flex:1;" id="partimentiBtn" type="button" title="Partimenti (experimental): el motor inventa un bajo (Regla de la octava ascendente/descendente, quintas descendentes, I–IV–V–I, esquemas galantes y cadencias simple/compuesta/doble) en una tonalidad mayor al azar y lo completa a 4 voces con conducción de voces (sin quintas ni octavas paralelas, la 7ª baja, la sensible sube): bajo en Bass, tenor y alto en Harmony, soprano con diminuciones en Melody. Al entrar pone Clavecín en los tres y Batería a 0%. Cada canción sortea un movimiento de tempo (Grave…Prestissimo). En el piano roll: cifra romana e inversión (V4/3, V6/4, I6...). Las opciones están en el desplegable de abajo. 🔀 / tecla G sortean otra canción.">🎹 Partimenti</button><button type="button" class="chip" data-radio-only="partimenti" style="flex:0 0 auto;padding-left:8px;padding-right:8px;" aria-label="Radio: solo Partimenti" title="Radio (player): abre el mismo player del RADIO! pero limitado a Partimenti: cada canción nueva es de Partimenti (Next / Previous / Stop, historial, log y export iguales). Con la radio prendida en este modo, apretarlo de nuevo la detiene; para volver al sorteo entre todos los modos usá el botón RADIO!.">📻</button></div>
-          <details id="partimentiOpts" style="margin-top:2px;"><summary style="font-size:12px;color:var(--ink-muted);cursor:pointer;" title="Partimenti: elegí qué celdas de bajo, esquemas galantes (Romanesca, Prinner, Meyer, Do-Re-Mi, Sol-Fa-Mi, Aprile, Jupiter, Pastorella, Fenaroli, Ponte, Passo Indietro, Quiescenza), cadencias (simple, compuesta, doble) y movimientos de tempo (Grave…Prestissimo) puede sortear. Sin tildar nada = todo.">🎹 Partimenti: esquemas, cadencias, tempo</summary><div id="partimentiOptsBody" style="padding:4px 0;"></div></details>
           <div style="display:flex;align-items:stretch;gap:6px;"><button class="chip primary" style="flex:1;" id="jazzTunesBtn" type="button" title="JazzTunes (random choose): sortea una canción de la carpeta Band in a box SONGS (archivo MGU), toma sus acordes y su melodía y la arma con el motor: la melodía es la de la canción nota por nota, la armonía sale del motor siguiendo los acordes de la canción (tonos guía llevados por la voz más cercana; respeta Chord simultaneity, BlockwithMelody, wide.range), el bajo toca la raíz de cada acorde y la batería es la del motor con tus controles. Tempo y compás (4/4 o 3/4) = los de la canción; una canción = un coro. moreComping y bebopMelody, si los tenés prendidos, tocan sobre los acordes de la canción. 🔀 / tecla G rearman el acompañamiento de la misma canción; este botón sortea otra.">🎷 JazzTunes</button><button type="button" class="chip" data-radio-only="jazz" style="flex:0 0 auto;padding-left:8px;padding-right:8px;" aria-label="Radio: solo JazzTunes" title="Radio (player): abre el mismo player del RADIO! pero limitado a JazzTunes: cada canción nueva es de JazzTunes (Next / Previous / Stop, historial, log y export iguales). Con la radio prendida en este modo, apretarlo de nuevo la detiene; para volver al sorteo entre todos los modos usá el botón RADIO!.">📻</button></div>
           <select id="jazzSongSel" style="width:100%;max-width:100%;font-size:12px;" title="Canciones de la carpeta Band in a box SONGS (todos los archivos MG*/SG*, como presets). Auto = el botón 🎷 JazzTunes sortea una canción. Elegir una canción de la lista la carga y la reproduce ya (con los defaults de JazzTunes y Reharmonization); mientras haya una elegida, el botón 🎷 JazzTunes vuelve a armar ESA canción (otra reharmonización). Para volver a sortear, elegí Auto. Si el archivo es de una versión que el parser MGU todavía no verifica, avisa con un mensaje en vez de adivinar. Se puede escribir para saltar a un nombre."><option value="">Auto · sortear</option></select>
           <div id="jazzReharmRow" style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-muted);" title="Reharmonization (solo JazzTunes; Jazz.i.Tunes tiene la suya, debajo de su botón): reharmoniza los acordes de la canción con conocimiento de sets (Forte-Solomon, vector de intervalos, pares Z) y la base de acordes de CommonChords, sin tocar la melodía: cada acorde nuevo tiene que calzar con las notas que suenan sobre él. Cuanto más grande el slider, más complejo: 1–25% colores y relativos (maj7→maj9, Cmaj7→Em7); 30–50% sustitutos tritonales, dominantes secundarios y ii–V insertados; 45%+ dominantes alterados; 55%+ clases de set iguales o pares Z, disminuidos de paso; 70%+ medíantes cromáticas y backdoor. Se aplica en el próximo JazzTunes y en cada 🔀 / tecla G (re-sortea). El detalle de lo cambiado (con el número de Forte de cada acorde) queda en el log de la canción.">
@@ -1822,6 +1826,13 @@
       </div>
         </div>
       </div>
+      <div class="consola-field consola-instruments consola-stack" id="partimentiOpts" title="Partimenti: elegí qué celdas de bajo, esquemas galantes (Romanesca, Prinner, Meyer, Do-Re-Mi, Sol-Fa-Mi, Aprile, Jupiter, Pastorella, Fenaroli, Ponte, Passo Indietro, Quiescenza), cadencias (simple, compuesta, doble) y movimientos de tempo (Grave…Prestissimo) puede sortear. Sin tildar nada = todo.">
+        <div class="consola-subfield-head">
+          <label>Partimenti</label>
+          <button type="button" class="subfield-toggle" aria-expanded="false" aria-controls="partimentiOptsBody" onclick="toggleModule(this)" title="Mostrar/ocultar los controles de Partimenti (valen para 🎹 Partimenti y para 🪄🎹 Creatura+Partimenti)"></button>
+        </div>
+        <div class="collapsible-content collapsed" id="partimentiOptsBody" style="display:block;"></div>
+      </div>
       <div class="consola-field consola-instruments consola-stack" title="Todo lo de ritmo agrupado y contraído por defecto: Rhythm complexity, Variaciones de ritmo (Velocity humanizada, Micro-timing, Variación por sección, other-rhythm-variations), Rhythm — Time signature (con Mix time signatures) y Loop — mismos controles de siempre, solo reubicados.">
         <div class="consola-subfield-head">
           <label>Rhythm</label>
@@ -1998,6 +2009,9 @@
           <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;" title="bebopMelody recorre la escala fija de Barry Harris (Major 6th diminished / Bebop Dominant). SOLO suena si el set completo de 8 notas elegido arriba es exactamente una de esas dos escalas (Forte 8-26 u 8-23) — con cualquier otro set, este checkbox no hace nada. A diferencia de Arpeggios/Scales, la escala no cambia con el acorde: es fija para todo el pasaje.">
             <input type="checkbox" id="consolaBebopHarrisChk"> 🎼 Harris
           </label>
+          <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;" title="Coltrane: bebopMelody toca un solo generado con estadísticas MEDIDAS de 20 solos reales de John Coltrane (Weimar Jazz Database, ODbL; 19.428 notas, 1.215 frases): grado de cada nota sobre el acorde vigente (7 / m7 / maj7), intervalos y continuidad de dirección, frases con largo, rango y silencios medidos, y notas por pulso medidas (corcheas, tresillos, semicorcheas, notas sostenidas). Usa notas fuera del set / modo del acorde, como en sus solos reales (excepción explícita a &quot;el set nunca se traiciona&quot;, igual que Scales). Manda sobre Arpeggios / Scales / Harris / Sixteenth notes; narrowRegister sí aplica. Cada Reproducir/Regenerar sortea un solo nuevo.">
+            <input type="checkbox" id="consolaBebopColtraneChk"> 🎷 Coltrane
+          </label>
           <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;" title="Cambia el RITMO de bebopMelody (aplica con Arpeggios, Scales, Harris o cualquier combinación): en vez de 8 corcheas por compás, toca 16 semicorcheas por compás (100% semicorcheas, sin mezcla). No afecta qué notas suenan, solo su duración.">
             <input type="checkbox" id="consolaBebopSemiChk"> Sixteenth notes
           </label>
@@ -2093,11 +2107,6 @@
           </div>
         </div>
         </div>
-      </div>
-      <div class="consola-field" style="flex-direction:row;flex-wrap:wrap;gap:8px;">
-        <button type="button" class="chip primary" id="consolaPlayBtn" title="Reproduce el segmento en loop — repite siempre la misma secuencia (la última generada) hasta que la cambies con 🔀 o elijas otras notas.">&#9658; Play</button>
-        <button type="button" class="chip chip-small" id="consolaRegenPlayBtn" disabled title="Atajo: tecla G. Detiene lo que suene, sortea una variación nueva del segmento (mismo set de notas elegido) y la reproduce de una — funciona también mientras está sonando.">&#128256;</button>
-        <button type="button" class="chip" id="consolaStopBtn" disabled>&#9632; Stop</button>
       </div>
     </div>
 
@@ -10946,6 +10955,155 @@ function runAnalysis() {
      el primer grado/nota de ESE tramo nuevo — el ritmo (fijo o mixto)
      no afecta este reinicio.
      ================================================================ */
+  /* ============================================================
+     MÓDULO COLTRANE — bebopMelody, checkbox "Coltrane" (#consolaBebopColtraneChk).
+     Genera un solo con las ESTADÍSTICAS MEDIDAS de 20 solos reales de John Coltrane
+     (Weimar Jazz Database v2.1, licencia ODbL; 19.428 notas, 1.215 frases), no con reglas teóricas.
+     Qué se midió y de dónde sale cada tabla:
+       DEG      % de notas por grado (0..11 semitonos sobre la raíz del acorde vigente), por tipo de acorde
+                (dom = 7 / 79b / +7…, min = -7 / m7b5…, maj = j7 / 6). Acordes que duran >= 2 pulsos.
+       INT_ABS  % de intervalos entre notas seguidas dentro de una frase, por |semitonos| 0..12 (todas las frases).
+       P_CONT   prob. de seguir en el mismo sentido (arriba/abajo) que el intervalo anterior: 57%.
+       N_*      NOTAS POR PULSO dentro de la frase (0 = nota sostenida a través del pulso, 1 negra, 2 corcheas,
+                3 tresillo, 4 semicorcheas, 5, 6) y cómo se pasa de un pulso al siguiente (cadena de Markov con
+                los conteos medidos en los pulsos interiores de las frases; solo ~8% de los pulsos llevan 4 o más).
+       Q_LEN    largo de frase en notas, Q_GAP silencio entre frases (pulsos), Q_RANGE rango de la frase en
+                semitonos, Q_LASTDUR duración de la última nota: cuantiles 0,5,10…100% (se sortea entre dos cuantiles).
+       START_W / END_W  grado con que arranca / termina una frase (medido sobre acordes dominantes).
+     Fuera de lo medido (decisión mía, no dato): ALPHA (cuánto pesa el grado frente al intervalo; calibrado
+     por simulación hasta igualar los % medidos), REG_SIGMA (tirón suave al registro) y que sobre acordes
+     sin 3ra se use la tabla dom si hay b7 y maj si no.
+     API: COLTRANE.generate(numBars, chordAt, opts) -> [{midi,startBeat,durBeats,bar}]
+       opts: rand (default Math.random), beatsPerBar (4), floor (nota MIDI más grave del registro; 72),
+             rootOf(chordMidi) -> pitch class de la raíz (por defecto, la nota más grave).
+     ============================================================ */
+  var COLTRANE = (function(){
+    var DEG = {
+      dom: [14,5,12,4,11,8,4,13,4,9,12,4],
+      min: [13,3,7,13,4,11,4,17,4,12,7,4],
+      maj: [12,2,13,3,17,5,2,20,2,10,3,11]
+    };
+    var INT_ABS = [3.4,20.2,30.9,18.0,12.2,7.1,1.8,2.4,1.0,1.1,0.6,0.2,0.4];
+    var PAR = { pcont: 0.674, rscale: 1.468 }; // calibrados por simulación hasta igualar el 57% de continuidad de dirección y el rango medido
+    var INT_W = [1.1,21.93,25.88,17.8,14.12,7.56,2.77,3.11,1.84,2.02,1.29,0.71,0.95]; // INT_ABS corregido por simulación (el grado también pesa, así que se compensa) hasta reproducir INT_ABS en la salida
+    var N_P0 = [0,21.7,47.1,13.4,5.6,2.0,0.8];  // 1er pulso de una frase: sin 0 (una frase arranca con nota)
+    var N_T = [[231,286,263,72,18,6,1],[257,543,818,228,35,7,4],[283,727,2213,416,76,18,6],[76,245,371,185,115,36,9],[19,31,78,99,146,54,22],[6,13,14,38,51,31,17],[5,3,7,8,18,17,13]]; // N_T[n actual][n siguiente], conteos
+    var Q_LEN = [1,3,4,5,5,6,8,8,9,10,11,13,14,16,19,21,24,28,34,45,60];
+    var Q_GAP = [0.24,0.79,1.01,1.12,1.21,1.33,1.43,1.5,1.58,1.68,1.8,1.96,2.14,2.34,2.5,2.72,2.99,3.37,3.8,4.94,6];
+    var Q_RANGE = [0,5,7,7,8,9,10,11,12,12,12,14,14,16,17,17,19,20,22,25,30];
+    var Q_LASTDUR = [0.09,0.24,0.29,0.33,0.37,0.4,0.43,0.46,0.49,0.52,0.54,0.57,0.61,0.65,0.69,0.74,0.83,0.92,1.16,1.57,2];
+    var START_W = [29,1,21,1,24,3,1,29,1,18,21,1];
+    var END_W   = [55,1,18,1,18,3,1,34,1,18,25,1];
+    var ALPHA = 1.0;
+    var REG_SIGMA = 9;
+    var LEGATO = 0.9; // las notas del medio suenan ~90% del paso (la mediana medida es ~0.37 pulsos con paso ~0.4)
+
+    function pickW(ws, r){
+      var s = 0, i;
+      for(i=0;i<ws.length;i++) s += ws[i];
+      var x = r() * s;
+      for(i=0;i<ws.length;i++){ x -= ws[i]; if(x <= 0) return i; }
+      return ws.length - 1;
+    }
+    function sampleQ(q, r){
+      var i = Math.min(q.length - 2, Math.floor(r() * (q.length - 1)));
+      return q[i] + r() * (q[i+1] - q[i]);
+    }
+    function chordInfo(chordMidi, rootOf){
+      var root = ((rootOf(chordMidi) % 12) + 12) % 12;
+      var rel = {};
+      for(var i=0;i<chordMidi.length;i++) rel[(((chordMidi[i] - root) % 12) + 12) % 12] = true;
+      var cls;
+      if(rel[4]) cls = (rel[11] && !rel[10]) ? "maj" : (rel[10] ? "dom" : "maj");
+      else if(rel[3]) cls = "min";
+      else cls = rel[10] ? "dom" : "maj";
+      return { root: root, cls: cls };
+    }
+    function choosePitch(st, info, isFirst, isLast, center){
+      var deg = DEG[info.cls];
+      var from = isFirst ? center - 9 : st.cur - 12;
+      var to = isFirst ? center + 9 : st.cur + 12;
+      var cands = [], ws = [];
+      for(var p=from;p<=to;p++){
+        var dd = isFirst ? 0 : p - st.cur;
+        var ad = dd < 0 ? -dd : dd;
+        if(!isFirst){
+          var nlo = Math.min(st.lo, p), nhi = Math.max(st.hi, p);
+          if(nhi - nlo > st.R) continue;
+        }
+        var pc = (((p - info.root) % 12) + 12) % 12;
+        var w = Math.pow(deg[pc], ALPHA);
+        if(isFirst) w *= START_W[pc];
+        else {
+          w *= (ad === 0 ? INT_W[0] : INT_W[ad] / 2);
+          if(st.dir !== 0 && dd !== 0) w *= ((dd > 0 ? 1 : -1) === st.dir ? PAR.pcont : 1 - PAR.pcont);
+        }
+        if(isLast) w *= END_W[pc];
+        var z = (p - center) / REG_SIGMA;
+        w *= Math.exp(-z * z);
+        if(w > 0){ cands.push(p); ws.push(w); }
+      }
+      if(!cands.length) return isFirst ? center : st.cur;
+      return cands[pickW(ws, st.r)];
+    }
+    function generate(numBars, chordAt, opts){
+      opts = opts || {};
+      var r = opts.rand || Math.random;
+      var bpb = opts.beatsPerBar || 4;
+      var floor = (opts.floor != null) ? opts.floor : 72;
+      var rootOf = opts.rootOf || function(ch){ var m = ch[0]; for(var i=1;i<ch.length;i++) if(ch[i] < m) m = ch[i]; return m; };
+      var center = floor + 12;
+      var total = numBars * bpb;
+      var events = [];
+      var t = 0, first = true, prevN = -1;
+      function nextN(){
+        var i = (prevN < 0) ? pickW(N_P0, r) : pickW(N_T[prevN], r);
+        prevN = i; return i;
+      }
+      while(t < total - 0.01){
+        if(!first) t += Math.max(0.2, sampleQ(Q_GAP, r) - 0.3); // -0.3: al ajustar el arranque a la grilla del pulso la frase se atrasa ~0.3 pulsos en promedio
+        first = false;
+        if(t >= total - 0.01) break;
+        var L = Math.max(2, Math.round(sampleQ(Q_LEN, r)));
+        var st = { cur: 0, lo: 1e9, hi: -1e9, dir: 0, R: Math.max(5, Math.round(sampleQ(Q_RANGE, r) * PAR.rscale)), r: r };
+        prevN = -1;
+        var b = Math.floor(t + 1e-9), n = nextN();
+        var k = Math.ceil((t - b) * n - 1e-9);
+        var count = 0, endT = t, lastEv = null;
+        while(count < L){
+          if(k >= n){
+            b++;
+            if(b >= total) break;
+            n = nextN(); k = 0;
+            if(n === 0){ // pulso sin ataque: la nota anterior se sostiene hasta el final de este pulso
+              if(lastEv){ lastEv.durBeats = (b + 1) - lastEv.startBeat; endT = b + 1; }
+              continue;
+            }
+          }
+          var onset = b + k / n;
+          if(onset >= total - 1e-6) break;
+          var bar = Math.floor(onset / bpb);
+          var chord = chordAt(bar, onset - bar * bpb) || [];
+          if(!chord.length) break;
+          var info = chordInfo(chord, rootOf);
+          var isLast = (count === L - 1);
+          var p = choosePitch(st, info, count === 0, isLast, center);
+          if(count > 0){ var dd = p - st.cur; if(dd !== 0) st.dir = dd > 0 ? 1 : -1; }
+          st.cur = p; if(p < st.lo) st.lo = p; if(p > st.hi) st.hi = p;
+          var dur = isLast ? Math.max(0.25, Math.min(2, sampleQ(Q_LASTDUR, r))) : LEGATO / n;
+          lastEv = { midi: p, startBeat: onset, durBeats: dur, bar: bar };
+          events.push(lastEv);
+          endT = onset + dur;
+          count++; k++;
+        }
+        if(count === 0){ t = Math.floor(t) + 1; continue; }
+        t = Math.max(t, endT);
+      }
+      return events;
+    }
+    return { generate: generate, _tables: { DEG: DEG, INT_ABS: INT_ABS, INT_W: INT_W, PAR: PAR } };
+  })();
+
   var BEBOPMELODY = (function(){
     var MAJOR_STEPS = [0,2,4,5,7,9,11];
     function enabled(){
@@ -10962,6 +11120,10 @@ function runAnalysis() {
     }
     function harrisChecked(){
       var el = document.getElementById("consolaBebopHarrisChk");
+      return !!(el && el.checked);
+    }
+    function coltraneChecked(){
+      var el = document.getElementById("consolaBebopColtraneChk");
       return !!(el && el.checked);
     }
     function semiChecked(){
@@ -11012,6 +11174,21 @@ function runAnalysis() {
     // (currentChordAt en modo libre, o state.progression[bar] en
     // Simplicity — el segundo argumento se ignora en ese caso).
     function buildEvents(numBars, chordAt){
+      // Coltrane (#consolaBebopColtraneChk): manda sobre Arpeggios/Scales/Harris/Sixteenth notes (ritmo y notas propios,
+      // medidos en solos reales; ver módulo COLTRANE). narrowRegister sí se respeta.
+      if(coltraneChecked()){
+        var colEv = COLTRANE.generate(numBars, chordAt, {
+          beatsPerBar: BEATS_PER_BAR,
+          floor: MELODY_MIDI_FLOOR,
+          rootOf: function(ch){ return bestRootQuality(ch.map(mod12)).rootPc; }
+        });
+        var colNarrow = narrowChecked();
+        return colEv.map(function(e){
+          var m = clampMelodyRange(e.midi);
+          if(colNarrow) m = clampNarrowRegister(m);
+          return { midi: m, startBeat: e.startBeat, durBeats: e.durBeats, bar: e.bar };
+        });
+      }
       var doArp = arpChecked();
       var doScale = scaleChecked();
       var mixedRhythm = semiChecked();
@@ -17287,9 +17464,9 @@ function runAnalysis() {
       // Form: mismo interruptor que el "Form" de How to play (se sincronizan solos). Apagado por defecto. Es una capa posterior: el motor de Partimenti no se toca,
       // solo se le suman los compases de las secciones y Form decide quién suena en cada una (no se escribe ninguna nota nueva).
       var fmk = mk("label", LBL + "font-weight:700;");
-      fmk.title = "Form (general): apagado por defecto. La canción se arma con SECCIONES: Intro, A y, al azar, B / C / D (una, dos, tres o ninguna) y Coda. Los compases se AGREGAN: A es el largo de siempre y suman Intro y Coda (2 a 4 compases cada una) y cada parte B / C / D (4 a 12), con tope de 96 en total. Cada sección tiene su propia instrumentación (armonía / bajo / melodía / batería) e intensidad; dos secciones seguidas nunca suenan igual. El motor de Partimenti no cambia: arma la canción entera y Form solo decide QUIÉN toca en cada sección (no se escribe ninguna nota nueva). El piano roll marca cada sección en celeste. Es el mismo interruptor que Form en How to play. Vale desde la próxima canción (🔀 / G).";
+      fmk.title = "Form (general): prendido por defecto. La canción se arma con SECCIONES: Intro, A y, al azar, B / C / D (una, dos, tres o ninguna) y Coda. Los compases se AGREGAN: A es el largo de siempre y suman Intro y Coda (2 a 4 compases cada una) y cada parte B / C / D (4 a 12), con tope de 96 en total. Cada sección tiene su propia instrumentación (armonía / bajo / melodía / batería) e intensidad; dos secciones seguidas nunca suenan igual. El motor de Partimenti no cambia: arma la canción entera y Form solo decide QUIÉN toca en cada sección (no se escribe ninguna nota nueva). El piano roll marca cada sección en celeste. Es el mismo interruptor que Form en How to play. Vale desde la próxima canción (🔀 / G).";
       var fmc = mk("input"); fmc.type = "checkbox"; fmc.id = "partimentiFormChk";
-      var fmc0 = document.getElementById("consolaFormChk"); fmc.checked = !!(fmc0 && fmc0.checked);
+      var fmc0 = document.getElementById("consolaFormChk"); fmc.checked = true;   // prendido por defecto (igual que el de How to play)
       fmk.appendChild(fmc); fmk.appendChild(document.createTextNode(" Form")); spw.appendChild(fmk);
       fmc.addEventListener("change", function(){   // esta casilla mueve la de How to play (su "change" regenera la canción)
         var m = document.getElementById("consolaFormChk");
@@ -18065,7 +18242,7 @@ function runAnalysis() {
       if(auto) auto.checked = false;
       if(bn) bn.value = String(bars);
       var P, song;
-      try { PARTIMENTI.randomize(); PARTIMENTI.build(); P = snap(); song = PARTIMENTI.lastSong; }
+      try { if(noPlay) PARTIMENTI.randomize(); PARTIMENTI.build(); P = snap(); song = PARTIMENTI.lastSong; }   // botón: valen los controles de Partimenti como los dejaste; 📻: se re-sortean como en la radio de Partimenti
       finally {
         if(pn && old.pn != null) pn.value = old.pn; if(pd && old.pd != null) pd.value = old.pd;
         if(auto) auto.checked = old.auto; if(bn && old.bn != null) bn.value = old.bn;
@@ -24542,7 +24719,7 @@ function runAnalysis() {
   // Checkboxes de modo de bebopMelody (Arpeggios / Scales, ver BEBOPMELODY
   // arriba) — solo cambian QUÉ notas calcula buildEvents, así que basta
   // con regenerar el segmento cuando cambian (mismo patrón que el botón).
-  ["consolaBebopArpChk", "consolaBebopScaleChk", "consolaBebopHarrisChk", "consolaBebopSemiChk", "consolaBebopNarrowChk"].forEach(function(id){
+  ["consolaBebopArpChk", "consolaBebopScaleChk", "consolaBebopHarrisChk", "consolaBebopColtraneChk", "consolaBebopSemiChk", "consolaBebopNarrowChk"].forEach(function(id){
     var el = document.getElementById(id);
     if(el) el.addEventListener("change", function(){
       if(state.rootChord.length) regenerateConsola();
