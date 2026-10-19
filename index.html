@@ -20340,17 +20340,18 @@ function runAnalysis() {
   // sintetizador de siempre como respaldo en ese caso.
   function playSM2Voice(ctx, dest, presetKey, midi, startTime, duration, gain, vel){
     var presetIdx = sm2PresetIdxFor(presetKey);
-    if(presetIdx < 0) return false;
+    if(presetIdx < 0){ try{ window.__perf.sf(presetKey, false, "preset sin índice"); }catch(eS){} return false; }
     var resolved = sm2ResolveFontAndProgram(presetKey);
-    if(!resolved) return false;
+    if(!resolved){ try{ window.__perf.sf(presetKey, false, "sin archivo/programa"); }catch(eS){} return false; }
     var font = resolved.font;
     var fontTag = resolved.tag;
-    if(!font) return false;
+    if(!font){ try{ window.__perf.sf(presetKey, false, "SoundFont no cargado"); }catch(eS){} return false; }
     // vel (opcional, 1-127): elige la capa de velocidad real del .sf2
     // (ej. 36_soft_kick / 36_hard_kick en Drums default). Sin vel: 100,
     // como siempre.
     var hits = sf2ResolveNoteCached(font, presetIdx, midi, vel != null ? Math.max(1, Math.min(127, Math.round(vel))) : 100);
-    if(!hits.length) return false;
+    if(!hits.length){ try{ window.__perf.sf(presetKey, false, "nota fuera de rango del preset"); }catch(eS){} return false; }
+    try{ window.__perf.sf(presetKey, true); }catch(eS){}
     var perHitGain = gain / hits.length;
     hits.forEach(function(hit){
       var shdr = hit.shdr, gens = hit.gens;
@@ -22515,6 +22516,7 @@ function runAnalysis() {
     // usar según el preset elegido en su selector.
     var gains = ensureInstrumentGains(ctx);
     var sm2Active = sm2UsingSF2();
+    if(!sm2Active && ctx === audioCtx){ try{ window.__perf.sfOff("synth=" + (typeof currentSynth !== "undefined" ? currentSynth : "?") + ", sf2State=" + (typeof sf2State !== "undefined" ? sf2State : "?")); }catch(eS2){} }
     if(instEnabled("consolaChordChk")){
       var chordFam = voiceFamilyFor(P.harmony, "strings1");
       var hdSm2 = 0, hdFb = 0; // diagnóstico Armonía muda (solo lectura)
@@ -23387,32 +23389,33 @@ function runAnalysis() {
   // 📝 SongLog — "blog" de cada canción: qué se sorteó (compases, reverb, presets, sliders, 5% especiales...) para rastrear qué perjudica la sonoridad.
   // begin() abre la entrada al empezar a armar una canción; add() anota cada sorteo; stamp() (al empezar a sonar) le pone título y el estado
   // final (compases, tempo, reverb, presets). Últimas 20. Se muestra en el panel "📝 Log" del Player vintage (comprimido por defecto).
-  // ⏱ __perf — diagnóstico de rendimiento del audio (solo mide; no cambia lo que suena).
-  // Qué mide: (1) atraso del scheduler (el setInterval de 50 ms llega tarde = hilo principal ocupado),
-  // (2) cuánto tarda cada pasada del scheduler, (3) notas que se saltaron por llegar tarde, (4) tareas largas del navegador
-  // (Chrome/Android; Safari iOS no las expone), (5) voces vivas a la vez, (6) cambios de estado del AudioContext,
-  // (7) deriva del reloj de audio contra el reloj real. Se agrega al final del texto que copia el botón "Copy" del 📝 Log.
+  // ⏱ __perf v2 — diagnóstico de audio (solo mide; no cambia lo que suena). Acumula TODA la sesión (no se reinicia con Play/🔀)
+  // y además guarda los números de la canción actual. Mide: atraso del scheduler (setInterval de 50 ms que llega tarde = hilo
+  // principal ocupado), duración de cada pasada, notas saltadas por llegar tarde, tareas largas (Chrome/Android; Safari iOS no las
+  // expone), voces vivas a la vez, cambios de estado del AudioContext, deriva del reloj de audio y —nuevo— cuántas notas pidieron
+  // SoundFont y NO pudieron sonar con él (caen al sintetizador de respaldo = cambio de timbre), por preset y por motivo.
+  // Se agrega al final del texto que copia el botón "Copy" del 📝 Log.
   window.__perf = (function(){
-    var P = {}, S = null, MAXN = 4000;
+    var P = {}, G = null, S = null, MAXN = 6000;
     function pct(a, q){ if(!a.length) return 0; var b = a.slice().sort(function(x, y){ return x - y; }); return b[Math.min(b.length - 1, Math.floor(q * b.length))]; }
     function r1(x){ return Math.round(x * 10) / 10; }
-    function fresh(ctx){
-      return { t0: performance.now(), a0: ctx ? ctx.currentTime : 0, last: 0, lag: [], dur: [], ticks: 0, hiddenTicks: 0,
-               skips: 0, skipMax: 0, skipTot: 0, longN: 0, longMax: 0, longTot: 0, vMax: 0, states: [], loops: 0, ctx: ctx };
-    }
+    function mk(ctx){ return { t0: performance.now(), a0: ctx ? ctx.currentTime : 0, lag: [], dur: [], ticks: 0, hiddenTicks: 0, skips: 0, skipMax: 0,
+      longN: 0, longMax: 0, longTot: 0, vMax: 0, sfOk: 0, sfFail: 0, sfBy: {}, lagMax: 0, lagMaxAt: 0, over100: 0, over300: 0, sfOff: {} }; }
+    function secs(g){ return r1((performance.now() - g.t0) / 1000); }
     P.begin = function(ctx){
-      S = fresh(ctx);
+      var first = !G;
+      if(first){ G = mk(ctx); G.states = []; G.songs = 0; G.ctx = ctx; }
+      G.songs++; S = mk(ctx); S.last = 0;
       try{
         if(ctx && !ctx.__perfHook){
           ctx.__perfHook = true;
-          ctx.addEventListener("statechange", function(){ if(S) S.states.push(r1((performance.now() - S.t0) / 1000) + "s→" + ctx.state); });
+          ctx.addEventListener("statechange", function(){ if(G) G.states.push(secs(G) + "s→" + ctx.state); });
         }
       }catch(e){}
       try{
         if(!P.__po && window.PerformanceObserver && PerformanceObserver.supportedEntryTypes && PerformanceObserver.supportedEntryTypes.indexOf("longtask") >= 0){
           P.__po = new PerformanceObserver(function(list){
-            if(!S) return;
-            list.getEntries().forEach(function(en){ S.longN++; S.longTot += en.duration; if(en.duration > S.longMax) S.longMax = en.duration; });
+            list.getEntries().forEach(function(en){ [G, S].forEach(function(g){ if(!g) return; g.longN++; g.longTot += en.duration; if(en.duration > g.longMax) g.longMax = en.duration; }); });
           });
           P.__po.observe({ entryTypes: ["longtask"] });
         }
@@ -23421,29 +23424,57 @@ function runAnalysis() {
     P.tick = function(){
       if(!S) return;
       var n = performance.now();
-      S.ticks++;
-      if(document.hidden){ S.hiddenTicks++; S.last = n; return; }
-      if(S.last){ var lag = n - S.last - 50; if(S.lag.length < MAXN) S.lag.push(lag < 0 ? 0 : lag); }
-      S.last = n;
-      try{ var v = voices ? voices.size : 0; if(v > S.vMax) S.vMax = v; }catch(e){}
-    };
-    P.dur = function(ms){ if(S && S.dur.length < MAXN) S.dur.push(ms); };
-    P.skip = function(lateSec){ if(!S) return; S.skips++; var ms = lateSec * 1000; S.skipTot += ms; if(ms > S.skipMax) S.skipMax = ms; };
-    P.report = function(){
-      if(!S) return "⏱ PERF: sin datos (todavía no se reprodujo nada)";
-      var ctx = S.ctx, secs = (performance.now() - S.t0) / 1000, L = [];
-      L.push("⏱ PERF — " + r1(secs) + " s de reproducción");
-      L.push("   scheduler: " + S.ticks + " pasadas (" + S.hiddenTicks + " con la pestaña oculta)");
-      L.push("   atraso del timer ms  p50/p95/max: " + r1(pct(S.lag, 0.5)) + " / " + r1(pct(S.lag, 0.95)) + " / " + r1(pct(S.lag, 1)) + "   (>100 ms = hilo principal ocupado)");
-      L.push("   duración de cada pasada ms  p50/p95/max: " + r1(pct(S.dur, 0.5)) + " / " + r1(pct(S.dur, 0.95)) + " / " + r1(pct(S.dur, 1)));
-      L.push("   notas saltadas por tarde: " + S.skips + " (atraso máx " + Math.round(S.skipMax) + " ms)");
-      L.push("   tareas largas >50 ms: " + (P.__po ? S.longN + " (máx " + Math.round(S.longMax) + " ms, total " + Math.round(S.longTot) + " ms)" : "no disponible en este navegador"));
-      L.push("   voces vivas a la vez (máx): " + S.vMax);
-      if(ctx){
-        var drift = ((ctx.currentTime - S.a0) - secs) * 1000;
-        L.push("   AudioContext: " + ctx.state + " · " + ctx.sampleRate + " Hz · baseLatency " + (ctx.baseLatency != null ? r1(ctx.baseLatency * 1000) : "?") + " ms · outputLatency " + (ctx.outputLatency != null ? r1(ctx.outputLatency * 1000) : "?") + " ms");
-        L.push("   deriva reloj de audio vs real: " + Math.round(drift) + " ms (cambios de estado: " + (S.states.length ? S.states.join(", ") : "ninguno") + ")");
+      [G, S].forEach(function(g){ g.ticks++; if(document.hidden) g.hiddenTicks++; });
+      if(document.hidden){ S.last = n; return; }
+      if(S.last){
+        var lag = Math.max(0, n - S.last - 50);
+        [G, S].forEach(function(g){
+          if(g.lag.length < MAXN) g.lag.push(lag);
+          if(lag > 100) g.over100++; if(lag > 300) g.over300++;
+          if(lag > g.lagMax){ g.lagMax = lag; g.lagMaxAt = (n - g.t0) / 1000; }
+        });
       }
+      S.last = n;
+      try{ var v = voices ? voices.size : 0; [G, S].forEach(function(g){ if(v > g.vMax) g.vMax = v; }); }catch(e){}
+    };
+    P.dur = function(ms){ [G, S].forEach(function(g){ if(g && g.dur.length < MAXN) g.dur.push(ms); }); };
+    P.skip = function(lateSec){ var ms = lateSec * 1000; [G, S].forEach(function(g){ if(!g) return; g.skips++; if(ms > g.skipMax) g.skipMax = ms; }); };
+    // Ventana del scheduler programada SIN motor SoundFont (todo cae al sintetizador de respaldo): se anota por qué.
+    P.sfOff = function(reason){ [G, S].forEach(function(g){ if(g) g.sfOff[reason] = (g.sfOff[reason] || 0) + 1; }); };
+    // Cada nota que pidió SoundFont: ok = sonó con él; si no, reason dice por qué cayó al respaldo.
+    P.sf = function(presetKey, ok, reason){
+      [G, S].forEach(function(g){
+        if(!g) return;
+        if(ok) g.sfOk++; else g.sfFail++;
+        var k = String(presetKey) + (ok ? "" : " [" + reason + "]");
+        g.sfBy[k] = g.sfBy[k] || { ok: 0, fail: 0 };
+        if(ok) g.sfBy[k].ok++; else g.sfBy[k].fail++;
+      });
+    };
+    function block(title, g, L){
+      L.push(title + " — " + secs(g) + " s");
+      L.push("   scheduler: " + g.ticks + " pasadas (" + g.hiddenTicks + " con la pestaña oculta)");
+      L.push("   atraso del timer ms  p50/p95/max: " + r1(pct(g.lag, 0.5)) + " / " + r1(pct(g.lag, 0.95)) + " / " + r1(g.lagMax) + (g.lagMax > 0 ? " (el máx fue a los " + r1(g.lagMaxAt) + " s)" : "") + "   · pasadas con atraso >100 ms: " + g.over100 + ", >300 ms: " + g.over300);
+      L.push("   duración de cada pasada ms  p50/p95/max: " + r1(pct(g.dur, 0.5)) + " / " + r1(pct(g.dur, 0.95)) + " / " + r1(pct(g.dur, 1)));
+      L.push("   notas saltadas por llegar tarde: " + g.skips + " (atraso máx " + Math.round(g.skipMax) + " ms)");
+      L.push("   tareas largas >50 ms: " + (P.__po ? g.longN + " (máx " + Math.round(g.longMax) + " ms, total " + Math.round(g.longTot) + " ms)" : "no disponible en este navegador"));
+      L.push("   voces vivas a la vez (máx): " + g.vMax);
+      L.push("   notas con SoundFont: " + g.sfOk + " · pidieron SoundFont y cayeron al respaldo: " + g.sfFail);
+      Object.keys(g.sfOff).forEach(function(k){ L.push("   ⚠ ventanas del scheduler SIN motor SoundFont (suena el sintetizador de respaldo): " + g.sfOff[k] + " · " + k); });
+      var bad = Object.keys(g.sfBy).filter(function(k){ return g.sfBy[k].fail > 0; });
+      bad.sort(function(x, y){ return g.sfBy[y].fail - g.sfBy[x].fail; }).slice(0, 12).forEach(function(k){ L.push("      ↳ " + k + ": " + g.sfBy[k].fail + " notas"); });
+    }
+    P.report = function(){
+      if(!G) return "⏱ PERF: sin datos (todavía no se reprodujo nada)";
+      var L = [], ctx = G.ctx;
+      block("⏱ PERF SESIÓN (" + G.songs + " reproducciones, acumulado)", G, L);
+      if(S && G.songs > 1) block("⏱ PERF ÚLTIMA CANCIÓN", S, L);
+      if(ctx){
+        var drift = ((ctx.currentTime - G.a0) - (performance.now() - G.t0) / 1000) * 1000;
+        L.push("   AudioContext: " + ctx.state + " · " + ctx.sampleRate + " Hz · baseLatency " + (ctx.baseLatency != null ? r1(ctx.baseLatency * 1000) : "?") + " ms · outputLatency " + (ctx.outputLatency != null ? r1(ctx.outputLatency * 1000) : "?") + " ms");
+        L.push("   deriva reloj de audio vs real: " + Math.round(drift) + " ms (cambios de estado: " + (G.states.length ? G.states.join(", ") : "ninguno") + ")");
+      }
+      try{ L.push("   motor: synth=" + (typeof currentSynth !== "undefined" ? currentSynth : "?") + " · sf2State=" + (typeof sf2State !== "undefined" ? sf2State : "?")); }catch(e){}
       L.push("   modo: " + (window.matchMedia && matchMedia("(display-mode: standalone)").matches ? "app instalada" : "navegador") + " · " + (navigator.userAgent.indexOf("iPhone") >= 0 ? "iPhone" : navigator.userAgent.indexOf("Android") >= 0 ? "Android" : "PC"));
       return L.join("\n");
     };
