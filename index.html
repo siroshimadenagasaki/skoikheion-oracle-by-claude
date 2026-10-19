@@ -26524,8 +26524,8 @@ function runAnalysis() {
           return;
         }
         if(kind === "mix"){
-          // RADIO!: cada vuelta nueva sortea entre CreaturaRandom, CreaturA, Intervalic.Creature, CommonChords y Partimenti.
-          var kinds = ["random", "bella", "intervalic", "common", "partimenti"];
+          // RADIO!: cada vuelta nueva sortea entre CreaturaRandom, CreaturA, Intervalic.Creature, CommonChords, Partimenti, One.Set y Creatura+Partimenti.
+          var kinds = ["random", "bella", "intervalic", "common", "partimenti", "oneset", "creapart"];
           if(window.__jazzPre && window.__jazzPre.P) kinds.push("jazz");     // JazzTunes solo si ya hay una canción precargada (la vuelta se arma sin esperar)
           if(window.__jazziPre && window.__jazziPre.P) kinds.push("jazzi");  // Jazz.i.Tunes, idem (tema de iReal precargado)
           // Player limitado a un modo (📻 junto a cada random choose): solo ese. Si es JazzTunes / Jazz.i.Tunes y todavía no hay canción precargada, sigue el sorteo normal esta vuelta.
@@ -27007,7 +27007,7 @@ function runAnalysis() {
     window.__radioMixOff = function(){ mixSet(false); };
     async function runMix(){
       jazzPrefetch(); jazziPrefetch();
-      var MIXK = ["random", "bella", "intervalic", "common", "partimenti", "jazz", "jazzi"];
+      var MIXK = ["random", "bella", "intervalic", "common", "partimenti", "jazz", "jazzi", "oneset", "creapart"];
       var pick = window.__radioOnly || MIXK[Math.floor(Math.random() * MIXK.length)];   // __radioOnly: player limitado a un modo
       window.__radioMixLast = pick;
       if(pick === "jazz") await runJazzTunes(true);
