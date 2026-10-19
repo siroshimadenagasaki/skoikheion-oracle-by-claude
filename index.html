@@ -15079,8 +15079,13 @@ function runAnalysis() {
     ES.noun.push(["Stoikheion","m"], ["clacli","m"], ["Santino","m"]);
     EN.adj.push("Pepuno", "Peperulo");
     EN.noun.push("Stoikheion", "Clacli", "Santino");
+    // Más palabras propias (2026-10-19): Peteitos, Bezucos, Pepeludito, peludo, pelado, peponio (los plurales solo van en HOUSE para no romper la concordancia)
+    ES.adj.push(["peludo","peluda"], ["pelado","pelada"]);
+    ES.noun.push(["Pepeludito","m"], ["peponio","m"]);
+    EN.adj.push("Peludo", "Pelado");
+    EN.noun.push("Pepeludito", "Peponio");
     // Palabras que además arman títulos propios ("Cachuelas le Santino"): [palabra, género, plural]
-    var HOUSE = [["Stoikheion","m",0],["pepuno","m",0],["peperulo","m",0],["clacli","m",0],["Santino","m",0],["pepuna","f",0],["cachuelas","f",1],["peperula","f",0],["papines","m",1]];
+    var HOUSE = [["Stoikheion","m",0],["pepuno","m",0],["peperulo","m",0],["clacli","m",0],["Santino","m",0],["pepuna","f",0],["cachuelas","f",1],["peperula","f",0],["papines","m",1],["Peteitos","m",1],["Bezucos","m",1],["Pepeludito","m",0],["peludo","m",0],["peluda","f",0],["pelado","m",0],["pelada","f",0],["peponio","m",0]];
     // En español "de" se escribe "le" (también "del" y "de la"): "Luna le río", "Cartas le un farol…"
     function esLe(t){ return t.replace(/\bde la\b/g, "le").replace(/\bDe la\b/g, "Le").replace(/\bdel\b/g, "le").replace(/\bde\b/g, "le").replace(/\bDe\b/g, "Le"); }
     var last = "";
