@@ -192,6 +192,9 @@
   /* Botón ▶ Player (abre la radio vintage): grande y bien visible, relleno dorado */
   #radioVintageOpenBtn{position:absolute;top:8px;left:12px;z-index:3;font-size:18px;font-weight:700;padding:8px 22px;line-height:1.2;background:var(--gold);border-color:var(--gold);color:#1a1622;box-shadow:0 0 0 2px rgba(255,255,255,.12),0 4px 14px rgba(0,0,0,.45);}
   #radioVintageOpenBtn:hover{background:var(--gold);border-color:var(--gold);filter:brightness(1.12);color:#1a1622;}
+  /* Checkbox "all" junto al botón Player: tildado = el Player hace lo de siempre; destildado = solo muestra el player a pantalla completa (no toca el audio) */
+  #radioVintageAllLbl{position:absolute;top:20px;left:158px;z-index:3;display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:600;color:var(--gold);cursor:pointer;user-select:none;-webkit-user-select:none;}
+  #radioVintageAllLbl input{margin:0;cursor:pointer;}
   .radio-mode-wrap.radio-top2{top:45px;}
   .radio-mode-wrap.radio-top0{top:5px;}
   /* ===== 📻 RADIO!: reproductor vintage a pantalla completa ===== */
@@ -1507,6 +1510,7 @@
     <div class="clock-card">
       <input type="checkbox" id="consolaRadioMixChk" hidden>
       <button type="button" class="chip" id="radioVintageOpenBtn" title="Abrir el reproductor de radio vintage (Previous / Play / Stop / Next)">&#9654;&#65038; Player</button>
+      <label id="radioVintageAllLbl" title="all (tildado): el botón Player funciona como siempre (abre la radio y, si no suena nada, arranca el mix de todos los modos). Destildado: el botón solo muestra a pantalla completa el player de la radio seleccionada (Creatura, Partimenti, etc.), sin cortar ni cambiar nada del audio."><input type="checkbox" id="radioVintageAllChk" checked> all</label>
       <input type="checkbox" id="consolaRadioChk" hidden>
       <input type="checkbox" id="consolaRadioClassicalChk" hidden>
       <div class="input-toggle">
@@ -27500,6 +27504,9 @@ function runAnalysis() {
     }
     var rvOpenBtn = document.getElementById("radioVintageOpenBtn");
     if(rvOpenBtn) rvOpenBtn.addEventListener("click", function(){
+      // Checkbox "all" destildado: el botón solo muestra el player a pantalla completa (de la radio que esté seleccionada); no arranca, no pausa, no cambia de modo ni corta audio.
+      var rvAllChk = document.getElementById("radioVintageAllChk");
+      if(rvAllChk && !rvAllChk.checked){ rvOpen(); return; }
       rvUnlockAudio();   // dentro del gesto del toque
       if(!RP.isOn()){ RP.only = null; window.__radioOnly = null; }   // el botón Player abre el RADIO! normal (mix de todos los modos); con la radio ya prendida en un modo limitado, solo la muestra
       rvOpen();
