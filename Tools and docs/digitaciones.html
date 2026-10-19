@@ -588,9 +588,12 @@
   // áureo para que se distingan bien aunque haya muchas.
   function chordColor(i) { return "hsl(" + ((i * 137.508) % 360) + ", 65%, 48%)"; }
 
+  // Traste más alto que se genera (el libro llega hasta el 14-15).
+  var MAX_FRET = 15;
+
   var DEFAULT_PARAMS = {
     spanMax: 5,
-    gapThresholds: { "1-2": 2, "2-3": 1, "3-4": 1 },
+    gapThresholds: { "1-2": 3, "2-3": 3, "3-4": 2 },
     maxFingerSlots: 4,
     thumbEnabled: true,
     thumbStrings: [6, 5],
@@ -727,17 +730,34 @@
       var resultados = [], vistos = {};
       lista.forEach(function (subset) {
         perms.forEach(function (perm) {
-          var grid = subset.map(function (stringNum, i) { return { string: stringNum, pc: perm[i], fret: fretFor(stringNum, perm[i]) }; });
-          if (opciones.bajo != null) {
-            var bass = grid.reduce(function (a, b) { return midiFor(a.string, a.fret) <= midiFor(b.string, b.fret) ? a : b; });
-            if (bass.pc !== opciones.bajo) return;
-          }
-          var firma = grid.slice().sort(function (a, b) { return b.string - a.string; }).map(function (g) { return g.string + ":" + g.fret; }).join(",");
-          if (vistos[firma]) return;
-          var solucion = asignarDedos(grid, params);
-          if (!solucion.ok) return;
-          vistos[firma] = true;
-          resultados.push({ cuerdas: subset.slice(), grid: grid, solucion: solucion, vista: vistaPorCuerda(grid, solucion) });
+          // Cada nota puede estar en su traste base (0-11) o una octava más
+          // arriba (traste +12) mientras no pase de MAX_FRET: así aparecen
+          // las posiciones del libro que cruzan el traste 12 (ej. 9-10-12-13).
+          var opciones12 = subset.map(function (stringNum, i) {
+            var f = fretFor(stringNum, perm[i]);
+            return f + 12 <= MAX_FRET ? [f, f + 12] : [f];
+          });
+          var combos = [[]];
+          opciones12.forEach(function (op) {
+            var nuevos = [];
+            combos.forEach(function (c) { op.forEach(function (f) { nuevos.push(c.concat([f])); }); });
+            combos = nuevos;
+          });
+          combos.forEach(function (frets) {
+            // una cuerda al aire (traste 0) no se mezcla con notas pisadas desde el 12
+            if (frets.some(function (f) { return f === 0; }) && frets.some(function (f) { return f >= 12; })) return;
+            var grid = subset.map(function (stringNum, i) { return { string: stringNum, pc: perm[i], fret: frets[i] }; });
+            if (opciones.bajo != null) {
+              var bass = grid.reduce(function (a, b) { return midiFor(a.string, a.fret) <= midiFor(b.string, b.fret) ? a : b; });
+              if (bass.pc !== opciones.bajo) return;
+            }
+            var firma = grid.slice().sort(function (a, b) { return b.string - a.string; }).map(function (g) { return g.string + ":" + g.fret; }).join(",");
+            if (vistos[firma]) return;
+            var solucion = asignarDedos(grid, params);
+            if (!solucion.ok) return;
+            vistos[firma] = true;
+            resultados.push({ cuerdas: subset.slice(), grid: grid, solucion: solucion, vista: vistaPorCuerda(grid, solucion) });
+          });
         });
       });
       return resultados;
@@ -891,7 +911,7 @@
   // (nunca abiertas), para que coincida exactamente con lo calculado en esa
   // sección de arriba.
   // ==========================================================================
-  var FRET_RANGE = 12;
+  var FRET_RANGE = MAX_FRET;
 
   function elegirPorZona(resultados) {
     var candidatos = resultados.map(function (r) {
