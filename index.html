@@ -23780,7 +23780,18 @@ function runAnalysis() {
         expr: { auto: (exprSel && exprSel.value === "auto") ? EXPR.autoProfile() : null },
         controls: readControls()
       };
+      o.cover = coverData(title, o.sets);   // tapa 8 bits (PNG) de la canción: la misma que muestra el Player
       return JSON.parse(JSON.stringify(o)); // copia profunda: si algo no fuera serializable, falla acá y no a medias
+    }
+    // Tapa del favorito: la MISMA imagen 8 bits del Player (semilla = título|sets), PNG 256x256 en data URL. Si falla, el favorito se guarda igual sin tapa.
+    function coverData(title, sets){
+      try{
+        if(!window.PixelArt) return "";
+        var seed = title ? title + "|" + String(sets || "").trim() : "RADIO", c = document.createElement("canvas");
+        c.width = 256; c.height = 256;
+        window.PixelArt.render(c, { seed: seed, mode: "auto" });
+        return c.toDataURL("image/png");
+      }catch(_e){ return ""; }
     }
     function slug(t){ return String(t || "").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40); }
     function fileName(o){
@@ -23836,10 +23847,10 @@ function runAnalysis() {
 
     // ---------- guardar en este navegador (localStorage) ----------
     function lsIndex(){ try{ var a = JSON.parse(localStorage.getItem(IDX_KEY) || "[]"); return Array.isArray(a) ? a : []; }catch(_e){ return []; } }
-    function lsPut(id, name, savedAt, text){
+    function lsPut(id, name, savedAt, text, cover){
       try{
         localStorage.setItem(ITEM_KEY + id, text);
-        var idx = lsIndex(); idx.unshift({ id: id, name: name, savedAt: savedAt });
+        var idx = lsIndex(); idx.unshift({ id: id, name: name, savedAt: savedAt, cover: cover || "" });
         localStorage.setItem(IDX_KEY, JSON.stringify(idx));
         return true;
       }catch(_e){ try{ localStorage.removeItem(ITEM_KEY + id); }catch(_e2){} return false; }
@@ -23853,10 +23864,10 @@ function runAnalysis() {
       if(!state.chordEvents.length){ toast("No hay música generada para guardar todavía."); return null; }
       var o, text;
       try{ o = capture(); text = JSON.stringify(o); }catch(err){ toast("No se pudo guardar: " + err.message); return null; }
-      var stored = lsPut(Date.now().toString(36), o.name, o.savedAt, text), fname = fileName(o);
+      var stored = lsPut(Date.now().toString(36), o.name, o.savedAt, text, o.cover), fname = fileName(o);
       try{ exportDownload(new Blob([text], { type: "application/json" }), fname); }catch(_e){}
       toast("♥ Guardado: " + o.name + " — archivo " + fname + " (dejalo en la carpeta Favorites/ del proyecto)" + (stored ? "" : ". No entró en el navegador: queda solo el archivo."));
-      F.mail(text, fname, o.name);
+      F.mail(text, fname, o.name, o.cover);
       Array.prototype.forEach.call(document.querySelectorAll(".fav-heart"), function(b){ b.classList.remove("fav-flash"); void b.offsetWidth; b.classList.add("fav-flash"); });
       return o;
     };
@@ -23926,7 +23937,7 @@ function runAnalysis() {
       if(!idx.length){ el.innerHTML = '<div class="fav-empty">Todavía no guardaste ninguno: apretá ♥ mientras suena una canción.</div>'; return; }
       el.innerHTML = idx.map(function(x){
         var d = ""; try{ d = new Date(x.savedAt).toLocaleString(); }catch(_e){}
-        return '<div class="fav-row"><span class="fav-n">' + esc(x.name) + '<i>' + esc(d) + '</i></span><button type="button" data-fav="open-local" data-id="' + esc(x.id) + '">Abrir</button><button type="button" data-fav="del" data-id="' + esc(x.id) + '" title="Borrar de este navegador">🗑</button></div>';
+        return '<div class="fav-row">' + (x.cover ? '<img src="' + esc(x.cover) + '" alt="" style="width:40px;height:40px;image-rendering:pixelated;border-radius:4px;flex:none;">' : '') + '<span class="fav-n">' + esc(x.name) + '<i>' + esc(d) + '</i></span><button type="button" data-fav="open-local" data-id="' + esc(x.id) + '">Abrir</button><button type="button" data-fav="del" data-id="' + esc(x.id) + '" title="Borrar de este navegador">🗑</button></div>';
       }).join("");
     }
     function fillRemote(force){
@@ -23958,11 +23969,11 @@ function runAnalysis() {
     // Una página estática no puede mandar email sola: el corazón le envía el .json a un endpoint de Google Apps Script propio (FAV_MAIL_URL),
     // que lo reenvía como adjunto a FAV_MAIL_TO. Sin URL configurada no se envía nada (el .json igual se descarga y queda en el navegador).
     var FAV_MAIL_URL = "";   // ← pegar acá la URL de la Web App de Apps Script (termina en /exec)
-    F.mail = function(text, fname, name){
+    F.mail = function(text, fname, name, cover){
       if(!FAV_MAIL_URL) return;
       try{
         fetch(FAV_MAIL_URL, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({ fileName: fname, name: name || "", json: text }) })
+          body: JSON.stringify({ fileName: fname, name: name || "", json: text, cover: cover || "" }) })
           .then(function(){ toast("♥ Enviado por email: " + fname); })
           .catch(function(){ toast("♥ No se pudo enviar el email (¿sin conexión?). El archivo " + fname + " quedó descargado."); });
       }catch(_e){}
