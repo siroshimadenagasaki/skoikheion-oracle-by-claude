@@ -4035,6 +4035,8 @@ var MGU = (function () {
       <a class="chip primary" id="soundfontTesterBtn" href="soundfont-tester.html" target="_blank" rel="noopener" title="Abre el SoundFont Tester en otra pestaña" style="text-decoration:none;">🎹 Soundfont tester</a>
       <button type="button" class="chip" id="reloadAllBtn" title="Modo offline: la app se carga una vez y después no usa internet. Este botón es lo único que baja cosas: trae la última versión del código y vuelve a bajar y guardar TODOS los archivos (sonidos, MIDIs, fondos, avatares, canciones; cientos de MB). Necesita conexión; antes de borrar nada comprueba que la versión nueva se pueda bajar.">🔄 Reload sounds and code v2</button>
     </div>
+    <div id="favDropZone" tabindex="0" role="button" title="Arrastrá acá un favorito (.json) que te llegó por email, o tocá para elegirlo: se abre y suena exactamente la misma canción" style="margin:12px auto 0;max-width:420px;padding:14px 12px;border:2px dashed var(--gold);border-radius:10px;text-align:center;font-size:13px;cursor:pointer;opacity:.9;">♥ Soltá acá un favorito (.json) para reproducirlo<br><span style="font-size:11px;opacity:.7;">o tocá para elegir el archivo</span></div>
+    <input type="file" id="favDropFile" accept=".json,application/json" hidden>
     <div id="offlineStatus" title="Tocá para actualizar este estado" style="text-align:center;margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:10.5px;opacity:.75;cursor:pointer;"></div>
   </div>
 
@@ -23854,6 +23856,7 @@ function runAnalysis() {
       var stored = lsPut(Date.now().toString(36), o.name, o.savedAt, text), fname = fileName(o);
       try{ exportDownload(new Blob([text], { type: "application/json" }), fname); }catch(_e){}
       toast("♥ Guardado: " + o.name + " — archivo " + fname + " (dejalo en la carpeta Favorites/ del proyecto)" + (stored ? "" : ". No entró en el navegador: queda solo el archivo."));
+      F.mail(text, fname, o.name);
       Array.prototype.forEach.call(document.querySelectorAll(".fav-heart"), function(b){ b.classList.remove("fav-flash"); void b.offsetWidth; b.classList.add("fav-flash"); });
       return o;
     };
@@ -23951,6 +23954,38 @@ function runAnalysis() {
       });
       return d;
     }
+    // ---------- ♥ → email ----------
+    // Una página estática no puede mandar email sola: el corazón le envía el .json a un endpoint de Google Apps Script propio (FAV_MAIL_URL),
+    // que lo reenvía como adjunto a FAV_MAIL_TO. Sin URL configurada no se envía nada (el .json igual se descarga y queda en el navegador).
+    var FAV_MAIL_URL = "";   // ← pegar acá la URL de la Web App de Apps Script (termina en /exec)
+    F.mail = function(text, fname, name){
+      if(!FAV_MAIL_URL) return;
+      try{
+        fetch(FAV_MAIL_URL, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ fileName: fname, name: name || "", json: text }) })
+          .then(function(){ toast("♥ Enviado por email: " + fname); })
+          .catch(function(){ toast("♥ No se pudo enviar el email (¿sin conexión?). El archivo " + fname + " quedó descargado."); });
+      }catch(_e){}
+    };
+    // ---------- zona de arrastrar en Tools ----------
+    function openFavFile(f){
+      if(!f) return;
+      var fr = new FileReader();
+      fr.onload = function(){ try{ F.open(JSON.parse(fr.result)); }catch(err){ toast("No se pudo abrir " + f.name + ": " + err.message); } };
+      fr.onerror = function(){ toast("No se pudo leer " + f.name); };
+      fr.readAsText(f);
+    }
+    function initDrop(){
+      var z = document.getElementById("favDropZone"), inp = document.getElementById("favDropFile");
+      if(!z || !inp) return;
+      z.addEventListener("click", function(){ inp.click(); });
+      z.addEventListener("keydown", function(e){ if(e.key === "Enter" || e.key === " "){ e.preventDefault(); inp.click(); } });
+      inp.addEventListener("change", function(e){ var f = e.target.files && e.target.files[0]; e.target.value = ""; openFavFile(f); });
+      ["dragenter", "dragover"].forEach(function(ev){ z.addEventListener(ev, function(e){ e.preventDefault(); z.style.background = "rgba(255,255,255,.08)"; }); });
+      ["dragleave", "drop"].forEach(function(ev){ z.addEventListener(ev, function(e){ e.preventDefault(); z.style.background = ""; }); });
+      z.addEventListener("drop", function(e){ openFavFile(e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]); });
+    }
+    if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", initDrop); else initDrop();
     F.mount = function(host, cls){ if(host) host.appendChild(bar(cls || "favbar-rv")); }; // lo usa el Player en cada skin
     F.capture = capture; F.check = check; F.VERSION = VER;
     function initMain(){ if(!document.querySelector(".favbar-main")) document.body.appendChild(bar("favbar-main")); }
