@@ -6281,14 +6281,24 @@ let sf2CacheDbPromise = null;
 function sf2CacheOpenDb() {
   if (!("indexedDB" in window)) return Promise.reject(new Error("No IndexedDB in this browser"));
   if (!sf2CacheDbPromise) {
-    sf2CacheDbPromise = new Promise((resolve, reject) => {
+    const opening = new Promise((resolve, reject) => {
       const req = indexedDB.open(SF2_CACHE_DB_NAME, 1);
       req.onupgradeneeded = () => { req.result.createObjectStore(SF2_CACHE_STORE_NAME); };
-      req.onsuccess = () => resolve(req.result);
+      req.onsuccess = () => {
+        const db = req.result;
+        // Si otra ventana (pestaña de Chrome + app instalada) quiere borrar/actualizar la base, esta conexión se suelta:
+        // sin esto la otra ventana queda bloqueada y TODAS las aperturas posteriores se cuelgan para siempre.
+        db.onversionchange = () => { try { db.close(); } catch (e) {} if (sf2CacheDbPromise === opening) sf2CacheDbPromise = null; };
+        resolve(db);
+      };
       req.onerror = () => reject(req.error || new Error("Could not open IndexedDB"));
+      req.onblocked = () => { try { sfLog("IDB open bloqueada por otra ventana"); } catch (e) {} };
     });
+    sf2CacheDbPromise = opening;
   }
-  return sf2CacheDbPromise;
+  // Nunca esperar más de 10 s: si la base está trabada se sigue sin caché (se baja por red) en vez de colgarse.
+  const cur = sf2CacheDbPromise;
+  return Promise.race([cur, new Promise((_, rej) => setTimeout(() => { if (sf2CacheDbPromise === cur) sf2CacheDbPromise = null; rej(new Error("IndexedDB trabada (¿otra ventana abierta?)")); }, 10000))]);
 }
 function sf2CacheKey(url) { return SF2_CACHE_VERSION + "::" + url; }
 async function sf2CacheGet(url) {
@@ -28653,17 +28663,20 @@ function runAnalysis() {
   }
 
   // ---- Botón "Reload sounds and code" ----
+  // Vacía el almacén de sonidos (no borra la base: borrar se bloquea si otra ventana la tiene abierta). Resuelve true/false; nunca espera más de 12 s.
   function wipeSounds() {
     return new Promise(function (resolve) {
+      var done = false;
+      function fin(ok) { if (!done) { done = true; resolve(ok === true); } }
+      setTimeout(function () { fin(false); }, 12000);
       try {
-        var p = (typeof sf2CacheDbPromise !== "undefined" && sf2CacheDbPromise) ? sf2CacheDbPromise : Promise.resolve(null);
-        p.then(function (db) { if (db) { try { db.close(); } catch (e) {} } }, function () {}).then(function () {
-          var rq = indexedDB.deleteDatabase(typeof SF2_CACHE_DB_NAME !== "undefined" ? SF2_CACHE_DB_NAME : "stoikheionSF2Cache"), done = false;
-          function fin() { if (!done) { done = true; resolve(); } }
-          rq.onsuccess = fin; rq.onerror = fin; rq.onblocked = function () { setTimeout(fin, 2500); };
-          setTimeout(fin, 8000);
-        });
-      } catch (e) { resolve(); }
+        sf2CacheOpenDb().then(function (db) {
+          var tx = db.transaction(SF2_CACHE_STORE_NAME, "readwrite");
+          tx.objectStore(SF2_CACHE_STORE_NAME).clear();
+          tx.oncomplete = function () { fin(true); };
+          tx.onerror = tx.onabort = function () { fin(false); };
+        }).catch(function () { fin(false); });
+      } catch (e) { fin(false); }
     });
   }
   // Qué baja el botón además del código: TODO lo que la app lee de GitHub Pages ("sf2" va a IndexedDB, "file" al caché del service worker).
@@ -28713,9 +28726,13 @@ function runAnalysis() {
       if (!fresh[0] || fresh[0].buf.byteLength < 100000) throw new Error("index.html llegó incompleto");
       // 2) Recién ahora se borra lo viejo (si el almacenamiento está casi lleno, lo nuevo no entraría) y se guarda el código nuevo.
       say("⏳ Clearing the saved files…");
+      if (!(await wipeSounds())) {
+        holdUntil = Date.now() + 60000;
+        say("⚠ The saved sounds are locked by another open Stoikheion window (a Chrome tab or the installed app). Close all of them, open the app once and press the button again — nothing was deleted.");
+        if (btn) btn.disabled = false;
+        return;
+      }
       changed = true;
-      await wipeSounds();
-      try { sf2CacheDbPromise = null; } catch (e) {}   // wipeSounds cerró la conexión: la app abre una nueva
       LIST_KEYS.forEach(function (k) { try { localStorage.removeItem(k); } catch (e) {} });
       var c = await caches.open(CACHE);
       var dirUrl = new URL("./", location.href).href;
