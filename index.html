@@ -1552,6 +1552,20 @@
           <div style="display:flex;align-items:stretch;gap:6px;"><button class="chip primary" style="flex:1;" id="creaturaBtn" type="button" title="Corre sola la secuencia: sortea Chromatism (2–40%), Chords (20–60%), Triplets (0–100%), Melodic/Harmonic/RythmSpace (0–100%) y Rapid runs (0–30%), Simplicity (0–50%), Melody n2 (on/off al azar) y una combinación totalmente al azar de Cycles (intervalos + Chromatism; prende Cycles) → Random Fill (5 o 2 sets al azar; 2–3/2–4/2–5 notas, modo Mezcla) → Compose → tilda Mix time signatures → Detener → espera 2s → 🔀 Regenerar. Una sola pasada por click.">🪄 CreaturaRandom</button><button type="button" class="chip" data-radio-only="random" style="flex:0 0 auto;padding-left:8px;padding-right:8px;" aria-label="Radio: solo CreaturaRandom" title="Radio (player): abre el mismo player del RADIO! pero limitado a CreaturaRandom: cada canción nueva es de CreaturaRandom (Next / Previous / Stop, historial, log y export iguales). Con la radio prendida en este modo, apretarlo de nuevo la detiene; para volver al sorteo entre todos los modos usá el botón RADIO!.">📻</button></div>
           <div style="display:flex;align-items:stretch;gap:6px;"><button class="chip primary" style="flex:1;" id="creaturaBellaBtn" type="button" title="Igual que CreaturaRandom (mismos sliders, incluidos Simplicity 0–50%, Melody n2 on/off y Cycles al azar; Compose, Mix time signatures, Detener, espera 2s y Regenerar), pero los 5 o 2 sets salen SOLO del índice del libro (jerarquías de sets) y con más probabilidad cuanto mayor es su jerarquía: dentro de cada cardinalidad (3 hasta el máximo del slider, el índice no tiene sets de 2 notas) el set 1 del índice es el más probable y el último el menos probable. Cada set sale transportado a una tónica al azar.">🪄 CreaturA</button><button type="button" class="chip" data-radio-only="bella" style="flex:0 0 auto;padding-left:8px;padding-right:8px;" aria-label="Radio: solo CreaturA" title="Radio (player): abre el mismo player del RADIO! pero limitado a CreaturA: cada canción nueva es de CreaturA (Next / Previous / Stop, historial, log y export iguales). Con la radio prendida en este modo, apretarlo de nuevo la detiene; para volver al sorteo entre todos los modos usá el botón RADIO!.">📻</button></div>
           <div style="display:flex;align-items:center;gap:8px;"><button class="chip primary" id="commonChordsBtn" type="button" style="flex:1;" title="ChordS: en vez de sets, compone una canción con acordes de la base de acordes (tríadas, sextas, séptimas, add, extendidos, alterados), en cualquier tónica y siempre en inversión: el bajo toca la tónica, la tercera, la quinta o la séptima. Cantidad de acordes al azar (1, 2 o 4 por compás; se pueden repetir o no). La melodía toca solo notas del modo del acorde en curso (Cmaj7 sin #11 = Jónico o Lidio). 🔀 / tecla G sortean otra canción ChordS.">🎼 ChordS</button><button type="button" class="chip" data-radio-only="common" style="flex:0 0 auto;padding-left:8px;padding-right:8px;" aria-label="Radio: solo ChordS" title="Radio (player): abre el mismo player del RADIO! pero limitado a ChordS: cada canción nueva es de ChordS (Next / Previous / Stop, historial, log y export iguales). Con la radio prendida en este modo, apretarlo de nuevo la detiene; para volver al sorteo entre todos los modos usá el botón RADIO!.">📻</button></div><details id="chordsConfig" style="margin-top:4px;"><summary style="font-size:12px;color:var(--ink-muted);cursor:pointer;font-weight:700;" title="Config: opciones de ChordS (Test, Familias de acordes y Escalas de la melodía). Cerrado por defecto.">⚙️ Config</summary><div style="padding:2px 0 2px 8px;"><label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;padding:2px 0 2px;font-weight:700;" title="Composer Configuration (ChordS): prendido por defecto. Tildado, la canción ChordS obedece los controles de la tarjeta Composer Configuration que sirven con acordes, con los valores que tengan ahí: Chords (cuántos compases llevan más de un acorde), Triplets, Syncopation, Sustain, Ornaments (+ glissando / bend), Melody silences, Norepetitions, BlockwithMelody (Harmony y Bass), musicSilence, MelodicSpace / HarmonicSpace / RythmSpace, moreComping y bebopMelody (si sus botones están prendidos). Dynamics, Tempo &amp; Expression, Melody n3, wide.range, Harmony textures, Chord simultaneity y los controles de la batería ya valen siempre en ChordS. No aplican (trabajan sobre sets): Chromatism, Subsets, Supersets, Cycles, Notas comunes, Simplicity, Melody n2 y Form. Para probar una función sola, poné las demás en 0% / destildadas en la tarjeta."><input type="checkbox" id="commonChordsComposerCfg" checked> Composer Configuration</label><details style="margin-top:4px;"><summary style="font-size:12px;color:var(--ink-muted);cursor:pointer;" title="Test (ChordS): ModeTestHarmony, ModeTestMelody y narrowregister.">🧪 Test</summary><div style="display:flex;flex-wrap:wrap;gap:4px 10px;padding:4px 0;"><label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="ModeTestHarmony: la armonía del ModeTest — un solo acorde cada 2 compases, con todas las notas atacando juntas (simultáneo) y sonando los 2 compases completos. La melodía queda normal. Con ModeTestMelody también tildado = ModeTest completo."><input type="checkbox" id="commonChordsModeTestH"> ModeTestHarmony</label><label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="ModeTestMelody: la melodía del ModeTest — toca únicamente la escala (el modo) de cada acorde, de la tónica hacia arriba o abajo, 1–3 octavas. La armonía queda normal (1, 2 o 4 acordes por compás). Con ModeTestHarmony también tildado = ModeTest completo."><input type="checkbox" id="commonChordsModeTestM"> ModeTestMelody</label><label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="narrowregister: el registro de un acorde al siguiente no se aleja más de una octava (la nota más grave y la más aguda de cada acorde quedan a no más de 12 semitonos de las del acorde anterior)."> <input type="checkbox" id="commonChordsNarrow"> narrowregister</label><label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="Testing patterns: un acorde random y una escala (modo de ese acorde, de las de Escalas de la melodía) para toda la reproducción; 160 BPM, 100 compases. Cada compás toca un patrón melódico distinto (2 a 4 movimientos de 1 a 8 pasos diatónicos, ↑ y ↓) arrancando en la tónica de la escala; no se repite ningún patrón. La melodía va al doble de velocidad: el patrón suena 2 veces por compás. El piano roll rotula el patrón de cada compás (ej. 2↑ 1↓ 3↑)."><input type="checkbox" id="commonChordsTestPat"> Testing patterns</label></div></details><details style="margin-top:4px;"><summary style="font-size:12px;color:var(--ink-muted);cursor:pointer;" title="Categoría: limita los acordes que se sortean a las familias tildadas. Sin tildar ninguna = todas.">🧬 Familias de acordes</summary><div id="commonChordsFamilies" style="display:flex;flex-wrap:wrap;gap:4px 10px;padding:4px 0;"><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;font-weight:700;" title="All: tilda o destilda todas las familias."><input type="checkbox" id="commonChordsFamiliesAll"> All</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Maj7"> Maj7</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="m7"> m7</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="7"> 7</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="7Alt"> 7Alt</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Sus 2b"> Sus 2b</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Semidisminuido"> Semidisminuido</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Disminuida"> Disminuida</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Aumentada"> Aumentada</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Díada"> Díada</label></div></details><details style="margin-top:4px;"><summary style="font-size:12px;color:var(--ink-muted);cursor:pointer;" title="Escalas: con una o más tildadas, la melodía de cada acorde toca solo modos de esas escalas (solo se sortean acordes que tengan algún modo en esas escalas; si la combinación con las familias no deja ninguno, usa cualquier modo y se marca con * en el subtítulo). Sin tildar = todas (menos las 4 de Barry Harris, que solo entran si se tildan y cuyas corridas de escala siempre bajan).">🎼 Escalas de la melodía</summary><div id="commonChordsScales" style="display:flex;flex-wrap:wrap;gap:4px 10px;padding:4px 0;"><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;font-weight:700;" title="All: tilda o destilda todas las escalas."><input type="checkbox" id="commonChordsScalesAll"> All</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Diatónica"> Diatónica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Menor melódica"> Menor melódica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Menor armónica"> Menor armónica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Mayor armónica"> Mayor armónica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Enigmática"> Enigmática</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Aumentada"> Aumentada</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Octatónica"> Octatónica</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-35"> Pent. 5-35 (tradicional)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-34"> Pent. 5-34 (Prometeo)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-29B"> Pent. 5-29B (Kumoi I)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-29"> Pent. 5-29 (Kumoi II)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-30"> Pent. 5-30 (Enigmática)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;"><input type="checkbox" value="Pentatónica 5-30B"> Pent. 5-30B (Enigmática II)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="Barry Harris: sexta mayor + disminuido (C D E F G Ab A B). Solo entra si la tildás; la corrida de escala (ModeTestMelody / Semis) siempre baja."><input type="checkbox" value="Harris Major 6th dim"> Harris Major 6th dim (8-26)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="Barry Harris: sexta menor + disminuido (C D Eb F G Ab A B). Solo entra si la tildás; la corrida de escala siempre baja."><input type="checkbox" value="Harris Minor 6th dim"> Harris Minor 6th dim (8-27)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="Barry Harris: séptima dominante + disminuido (C D E F G Ab Bb B). Solo entra si la tildás; la corrida de escala siempre baja."><input type="checkbox" value="Harris Dominant dim"> Harris Dominant dim (8-27B)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="Barry Harris: séptima dominante b5 + disminuido (C D E F Gb Ab Bb B). Solo entra si la tildás; la corrida de escala siempre baja."><input type="checkbox" value="Harris Dominant b5 dim"> Harris Dominant b5 dim (8-25)</label></div><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;padding-bottom:4px;" title="Semis: la melodía toca la escala del modo de cada acorde, de la tónica hacia arriba, al doble de velocidad que ModeTest (cada nota dura la mitad y la escala se repite desde la tónica hasta llenar el acorde). Funciona con o sin ModeTestMelody."><input type="checkbox" id="commonChordsSemis"> Semis (escalas al doble de velocidad)</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;padding-bottom:4px;" title="MelodicPatternsV2: la melodía recorre las notas del modo del acorde con patrones del tester (1 a 8 pasos diatónicos, 2 a 4 movimientos, hacia arriba o abajo; ej. 2↑ 1↓ = C E D). Cada patrón se usa una sola vez y le sigue otro nuevo. No aplica con ModeTestMelody ni Semis (corridas de escala)."><input type="checkbox" id="commonChordsPatV2"> MelodicPatternsV2 (patrones del tester)</label></details></div></details>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:4px;"><button class="chip primary" id="oneChordBtn" type="button" style="flex:1;" title="One Chord: una canción con UN solo acorde de la base de ChordS (mismas Familias de acordes y Escalas de la melodía de ⚙️ Config), repetido en todos los compases, sin melodía por ahora. Linkeado por defecto a Styles: el bajo, el acompañamiento y la batería salen de un estilo de Band in a Box (se desliga en 🎛️ Styles). 🔀 / tecla G sortean otro One Chord.">🎯 One Chord</button></div>
+          <details id="stylesCfg" style="margin-top:4px;"><summary style="font-size:12px;color:var(--ink-muted);cursor:pointer;font-weight:700;" title="Styles: patrones de bajo, acompañamiento y batería leídos de los estilos .STY de Band in a Box (1376 estilos). Por ahora lo pueden usar, de forma optativa, ChordS y One Chord.">🎛️ Styles</summary><div style="padding:2px 0 2px 8px;display:flex;flex-direction:column;gap:4px;">
+            <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted);cursor:pointer;" title="One Chord linkeado a Styles (tildado por defecto): One Chord toca con el estilo elegido abajo. Destildado, One Chord usa el motor de ChordS."><input type="checkbox" id="stylesUseOne" checked> One Chord linkeado a Styles</label>
+            <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted);cursor:pointer;" title="ChordS con Styles (optativo, apagado por defecto): el bajo, el acompañamiento y la batería de ChordS salen del estilo elegido, siguiendo los acordes de la canción."><input type="checkbox" id="stylesUseChords"> Usar Styles en ChordS</label>
+            <input type="text" id="stylesFilter" placeholder="filtrar estilos (jazz, latin, funk...)" style="width:100%;box-sizing:border-box;font-size:12px;">
+            <select id="stylesSelect" style="width:100%;max-width:100%;font-size:12px;" title="Estilo. Random = uno al azar en cada canción (entre los que pasan el filtro)."><option value="">🎲 Random (uno por canción)</option></select>
+            <div style="display:flex;flex-wrap:wrap;gap:4px 10px;">
+              <label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);cursor:pointer;" title="Bajo del estilo."><input type="checkbox" id="stylesBass" checked> Bass</label>
+              <label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);cursor:pointer;" title="Acompañamiento del estilo (piano / guitarra / cuerdas, según el estilo) en la pista de armonía."><input type="checkbox" id="stylesComp" checked> Comping</label>
+              <label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);cursor:pointer;" title="Batería del estilo. Solo 249 de los 1376 estilos la traen como notas; en los demás queda la batería de siempre."><input type="checkbox" id="stylesDrums" checked> Drums</label>
+              <label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);cursor:pointer;" title="Adaptar 3ª, 5ª y 7ª de los patrones (que el estilo guarda en do) al acorde de cada momento. Inferido de una exportación de Band in a Box, no verificado en el formato."><input type="checkbox" id="stylesAdapt" checked> Adaptar 3ª/7ª al acorde</label>
+            </div>
+            <div id="stylesStatus" style="font-size:11px;color:var(--ink-muted);">estilos: sin cargar (se bajan al usarlos)</div>
+          </div></details>
           <div style="display:flex;align-items:stretch;gap:6px;"><button class="chip primary" style="flex:1;" id="partimentiBtn" type="button" title="Partimenti (experimental): el motor inventa un bajo (Regla de la octava ascendente/descendente, quintas descendentes, I–IV–V–I, esquemas galantes y cadencias simple/compuesta/doble) en una tonalidad mayor al azar y lo completa a 4 voces con conducción de voces (sin quintas ni octavas paralelas, la 7ª baja, la sensible sube): bajo en Bass, tenor y alto en Harmony, soprano con diminuciones en Melody. Al entrar pone Clavecín en los tres y Batería a 0%. Cada canción sortea un movimiento de tempo (Grave…Prestissimo). En el piano roll: cifra romana e inversión (V4/3, V6/4, I6...). Las opciones están en el desplegable de abajo. 🔀 / tecla G sortean otra canción.">🎹 Partimenti</button><button type="button" class="chip" data-radio-only="partimenti" style="flex:0 0 auto;padding-left:8px;padding-right:8px;" aria-label="Radio: solo Partimenti" title="Radio (player): abre el mismo player del RADIO! pero limitado a Partimenti: cada canción nueva es de Partimenti (Next / Previous / Stop, historial, log y export iguales). Con la radio prendida en este modo, apretarlo de nuevo la detiene; para volver al sorteo entre todos los modos usá el botón RADIO!.">📻</button></div>
           <div style="display:flex;align-items:stretch;gap:6px;"><button class="chip primary" style="flex:1;" id="jazzTunesBtn" type="button" title="JazzTunes (random choose): sortea una canción de la carpeta Band in a box SONGS (archivo MGU), toma sus acordes y su melodía y la arma con el motor: la melodía es la de la canción nota por nota, la armonía sale del motor siguiendo los acordes de la canción (tonos guía llevados por la voz más cercana; respeta Chord simultaneity, BlockwithMelody, wide.range), el bajo toca la raíz de cada acorde y la batería es la del motor con tus controles. Tempo y compás (4/4 o 3/4) = los de la canción; una canción = un coro. moreComping y bebopMelody, si los tenés prendidos, tocan sobre los acordes de la canción. 🔀 / tecla G rearman el acompañamiento de la misma canción; este botón sortea otra.">🎷 JazzTunes</button><button type="button" class="chip" data-radio-only="jazz" style="flex:0 0 auto;padding-left:8px;padding-right:8px;" aria-label="Radio: solo JazzTunes" title="Radio (player): abre el mismo player del RADIO! pero limitado a JazzTunes: cada canción nueva es de JazzTunes (Next / Previous / Stop, historial, log y export iguales). Con la radio prendida en este modo, apretarlo de nuevo la detiene; para volver al sorteo entre todos los modos usá el botón RADIO!.">📻</button></div>
           <select id="jazzSongSel" style="width:100%;max-width:100%;font-size:12px;" title="Canciones de la carpeta Band in a box SONGS (todos los archivos MG*/SG*, como presets). Auto = el botón 🎷 JazzTunes sortea una canción. Elegir una canción de la lista la carga y la reproduce ya (con los defaults de JazzTunes y Reharmonization); mientras haya una elegida, el botón 🎷 JazzTunes vuelve a armar ESA canción (otra reharmonización). Para volver a sortear, elegí Auto. Si el archivo es de una versión que el parser MGU todavía no verifica, avisa con un mensaje en vez de adivinar. Se puede escribir para saltar a un nombre."><option value="">Auto · sortear</option></select>
@@ -15862,6 +15876,7 @@ function runAnalysis() {
     }
 
     function build(){
+      var oneChord = !!api.oneChord, stl = null;   // One Chord: un solo acorde en todos los compases, sin melodía
       var famOn = selectedFamilies(), scOn = selectedScales();
       var semisEl = document.getElementById("commonChordsSemis"), semisOn = !!(semisEl && semisEl.checked);
       var pv2El = document.getElementById("commonChordsPatV2"), patV2On = !!(pv2El && pv2El.checked);
@@ -15930,7 +15945,7 @@ function runAnalysis() {
       }
       for(var bar = 0; bar < NUM_BARS; bar += span){
         span = testH ? Math.min(2, NUM_BARS - bar) : 1;   // ModeTestHarmony: cada acorde dura 2 compases (si queda 1 solo al final, dura 1)
-        var chD = (testH || testP) ? null : chDraw(bar);   // Testing patterns: un solo acorde por compás
+        var chD = (testH || testP || oneChord) ? null : chDraw(bar);   // Testing patterns: un solo acorde por compás
         if(chD) span = Math.max(1, Math.min(NUM_BARS - bar, chD.span));   // acorde sostenido varios compases (si quedan menos al final, dura lo que queda)
         var beats = RHYTHM.beats(bar), barStart = RHYTHM.start(bar);
         var spanBeats = 0;
@@ -15946,7 +15961,7 @@ function runAnalysis() {
           // narrowregister: el acorde siguiente tiene que quedar a <= 12 semitonos (una octava) del anterior, tanto en su nota más
           // grave como en la más aguda. Se sortean candidatos (a veces una octava arriba) hasta que cumpla; si no, el que más se acerca.
           var best = null, bestV = 1e9;
-          if(testP && fixedPick) best = fixedPick;   // Testing patterns: el mismo acorde (misma voz) en los 100 compases
+          if((testP || oneChord) && fixedPick) best = fixedPick;   // Testing patterns: el mismo acorde (misma voz) en los 100 compases
           else for(var tr = 0; tr < 400; tr++){
             var cand = pickChord();
             var cv = voice(cand.def, cand.root, cand.degKey, narrow && Math.random() < 0.5);
@@ -15957,20 +15972,20 @@ function runAnalysis() {
           }
           if(narrow && prevRange && bestV > 12) narrowMiss++;
           var pk = best.pk, chord = best.chord, def = pk.def;
-          if(testP && !fixedPick) fixedPick = best;
+          if((testP || oneChord) && !fixedPick) fixedPick = best;
           record(pk);
           if(narrow) prevRange = [chord[0], chord[chord.length - 1]];
           var modeCand = scOn.length ? def.modes.filter(function(m){ return scOn.indexOf(m.fam) >= 0; }) : def.modesStd;
           var modeFb = !!scOn.length && !modeCand.length;      // el acorde no entra en las escalas tildadas: usa cualquiera de sus modos
           if(pk.force && scOn.length && scOn.indexOf(pk.force.fam) < 0) modeFb = true; // C7alt siempre es Altered
           if(!modeCand.length) modeCand = def.modesStd.length ? def.modesStd : def.modes;
-          var mode = testP && fixedMode ? fixedMode : pk.force;
+          var mode = (testP || oneChord) && fixedMode ? fixedMode : pk.force;
           if(!mode){ // entre los modos del acorde, solo los menos usados en la canción (así no se repite uno hasta agotar los demás); al azar entre ellos
             var minUse = Math.min.apply(null, modeCand.map(function(m){ return modeUsed[m.name] || 0; }));
             var fresh = modeCand.filter(function(m){ return (modeUsed[m.name] || 0) === minUse; });
             mode = fresh[rnd(fresh.length)];
           }
-          if(testP && !fixedMode) fixedMode = mode;
+          if((testP || oneChord) && !fixedMode) fixedMode = mode;
           modeUsed[mode.name] = (modeUsed[mode.name] || 0) + 1;
           var bassPc = (pk.root + def.stack[def.deg[pk.degKey]]) % 12;
           var bassMidi = 36 + bassPc;
@@ -16068,6 +16083,7 @@ function runAnalysis() {
         }
       }
 
+      if(oneChord) melodyEvents = [];   // One Chord: sin melodía por ahora
       // Composer Configuration (checkbox maestro, apagado por defecto): las mismas etapas del motor libre, en el mismo orden, sobre los eventos ya armados.
       var melodyPlain = melodyEvents;
       if(cfgOn){
@@ -16120,6 +16136,8 @@ function runAnalysis() {
         TRIPLETS.setActive(false);
       }
       drumEvents = buildDrumEvents(NUM_BARS);
+      stl = window.__styles ? window.__styles.apply(song, oneChord) : null;   // Styles (optativo): bajo / acompañamiento / batería del estilo elegido, siguiendo los acordes de la canción
+      if(stl){ if(stl.bass) state.bassEvents = stl.bass; if(stl.chord) state.chordEvents = stl.chord; if(stl.drums) drumEvents = stl.drums; }
       if(cfgOn){ // musicSilence: silencios totales (todas las pistas, batería incluida) al final de frases de 4 compases
         var muSilC = parseInt((document.getElementById("consolaMusicSilenceSlider") || {}).value, 10) || 0;
         MUSICSILENCE.last = null;
@@ -16142,7 +16160,7 @@ function runAnalysis() {
       if(sol) sol.innerHTML = "";
       if(SONGTITLE) SONGTITLE.next();
       var sub = document.getElementById("consolaSongSets");
-      if(sub) sub.textContent = "(ChordS" + (testP ? " · Testing patterns (160 BPM)" : testH && testM ? " · ModeTest" : (testH ? " · ModeTestHarmony" : (testM ? " · ModeTestMelody" : ""))) + (cfgOn ? " · Composer Configuration" : "") + " · " + song.length + " acordes · " +
+      if(sub) sub.textContent = "(" + (oneChord ? "One Chord" : "ChordS") + (testP ? " · Testing patterns (160 BPM)" : testH && testM ? " · ModeTest" : (testH ? " · ModeTestHarmony" : (testM ? " · ModeTestMelody" : ""))) + (cfgOn ? " · Composer Configuration" : "") + (stl ? " · Styles: " + stl.name + " (" + stl.parts + ")" : "") + " · " + song.length + " acordes · " +
         (allowRepeat ? "con" : "sin") + " repetición" + (famOn.length ? " · familias: " + famOn.join(", ") : "") + (scOn.length ? " · escalas: " + scOn.join(", ") : "") + (semisOn ? " · Semis" : "") + (patV2On && !testM && !semisOn ? " · PatternsV2" : "") + " — " +
         song.map(function(s){ return s.label + " [" + s.mode + (s.modeFb ? "*" : "") + " · " + s.fam + " › " + s.tipo + "]"; }).join(" | ") + ")";
       ["consolaPlayBtn", "consolaRegenPlayBtn"].forEach(function(id){
@@ -16154,7 +16172,8 @@ function runAnalysis() {
 
     api.src = CHORDS_SRC; api.fused = FUSED;     // los usa REHARMONIZATION (JazzTunes)
     api.build = build;
-    api.start = function(){ if(window.__jazzTunes) window.__jazzTunes.off(); api.active = true; regenerateConsola(); };
+    api.oneChord = false;
+    api.start = function(one){ if(window.__jazzTunes) window.__jazzTunes.off(); api.oneChord = (one === true); api.active = true; regenerateConsola(); };
     api.off = function(){ api.active = false; };
     // Cualquier otra Creatura / Compose / Clear / cambio de set sale de CommonChords.
     document.addEventListener("click", function(e){
@@ -16164,6 +16183,139 @@ function runAnalysis() {
     return api;
   })();
   window.__commonChords = COMMONCHORDS;
+  /* ================================================================
+     STYLES — módulo "🎛️ Styles" (dentro de la tarjeta ChordS).
+     Patrones de bajo, acompañamiento y batería leídos de los estilos .STY de Band in a Box (carpeta Styles/bib_styles.json.gz:
+     1376 estilos; se baja la primera vez que se usa y queda en el caché offline). Por ahora lo usan, de forma optativa, ChordS
+     (checkbox "Usar Styles en ChordS", apagado) y One Chord (linkeado por defecto).
+     · Formato de cada estilo: { d: descripción, b: patrones de bajo, c: patrones de acompañamiento, r: patrones de batería }.
+       Cada patrón es una lista de notas [tick, nota MIDI, duración en ticks, velocity]; 120 ticks = 1 pulso. Los patrones de bajo y
+       acompañamiento están escritos en do (C): se transportan a la tónica del acorde de cada momento.
+     · "Adaptar 3ª/7ª": la 3ª, 5ª y 7ª del patrón pasan a las del acorde en curso (inferido de una exportación de Band in a Box: Dm7 usa b3 y b7, CMaj usa 3ª mayor;
+       NO verificado en el formato). Una 7ª en un acorde sin 7ª se omite.
+     · La batería solo existe como notas en 249 de los 1376 estilos (regla propia: notas GM con hi-hat / platillo / pedal); en los demás queda la batería de siempre.
+     · Cada pista elige hasta 3 patrones del estilo y los alterna (el primero pesa más); el compás del estilo es 4/4 (480 ticks): en otros compases se cortan las notas que no entran.
+     · No hay tabla de selección de patrón por tipo de acorde (no decodificada): la elección es al azar dentro del estilo.
+     ================================================================ */
+  var STYLES = (function(){
+    var URL_ = "Styles/bib_styles.json.gz", DB = null, loading = null, names = [], api = {};
+    function el(id){ return document.getElementById(id); }
+    function setStatus(t){ var e = el("stylesStatus"); if(e) e.textContent = t; }
+    function chk(id){ var e = el(id); return !!(e && e.checked); }
+    function fillSelect(){
+      var sel = el("stylesSelect"); if(!sel) return;
+      var keep = sel.value, f = (el("stylesFilter") ? el("stylesFilter").value : "").toLowerCase();
+      sel.innerHTML = '<option value="">🎲 Random (uno por canción)</option>';
+      var n = 0;
+      names.forEach(function(k){
+        var t = k + " — " + (DB[k].d || "");
+        if(f && t.toLowerCase().indexOf(f) < 0) return;
+        var o = document.createElement("option"); o.value = k; o.textContent = t.length > 70 ? t.slice(0, 70) + "…" : t; sel.appendChild(o); n++;
+      });
+      if(keep) sel.value = keep;
+      setStatus(names.length + " estilos cargados" + (f ? " · " + n + " con el filtro" : ""));
+    }
+    api.load = function(){
+      if(DB) return Promise.resolve(DB);
+      if(loading) return loading;
+      setStatus("cargando estilos…");
+      loading = fetch(URL_).then(function(r){
+        if(!r.ok) throw new Error("HTTP " + r.status);
+        return r.arrayBuffer();
+      }).then(function(buf){
+        var u = new Uint8Array(buf);
+        if(u[0] === 0x1f && u[1] === 0x8b){   // gzip (si el servidor ya lo descomprimió, llega JSON plano)
+          if(typeof DecompressionStream === "undefined") throw new Error("este navegador no puede descomprimir (DecompressionStream)");
+          return new Response(new Blob([buf]).stream().pipeThrough(new DecompressionStream("gzip"))).json();
+        }
+        return JSON.parse(new TextDecoder().decode(buf));
+      }).then(function(d){
+        DB = d; names = Object.keys(d).sort(function(a, b){ return a < b ? -1 : 1; }); fillSelect(); return d;
+      }).catch(function(e){ loading = null; setStatus("no se pudo cargar los estilos: " + ((e && e.message) || e)); throw e; });
+      return loading;
+    };
+    api.wants = function(one){ return one ? chk("stylesUseOne") : chk("stylesUseChords"); };
+    function pickStyle(){
+      var sel = el("stylesSelect"), v = sel ? sel.value : "";
+      if(v && DB[v]) return v;
+      var f = (el("stylesFilter") ? el("stylesFilter").value : "").toLowerCase();
+      var pool = names.filter(function(k){ return !f || (k + " — " + (DB[k].d || "")).toLowerCase().indexOf(f) >= 0; });
+      if(!pool.length) pool = names;
+      return pool[Math.floor(Math.random() * pool.length)];
+    }
+    function pool3(list){   // hasta 3 patrones distintos; el primero pesa más
+      var a = list.slice(), out = [];
+      while(out.length < 3 && a.length) out.push(a.splice(Math.floor(Math.random() * a.length), 1)[0]);
+      return out;
+    }
+    function choose(pool){
+      var r = Math.random(), w = pool.length === 1 ? [1] : pool.length === 2 ? [0.7, 0.3] : [0.55, 0.3, 0.15], acc = 0;
+      for(var i = 0; i < pool.length; i++){ acc += w[i]; if(r < acc) return pool[i]; }
+      return pool[0];
+    }
+    function patBars(p){ var mx = 0; p.forEach(function(n){ if(n[0] > mx) mx = n[0]; }); return Math.max(1, Math.floor(mx / 480) + 1); }
+    // pc relativo a do (patrón) → pc relativo a la tónica del acorde; -1 = omitir
+    function mapPc(pc, iv, adapt){
+      if(!adapt) return pc;
+      if(pc === 4){ if(iv[4]) return 4; if(iv[3]) return 3; if(iv[5]) return 5; if(iv[2]) return 2; return 4; }
+      if(pc === 7){ if(iv[7]) return 7; if(iv[6]) return 6; if(iv[8]) return 8; return 7; }
+      if(pc === 10 || pc === 11){ if(iv[10]) return 10; if(iv[11]) return 11; if(iv[9] && iv[6] && iv[3]) return 9; return -1; }
+      return pc;
+    }
+    function renderTrack(list, kind, numBars, ents, adapt){
+      if(!list || !list.length) return null;
+      var pool = pool3(list), cur = null, chunk = 0, idx = 0, out = [];
+      for(var bar = 0; bar < numBars; bar++){
+        if(!cur || chunk >= patBars(cur)){ cur = choose(pool); chunk = 0; }
+        var bs = RHYTHM.start(bar), nb = RHYTHM.beats(bar), lo = chunk * 480, hi = lo + 480;
+        for(var i = 0; i < cur.length; i++){
+          var n = cur[i], tk = n[0];
+          if(tk < lo || tk >= hi) continue;
+          var off = (tk - lo) / 120; if(off >= nb - 1e-6) continue;
+          var abs = bs + off, vel = n[3] || 90;
+          if(kind === "drum"){ out.push({ midi: n[1], startBeat: abs, durBeats: 0.1, bar: bar, vel: vel }); continue; }
+          while(idx > 0 && ents[idx].s > abs + 1e-6) idx--;
+          while(idx + 1 < ents.length && ents[idx + 1].s <= abs + 1e-6) idx++;
+          var ch = ents[idx], m = mapPc(n[1] % 12, ch.iv, adapt);
+          if(m < 0) continue;
+          var d = Math.max(0.05, n[2] / 120);
+          if(ch.e - abs > 0.05) d = Math.min(d, ch.e - abs);
+          out.push({ midi: Math.floor(n[1] / 12) * 12 + m + ch.shift, startBeat: abs, durBeats: Math.round(d * 1000) / 1000, bar: bar, vel: vel });
+        }
+        chunk++;
+      }
+      return out;
+    }
+    // song: lista de acordes de ChordS ({root, chordPcs, startBeat, durBeats}); devuelve {name, parts, bass, chord, drums} o null (apagado / sin cargar).
+    api.apply = function(song, one){
+      if(!api.wants(!!one)) return null;
+      if(!DB){ api.load().catch(function(){}); return null; }   // todavía no bajó: esta canción sale sin estilo (la próxima ya lo usa)
+      if(!song || !song.length) return null;
+      var name = pickStyle(), s = DB[name], adapt = chk("stylesAdapt");
+      var ents = song.map(function(c, i){
+        var iv = []; for(var k = 0; k < 12; k++) iv.push(false);
+        c.chordPcs.forEach(function(pc){ iv[(((pc - c.root) % 12) + 12) % 12] = true; });
+        return { s: c.startBeat, e: c.startBeat + c.durBeats, iv: iv, shift: c.root > 6 ? c.root - 12 : c.root };
+      });
+      ents[0].s = Math.min(ents[0].s, 0);
+      var res = { name: name, parts: [], bass: null, chord: null, drums: null };
+      if(chk("stylesBass")){ res.bass = renderTrack(s.b, "pitch", NUM_BARS, ents, adapt); if(res.bass) res.parts.push("bajo"); }
+      if(chk("stylesComp")){ res.chord = renderTrack(s.c, "pitch", NUM_BARS, ents, adapt); if(res.chord) res.parts.push("comping"); }
+      if(chk("stylesDrums")){ res.drums = renderTrack(s.r, "drum", NUM_BARS, ents, adapt); if(res.drums) res.parts.push("batería"); }
+      res.parts = res.parts.join("+") || "sin patrones";
+      api.last = res;
+      return res;
+    };
+    function init(){
+      var f = el("stylesFilter"); if(f) f.addEventListener("input", function(){ if(DB) fillSelect(); });
+      ["stylesUseOne", "stylesUseChords"].forEach(function(id){ var c = el(id); if(c) c.addEventListener("change", function(){ if(c.checked) api.load().catch(function(){}); }); });
+      var sum = document.querySelector("#stylesCfg > summary"); if(sum) sum.addEventListener("click", function(){ api.load().catch(function(){}); });
+    }
+    if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
+    return api;
+  })();
+  window.__styles = STYLES;
+
 
   /* ================================================================
      PARTIMENTI — botón "🎹 Partimenti" (debajo de toda la sección CommonChords). Modo EXPERIMENTAL aparte: no usa el set del reloj
@@ -26967,12 +27119,33 @@ function runAnalysis() {
         randomizeSlider("consolaTempo", 30, 120); // tempo al azar con el mismo rango que CreaturaRandom/Bella (se sortea antes de generar: el motor lo lee al armar la canción)
         rcPre("common");
         // ChordS ya NO pone todo en cero: arranca como el resto de los modos, con los sliders y checkboxes como estén (zeroForChordS queda definida pero sin usar)
+        if(window.__styles && window.__styles.wants(false)){ try { await window.__styles.load(); } catch(_e){} }
         window.__commonChords.start();
         rcPost("common");
         clickIfEnabled("consolaPlayBtn");
       } finally { running = false; }
     }
     if(btnCC) btnCC.addEventListener("click", runCommonChords);
+    // 🎯 One Chord (ver módulo COMMONCHORDS, flag oneChord): igual que ChordS pero con UN acorde para toda la canción, sin melodía; linkeado a Styles por defecto.
+    var btnOC = document.getElementById("oneChordBtn");
+    async function runOneChord(){
+      if(running) return;
+      running = true;
+      try {
+        SLbegin("One Chord");
+        window.__radioKind = null;
+        if(typeof window.__rollToFront === "function") window.__rollToFront();
+        clickIfEnabled("consolaStopBtn");
+        await wait(300);
+        randomizeSlider("consolaTempo", 30, 120);
+        rcPre("common");
+        if(window.__styles && window.__styles.wants(true)){ try { await window.__styles.load(); } catch(_e){} }
+        window.__commonChords.start(true);
+        rcPost("common");
+        clickIfEnabled("consolaPlayBtn");
+      } finally { running = false; }
+    }
+    if(btnOC) btnOC.addEventListener("click", runOneChord);
     // 🎹 Partimenti (ver módulo PARTIMENTI): detiene lo que suene, inventa el bajo, lo realiza a 4 voces y lo reproduce.
     var btnPT = document.getElementById("partimentiBtn");
     async function runPartimenti(radio){
@@ -28324,7 +28497,7 @@ function runAnalysis() {
   function wanted(p) {
     if (/(^|\/)\.DS_Store$/.test(p)) return null;
     if (/^Soundfonts v2\/.+\.sf2$/i.test(p)) return "sf2";
-    if (/^(Soundfonts v2|Midi|Avatar(e?s)?|BAckgrounds|Favorites|Band in a box SONGS)\//i.test(p) && !/\.pdf$/i.test(p)) return "file";
+    if (/^(Soundfonts v2|Midi|Avatar(e?s)?|BAckgrounds|Favorites|Band in a box SONGS|Styles)\//i.test(p) && !/\.pdf$/i.test(p)) return "file";
     if (/^Tools and docs\/ireal(\.html|-default\.txt)$/.test(p)) return "file";
     return null;
   }
