@@ -6965,9 +6965,14 @@ function loadExtraSummary() {
 // Extras = los .sf2 que NO se bajan solos (mismo criterio que loadExtraSummary).
 // El random puede elegir un .sf2 solo si ya está cargado; y los extras, solo cuando
 // TODOS terminaron de cargar (100%). Así nunca sortea un preset que todavía no suena.
+// "100%" = todos los extras TERMINARON de cargar (ready o error). Un archivo que da 404 (p.ej. catalog.json
+// desactualizado con un .sf2 ya borrado) no bloquea para siempre al resto; igual nunca se elige porque
+// sfPickable exige que ESE archivo esté ready.
 function sfExtrasAllReady() {
   const ex = sfExtraFiles.filter((e) => !sfIsAutoId(e.id));
-  return hifiEnabled && ex.length > 0 && ex.every((e) => sfStateByUrl[e.url] === "ready");
+  return hifiEnabled && ex.length > 0 &&
+    ex.every((e) => sfStateByUrl[e.url] === "ready" || sfStateByUrl[e.url] === "error") &&
+    ex.some((e) => sfStateByUrl[e.url] === "ready");
 }
 function sfPickable(e) { // e: entrada de sfExtraFiles
   if (sfStateByUrl[e.url] !== "ready") return false;
