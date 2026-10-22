@@ -6915,9 +6915,16 @@ function sfLoadFontOnce(url) {
 }
 // Los 6 .sf2 default se bajan solos al abrir la página (sin HIFI). Espera
 // al descubrimiento solo para asegurarse de que todo el script ya corrió.
+// Orden de carga al abrir: PRIMERO los .sf2 base (defaults + clásicos) y, cuando
+// terminan, los extras (lo mismo que apretar loadExtra, sin tener que apretarlo).
+// Hasta que TODOS los extras estén cargados, el random no sortea presets de Extra
+// (ver sfExtrasAllReady / sfPickable / sfKeyUsable más abajo).
 Promise.resolve(sfDiscoverReady).catch(() => {}).then(() => {
-  sfAutoFiles().forEach((f) => sfLoadFontOnce(sfUrlForPath(SF_ROOT_DIR + "/" + f)));
-});
+  return Promise.all(sfAutoFiles().map((f) => sfLoadFontOnce(sfUrlForPath(SF_ROOT_DIR + "/" + f))));
+}).then(() => {
+  const b = document.getElementById("loadExtraBtn");
+  if (b && !b.disabled) b.click();
+}).catch((err) => { console.error("Auto-load of extras:", err); });
 // Carga (bajo demanda, una sola vez por archivo) cada .sf2 de HIFI_FILES
 // Y cada .sf2 extra descubierto en Soundfonts/ — se dispara al tildar el
 // checkbox "HIFI" por primera vez. Un archivo que falla (404, red) no
@@ -6953,6 +6960,67 @@ const loadExtraBtn = document.getElementById("loadExtraBtn");
 function loadExtraSummary() {
   const files = sfExtraFiles.filter((e) => !sfIsAutoId(e.id));
   return { ok: files.filter((e) => sfStateByUrl[e.url] === "ready").length, total: files.length };
+}
+// ---- Qué puede elegir el random ----
+// Extras = los .sf2 que NO se bajan solos (mismo criterio que loadExtraSummary).
+// El random puede elegir un .sf2 solo si ya está cargado; y los extras, solo cuando
+// TODOS terminaron de cargar (100%). Así nunca sortea un preset que todavía no suena.
+function sfExtrasAllReady() {
+  const ex = sfExtraFiles.filter((e) => !sfIsAutoId(e.id));
+  return hifiEnabled && ex.length > 0 && ex.every((e) => sfStateByUrl[e.url] === "ready");
+}
+function sfPickable(e) { // e: entrada de sfExtraFiles
+  if (sfStateByUrl[e.url] !== "ready") return false;
+  return sfIsAutoId(e.id) || sfExtrasAllReady();
+}
+function sfKeyUsable(key) { // key de preset: "piano", "sf:<id>:<banco>:<programa>", etc.
+  if (typeof key !== "string") return true;
+  if (key.indexOf("sf:") !== 0) {
+    return SF_LEGACY_FILES[key] ? sfStateByUrl[sfLegacyUrl(key)] === "ready" : true;
+  }
+  const id = key.split(":")[1];
+  if (id === "instruments" || id === "drums" || id === "percussion") return true;
+  const f = sfExtraFiles.find((e) => e.id === id);
+  return !!f && sfPickable(f);
+}
+// ---- Canciones abiertas desde un favorito (.json): cargar lo que necesitan ANTES de reproducir ----
+// Devuelve { url, auto } del .sf2 que usa una key de preset (url null = no aparece en la lista descubierta),
+// o null si la key no usa .sf2 (sintetizador, "mute", kits fijos).
+function sfFileForKey(key) {
+  if (typeof key !== "string") return null;
+  if (key.indexOf("sf:") === 0) {
+    const id = key.split(":")[1];
+    if (id === "instruments" || id === "drums" || id === "percussion") return null;
+    const f = sfExtraFiles.find((e) => e.id === id);
+    return f ? { url: f.url, auto: sfIsAutoId(id) } : { url: null, auto: false };
+  }
+  return SF_LEGACY_FILES[key] ? { url: sfLegacyUrl(key), auto: true } : null;
+}
+function sfPendingFonts(keys) { // cuántos .sf2 distintos faltan cargar para estas keys
+  const u = new Set();
+  keys.forEach((k) => { const f = sfFileForKey(k); if (f && f.url && sfStateByUrl[f.url] !== "ready") u.add(f.url); });
+  return u.size;
+}
+async function sfEnsurePresetsLoaded(keys, timeoutMs) {
+  try { await sfDiscoverReady; } catch (_e) {}
+  const urls = new Set();
+  keys.forEach((k) => {
+    const f = sfFileForKey(k);
+    if (!f || !f.url) return;
+    urls.add(f.url);
+    if (!f.auto) hifiEnabled = true; // los extras solo suenan con HIFI activo (mismo efecto que loadExtra)
+  });
+  if (urls.size) sfNotifyCatalogChange(false);
+  const all = Promise.all([...urls].map((u) => sfLoadFontOnce(u)));
+  await Promise.race([all, new Promise((res) => setTimeout(res, timeoutMs || 90000))]);
+  const notFound = [], notReady = [];
+  keys.forEach((k) => {
+    const f = sfFileForKey(k);
+    if (!f) return;
+    if (!f.url) notFound.push(k);
+    else if (sfStateByUrl[f.url] !== "ready") notReady.push(k);
+  });
+  return { notFound, notReady };
 }
 loadExtraBtn.addEventListener("click", async function () {
   if (loadExtraBtn.disabled) return;
@@ -20721,19 +20789,39 @@ function runAnalysis() {
   // la pista. Devuelve false (sin sonar nada) si el preset no existe o
   // la nota queda fuera de su rango — el llamador debe usar el
   // sintetizador de siempre como respaldo en ese caso.
+  // Monitoreo de muteos: cuenta las notas que NO pudieron sonar con su soundfont (y cayeron al sintetizador de respaldo o no sonaron).
+  // Se lee con window.__muteMon.report(); el favorito (.json) lo muestra unos segundos después de dar Play.
+  var MM = window.__muteMon = {
+    f: {},
+    reset: function(){ this.f = {}; },
+    report: function(){
+      var ks = Object.keys(this.f);
+      if(!ks.length) return "";
+      ks.sort(function(a, b){ return MM.f[b] - MM.f[a]; });
+      return ks.slice(0, 6).map(function(k){ return k + ": " + MM.f[k] + " notas"; }).join(" · ") + (ks.length > 6 ? " · … (+" + (ks.length - 6) + ")" : "");
+    }
+  };
+  function mmFail(key, why){
+    var nm = String(key);
+    try{ nm = decodeURIComponent(nm); }catch(_e){}
+    nm = nm.replace(/^sf:x_/, "").replace(/\.sf2:(\d+):(\d+)$/, " [$1:$2]");
+    var k = nm + " — " + why;
+    MM.f[k] = (MM.f[k] || 0) + 1;
+    return false;
+  }
   function playSM2Voice(ctx, dest, presetKey, midi, startTime, duration, gain, vel){
     var presetIdx = sm2PresetIdxFor(presetKey);
-    if(presetIdx < 0) return false;
+    if(presetIdx < 0) return mmFail(presetKey, "soundfont no cargado");
     var resolved = sm2ResolveFontAndProgram(presetKey);
-    if(!resolved) return false;
+    if(!resolved) return mmFail(presetKey, "soundfont no cargado");
     var font = resolved.font;
     var fontTag = resolved.tag;
-    if(!font) return false;
+    if(!font) return mmFail(presetKey, "soundfont no cargado");
     // vel (opcional, 1-127): elige la capa de velocidad real del .sf2
     // (ej. 36_soft_kick / 36_hard_kick en Drums default). Sin vel: 100,
     // como siempre.
     var hits = sf2ResolveNoteCached(font, presetIdx, midi, vel != null ? Math.max(1, Math.min(127, Math.round(vel))) : 100);
-    if(!hits.length) return false;
+    if(!hits.length) return mmFail(presetKey, "nota fuera del rango del preset");
     var perHitGain = gain / hits.length;
     hits.forEach(function(hit){
       var shdr = hit.shdr, gens = hit.gens;
@@ -24018,11 +24106,20 @@ function runAnalysis() {
 
     function esc(t){ return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
     var toastT = null;
-    function toast(msg){
+    function toast(msg, ms){
       var t = document.getElementById("favToast");
       if(!t){ t = document.createElement("div"); t.id = "favToast"; t.setAttribute("role", "status"); t.setAttribute("aria-live", "polite"); document.body.appendChild(t); }
       t.textContent = msg; t.classList.add("on");
-      clearTimeout(toastT); toastT = setTimeout(function(){ t.classList.remove("on"); }, 6000);
+      clearTimeout(toastT); toastT = setTimeout(function(){ t.classList.remove("on"); }, ms || 6000);
+    }
+    // Monitoreo de muteos al abrir un favorito: qué pista usa qué preset (solo pistas con notas).
+    var CH_TRACK = { harmony: "chord", chordDouble: "chord", melody: "melody", melodyDouble: "melody", bebop: "bebop", melody2: "melody2",
+                     melody3: "melody3", comping2: "comping2", bass: "bass", bassDouble: "bass", drum: "drum" };
+    var openTok = 0;   // si se abre otro favorito mientras cargan los soundfonts, el anterior no arranca
+    function warnStatus(msg){
+      var st = document.getElementById("consolaPrerenderStatus");
+      if(st) st.textContent = msg;
+      try{ console.warn("[Favorito] " + msg); }catch(_e){}
     }
 
     // ---------- estado de los controles ----------
@@ -24123,16 +24220,39 @@ function runAnalysis() {
         var exprSel = document.getElementById("consolaExprSelect");
         if(exprSel && exprSel.value === "auto" && o.expr && o.expr.auto) EXPR.setAuto(o.expr.auto); else EXPR.reroll();
       } finally { window.__favApplying = false; }
-      var missing = [];
-      PRESET_PAIRS.forEach(function(pr){
-        var el = document.getElementById(pr[0]), v = o.presets[pr[1]];
-        if(el && v != null && el.value !== v) missing.push(pr[1]);
+      // Monitoreo de muteos: ANTES de reproducir se cargan los soundfonts que usa la canción (solo pistas con notas) y, si alguno no carga, se avisa
+      // con nombre de pista y preset (aviso largo + línea de estado). Después de Play, a los 5 s se informa cuántas notas no pudieron sonar y por qué.
+      var tok = ++openTok, need = [];
+      Object.keys(CH_TRACK).forEach(function(ch){
+        var k = o.presets[ch];
+        if(k != null && (o.tracks[CH_TRACK[ch]] || []).length) need.push([ch, k]);
       });
-      toast("♥ Abierto: " + (o.name || "favorito") + (missing.length ? " — ojo: sin instrumento cargado en el selector de " + missing.join(", ") + " (¿soundfont todavía cargando?)" : ""));
-      if(!opts || opts.play !== false){
-        var pb = document.getElementById("consolaPlayBtn");
-        if(pb && !pb.disabled && typeof window.consolaStartPlayback === "function") window.consolaStartPlayback();
+      var keys = need.map(function(x){ return x[1]; });
+      var pend = (typeof sfPendingFonts === "function") ? sfPendingFonts(keys) : 0;
+      toast("♥ Abierto: " + (o.name || "favorito") + (pend ? " — cargando " + pend + " soundfont" + (pend > 1 ? "s" : "") + " de esta canción antes de reproducir…" : ""), pend ? 90000 : 6000);
+      if(window.__muteMon) window.__muteMon.reset();
+      function chName(list){ return need.filter(function(x){ return list.indexOf(x[1]) !== -1; }).map(function(x){ return x[0] + "=" + x[1].replace(/^sf:x_/, "").replace(/%20/g, " "); }).join(", "); }
+      function go(){
+        if(tok !== openTok) return;   // se abrió otro favorito (o se paró) mientras cargaban
+        if(!opts || opts.play !== false){
+          var pb = document.getElementById("consolaPlayBtn");
+          if(pb && !pb.disabled && typeof window.consolaStartPlayback === "function") window.consolaStartPlayback();
+          setTimeout(function(){
+            if(tok !== openTok || !window.__muteMon) return;
+            var rep = window.__muteMon.report();
+            if(rep){ var m = "⚠ Notas que no sonaron con su soundfont: " + rep; toast(m, 30000); warnStatus(m); }
+          }, 5000);
+        }
       }
+      if(typeof sfEnsurePresetsLoaded !== "function"){ go(); return o; }
+      sfEnsurePresetsLoaded(keys, 90000).then(function(r){
+        var bad = [];
+        if(r.notFound.length) bad.push("no están en la carpeta de soundfonts: " + chName(r.notFound));
+        if(r.notReady.length) bad.push("no terminaron de cargar: " + chName(r.notReady));
+        if(bad.length){ var m = "⚠ Esta canción tiene instrumentos que van a sonar mal — " + bad.join(" · "); toast(m, 30000); warnStatus(m); }
+        else if(pend) toast("♥ Abierto: " + (o.name || "favorito") + " — soundfonts listos", 4000);
+        go();
+      }).catch(function(err){ warnStatus("⚠ Error cargando los soundfonts del favorito: " + (err && err.message || err)); go(); });
       return o;
     };
 
@@ -25665,7 +25785,11 @@ function runAnalysis() {
       }
       function rnd(n){ return Math.floor(Math.random() * n); }
       function SL(l, v){ try{ if(window.__songLog) window.__songLog.add(l, v); }catch(_e){} }   // 📝 Log de la canción
-      function extraFiles(){ return (typeof sfExtraFiles !== "undefined" && sfExtraFiles) ? sfExtraFiles : []; }
+      // Solo .sf2 que el random puede elegir: ya cargados, y los extras únicamente cuando TODOS los extras cargaron (sfPickable).
+      function extraFiles(){
+        if(typeof sfExtraFiles === "undefined" || !sfExtraFiles) return [];
+        return sfExtraFiles.filter(function(e){ return typeof sfPickable !== "function" || sfPickable(e); });
+      }
       function setPreset(mixKey, key, label){
         var el = document.getElementById(SEL_ID[mixKey]);
         if(el && !Array.prototype.some.call(el.options, function(o){ return o.value === key; })){
@@ -25803,7 +25927,11 @@ function runAnalysis() {
                 ["comping2", keyb.concat(gtr, pads), 0.5], ["drum", kits, 0.3]];
       }
       function rollVoices(kind){
-        if(!extraFiles().some(function(e){ return /\/Extra v2\//i.test(e.path); })){ SL("Voces (RANDOM CHOOSE)", "no se sortea: loadExtra todavía no cargó las carpetas"); return; }
+        if(typeof sfExtrasAllReady === "function" && !sfExtrasAllReady()){
+          var rs = (typeof loadExtraSummary === "function") ? loadExtraSummary() : null;
+          SL("Voces (RANDOM CHOOSE)", "no se sortea: los extras todavía no terminaron de cargar" + (rs ? " (" + rs.ok + "/" + rs.total + ")" : "")); return;
+        }
+        if(!extraFiles().some(function(e){ return /\/Extra v2\//i.test(e.path); })){ SL("Voces (RANDOM CHOOSE)", "no se sortea: no hay carpetas de Extra cargadas"); return; }
         var out = [];
         voiceRoles(kind).forEach(function(r){
           var k = r[0], pool = r[1], prob = r[2];
@@ -26877,7 +27005,8 @@ function runAnalysis() {
         var el = document.getElementById(id);
         if(!el) return;
         var avail = list.filter(function(v){
-          return v === null || Array.prototype.some.call(el.options, function(o){ return o.value === v; });
+          return v === null || (Array.prototype.some.call(el.options, function(o){ return o.value === v; })
+            && (typeof sfKeyUsable !== "function" || sfKeyUsable(v)));   // solo presets ya cargados; los de Extra, cuando todos los extras cargaron
         });
         var v = avail[Math.floor(Math.random() * avail.length)], lbl = (id === "harmonyPresetSelect") ? "Preset Armonía (sorteo)" : "Preset Melodía (sorteo)";
         if(v !== null){
