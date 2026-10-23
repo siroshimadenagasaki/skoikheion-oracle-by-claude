@@ -1593,6 +1593,7 @@
           <div style="display:flex;align-items:stretch;gap:6px;"><button class="chip primary" style="flex:1;" id="creaturaOneSetBtn" type="button" title="Igual que CreaturaRandom (mismos sliders, sets al azar, Compose, Mix time signatures, Detener, espera 2s y Regenerar), pero cada SECCIÓN de Form usa un solo set: Intro, A, B / C / D y Coda tocan cada una un único set (sets distintos entre secciones, sin repetir el de la sección anterior mientras haya otros). Dentro de la sección no hay reataques de otros sets. Sin Form tildado, la canción entera es una sola sección (un solo set).">🪄 One.Set</button><button type="button" class="chip" data-radio-only="oneset" style="flex:0 0 auto;padding-left:8px;padding-right:8px;" aria-label="Radio: solo One.Set" title="Radio (player): abre el mismo player del RADIO! pero limitado a One.Set: cada canción nueva es de One.Set (un solo set por sección de Form). Next / Previous / Stop, historial, log y export iguales. Con la radio prendida en este modo, apretarlo de nuevo la detiene; para volver al sorteo entre todos los modos usá el botón RADIO!.">📻</button></div>
           <div style="display:flex;align-items:stretch;gap:6px;"><button class="chip primary" style="flex:1;" id="creaPartBtn" type="button" title="Creatura+Partimenti (modo test): arma una canción de Creatura (sets) y una de Partimenti (bajo + 4 voces) con el mismo largo, compás y tempo y las combina según el checkbox elegido. Apaga Form y Mix time signatures (los dos motores comparten la grilla de compases). La batería es la de Creatura. Partimenti se transporta a la tónica del primer set. 🔀 / tecla G vuelven a Creatura común.">🪄🎹 Creatura+Partimenti (test)</button><button type="button" class="chip" data-radio-only="creapart" style="flex:0 0 auto;padding-left:8px;padding-right:8px;" aria-label="Radio: solo Creatura+Partimenti" title="Radio (player): abre el mismo player del RADIO! pero limitado a Creatura+Partimenti (test): cada canción nueva es de Creatura+Partimenti, con el checkbox de mezcla tildado (mixbysection / Totalfusion / Layers). Next / Previous / Stop, historial, log y export iguales. Con la radio prendida en este modo, apretarlo de nuevo la detiene; para volver al sorteo entre todos los modos usá el botón RADIO!.">📻</button></div>
           <div id="creaPartModes" style="display:flex;flex-wrap:wrap;gap:4px 10px;padding:2px 0 4px 8px;"><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="mixbysection: bloques de 4 compases; cada bloque sale entero de Creatura o de Partimenti (50/50, siempre al menos uno de cada uno)."><input type="checkbox" id="creaPartBySection" checked> mixbysection</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="Totalfusion: bajo, tenor/alto, soprano y Melody n2 de Partimenti, con cada nota llevada a la nota más cercana del set que Creatura sorteó para ese compás (el set no se traiciona)."><input type="checkbox" id="creaPartTotal"> Totalfusion</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="Layers: el bajo es el de Partimenti (partimento) y la armonía, la melodía y lo demás son los de Creatura, en todos los compases."><input type="checkbox" id="creaPartLayers"> Layers</label></div>
+          <div id="creaPartLead" style="display:flex;flex-wrap:wrap;gap:4px 10px;padding:0 0 4px 8px;"><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="PartimentiLeading: el motor es Partimenti (bajo + 4 voces) y Creatura aparece según la mezcla elegida (mixbysection / Totalfusion / Layers). Es el comportamiento de siempre."><input type="checkbox" id="creaPartLeadP" checked> PartimentiLeading</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="CreaturaLeading: el motor es Creatura (sets) y Partimenti entra como ornamentación según la mezcla elegida. mixbysection: la mayoría de los bloques de 4 compases son de Creatura y ~25% de Partimenti. Totalfusion: Creatura intacta + las figuras de Partimenti (pasos, bordaduras, giros, apoyaturas) llevadas al set de cada compás, en Melody n2. Layers: Creatura completa + soprano y Melody n2 de Partimenti con diminuciones (llevados al set) en Melody n3."><input type="checkbox" id="creaPartLeadC"> CreaturaLeading</label></div>
           <div style="display:flex;align-items:stretch;gap:6px;"><button class="chip primary" style="flex:1;" id="chorPartBtn" type="button" title="Chords+Partimenti (modo test): igual que Creatura+Partimenti, pero la base es ChordS (acordes de la base) en vez de Creatura. Arma una canción de ChordS y una de Partimenti (bajo + 4 voces) con el mismo largo, compás y tempo y las combina según el checkbox elegido. Apaga Mix time signatures (los dos motores comparten la grilla de compases). La batería es la de ChordS. Partimenti se transporta a la tónica del primer acorde. 🔀 / tecla G vuelven a Creatura común.">🪄🎹 Chords+Partimenti (test)</button><button type="button" class="chip" data-radio-only="chorpart" style="flex:0 0 auto;padding-left:8px;padding-right:8px;" aria-label="Radio: solo Chords+Partimenti" title="Radio (player): abre el mismo player del RADIO! pero limitado a Chords+Partimenti (test): cada canción nueva es de Chords+Partimenti, con el checkbox de mezcla sorteado (mixbysection / Totalfusion / Layers, 33% cada uno). Next / Previous / Stop, historial, log y export iguales. Con la radio prendida en este modo, apretarlo de nuevo la detiene; para volver al sorteo entre todos los modos usá el botón RADIO!.">📻</button></div>
           <div id="chorPartModes" style="display:flex;flex-wrap:wrap;gap:4px 10px;padding:2px 0 4px 8px;"><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="mixbysection: bloques de 4 compases; cada bloque sale entero de ChordS o de Partimenti (50/50, siempre al menos uno de cada uno)."><input type="checkbox" id="chorPartBySection" checked> mixbysection</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="Totalfusion: bajo, tenor/alto, soprano y Melody n2 de Partimenti, con cada nota llevada a la nota más cercana del acorde que ChordS sorteó para ese compás."><input type="checkbox" id="chorPartTotal"> Totalfusion</label><label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="Layers: el bajo es el de Partimenti (partimento) y la armonía, la melodía y lo demás son los de ChordS, en todos los compases."><input type="checkbox" id="chorPartLayers"> Layers</label></div>
         </div>
@@ -18831,8 +18832,8 @@ function runAnalysis() {
     function byTime(a, b){ return a.startBeat - b.startBeat; }
     function snapPc(m, pcs){ if(pcs[((m % 12) + 12) % 12]) return m; for(var k = 1; k <= 6; k++){ if(pcs[(((m - k) % 12) + 12) % 12]) return m - k; if(pcs[(((m + k) % 12) + 12) % 12]) return m + k; } return m; }
     function barPcs(slots){ var pcs = {}, any = false; (slots || []).forEach(function(s){ ((s.setNotes && s.setNotes.length) ? s.setNotes : s.chord || []).forEach(function(m){ pcs[((m % 12) + 12) % 12] = true; any = true; }); }); return any ? pcs : null; }
-    api.make = function(mode, noPlay, base){   // base === "chords": la base es ChordS (acordes de la base) en vez de Creatura (sets) -> Chords+Partimenti. noPlay: no para ni arranca la reproducción (vueltas de la radio: el scheduler en vivo engancha la canción nueva)
-      var CH = (base === "chords"), A = CH ? "Chords" : "Creatura";
+    api.make = function(mode, noPlay, base, lead){   // base === "chords": la base es ChordS (acordes de la base) en vez de Creatura (sets) -> Chords+Partimenti. noPlay: no para ni arranca la reproducción (vueltas de la radio: el scheduler en vivo engancha la canción nueva)
+      var CH = (base === "chords"), A = CH ? "Chords" : "Creatura", CL = (lead === "creatura" && !CH);   // CL: CreaturaLeading (Creatura es el motor; Partimenti ornamenta). Chords+Partimenti no lo usa.
       (CH ? ["__jazzTunes", "__partimenti"] : ["__commonChords", "__jazzTunes", "__partimenti"]).forEach(function(k){ if(window[k] && window[k].off) window[k].off(); });
       if(CH && window.__commonChords) window.__commonChords.active = true;   // Chords+Partimenti: regenerateConsola arma la canción de ChordS
       try { regenerateConsola(); }                           // 1) Creatura (los sets de Compose siguen en memoria) o ChordS
@@ -18872,7 +18873,20 @@ function runAnalysis() {
       Ps.slotChords = shiftSlots(P.slotChords, d); Ps.progression = (P.progression || []).map(function(c){ return c.map(function(m){ return m + d; }); }); Ps.roles = P.roles;
       var out = { drums: C.drums }, info = "";
       ALLK.forEach(function(k){ out[k] = C[k]; });
-      if(mode === "layers"){
+      var pcsBar0 = null;
+      function snapTo(evs){ if(!pcsBar0){ pcsBar0 = []; for(var bq = 0; bq < bars; bq++) pcsBar0.push(barPcs(C.slotChords[bq])); } return (evs || []).map(function(e){ var c = {}, q; for(q in e) c[q] = e[q]; var pc = pcsBar0[barOf(e.startBeat)]; if(pc) c.midi = snapPc(e.midi, pc); return c; }); }
+      if(CL && mode === "layers"){
+        // CreaturaLeading + Layers: Creatura completa; Partimenti agrega su soprano y su Melody n2 (con diminuciones), llevados al set, en Melody n3
+        out.melody3Events = (C.melody3Events || []).concat(snapTo(Ps.melodyEvents), snapTo(Ps.melody2Events)).sort(byTime);
+        info = "CreaturaLeading · Layers: Creatura completa + soprano y Melody n2 de Partimenti con diminuciones en Melody n3 (llevados al set; transportado " + (d > 0 ? "+" : "") + d + ")";
+      } else if(CL && mode === "total"){
+        // CreaturaLeading + Totalfusion: Creatura intacta; solo las FIGURAS de Partimenti (eventos con fig: pasos, bordaduras, giros, apoyaturas...) llevadas al set de cada compás, en Melody n2
+        var figs = snapTo(Ps.melodyEvents.concat(Ps.melody2Events).filter(function(e){ return !!e.fig; })).sort(byTime);
+        var seenF = {}; (C.melody2Events || []).forEach(function(e){ seenF[Math.round(e.startBeat * 1000)] = 1; });
+        figs = figs.filter(function(e){ var k = Math.round(e.startBeat * 1000); if(seenF[k]) return false; seenF[k] = 1; return true; });
+        out.melody2Events = (C.melody2Events || []).concat(figs).sort(byTime);
+        info = "CreaturaLeading · Totalfusion: Creatura + " + figs.length + " figuras de Partimenti llevadas al set de cada compás en Melody n2 (transportado " + (d > 0 ? "+" : "") + d + ")";
+      } else if(mode === "layers"){
         out.bassEvents = Ps.bassEvents;
         info = "Layers: bajo de Partimenti (" + (song.mode === "minor" ? "menor" : "mayor") + ", transportado " + (d > 0 ? "+" : "") + d + ") + armonía, melodía y demás de " + A;
       } else if(mode === "total"){
@@ -18885,14 +18899,14 @@ function runAnalysis() {
       } else {
         var secs = [], sb; for(sb = 0; sb < bars; sb += 4) secs.push({ b0: sb, b1: Math.min(bars, sb + 4) });
         if(secs.length > 1 && secs[secs.length - 1].b1 - secs[secs.length - 1].b0 < 2){ var lst = secs.pop(); secs[secs.length - 1].b1 = lst.b1; }
-        secs.forEach(function(s){ s.p = Math.random() < 0.5; });
+        secs.forEach(function(s){ s.p = Math.random() < (CL ? 0.25 : 0.5); });   // CreaturaLeading: ~25% de bloques de Partimenti
         if(secs.length > 1 && secs.every(function(s){ return s.p === secs[0].p; })){ var fl = secs[Math.floor(Math.random() * secs.length)]; fl.p = !fl.p; }
         var useP = []; secs.forEach(function(s){ for(var bb = s.b0; bb < s.b1; bb++) useP[bb] = s.p; });
         TRK.forEach(function(k){
           out[k] = (C[k] || []).filter(function(e){ return !useP[barOf(e.startBeat)]; }).concat(Ps[k].filter(function(e){ return useP[barOf(e.startBeat)]; })).sort(byTime);
         });
         ["slotChords", "progression", "roles"].forEach(function(k){ out[k] = C[k].map(function(v, bi){ return useP[bi] ? Ps[k][bi] : v; }); });
-        info = "mixbysection: " + secs.map(function(s){ return (s.b0 + 1) + "–" + s.b1 + (s.p ? " Partimenti" : " " + A); }).join(" · ") + " (Partimenti transportado " + (d > 0 ? "+" : "") + d + ")";
+        info = (CL ? "CreaturaLeading · " : "") + "mixbysection: " + secs.map(function(s){ return (s.b0 + 1) + "–" + s.b1 + (s.p ? " Partimenti" : " " + A); }).join(" · ") + " (Partimenti transportado " + (d > 0 ? "+" : "") + d + ")";
       }
       ALLK.forEach(function(k){ state[k] = out[k]; });
       drumEvents = C.drums;
@@ -18900,7 +18914,7 @@ function runAnalysis() {
       if(rdEl) rdEl.textContent = cRd; if(solEl) solEl.innerHTML = cSol;
       renderRoll(); renderBebopRoll();
       if(!noPlay){ if(playing) stopPlayback(); startPlayback(); }
-      api.last = { mode: mode, d: d, info: info };
+      api.last = { mode: mode, lead: CL ? "creatura" : "partimenti", d: d, info: info };
       return { ok: true, text: info };
     };
     return api;
@@ -27261,7 +27275,7 @@ function runAnalysis() {
             randomizeExtras();
             randomizeSlider("consolaTempo", 30, 120);
             rcPost("creatura");
-            SL("Creatura+Partimenti", window.__creaPart.make(creaPartMode(true), true).text);
+            SL("Creatura+Partimenti", window.__creaPart.make(creaPartMode(true), true, undefined, creaPartLead(true)).text);
             return;
           }
           if(pick === "onechord"){
@@ -27348,6 +27362,20 @@ function runAnalysis() {
         else if(!cpBoxes.some(function(o){ return o && o.checked; })) c.checked = true;
       });
     });
+    // PartimentiLeading / CreaturaLeading: excluyentes, siempre queda uno tildado. PartimentiLeading = comportamiento de siempre.
+    var cpLead = ["creaPartLeadP", "creaPartLeadC"].map(function(id){ return document.getElementById(id); });
+    cpLead.forEach(function(c){
+      if(!c) return;
+      c.addEventListener("change", function(){
+        if(c.checked) cpLead.forEach(function(o){ if(o && o !== c) o.checked = false; });
+        else if(!cpLead.some(function(o){ return o && o.checked; })) c.checked = true;
+      });
+    });
+    // rnd = true (📻 Creatura+Partimenti): cada canción sortea el Leading 50/50 y tilda ese checkbox.
+    function creaPartLead(rnd){
+      if(rnd) setChecked(["creaPartLeadP", "creaPartLeadC"][Math.floor(Math.random() * 2)], true);
+      return (cpLead[1] && cpLead[1].checked) ? "creatura" : "partimenti";
+    }
     // rnd = true (📻 Creatura+Partimenti): cada canción sortea el modo de mezcla, 33% mixbysection / 33% Totalfusion / 33% Layers, y tilda ese checkbox.
     function creaPartMode(rnd){
       if(rnd) setChecked(["creaPartBySection", "creaPartTotal", "creaPartLayers"][Math.floor(Math.random() * 3)], true);
@@ -27371,7 +27399,7 @@ function runAnalysis() {
         clickIfEnabled("multiSetsComposeBtn");
         clickIfEnabled("consolaStopBtn");
         await wait(2000);
-        var res = window.__creaPart.make(mode);
+        var res = window.__creaPart.make(mode, undefined, undefined, creaPartLead(rnd === true));
         SL("Creatura+Partimenti", res.text);
       } finally {
         if(btnCP) btnCP.disabled = false;
