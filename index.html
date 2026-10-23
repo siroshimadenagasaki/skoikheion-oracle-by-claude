@@ -62,6 +62,16 @@
   .sf2-load-overlay .sf2-load-label{ white-space:normal; }
   .sf2-load-overlay .sf2-load-now{ font-size:9px; color:var(--ink-muted); opacity:.85; max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .sf2-load-overlay .sf2-load-now:empty{ display:none; }
+  /* Detalle por archivo: fallidos (con motivo) y en curso (fase, %, segundos) */
+  .sf2-load-overlay{ flex-wrap:wrap; }
+  .sf2-load-overlay .sf2-load-detail{ flex:1 1 100%; min-width:min(440px, calc(100vw - 56px)); max-height:40vh; overflow:auto; font-size:10px; line-height:1.45; color:var(--ink-muted); white-space:normal; word-break:break-word; user-select:text; }
+  .sf2-load-overlay .sf2-load-detail:empty{ display:none; }
+  .sf2-load-overlay .sf2-load-detail .sf2-d-bad{ color:var(--red-warn); }
+  .sf2-load-overlay .sf2-load-detail .sf2-d-slow{ color:var(--gold); }
+  .sf2-load-overlay.sf2-load-error{ pointer-events:auto; }
+  .sf2-load-overlay.sf2-load-hidden{ pointer-events:none !important; }
+  .sf2-load-overlay .sf2-load-close{ display:none; background:none; border:1px solid var(--line); border-radius:6px; color:var(--ink); cursor:pointer; font-size:11px; padding:1px 6px; }
+  .sf2-load-overlay.sf2-load-error .sf2-load-close{ display:inline-block; }
   body{
     margin:0;
     background:
@@ -1442,6 +1452,7 @@
   <span class="sf2-load-label" id="sf2LoadLabel">&#127932; Loading sounds&hellip; 0%</span>
   <span class="sf2-load-bar"><span class="sf2-load-bar-fill" id="sf2LoadBarFill"></span></span>
   <span class="sf2-load-now" id="sf2LoadNow"></span>
+  <div class="sf2-load-detail" id="sf2LoadDetail"></div>
 </div>
 
 <!-- Indicador de carga de loadExtra (mismo estilo, debajo del de Sonido real) -->
@@ -1449,6 +1460,8 @@
   <span class="sf2-load-label" id="extraLoadLabel">&#127932; Loading extras&hellip; 0%</span>
   <span class="sf2-load-bar"><span class="sf2-load-bar-fill" id="extraLoadBarFill"></span></span>
   <span class="sf2-load-now" id="extraLoadNow"></span>
+  <button class="sf2-load-close" id="extraLoadClose" type="button" title="Cerrar">&#10005;</button>
+  <div class="sf2-load-detail" id="extraLoadDetail"></div>
 </div>
 
 <!-- Fondo de página: avatar detrás del texto -->
@@ -6898,6 +6911,53 @@ function sfRefreshLoadNow() {
   const txt = names.length ? (names.slice(0, 2).join(" · ") + (names.length > 2 ? " +" + (names.length - 2) : "")) : "";
   ["sf2LoadNow", "extraLoadNow"].forEach((id) => { const el = document.getElementById(id); if (el) { el.textContent = txt; el.title = names.join("\n"); } });
 }
+// Detalle por archivo para el overlay: sfDetailByUrl[url] = { phase, pct, t0, err }.
+const sfDetailByUrl = {};
+const SF_STALL_MS = window.__SF_STALL_MS || 90000; // sin bytes nuevos durante este tiempo = descarga trabada
+function sfDetailSet(url, patch) {
+  const d = sfDetailByUrl[url] || (sfDetailByUrl[url] = { phase: "", pct: 0, t0: Date.now(), tp: Date.now(), err: "" });
+  if (patch.pct !== undefined && patch.pct !== d.pct) d.tp = Date.now(); // hubo avance
+  Object.assign(d, patch);
+  sfDetailSchedule();
+}
+let sfDetailRaf = 0;
+function sfDetailSchedule() {
+  if (sfDetailRaf) return;
+  sfDetailRaf = setTimeout(() => { sfDetailRaf = 0; sfRenderLoadDetail(); }, 200);
+}
+function sfDetailName(u) { let b = sf2BasenameOfUrl(u); try { b = decodeURIComponent(b); } catch (_e) {} return b; }
+function sfDetailEsc(s) { return String(s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c])); }
+// Dibuja, para cada overlay, los archivos que fallaron (con el motivo) y los que están en curso.
+function sfRenderLoadDetail() {
+  const extraUrls = new Set(sfExtraFiles.filter((e) => !sfIsAutoId(e.id)).map((e) => e.url));
+  const groups = { sf2LoadDetail: [], extraLoadDetail: [] };
+  const now = Date.now();
+  Object.keys(sfDetailByUrl).forEach((u) => {
+    const st = sfStateByUrl[u];
+    const d = sfDetailByUrl[u];
+    const id = extraUrls.has(u) ? "extraLoadDetail" : "sf2LoadDetail";
+    if (st === "error" || (d.phase === "error" && st !== "ready")) {
+      groups[id].push({ bad: true, txt: "✗ " + sfDetailName(u) + " — " + (d.err || "error") });
+    } else if (st === "loading") {
+      const secs = Math.round((now - d.t0) / 1000);
+      groups[id].push({ slow: secs >= 30, txt: "… " + sfDetailName(u) + " — " + (d.phase || "esperando") + (d.phase === "bajando" ? " " + d.pct + "%" : "") + " · " + secs + "s" });
+    }
+  });
+  Object.keys(groups).forEach((id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const items = groups[id];
+    items.sort((a, b) => (b.bad ? 1 : 0) - (a.bad ? 1 : 0)); // primero los fallidos
+    const bad = items.filter((i) => i.bad), run = items.filter((i) => !i.bad);
+    const shown = bad.concat(run.slice(0, 6));
+    let html = shown.map((i) => '<div class="' + (i.bad ? "sf2-d-bad" : i.slow ? "sf2-d-slow" : "") + '">' + sfDetailEsc(i.txt) + "</div>").join("");
+    if (run.length > 6) html += "<div>… y " + (run.length - 6) + " más cargando</div>";
+    el.innerHTML = html;
+    el.title = items.map((i) => i.txt).join("\n");
+  });
+  // mientras haya algo cargando, refresca los segundos
+  if (Object.keys(sfDetailByUrl).some((u) => sfStateByUrl[u] === "loading")) sfDetailSchedule();
+}
 function sfProgressTick(url) {
   if (!sfProgress || !sfProgress.urls.has(url) || sfProgress.done.has(url)) return;
   sfProgress.done.add(url);
@@ -6910,19 +6970,34 @@ function sfLoadFontOnce(url) {
     sfNotifyCatalogChange(false); // el aviso del selector pasa a "cargando"
     sfLoadPromiseByUrl[url] = (async () => {
       try {
-        const abuf = await sf2GetArrayBuffer(url);
+        sfDetailSet(url, { phase: "bajando", pct: 0, t0: Date.now(), tp: Date.now(), err: "" });
+        // Si la descarga no avanza en SF_STALL_MS, se da por trabada: pasa a error (con motivo) y no bloquea el cierre de loadExtra.
+        const abuf = await Promise.race([
+          sf2GetArrayBuffer(url, (p) => sfDetailSet(url, { phase: "bajando", pct: Math.round(p * 100) })),
+          new Promise((_res, rej) => {
+            const iv = setInterval(() => {
+              const d = sfDetailByUrl[url];
+              if (!d || d.phase !== "bajando") { clearInterval(iv); return; }
+              if (Date.now() - d.tp > SF_STALL_MS) { clearInterval(iv); rej(new Error("descarga trabada: sin avance hace " + Math.round(SF_STALL_MS / 1000) + " s (" + d.pct + "%)")); }
+            }, 2000);
+          })
+        ]);
         sfLog("[" + sf2BasenameOfUrl(url) + "] parseando " + sfFmtMB(abuf.byteLength));
+        sfDetailSet(url, { phase: "parseando " + sfFmtMB(abuf.byteLength) });
+        await new Promise((r) => setTimeout(r, 0)); // deja pintar el estado antes del parseo (bloquea el hilo)
         const font = sf2ParseFont(abuf);
         sfLog("[" + sf2BasenameOfUrl(url) + "] LISTO");
         sfFontByUrl[url] = font;
         sfStateByUrl[url] = "ready";
         sfLoadingNow.delete(url); sfRefreshLoadNow();
+        sfDetailSet(url, { phase: "listo", pct: 100 });
         sfNotifyCatalogChange(true);
         sfProgressTick(url);
         return font;
       } catch (err) {
         console.error("Could not load the SoundFont " + url + ":", err);
         sfLog("[" + sf2BasenameOfUrl(url) + "] ERROR: " + (err && err.message || err));
+        sfDetailSet(url, { phase: "error", err: String((err && err.message) || err).replace(/ when requesting .*/, "") });
         sfFontByUrl[url] = null;
         sfStateByUrl[url] = "error";
         sfLoadingNow.delete(url); sfRefreshLoadNow();
@@ -7076,12 +7151,23 @@ loadExtraBtn.addEventListener("click", async function () {
   } catch (err) { console.error("loadExtra:", err); }
   sfProgress = null;
   const r = loadExtraSummary();
-  if (ov) { if (r.total > 0 && r.ok < r.total) { ov.classList.add("sf2-load-error"); if (ovLabel) ovLabel.textContent = "🎼 Extras: " + r.ok + "/" + r.total; } else ov.classList.add("sf2-load-hidden"); }
+  const failedExtras = sfExtraFiles.filter((e) => !sfIsAutoId(e.id) && sfStateByUrl[e.url] !== "ready");
+  if (ov) { if (r.total > 0 && r.ok < r.total) { ov.classList.add("sf2-load-error"); if (ovLabel) ovLabel.textContent = "🎼 Extras: " + r.ok + "/" + r.total + " — fallaron " + failedExtras.length; } else ov.classList.add("sf2-load-hidden"); }
+  if (failedExtras.length) failedExtras.forEach((e) => {
+    // un extra que no terminó ni en "ready" ni en "error" (nunca arrancó o quedó colgado) también se informa
+    if (sfStateByUrl[e.url] !== "error") sfDetailSet(e.url, { phase: "error", err: "no terminó de cargar (estado: " + (sfStateByUrl[e.url] || "sin iniciar") + ")" });
+    console.error("[loadExtra] falló:", sfDetailName(e.url), "—", (sfDetailByUrl[e.url] || {}).err);
+  });
+  sfRenderLoadDetail();
   sfAskPersist();
   loadExtraBtn.disabled = false;
   loadExtraBtn.textContent = (r.total > 0 && r.ok === r.total) ? "loadExtra ✓ (" + r.ok + ")" : "loadExtra ⚠ " + r.ok + "/" + r.total + " — reintentar";
   sfNotifyCatalogChange(false);
 });
+(function () {
+  const c = document.getElementById("extraLoadClose");
+  if (c) c.addEventListener("click", () => { const o = document.getElementById("extraLoadOverlay"); if (o) o.classList.add("sf2-load-hidden"); });
+})();
 async function sf2Activate(btn) {
   sf2State = "loading";
   btn.disabled = true;
