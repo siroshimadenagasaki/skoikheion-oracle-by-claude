@@ -6825,7 +6825,15 @@ function sfTagForUrl(url, id) {
 //      recién subido antes de que la Action actualice catalog.json.
 const SF_CATALOG_URL = sfUrlForPath(SF_ROOT_DIR + "/catalog.json");
 async function sfListSf2PathsFromCatalog() {
-  const res = await fetch(SF_CATALOG_URL, { cache: "no-cache" });
+  // Con red: ?stknet manda el pedido directo a la red (el service worker, si no, lo serviría del caché guardado y
+  // una lista vieja seguiría pidiendo archivos borrados). Sin red: cae al pedido normal (caché del service worker).
+  let res;
+  try {
+    res = await fetch(SF_CATALOG_URL + "?stknet=" + Date.now(), { cache: "no-cache" });
+    if (!res.ok) throw new Error("catalog.json " + res.status);
+  } catch (_e) {
+    res = await fetch(SF_CATALOG_URL, { cache: "no-cache" });
+  }
   if (!res.ok) throw new Error("catalog.json " + res.status);
   const data = await res.json();
   return (data && Array.isArray(data.files) ? data.files : [])
@@ -6913,6 +6921,7 @@ function sfRefreshLoadNow() {
 }
 // Detalle por archivo para el overlay: sfDetailByUrl[url] = { phase, pct, t0, err }.
 const sfDetailByUrl = {};
+const sfMissingByUrl = {}; // .sf2 de la lista que dieron 404 (ya no existen): se omiten, no son fallos
 const SF_STALL_MS = window.__SF_STALL_MS || 90000; // sin bytes nuevos durante este tiempo = descarga trabada
 function sfDetailSet(url, patch) {
   const d = sfDetailByUrl[url] || (sfDetailByUrl[url] = { phase: "", pct: 0, t0: Date.now(), tp: Date.now(), err: "" });
@@ -6995,6 +7004,24 @@ function sfLoadFontOnce(url) {
         sfProgressTick(url);
         return font;
       } catch (err) {
+        // HTTP 404 en un EXTRA = el archivo ya no existe en el sitio (la lista guardada es vieja): se descarta de la lista,
+        // no cuenta como fallo y no aparece en los selectores. Un 404 en un archivo base (default) sigue siendo error real.
+        const extraEntry = sfExtraFiles.find((e) => e.url === url);
+        const gone = /^HTTP 404\b/.test(String((err && err.message) || "")) && extraEntry && !sfIsAutoId(extraEntry.id);
+        if (gone) {
+          console.warn("[SoundFont] ya no existe en el sitio, se omite:", sfDetailName(url));
+          sfLog("[" + sf2BasenameOfUrl(url) + "] 404: ya no existe, se omite");
+          sfMissingByUrl[url] = true;
+          sfDetailSet(url, { phase: "omitido", err: "" });
+          sfFontByUrl[url] = null;
+          sfStateByUrl[url] = "missing";
+          sfExtraFiles = sfExtraFiles.filter((e) => e.url !== url);
+          sfLoadingNow.delete(url); sfRefreshLoadNow();
+          delete sfLoadPromiseByUrl[url];
+          sfNotifyCatalogChange(false);
+          sfProgressTick(url);
+          return null;
+        }
         console.error("Could not load the SoundFont " + url + ":", err);
         sfLog("[" + sf2BasenameOfUrl(url) + "] ERROR: " + (err && err.message || err));
         sfDetailSet(url, { phase: "error", err: String((err && err.message) || err).replace(/ when requesting .*/, "") });
@@ -7161,7 +7188,9 @@ loadExtraBtn.addEventListener("click", async function () {
   sfRenderLoadDetail();
   sfAskPersist();
   loadExtraBtn.disabled = false;
-  loadExtraBtn.textContent = (r.total > 0 && r.ok === r.total) ? "loadExtra ✓ (" + r.ok + ")" : "loadExtra ⚠ " + r.ok + "/" + r.total + " — reintentar";
+  const nOmitidos = Object.keys(sfMissingByUrl).length;
+  if (nOmitidos) console.warn("[loadExtra] " + nOmitidos + " archivo(s) de la lista ya no existen y se omitieron:", Object.keys(sfMissingByUrl).map(sfDetailName).join(" · "));
+  loadExtraBtn.textContent = (r.total > 0 && r.ok === r.total) ? "loadExtra ✓ (" + r.ok + ")" + (nOmitidos ? " · " + nOmitidos + " omitidos" : "") : "loadExtra ⚠ " + r.ok + "/" + r.total + " — reintentar";
   sfNotifyCatalogChange(false);
 });
 (function () {
