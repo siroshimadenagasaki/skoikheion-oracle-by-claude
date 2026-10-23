@@ -1014,6 +1014,10 @@
     font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-muted);
   }
   .consola-legend .sw{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;vertical-align:-1px;}
+  /* Leyenda del piano roll: chiquita, ARRIBA del roll, con el preset elegido de cada instrumento */
+  .consola-legend.top{margin:0 0 4px;gap:2px 12px;font-size:9.5px;position:sticky;left:0;width:max-content;max-width:min(100%,440px);}
+  .consola-legend.top .sw{width:7px;height:7px;margin-right:4px;}
+  .consola-legend .pn{color:var(--ink);opacity:.85;margin-left:4px;display:inline-block;max-width:24ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom;}
   .consola-empty{text-align:center;color:var(--ink-muted);font-style:italic;font-size:14px;padding:24px 0;}
   .consola-foot{
     color:var(--ink-muted);font-family:'JetBrains Mono',monospace;font-size:10.5px;
@@ -1183,6 +1187,8 @@
   }
   /* Fondo de pantalla al azar: un script al final del body elige una imagen de la carpeta BAckgrounds (--page-wallpaper); el velo oscuro es el mismo de siempre.
      Si la imagen no carga, queda el fondo incrustado de antes. */
+  /* Popup breve de los sliders de How to play (hover, foco o toque en el slider o en su nombre): ver el script "stk-tip". */
+  .stk-tip{position:fixed;z-index:99999;max-width:260px;padding:7px 10px;border-radius:7px;background:var(--surface);color:var(--ink);border:1px solid var(--gold);font-size:12px;line-height:1.4;box-shadow:0 4px 14px rgba(0,0,0,.5);pointer-events:none;}
   html.wallpaper-ready .page-bg-avatar{opacity:1;}
   html.has-wallpaper .page-bg-avatar{background-image:linear-gradient(rgba(20,18,29,.88), rgba(20,18,29,.92)), var(--page-wallpaper);}
   .site-avatar{
@@ -9172,6 +9178,9 @@ function runAnalysis() {
          "contrast" (compases alternados entre dos niveles) o "random" (un sorteo por compás);
        · MITAD DE COMPÁS: a veces la 2ª mitad cambia (espejo 1-f, p. ej. 0% / 100%, o un nivel nuevo), más seguido al
          final de frase.
+     Cada slider tiene además un switch "Mode A / Mode B" (al lado de su MiX, Mode A por defecto): A = la automatización de arriba;
+     B = UN solo valor por sección de la Form (A, B, C… o bloques de 8 compases si no hay Form), constante en toda la sección; de una sección a la
+     siguiente cambia a veces sutil (±5–20%) y a veces radical (salta al otro extremo). Todo sorteado con la semilla de la canción.
      Semilla: cada generación sortea una semilla maestra y cada slider deriva la suya (repetible: MIX.seed()).
      Notes complexity es un slider maestro sin lógica propia: su curva actúa como envolvente que se mezcla (25%) con la
      curva propia de Chromatism, Chords, Jazz y Chord simultaneity cuando éstos tienen MiX prendido.
@@ -9247,6 +9256,30 @@ function runAnalysis() {
       return out;
     }
 
+    // Mode B: un valor por sección (constante en toda la sección), sutil o radical respecto de la sección anterior.
+    function genPlanB(id, secs, nb, seed){
+      var rng = mulberry32((seed ^ hash(id + "|B")) >>> 0), out = new Float32Array(nb * 2), prev = -1;
+      secs.forEach(function(s){
+        var L;
+        if(prev < 0){ var r0 = rng(); L = r0 < 0.2 ? 1 : (r0 < 0.3 ? 0 : rng()); }
+        else if(rng() < 0.5){                                   // sutil: ±5–20%
+          var d = 0.05 + rng() * 0.15, sg = rng() < 0.5 ? -1 : 1;
+          L = prev + sg * d;
+          if(L < 0 || L > 1) L = prev - sg * d;
+        } else {                                                // radical: al otro lado del 50%
+          L = prev >= 0.5 ? rng() * 0.3 : 0.7 + rng() * 0.3;
+        }
+        L = clamp01(L); prev = L;
+        for(var k = 0; k < s.n; k++){
+          var bar = s.b0 + k;
+          if(bar >= nb) break;
+          out[bar * 2] = L; out[bar * 2 + 1] = L;
+        }
+      });
+      return out;
+    }
+    function modeB(id){ var m = document.getElementById("mixMode_" + id); return !!(m && m.checked); }
+
     function regenerate(){
       pos.bar = -1; pos.beat = 0;
       nBars = Math.max(0, NUM_BARS | 0);
@@ -9257,7 +9290,7 @@ function runAnalysis() {
       secsNow = sections();
       plans = {}; means = {};
       IDS.forEach(function(id){
-        var p = genPlan(id, secsNow, nBars, seedMaster), s = 0;
+        var p = (modeB(id) ? genPlanB : genPlan)(id, secsNow, nBars, seedMaster), s = 0;
         for(var i = 0; i < p.length; i++) s += p[i];
         plans[id] = p; means[id] = p.length ? s / p.length : 1;
       });
@@ -9326,7 +9359,7 @@ function runAnalysis() {
         if(!sl || chk(id)) return;
         var field = sl.parentNode;
         var row = document.createElement("div");
-        row.style.cssText = "display:flex;align-items:center;gap:6px;";
+        row.style.cssText = "display:flex;align-items:center;flex-wrap:wrap;gap:4px 8px;";
         var lab = document.createElement("label");
         lab.title = NAMES[id] + " MiX: prendido (default), el slider es el TECHO de una automatización que se calcula al generar la canción " +
           "(secciones, frases, compases y mitades de compás con valores entre 0 y el slider) y queda reflejada en el piano roll; el gráfico muestra esa curva. " +
@@ -9335,13 +9368,30 @@ function runAnalysis() {
         var cb = document.createElement("input");
         cb.type = "checkbox"; cb.id = "mixChk_" + id; cb.checked = true;
         lab.appendChild(cb); lab.appendChild(document.createTextNode("MiX"));
+        var mlab = document.createElement("label");
+        mlab.title = NAMES[id] + " · Mode A (default): la automatización de siempre (secciones, frases, compases y mitades). " +
+          "Mode B: un solo valor por sección de la Form (A, B, C…; sin Form, bloques de 8 compases), constante en toda la sección; de una sección a la otra cambia a veces sutil y a veces radical, al azar. " +
+          "Solo vale con MiX prendido; recalcula la canción.";
+        mlab.style.cssText = "display:inline-flex;align-items:center;gap:3px;font-size:10px;cursor:pointer;white-space:nowrap;";
+        var mcb = document.createElement("input");
+        mcb.type = "checkbox"; mcb.id = "mixMode_" + id; mcb.checked = false;
+        var mtx = document.createTextNode("Mode A");
+        mlab.appendChild(mcb); mlab.appendChild(mtx);
         var cv = document.createElement("canvas");
         cv.id = "mixGraph_" + id; cv.width = 118; cv.height = 18; cv.className = "mix-graph";
         cv.style.cssText = "width:118px;height:18px;flex:none;";
         cv.title = NAMES[id] + ": curva de MiX de esta canción (cada barra = medio compás; líneas = cada 4 compases).";
-        row.appendChild(lab); row.appendChild(cv);
+        row.appendChild(lab); row.appendChild(mlab); row.appendChild(cv);
         field.appendChild(row);
+        function syncMode(){ mcb.disabled = !cb.checked; mlab.style.opacity = cb.checked ? "1" : "0.45"; mtx.nodeValue = mcb.checked ? "Mode B" : "Mode A"; }
+        syncMode();
+        mcb.addEventListener("change", function(){
+          syncMode();
+          if(typeof state !== "undefined" && state.rootChord && state.rootChord.length && typeof regenerateConsola === "function") regenerateConsola();
+          else { regenerate(); }
+        });
         cb.addEventListener("change", function(){
+          syncMode();
           drawOne(id);
           if(typeof state !== "undefined" && state.rootChord && state.rootChord.length && typeof regenerateConsola === "function") regenerateConsola();
         });
@@ -19738,7 +19788,7 @@ function runAnalysis() {
     attachKbSticky(host, kbG);
 
     var wrap = document.createElement("div");
-    wrap.className = "consola-legend";
+    wrap.className = "consola-legend top";
     var items = [
       ["var(--c-bar1)","Harmony"],
       ["var(--c-bass)","Bass"],
@@ -19752,11 +19802,27 @@ function runAnalysis() {
     items.forEach(function(it){
       var span = document.createElement("span");
       span.innerHTML = '<span class="sw" style="background:'+it[0]+'"></span>'+it[1];
+      var sid = LEGEND_PRESET[it[1]];   // instrumento (preset) elegido para esa pista, entre paréntesis de la leyenda
+      if(sid){
+        var pn = document.createElement("span");
+        pn.className = "pn"; pn.setAttribute("data-sel", sid); pn.textContent = "\u00b7 " + legendPresetName(sid);
+        span.appendChild(pn);
+      }
       wrap.appendChild(span);
     });
-    host.appendChild(wrap);
+    host.insertBefore(wrap, svg);   // leyenda chiquita arriba del piano roll
     updateExportBtns();
   }
+  // Leyenda del piano roll: qué preset (instrumento) tiene elegido cada pista con color. Se refresca sola al cambiar un selector de presets.
+  var LEGEND_PRESET = { "Harmony":"harmonyPresetSelect", "Bass":"bassPresetSelect", "Melody":"melodyPresetSelect", "moreComping":"comping2PresetSelect", "Melody n2":"melody2PresetSelect", "Melody n3":"melody3PresetSelect" };
+  function legendPresetName(id){
+    var sel = document.getElementById(id), o = sel && sel.options && sel.options[sel.selectedIndex];
+    return o ? String(o.text).trim() : "";
+  }
+  function refreshLegendPresets(){
+    Array.prototype.forEach.call(document.querySelectorAll(".consola-legend .pn[data-sel]"), function(el){ el.textContent = "\u00b7 " + legendPresetName(el.getAttribute("data-sel")); });
+  }
+  document.addEventListener("change", function(e){ var t = e.target; if(t && t.classList && t.classList.contains("mix-preset-select")) refreshLegendPresets(); });
 
   // Piano roll SEPARADO para bebopMelody — a pedido: antes compartía el
   // roll principal (mismas filas/rango que armonía+bajo+melodía), lo que
@@ -27446,7 +27512,7 @@ function runAnalysis() {
     // 🎼 CommonChords (ver módulo COMMONCHORDS): detiene lo que suene, genera la canción con acordes de la base y la reproduce.
     var btnCC = document.getElementById("commonChordsBtn");
     // ChordS arranca con TODO en cero: los sliders de How to play y de Harmony pasan a 0 y sus checkboxes se destildan (se ve en pantalla y se puede retocar después).
-    // Excepciones: Simplicity queda en 100%, Form queda como esté (Form sí vale en ChordS) y los checkboxes MiX de los sliders no se destildan. El slider Chords en 0 = 75% menos acordes (ver COMMONCHORDS.build).
+    // Excepciones: Simplicity queda en 100%, Form queda como esté (Form sí vale en ChordS) y los checkboxes MiX y los switches Mode A/B de los sliders no se tocan. El slider Chords en 0 = 75% menos acordes (ver COMMONCHORDS.build).
     // Solo se tocan los valores y las etiquetas (evento "input", que no regenera); los selects, el compás y los botones de instrumentos no se mueven.
     function zeroForChordS(){
       var moved = [];
@@ -27459,7 +27525,7 @@ function runAnalysis() {
           sl.dispatchEvent(new Event("input", { bubbles: true }));   // actualiza la etiqueta y la variable interna, sin regenerar
         });
         Array.prototype.forEach.call(body.querySelectorAll('input[type="checkbox"]'), function(c){
-          if(c.id === "consolaFormChk" || /^mixChk_/.test(c.id) || !c.checked) return;   // Form y los MiX de los sliders se quedan como están (MiX prendido por defecto)
+          if(c.id === "consolaFormChk" || /^mix(Chk|Mode)_/.test(c.id) || !c.checked) return;   // Form y los MiX de los sliders se quedan como están (MiX prendido por defecto)
           if(c.id === "consolaIntroChk" && typeof INTRO !== "undefined") INTRO.set(false); else c.checked = false;   // Intro: las dos casillas (How to play y Partimenti) son el mismo interruptor
           moved.push(c.id.replace(/^consola/, "").replace(/Chk$/, ""));
         });
@@ -28594,20 +28660,92 @@ function runAnalysis() {
 })();
 </script>
 <script>
-// Fondo de pantalla de la página: una imagen al azar de la carpeta BAckgrounds (el nombre lleva B y A mayúsculas: GitHub Pages distingue mayúsculas).
-// Para sumar imágenes nuevas hay que agregar su nombre a esta lista. El nombre del PNG lleva un espacio especial (U+202F) que puso macOS.
+// stk-tip: popup breve (1–2 oraciones) en cada slider de How to play. Sale al pasar el mouse, al enfocar o al tocar el slider o su nombre
+// (en el iPhone el title nativo no se ve, por eso es un globito propio). Reemplaza el title largo SOLO sobre el slider y su nombre; el resto
+// de la tarjeta conserva la explicación larga de siempre.
 (function(){
-  var FILES = ["i71pz5pqgi3g1.jpg", "terminatoer.jpg", "Screenshot 2026-09-16 at 9.23.59 PM.png"];
-  var url = encodeURI("BAckgrounds/" + FILES[Math.floor(Math.random() * FILES.length)]);
-  var root = document.documentElement;
-  var img = new Image();
-  img.onload = function(){
-    root.style.setProperty("--page-wallpaper", 'url("' + url + '")');
-    root.classList.add("has-wallpaper", "wallpaper-ready");
+  var TIPS = {
+    consolaNormalSlider: "Mezcla el motor libre con una versión simple (set completo, sin transposiciones, patrones predecibles). 0% = motor libre de siempre; 100% = todos los compases en modo simple.",
+    consolaChromaSlider: "Cuánto se transpone cromáticamente cada compás y cuánto se achican los acordes. 0% = notas literales del set; 100% = la máxima variación del motor libre.",
+    consolaChordsSlider: "Cuántos compases llevan más de un acorde. 0% = un solo acorde por compás; 100% = ritmo armónico variable, con hasta 5 reataques por compás.",
+    consolaJazzSlider: "Probabilidad de que cada decisión (ritmo, voicing, arpegio, bajo, batería) use la variante jazz en vez de la base. 0% = nunca; 100% = siempre.",
+    consolaChordSimulSlider: "Qué parte de los acordes suena en bloque y qué parte quebrada (nota por nota). 0% = todos en bloque; 100% = todos quebrados.",
+    consolaNotesComplexitySlider: "Slider maestro: mueve juntos Chromatism, Chords, Jazz y Chord simultaneity al mismo %. Mover esos cuatro a mano no lo mueve a él.",
+    consolaTripletsSlider: "Cuántos tresillos hay en todas las pistas. 0% = casi ninguno; 100% = compases enteros en tresillos. Solo mueve ataques, nunca cambia notas.",
+    consolaMusicSilenceSlider: "Silencios totales (todas las pistas) al final de frases de 4 compases. 0% = ninguno; a mayor %, pausas más seguidas y más largas (hasta 5 s).",
+    consolaSyncopationSlider: "Probabilidad por compás de que el acorde de la armonía no caiga en el tiempo 1 (se anticipa o se retrasa). 0% = siempre en el 1.",
+    consolaDynamicsSlider: "Dinámicas de volumen (pp a ff) con crescendos, terrazas y acento en el tiempo 1. 0% = velocity original; 100% = de pp a ff."
   };
-  img.onerror = function(){ root.classList.add("wallpaper-ready"); }; // sin imagen: queda el fondo de siempre
-  img.src = url;
-  setTimeout(function(){ root.classList.add("wallpaper-ready"); }, 3000); // conexión lenta: se muestra el fondo de siempre y la imagen entra cuando llega
+  var tip = null, timer = null;
+  function hide(){ clearTimeout(timer); if(tip && tip.parentNode) tip.parentNode.removeChild(tip); tip = null; }
+  function show(el, text, auto){
+    hide();
+    tip = document.createElement("div"); tip.className = "stk-tip"; tip.setAttribute("role", "tooltip"); tip.textContent = text;
+    document.body.appendChild(tip);
+    var r = el.getBoundingClientRect(), w = tip.offsetWidth, h = tip.offsetHeight;
+    var left = Math.max(8, Math.min(r.left, window.innerWidth - w - 8));
+    var top = r.bottom + 6; if(top + h > window.innerHeight - 8) top = Math.max(8, r.top - h - 6);
+    tip.style.left = left + "px"; tip.style.top = top + "px";
+    if(auto) timer = setTimeout(hide, 4500);
+  }
+  Object.keys(TIPS).forEach(function(id){
+    var sl = document.getElementById(id), lab = document.querySelector('label[for="' + id + '"]');
+    [sl, lab].forEach(function(el){
+      if(!el) return;
+      el.title = "";   // title vacío: tapa el title largo de la tarjeta para que no salgan dos cuadros a la vez
+      el.addEventListener("mouseenter", function(){ show(el, TIPS[id], false); });
+      el.addEventListener("mouseleave", hide);
+      el.addEventListener("focus", function(){ show(el, TIPS[id], true); });
+      el.addEventListener("blur", hide);
+      el.addEventListener("pointerdown", function(e){ if(e.pointerType && e.pointerType !== "mouse") show(el, TIPS[id], true); });
+    });
+  });
+  window.addEventListener("scroll", hide, true);
+})();
+</script>
+<script>
+// Fondo de pantalla de la página: una imagen de la carpeta BAckgrounds, distinta de la de la carga anterior (--page-wallpaper).
+// La lista se descubre sola con la API de GitHub (carpeta de primer nivel Backgrounds, sin distinguir mayúsculas; caché 10 min en localStorage):
+// no hay que anotar nombres, alcanza con subir la foto al repo (en la app instalada aparece tras "Reload sounds and code").
+// Sin conexión usa la última lista guardada y, si no hay ninguna, la lista de respaldo de abajo. Si una imagen no carga, prueba otra.
+(function(){
+  var FALLBACK = ["BAckgrounds/Screenshot 2026-09-16 at 9.23.59\u202fPM.png", "BAckgrounds/Screenshot 2026-10-06 at 9.25.17\u202fPM.png", "BAckgrounds/Screenshot 2026-10-06 at 9.26.14\u202fPM.png", "BAckgrounds/i71pz5pqgi3g1.jpg", "BAckgrounds/images.jpg", "BAckgrounds/pexels-damir-27308291.jpg", "BAckgrounds/terminatoer.jpg"];
+  var KEY = "stoikheion_bg_files_v1", LAST = "stoikheion_bg_last_v1", TTL = 10 * 60 * 1000;
+  var root = document.documentElement;
+  function done(){ root.classList.add("wallpaper-ready"); }
+  setTimeout(done, 3000); // conexión lenta: se muestra el fondo de siempre y la imagen entra cuando llega
+  function show(files){
+    var last = ""; try { last = localStorage.getItem(LAST) || ""; } catch(_e){}
+    var pool = files.filter(function(f){ return f !== last; });
+    if(!pool.length) pool = files.slice();
+    for(var i = pool.length - 1; i > 0; i--){ var j = Math.floor(Math.random() * (i + 1)), t = pool[i]; pool[i] = pool[j]; pool[j] = t; }
+    (function tryNext(k){
+      if(k >= pool.length){ done(); return; }
+      var url = pool[k].split("/").map(encodeURIComponent).join("/"), img = new Image();
+      img.onload = function(){
+        root.style.setProperty("--page-wallpaper", 'url("' + url + '")');
+        root.classList.add("has-wallpaper"); done();
+        try { localStorage.setItem(LAST, pool[k]); } catch(_e){}
+      };
+      img.onerror = function(){ tryNext(k + 1); };
+      img.src = url;
+    })(0);
+  }
+  var cached = null;
+  try { cached = JSON.parse(localStorage.getItem(KEY) || "null"); } catch(_e){}
+  var cachedFiles = (cached && Array.isArray(cached.files) && cached.files.length) ? cached.files : null;
+  if(cachedFiles && Date.now() - cached.t < TTL){ show(cachedFiles); return; }
+  fetch("https://api.github.com/repos/" + SF_GH_OWNER + "/" + SF_GH_REPO + "/git/trees/main?recursive=1", { headers: { Accept: "application/vnd.github+json" } })
+    .then(function(r){ if(!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+    .then(function(t){
+      var files = (t.tree || []).filter(function(x){
+        return x.type === "blob" && /^backgrounds?\//i.test(x.path) && /\.(jpe?g|png|webp|gif|avif)$/i.test(x.path);
+      }).map(function(x){ return x.path; });
+      if(!files.length) throw new Error("sin imágenes");
+      try { localStorage.setItem(KEY, JSON.stringify({ t: Date.now(), files: files })); } catch(_e){}
+      show(files);
+    })
+    .catch(function(){ show(cachedFiles || FALLBACK); });
 })();
 </script>
 <script>
