@@ -6954,7 +6954,7 @@ function sfRenderLoadDetail() {
       groups[id].push({ bad: true, txt: "✗ " + sfDetailName(u) + " — " + (d.err || "error") });
     } else if (st === "loading") {
       const secs = Math.round((now - d.t0) / 1000);
-      groups[id].push({ slow: secs >= 30, txt: "… " + sfDetailName(u) + " — " + (d.phase || "esperando") + (d.phase === "bajando" ? " " + d.pct + "%" : "") + " · " + secs + "s" });
+      groups[id].push({ slow: secs >= 30 && d.phase === "bajando", txt: "… " + sfDetailName(u) + " — " + (d.phase || "esperando") + (d.phase === "bajando" ? " " + d.pct + "%" : "") + " · " + secs + "s" });
     }
   });
   Object.keys(groups).forEach((id) => {
@@ -6977,12 +6977,28 @@ function sfProgressTick(url) {
   sfProgress.done.add(url);
   sfProgress.cb(Math.round(sfProgress.done.size / sfProgress.urls.size * 100));
 }
+const SF_MAX_PARALLEL = window.__SF_MAX_PARALLEL || 4; // descargas de .sf2 simultáneas (el navegador atiende ~6 por servidor; 71 a la vez dejaban el resto esperando)
+let sfSlotsBusy = 0;
+const sfSlotWaiters = [];
+function sfAcquireSlot() {
+  return new Promise((res) => { if (sfSlotsBusy < SF_MAX_PARALLEL) { sfSlotsBusy++; res(); } else sfSlotWaiters.push(res); });
+}
+function sfReleaseSlot() {
+  const next = sfSlotWaiters.shift();
+  if (next) next(); else sfSlotsBusy--;
+}
 function sfLoadFontOnce(url) {
   if (!sfLoadPromiseByUrl[url]) {
     sfStateByUrl[url] = "loading";
     sfLoadingNow.add(url); sfRefreshLoadNow();
     sfNotifyCatalogChange(false); // el aviso del selector pasa a "cargando"
     sfLoadPromiseByUrl[url] = (async () => {
+      // Cola propia: como mucho SF_MAX_PARALLEL descargas a la vez. El reloj de "sin avance" arranca recién cuando el archivo
+      // sale de la cola (si no, los que esperan turno se marcaban como trabados y fallaban en masa: "Extras: 5/71").
+      sfDetailSet(url, { phase: "en cola", pct: 0, t0: Date.now(), tp: Date.now(), err: "" });
+      await sfAcquireSlot();
+      let slotFreed = false;
+      const freeSlot = () => { if (!slotFreed) { slotFreed = true; sfReleaseSlot(); } };
       try {
         sfDetailSet(url, { phase: "bajando", pct: 0, t0: Date.now(), tp: Date.now(), err: "" });
         // Si la descarga no avanza en SF_STALL_MS, se da por trabada: pasa a error (con motivo) y no bloquea el cierre de loadExtra.
@@ -6996,6 +7012,7 @@ function sfLoadFontOnce(url) {
             }, 2000);
           })
         ]);
+        freeSlot(); // ya bajó: el siguiente de la cola puede arrancar mientras este se parsea
         sfLog("[" + sf2BasenameOfUrl(url) + "] parseando " + sfFmtMB(abuf.byteLength));
         sfDetailSet(url, { phase: "parseando " + sfFmtMB(abuf.byteLength) });
         await new Promise((r) => setTimeout(r, 0)); // deja pintar el estado antes del parseo (bloquea el hilo)
@@ -7009,6 +7026,7 @@ function sfLoadFontOnce(url) {
         sfProgressTick(url);
         return font;
       } catch (err) {
+        freeSlot();
         // HTTP 404 en un EXTRA = el archivo ya no existe en el sitio (la lista guardada es vieja): se descarta de la lista,
         // no cuenta como fallo y no aparece en los selectores. Un 404 en un archivo base (default) sigue siendo error real.
         const extraEntry = sfExtraFiles.find((e) => e.url === url);
