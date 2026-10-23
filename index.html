@@ -2306,6 +2306,7 @@
           <span class="consola-inst-toggle" title="melody_2follows: con Melody n2 prendida, en cada compás hay 50% de chances de que Melody n2 SIGA a la melodía principal (toca las mismas notas y el mismo ritmo, con su propio instrumento). En el otro 50% toca su línea independiente. Respeta los silencios de Melody n2; si la melodía principal calla en ese compás, Melody n2 toca lo suyo. Apagado por defecto."><input type="checkbox" id="consolaMelody2FollowsChk"><label for="consolaMelody2FollowsChk">melody_2follows</label></span>
           <span class="consola-inst-toggle" title="Melody n3: tercera melodía MINIMALISTA que no molesta. Se arma a partir de la melodía principal (ya con sus silencios): en cada compás, lo más común (~70%) es tocar NOTAS LARGAS — una sola nota que dura el compás entero (a veces dos, una por mitad) y que es una nota de la melodía principal una octava más abajo, así que nunca sale del set. En el ~30% restante SIGUE a la melodía principal una octava más abajo (mismas notas y mismo ritmo). Si la melodía principal calla en un compás, Melody n3 también. Tiene su propio fader, reverb e instrumento en el Mixer (Flauta por defecto). Apagada por defecto."><input type="checkbox" id="consolaMelody3Chk"><label for="consolaMelody3Chk">&#127925; Melody n3</label></span>
           <span class="consola-inst-toggle" title="bendv2: pitch bend sutil en Melody, Melody n2 y Doblar melodía. (1) Scoop: la primera nota de cada frase (después de un silencio de 1 tiempo o más) arranca 30–60 cents abajo y sube a su altura en ~100 ms. (2) Caída final: la última nota de la frase (antes de un silencio, de 1 tiempo o más) baja 50–100 cents en su último cuarto. ~15% de las notas elegibles, máximo un bend por compás, nunca llega a un semitono (el set no se toca) y no pisa notas con glissando o bend↓."><input type="checkbox" id="consolaMelBendV2Chk" checked><label for="consolaMelBendV2Chk">bendv2</label></span>
+          <span class="consola-inst-toggle" title="bendv3: el mismo pitch bend sutil de bendv2, pero aplicado a la ARMONÍA (y a Doblar armonía). Se mueve el acorde entero a la vez. (1) Scoop: el acorde arranca 30–60 cents abajo y sube a su altura en ~100 ms (acordes de 1 tiempo o más). (2) Caída: el acorde baja 50–90 cents en su último cuarto (acordes de 2 tiempos o más). ~15% de los acordes elegibles, máximo un bend por compás, nunca llega a un semitono (el set no se toca). Apagado por defecto."><input type="checkbox" id="consolaHarmBendV3Chk"><label for="consolaHarmBendV3Chk">bendv3</label></span>
         </div>
         <div class="consola-inst-row">
           <span class="consola-inst-toggle" title="Silencios de la melodía principal. 0% = la melodía suena siempre (como antes). 100% = suena solo ~10% del tiempo. En el medio, proporcional. Los silencios son de 1 a 4 compases y los más largos caen al principio. Afecta igual a Melody n2 (cada una sortea sus propios silencios). Default 25%."><label for="consolaMelSilSlider">Melody silences</label><input type="range" class="consola-mini-range" id="consolaMelSilSlider" min="0" max="100" value="25" step="1"><span class="consola-val" id="consolaMelSilVal">25%</span></span>
@@ -10769,7 +10770,35 @@ function runAnalysis() {
         usedBars[bar] = true;
       });
     }
-    return { mark: mark };
+    // bendv3 (checkbox #consolaHarmBendV3Chk, al lado de bendv2): el mismo bend sutil (ev.sc / ev.fd, en cents) aplicado a la ARMONÍA.
+    // La armonía no tiene frases separadas por silencios, así que acá "elegible" es: scoop en el ataque de un acorde de >= 1 tiempo,
+    // caída final en un acorde de >= 2 tiempos. Todas las notas de un mismo ataque llevan el MISMO bend (el acorde se mueve entero).
+    // ~15% de los acordes elegibles, máximo un bend por compás, siempre < 1 semitono (el set no se toca).
+    var V3_PROB = 0.15, V3_SC_MIN_BEATS = 1, V3_FD_MIN_BEATS = 2;
+    function markHarm(list){
+      if(!list || !list.length) return list;
+      list.forEach(function(ev){ delete ev.sc; delete ev.fd; });
+      if(!on("consolaHarmBendV3Chk")) return list;
+      var groups = {}, keys = [];
+      list.forEach(function(ev){ var k = Math.round(ev.startBeat * 1000); if(!groups[k]){ groups[k] = []; keys.push(k); } groups[k].push(ev); });
+      keys.sort(function(a, b){ return a - b; });
+      var usedBars = {};
+      keys.forEach(function(k){
+        var g = groups[k], ev0 = g[0];
+        var dur = Math.min.apply(null, g.map(function(e){ return e.durBeats; }));
+        var bar = (ev0.bar != null) ? ev0.bar : Math.floor(ev0.startBeat / 4);
+        if(usedBars[bar]) return;
+        var canSc = dur >= V3_SC_MIN_BEATS - EPS, canFd = dur >= V3_FD_MIN_BEATS - EPS;
+        if(canSc && canFd){ if(Math.random() < 0.5) canFd = false; else canSc = false; }
+        if(!canSc && !canFd) return;
+        if(Math.random() >= V3_PROB) return;
+        var cents = canSc ? 30 + Math.round(Math.random() * 30) : 50 + Math.round(Math.random() * 40);
+        g.forEach(function(e){ if(canSc) e.sc = cents; else e.fd = cents; });
+        usedBars[bar] = true;
+      });
+      return list;
+    }
+    return { mark: mark, markHarm: markHarm };
   })();
 
   /* ================================================================
@@ -15730,7 +15759,7 @@ function runAnalysis() {
     SUPMEL.finish(); // SupersetMelody: ya no hace falta el sorteo (n3 y melody_2follows lo usaron arriba)
     NOREPEAT.melody(state.melody2Events, "consolaNoRepChk"); // Norepetitions: también en Melody n2
     PITCHFX.mark(state.melodyEvents); PITCHFX.mark(state.melody2Events); // glissando / bend↓ (Ornaments): marcas para el audio
-    DYNAMICS.applyPitched(state); // Dynamics (0% = no-op)
+    PITCHFX.markHarm(state.chordEvents); DYNAMICS.applyPitched(state); // Dynamics (0% = no-op)
     drumEvents = buildDrumEvents(NUM_BARS);
     // musicSilence (How to play, 0% = no-op): silencios totales (todas las pistas, batería incluida) al final de frases de 4 compases. Solo motor libre.
     var muSilF = parseInt((document.getElementById("consolaMusicSilenceSlider") || {}).value, 10) || 0;
@@ -15797,7 +15826,7 @@ function runAnalysis() {
     applyMelody3(); // Melody n3: notas largas o la melodía principal una octava abajo (parte de la melodía ya recortada)
     state.chordEvents = OSTINATOV2.apply(HARMTEXTURES.apply(WIDERANGE.apply(state.chordEvents), state.slotChords), state.slotChords); // wide.range (Harmony): acordes largos duplicados en varias octavas, capas escalonadas
     state.chordEvents = staggerBigChordAttacks(state.chordEvents); // Armonía: 6+ notas nunca atacan simultáneas
-    DYNAMICS.applyPitched(state); // Dynamics (0% = no-op)
+    PITCHFX.markHarm(state.chordEvents); DYNAMICS.applyPitched(state); // Dynamics (0% = no-op)
     drumEvents = buildDrumEvents(NUM_BARS);
     FORM.apply(); // Form: instrumentación e intensidad por sección (no-op sin Form)
     renderRoll();
@@ -16420,14 +16449,14 @@ function runAnalysis() {
         state.chordEvents = evSim.concat(staggerBigChordAttacks(evOth)).sort(function(a, b){ return a.startBeat - b.startBeat || a.midi - b.midi; });
       }
       if(cfgOn) PITCHFX.mark(state.melodyEvents); // glissando / bend↓ (Ornaments)
-      DYNAMICS.applyPitched(state);
+      PITCHFX.markHarm(state.chordEvents); DYNAMICS.applyPitched(state);
       if(!cfgOn){
         RHYTHMSPACE.reset(0);          // igual que Simplicity: la batería es compartida, sin tramos de respiro ni tresillos
         TRIPLETS.setActive(false);
       }
       drumEvents = buildDrumEvents(NUM_BARS);
       stl = (window.__styles && !testF) ? window.__styles.apply(song, oneChord) : null;   // Styles (optativo): bajo / acompañamiento / batería del estilo elegido, siguiendo los acordes de la canción
-      if(stl){ if(stl.bass) state.bassEvents = stl.bass; if(stl.chord) state.chordEvents = stl.chord; if(stl.drums) drumEvents = stl.drums; }
+      if(stl){ if(stl.bass) state.bassEvents = stl.bass; if(stl.chord){ state.chordEvents = stl.chord; PITCHFX.markHarm(state.chordEvents); } if(stl.drums) drumEvents = stl.drums; }
       if(cfgOn){ // musicSilence: silencios totales (todas las pistas, batería incluida) al final de frases de 4 compases
         var muSilC = parseInt((document.getElementById("consolaMusicSilenceSlider") || {}).value, 10) || 0;
         MUSICSILENCE.last = null;
@@ -18694,7 +18723,7 @@ function runAnalysis() {
       // Chord simultaneity (slider #partimentiChordSimul): mismo mecanismo que How to play (BROKENCHORD), sobre los reataques de armonía (tenor + alto); 0 % = no cambia nada
       var csEl = document.getElementById("partimentiChordSimul"), csPct = csEl ? parseInt(csEl.value, 10) : 0;
       if(csPct > 0) state.chordEvents = partChordSimul(state.chordEvents, csPct);
-      DYNAMICS.applyPitched(state);
+      PITCHFX.markHarm(state.chordEvents); DYNAMICS.applyPitched(state);
       RHYTHMSPACE.reset(0);          // batería compartida, sin tramos de respiro ni tresillos (igual que CommonChords)
       TRIPLETS.setActive(false);
       drumEvents = buildDrumEvents(NUM_BARS);
@@ -19473,7 +19502,7 @@ function runAnalysis() {
       state.chordEvents = OSTINATOV2.apply(HARMTEXTURES.apply(WIDERANGE.apply(state.chordEvents), state.slotChords), state.slotChords);
       state.chordEvents = staggerBigChordAttacks(state.chordEvents);
       if(P.free) PITCHFX.mark(state.melodyEvents); PITCHFX.mark(state.melody2Events);   // glissando / bend↓ (Ornaments): marcas para el audio
-      DYNAMICS.applyPitched(state);
+      PITCHFX.markHarm(state.chordEvents); DYNAMICS.applyPitched(state);
       RHYTHMSPACE.reset(0);          // batería compartida, sin tramos de respiro ni tresillos (igual que CommonChords y Partimenti)
       TRIPLETS.setActive(false);
       drumEvents = buildDrumEvents(NUM_BARS);
@@ -23125,9 +23154,12 @@ function runAnalysis() {
         var t = loopStartTime + TWf(ev.startBeat + mtOff(ev, 1))*spb;
         var dur = twD(ev)*spb;
         // ev.vel (solo Harmony testing/accent): escala el volumen y elige capa de velocidad del .sf2
-        if(sm2Active && playSM2Voice(ctx, gains.chord, P.harmony, ev.midi, t, dur*0.93, 0.2*velK(ev), velL(ev))){ hdSm2++; return; }
-        hdFb++;
-        chordFam.fn(ctx, gains.chord, ev.midi, t, dur*0.93, velOpts(chordFam, dur*0.93, ev));
+        PITCHFX_CUR = pitchFxFor(ev, t, dur*0.93);   // bendv3 (solo si la nota trae ev.sc / ev.fd)
+        try{
+          if(sm2Active && playSM2Voice(ctx, gains.chord, P.harmony, ev.midi, t, dur*0.93, 0.2*velK(ev), velL(ev))){ hdSm2++; return; }
+          hdFb++;
+          chordFam.fn(ctx, gains.chord, ev.midi, t, dur*0.93, velOpts(chordFam, dur*0.93, ev));
+        } finally { PITCHFX_CUR = null; }
       });
       // Diagnóstico "Armonía muda": solo lee estado (no cambia el audio). Si hay notas pero el
       // audio está parado o el canal de Armonía quedó en 0, lo avisa en pantalla.
@@ -23183,8 +23215,11 @@ function runAnalysis() {
           if(!inWin(ev)) return;
           var t = loopStartTime + TWf(ev.startBeat + mtOff(ev, 1))*spb;
           var dur = twD(ev)*spb;
-          if(sm2Active && playSM2Voice(ctx, gains.chordDouble, P.chordDouble, ev.midi, t, dur*0.93, 0.2*velK(ev), velL(ev))) return;
-          chordDoubleFam.fn(ctx, gains.chordDouble, ev.midi, t, dur*0.93, velOpts(chordDoubleFam, dur*0.93, ev));
+          PITCHFX_CUR = pitchFxFor(ev, t, dur*0.93);   // bendv3
+          try{
+            if(sm2Active && playSM2Voice(ctx, gains.chordDouble, P.chordDouble, ev.midi, t, dur*0.93, 0.2*velK(ev), velL(ev))) return;
+            chordDoubleFam.fn(ctx, gains.chordDouble, ev.midi, t, dur*0.93, velOpts(chordDoubleFam, dur*0.93, ev));
+          } finally { PITCHFX_CUR = null; }
         });
       }
     }
@@ -25529,6 +25564,9 @@ function runAnalysis() {
     if(state.rootChord.length) regenerateConsola();
   });
   document.getElementById("consolaMelBendV2Chk").addEventListener("change", function(){
+    if(state.rootChord.length) regenerateConsola();
+  });
+  document.getElementById("consolaHarmBendV3Chk").addEventListener("change", function(){   // bendv3 (Armonía): igual que bendv2
     if(state.rootChord.length) regenerateConsola();
   });
 
