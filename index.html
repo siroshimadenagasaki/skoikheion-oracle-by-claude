@@ -20933,8 +20933,26 @@ function runAnalysis() {
     if(st === "loading" || hifiEnabled) return "… loading presets from this file";
     return "… press loadExtra to see all its presets";
   }
+  // Ajustes a mano de qué .sf2 aparecen en cada desplegable (planilla soundfonts_por_categoria_v3, 2026-10-23). Rutas relativas a SF_ROOT_DIR.
+  // add = se muestra aunque su carpeta no lo incluya · hide = se oculta aunque su carpeta lo incluya (el preset elegido ahora y los defaults siguen visibles).
+  var SF_SELECT_ADD = {
+    harmony: ["Extra v2/LEAD/MkII Flutes.sf2", "Extra v2/Percusive melodic/ Celesta.sf2", "Extra v2/Percusive melodic/ Vibraphone.sf2", "Extra v2/Percusive melodic/Celesta.sf2", "Extra v2/Percusive melodic/Loud Glock.sf2", "Extra v2/Percusive melodic/Steel Drums 1.sf2", "Extra v2/Percusive melodic/Steel drums 2.sf2", "Extra v2/Percusive melodic/Vibes 1.sf2", "Extra v2/Percusive melodic/Vibraphone.sf2"],
+    chordDouble: ["Extra v2/LEAD/MkII Flutes.sf2", "Extra v2/Percusive melodic/ Celesta.sf2", "Extra v2/Percusive melodic/ Vibraphone.sf2", "Extra v2/Percusive melodic/Celesta.sf2", "Extra v2/Percusive melodic/Loud Glock.sf2", "Extra v2/Percusive melodic/Steel Drums 1.sf2", "Extra v2/Percusive melodic/Steel drums 2.sf2", "Extra v2/Percusive melodic/Vibes 1.sf2", "Extra v2/Percusive melodic/Vibraphone.sf2"],
+    comping2: ["Extra v2/LEAD/MkII Flutes.sf2"],
+    modalVamps: ["Extra v2/LEAD/MkII Flutes.sf2"],
+    bassDouble: ["Piano default.sf2", "Extra v2/8bits/8bitsf - 000-002 PIANO 3.sf2", "Extra v2/8bits/8bitsf - 000-003 HONKY TONK PIANO.sf2", "Extra v2/8bits/8bitsf - 000-020 ORGAN 6.sf2", "Extra v2/8bits/8bitsf - 000-032 BASS 1.sf2", "Extra v2/8bits/8bitsf - 000-072 FLUTE 1.sf2", "Extra v2/8bits/8bitsf - 000-079 FLUTE 8.sf2", "Extra v2/8bits/8bitsf - 000-084 SQUARE WAVE 4.sf2", "Extra v2/8bits/8bitsf - 000-114 STEEL DRUM.sf2"]
+  };
+  var SF_SELECT_HIDE = {
+    melody: ["Extra v2/Brass & Strings/Instruments - 000-061 Brass Section 1.sf2", "Extra v2/Brass & Strings/Papelmedia_Strings_1.sf2", "Extra v2/Brass & Strings/Strings Lyrical.sf2", "Extra v2/Brass & Strings/Super strings.sf2"],
+    bebop: ["Extra v2/Brass & Strings/Instruments - 000-061 Brass Section 1.sf2", "Extra v2/Brass & Strings/Papelmedia_Strings_1.sf2", "Extra v2/Brass & Strings/Strings Lyrical.sf2", "Extra v2/Brass & Strings/Super strings.sf2"],
+    melody2: ["Extra v2/Brass & Strings/Instruments - 000-061 Brass Section 1.sf2", "Extra v2/Brass & Strings/Papelmedia_Strings_1.sf2", "Extra v2/Brass & Strings/Strings Lyrical.sf2", "Extra v2/Brass & Strings/Super strings.sf2"],
+    melody3: ["Extra v2/Brass & Strings/Instruments - 000-061 Brass Section 1.sf2", "Extra v2/Brass & Strings/Papelmedia_Strings_1.sf2", "Extra v2/Brass & Strings/Strings Lyrical.sf2", "Extra v2/Brass & Strings/Super strings.sf2"]
+  };
   function sfFileVisibleIn(cfg, f, current){
-    if(cfg.roles.indexOf(sfRoleFor(f.path)) !== -1) return true;
+    var rel = f.path.indexOf(SF_ROOT_DIR + "/") === 0 ? f.path.slice(SF_ROOT_DIR.length + 1) : f.path;
+    if((SF_SELECT_ADD[cfg.mix] || []).indexOf(rel) !== -1) return true;
+    var hidden = (SF_SELECT_HIDE[cfg.mix] || []).indexOf(rel) !== -1;
+    if(!hidden && cfg.roles.indexOf(sfRoleFor(f.path)) !== -1) return true;
     if(SF_DEFAULT_FILES.some(function(d){ return d.mix === cfg.mix && sfDefaultId(d) === f.id; })) return true; // su default
     if(SF_ALWAYS_FILES.some(function(a){ return "x_" + encodeURIComponent(a) === f.id; }) && cfg.roles.indexOf("bass") === -1 && cfg.roles.indexOf("drum") === -1) return true; // usados por estilos
     return String(current).indexOf("sf:" + f.id + ":") === 0; // el preset elegido ahora
