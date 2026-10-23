@@ -1618,7 +1618,7 @@
           <div class="collapsible-content collapsed" id="soundsBody" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;">
         <button class="chip toggle" id="sf2Btn" type="button" aria-pressed="false" title="Carga los SoundFonts default y clásicos (Soundfonts v2/*.sf2 + un .sf2 por instrumento) y reemplaza el sintetizador por muestras de instrumento y batería reales (incluye SetMusicBox). Un clic más para volver al sintetizador liviano.">🎼 Real sound (SoundFont)</button>
         <input type="file" id="sf2LocalPicker" webkitdirectory directory multiple hidden aria-hidden="true">
-        <button class="chip" id="loadExtraBtn" type="button" title="Carga los SoundFonts de la carpeta Soundfonts v2/Extra v2/ (Piano Steinway D, Warm Pad, Super Bass Electric, Jazz Kit… y cualquier .sf2 que subas ahí) y activa sus opciones (HIFI) en los selectores del Mixer. Solo se nota con '🎼 Sonido real' activado. Si alguno falla, volvé a apretarlo para reintentar.">loadExtra</button>
+        <button class="chip" id="loadExtraBtn" type="button" title="Carga los SoundFonts de la carpeta Soundfonts v2/Extra v2/ (Warm Pad, Super Bass Electric, Jazz Kit… y cualquier .sf2 que subas ahí) y activa sus opciones (HIFI) en los selectores del Mixer. Solo se nota con '🎼 Sonido real' activado. Si alguno falla, volvé a apretarlo para reintentar.">loadExtra</button>
           </div>
         </div>
         <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink-muted);white-space:nowrap;cursor:pointer;" title="AutoShow: tildado, los botones que generan y reproducen solos (CreaturaRandom / Bella / Intervalic, ChordS, Compose, RadioMode) traen el piano roll al primer plano automáticamente. Sin tildar (por defecto), el piano roll no cambia de vista solo; el botón + / − de arriba a la izquierda lo sigue controlando a mano."><input type="checkbox" id="consolaAutoShowChk"> AutoShow</label>
@@ -6069,7 +6069,7 @@ function synthPluck(freq, { start = 0, duration = 1.6, gain = 0.5 } = {}) {
    - Soundfonts/Percussion.sf2 (~0.5MB): congas cromáticas, usada
      como preset alternativo de la pista de batería en SetMusicBox.
    ------------------------------------------------------------ */
-const SF2_DEFAULT_PRESET = { bank: 0, preset: 0 }; // Grand Piano
+const SF2_DEFAULT_PRESET = { bank: 0, preset: 0 }; // Steinway Grand
 
 // ---- HIFI: SoundFonts premium aparte, uno por instrumento -------------
 // ------------------------------------------------------------------------
@@ -6112,8 +6112,8 @@ const HIFI_MANIFEST_URL = SF_ROOT_DIR.split("/").map(encodeURIComponent).join("/
 // soundfonts nuevos sin tocar código — ver comentario de formato más
 // abajo, junto a hifiLoadManifest.
 const HIFI_DEFAULT_MANIFEST = [
-  { key: "piano",             file: "Keys/ Steinway Grand.sf2",        bank: 0, program: 0,  label: "Steinway D",           mode: "replace" },
-  { key: "pad",                file: "Polysynths/Warm Pad.sf2",         bank: 0, program: 0,  label: "Warm Pad",             mode: "new", fallbackFamily: "pad",  target: "melodic" },
+  // Piano HIFI sacado 2026-10-23: el Steinway Grand pasó a ser "Piano default.sf2" y Keys/ Steinway Grand.sf2 ya no existe (daba 404).
+  { key: "pad",             file: "Polysynths/Warm Pad.sf2",         bank: 0, program: 0,  label: "Warm Pad",             mode: "new", fallbackFamily: "pad",  target: "melodic" },
   { key: "bassSuperElectric",  file: "BASS/super bass electric.sf2",   bank: 0, program: 0,  label: "Super Bass Electric",  mode: "new", fallbackFamily: "bass", target: "melodic" }
   // Jazz Kit (Jazz Traps) sacado 2026-10-11: el archivo ya no está; "kit" usa Drums default.sf2.
 ];
@@ -6748,7 +6748,7 @@ const SF_BASE_URLS = []; // Instruments/Drums/Percussion.sf2 ya no existen (ver 
 // checkbox HIFI (ver sfIsDefaultId en sm2ResolveFontAndProgram). Para
 // cambiar un default: reemplazá el archivo en Soundfonts/ o editá su fila.
 const SF_DEFAULT_FILES = [
-  { mix: "harmony",      file: "Piano default.sf2", bank: 0, program: 0,  label: "Grand Piano",          kind: "melodic", family: "piano" },
+  { mix: "harmony",      file: "Piano default.sf2", bank: 0, program: 0,  label: "Steinway Grand",          kind: "melodic", family: "piano" },
   { mix: "chordDouble",  file: "Extra v2/Polysynths/Warm Pad.sf2", bank: 0, program: 0,  label: "Warm Pad",         kind: "melodic", family: "pad"   },
   { mix: "melody",       file: "BasoonFlute.sf2",   bank: 0, program: 0,  label: "Ethan's Bassoon",      kind: "melodic", family: "flute" },
   { mix: "melodyDouble", file: "Extra v2/LEAD/Armonica.sf2", bank: 0, program: 0,  label: "Hohner C Harmonica",   kind: "melodic", family: "flute" },
