@@ -29697,7 +29697,7 @@ window.addEventListener("load", sfAskPersist);
 </style>
 <details class="clock-card" id="controlLab">
   <summary>&#128300; Control Lab</summary>
-  <p class="lab-help">Elegí un control y apretá Probar. Genera la MISMA canción ChordS (misma seed) varias veces, cambiando solo ese control, y las reproduce una tras otra: sliders en 0%, 50% y 100%; checkboxes apagado y prendido. Al terminar vuelve todo como estaba.</p>
+  <p class="lab-help">Elegí un control y apretá Probar. Genera la MISMA canción ChordS (misma seed) varias veces, cambiando solo ese control, y las reproduce una tras otra: sliders en 0%, 50% y 100%; checkboxes apagado y prendido. Al terminar vuelve todo como estaba. En los sliders aparece además un slider "En vivo": al moverlo regenera la misma canción con ese valor y suena al instante (■ Parar repone todo).</p>
   <div class="lab-row">
     <input type="search" class="lab-filter" placeholder="Filtrar controles (ej. simult, triplets, textures)…" aria-label="Filtrar controles">
     <button type="button" class="chip lab-refresh" title="Actualizar la lista de controles">&#8635;</button>
@@ -29710,6 +29710,11 @@ window.addEventListener("load", sfAskPersist);
     <select class="lab-secs" aria-label="Segundos por prueba"><option value="15">15 s</option><option value="30" selected>30 s</option><option value="60">60 s</option></select>
     <button type="button" class="chip primary lab-go">&#9654; Probar</button>
     <button type="button" class="chip lab-stop" disabled>&#9632; Parar</button>
+  </div>
+  <div class="lab-row lab-live" hidden>
+    <span>En vivo</span>
+    <input type="range" class="lab-live-range" aria-label="Valor del control en vivo" style="flex:1 1 260px;min-width:180px;">
+    <b class="lab-live-val" style="min-width:42px;text-align:right;"></b>
   </div>
   <div class="lab-status" role="status" aria-live="polite"></div>
 </details>
@@ -29899,8 +29904,64 @@ window.addEventListener("load", sfAskPersist);
       if(!/^Error/.test(st.textContent)) st.textContent = (was ? "Detenido" : "Listo") + " — controles repuestos como estaban.";
     }
   }
-  go.addEventListener("click", labRun);
-  stopB.addEventListener("click", function(){ abort = true; clickIfEnabled("consolaStopBtn"); });
+  go.addEventListener("click", function(){ if(liveBusy) return; if(liveSnap) liveEnd(); labRun(); });
+
+  /* ---------------- SLIDER EN VIVO ----------------
+     Para controles tipo slider: al mover el slider "En vivo" se regenera la MISMA canción (misma seed) con ese valor y suena al instante.
+     La primera vez guarda cómo estaban los controles; ■ Parar (o elegir otro control, o cerrar el Lab) los repone. */
+  var liveRow = $(".lab-live"), liveRange = $(".lab-live-range"), liveVal = $(".lab-live-val");
+  var liveSnap = null, liveBusy = false, livePending = null, liveTimer = null, liveEndAfter = false, liveTargetId = null;
+  function selTarget(){ return document.getElementById(sel.value); }
+  function liveEnd(){
+    clearTimeout(liveTimer); livePending = null;
+    if(liveBusy){ liveEndAfter = true; return; }   // hay una generación en curso: repone apenas termine
+    if(!liveSnap) return;
+    clickIfEnabled("consolaStopBtn");
+    restore(liveSnap); liveSnap = null; liveTargetId = null;
+    if(!running){ go.disabled = false; stopB.disabled = true; }
+    st.textContent = "Listo — controles repuestos como estaban.";
+  }
+  function syncLiveRow(){
+    if(liveSnap && liveTargetId !== sel.value) liveEnd();
+    var t = selTarget();
+    if(!t || t.type !== "range"){ liveRow.hidden = true; return; }
+    liveRow.hidden = false;
+    if(liveSnap) return;   // en plena sesión en vivo no se toca el slider
+    var mn = t.min !== "" ? t.min : "0", mx = t.max !== "" ? t.max : "100";
+    liveRange.min = mn; liveRange.max = mx; liveRange.step = t.step || "1";
+    liveRange.value = t.value; liveVal.textContent = liveRange.value;
+  }
+  async function liveApply(v){
+    if(running) return;
+    var tgt = selTarget(); if(!tgt || tgt.type !== "range") return;
+    if(liveBusy){ livePending = v; return; }
+    liveBusy = true;
+    try{
+      if(!liveSnap){ liveSnap = snapshot(); liveTargetId = tgt.id; go.disabled = true; stopB.disabled = false; }
+      var s = (parseInt(seedIn.value, 10) >>> 0), name = labelOf(tgt);
+      st.textContent = "En vivo — " + name + " = " + v + " · generando…";
+      abort = false;
+      await generate(tgt, v, s);
+      if(!liveEndAfter) st.textContent = "▶ En vivo — " + name + " = " + v + " · mové el slider para comparar (misma canción). ■ Parar repone todo.";
+    } catch(e){ st.textContent = "Error: " + (e && e.message ? e.message : e); try{ console.error(e); }catch(_e){} }
+    finally {
+      liveBusy = false;
+      if(liveEndAfter){ liveEndAfter = false; liveEnd(); }
+      else if(livePending != null){ var p = livePending; livePending = null; liveApply(p); }
+    }
+  }
+  liveRange.addEventListener("input", function(){
+    liveVal.textContent = liveRange.value;
+    clearTimeout(liveTimer);
+    liveTimer = setTimeout(function(){ liveApply(parseFloat(liveRange.value)); }, 350);   // espera a que termines de mover
+  });
+  liveRange.addEventListener("change", function(){ clearTimeout(liveTimer); liveApply(parseFloat(liveRange.value)); });
+  sel.addEventListener("change", syncLiveRow);
+  box.addEventListener("toggle", function(){ if(!box.open) liveEnd(); else syncLiveRow(); });
+  filt.addEventListener("input", syncLiveRow);
+  refresh.addEventListener("click", syncLiveRow);
+
+  stopB.addEventListener("click", function(){ abort = true; clickIfEnabled("consolaStopBtn"); liveEnd(); });
 })();
 </script>
 </body>
