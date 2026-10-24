@@ -29904,10 +29904,20 @@ window.addEventListener("load", sfAskPersist);
     try{
       if(resetBase) lastSig = null;
       var hadBase = (lastSig !== null);
-      clickIfEnabled("consolaStopBtn"); await wait(250);
       var rb = byId("consolaRegenPlayBtn");
       if(!rb || rb.disabled) throw new Error("No hay canción para regenerar: elegí un modo.");
       var mode = activeMode();
+      // Si ya está sonando: primero se regenera "en seco" (misma seed, sin parar). Solo si la música cambió se reinicia el test; si no, sigue sonando y avisa "no change!".
+      var sb0 = byId("consolaStopBtn");
+      if(hadBase && sb0 && !sb0.disabled && typeof window.regenerateConsola === "function"){
+        if(window.__seed && window.__seed.run) window.__seed.run(seedVal(), function(){ window.regenerateConsola(); }); else window.regenerateConsola();
+        if(songSig() === lastSig){
+          st.textContent = "▶ Test en loop · " + barsInSong() + " compases · " + tempoR.value + " bpm · " + mode + (why ? " · " + why : "") + " · sigue sonando (sin reiniciar)";
+          ncBox.textContent = "⚠ no change! — " + (why || "") + ": sale exactamente la misma música.";
+          return;
+        }
+      }
+      clickIfEnabled("consolaStopBtn"); await wait(250);
       try{ window.__songKindName = mode + " (Control Lab)"; if(window.__songLog) window.__songLog.begin(mode); }catch(_e){}
       try{ if(window.__styles && window.__styles.wants && window.__styles.wants(mode === "One Chord")) await window.__styles.load(); }catch(_e){}
       try{ if(typeof window.__rollToFront === "function") window.__rollToFront(); }catch(_e){}
