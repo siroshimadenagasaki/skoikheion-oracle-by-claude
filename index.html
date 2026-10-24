@@ -15460,6 +15460,7 @@ function runAnalysis() {
     state.melody3Events = out;
   }
   window.__consolaState = state; // hook de diagnóstico (solo lectura)
+  window.__consolaDrums = function(){ try{ return drumEvents; }catch(_e){ return null; } };   // (Control Lab: comparar la batería entre pruebas)
 
   // Opciones de variedad armónica
   var subsetVarietyEnabled = false;
@@ -29688,37 +29689,43 @@ window.addEventListener("load", sfAskPersist);
 .seed-num{width:120px;}
 .seed-hint{font-size:11px;color:var(--ink-muted,#888);text-align:center;line-height:1.35;}
 #controlLab{max-width:980px;margin:18px auto 40px;padding:10px 14px;}
-#controlLab>summary{cursor:pointer;font-weight:800;font-size:15px;}
+#controlLab .lab-head{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+#controlLab .lab-title{font-size:15px;font-weight:800;}
+#controlLab .lab-switch{width:150px;height:40px;border-radius:20px;font-size:14px;letter-spacing:.04em;flex:0 0 auto;}
+#controlLab .lab-switch .seed-knob{width:28px;height:28px;top:4px;left:4px;}
+#controlLab .lab-switch[aria-checked="true"] .seed-knob{left:calc(100% - 32px);}
+#controlLab .lab-body[hidden]{display:none;}
 #controlLab .lab-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:8px 0;font-size:12px;color:var(--ink-muted,#888);}
-#controlLab .lab-sel{flex:1 1 320px;min-width:220px;max-width:100%;}
-#controlLab .lab-seed{width:110px;}
+#controlLab .lab-seed{width:100px;}
+#controlLab .lab-rng{flex:1 1 150px;min-width:120px;}
 #controlLab .lab-help{font-size:12px;color:var(--ink-muted,#888);line-height:1.4;margin:8px 0;}
 #controlLab .lab-status{font-size:13px;font-weight:700;min-height:20px;}
+#controlLab .lab-nochange{font-size:15px;font-weight:800;color:#ff9f1c;min-height:20px;margin-top:2px;}
+#controlLab.lab-on{position:fixed;left:50%;transform:translateX(-50%);bottom:64px;width:min(980px,calc(100% - 16px));margin:0;z-index:9000;max-height:55vh;overflow:auto;background:rgba(14,14,22,.96);box-shadow:0 8px 32px rgba(0,0,0,.6);}
 </style>
-<details class="clock-card" id="controlLab">
-  <summary>&#128300; Control Lab</summary>
-  <p class="lab-help">Elegí un control y apretá Probar. Regenera la MISMA canción (misma seed) con el modo que tengas activo (CreaturaRandom, ChordS, Partimenti, etc.; generá una antes), cambiando solo ese control, y las reproduce una tras otra: sliders en 0%, 50% y 100%; checkboxes apagado y prendido. Al terminar vuelve todo como estaba. En los sliders aparece además un slider "En vivo": al moverlo regenera la misma canción con ese valor y suena al instante (■ Parar repone todo).</p>
-  <div class="lab-row">
-    <input type="search" class="lab-filter" placeholder="Filtrar controles (ej. simult, triplets, textures)…" aria-label="Filtrar controles">
-    <button type="button" class="chip lab-refresh" title="Actualizar la lista de controles">&#8635;</button>
+<section class="clock-card" id="controlLab" aria-label="Control Lab">
+  <div class="lab-head">
+    <strong class="lab-title">&#128300; Control Lab</strong>
+    <button type="button" class="seed-switch lab-switch" role="switch" aria-checked="false" title="ON: el Lab queda flotando abajo y arma un test corto en loop; cualquier control de la página que muevas lo regenera con la seed fija. OFF: queda comprimido y no toca nada.">
+      <span class="seed-knob"></span><span class="seed-txt">Lab OFF</span>
+    </button>
   </div>
-  <div class="lab-row"><span>Modo</span><select class="lab-mode" aria-label="Modo (random choose) con el que se genera" title="Con qué botón se genera la canción de prueba. 'El que esté activo' regenera (🔀) con el modo que ya sonó; los demás aprietan ese random choose con la seed fija y después aplican el control."></select></div>
-  <div class="lab-row"><select class="lab-sel" aria-label="Control a probar"></select></div>
-  <div class="lab-row">
-    <span>Seed</span><input type="number" class="lab-seed" min="0" max="4294967295" step="1" value="1234" aria-label="Seed de la prueba">
-    <label style="display:flex;align-items:center;gap:4px;cursor:pointer;" title="Pone en cero los demás sliders y destilda los demás checkboxes (no toca tempo, volúmenes, instrumentos, largo, Form ni Composer Configuration), así solo se escucha el efecto del control elegido."><input type="checkbox" class="lab-zero" checked> Poner los demás en cero</label>
-    <span>Duración</span>
-    <select class="lab-secs" aria-label="Segundos por prueba"><option value="15">15 s</option><option value="30" selected>30 s</option><option value="60">60 s</option></select>
-    <button type="button" class="chip primary lab-go">&#9654; Probar</button>
-    <button type="button" class="chip lab-stop" disabled>&#9632; Parar</button>
+  <div class="lab-body" hidden>
+    <p class="lab-help">Test corto en loop (misma seed). Movés cualquier control de la página y el test se regenera al instante con ese cambio. Si no cambia la música aparece "⚠ no change!". Al apagar el Lab vuelven los compases, el tempo, Form, Intro y Loop como estaban; tus cambios en los demás controles se quedan.</p>
+    <div class="lab-row">
+      <span>Modo</span><select class="lab-mode" aria-label="Modo (random choose) con el que se genera el test"></select>
+      <span>Seed</span><input type="number" class="lab-seed" min="0" max="4294967295" step="1" value="1234" aria-label="Seed del test">
+      <button type="button" class="chip lab-zero" title="Pone en cero los sliders y destilda los checkboxes (no toca tempo, volúmenes, instrumentos, largo, Form ni Composer Configuration) para partir de una base limpia.">Todo en cero</button>
+    </div>
+    <div class="lab-row">
+      <span>Compases</span><input type="range" class="lab-rng lab-bars" min="2" max="12" step="1" value="2" aria-label="Compases del test"><b class="lab-bars-val" style="min-width:24px;">2</b>
+      <span>Tempo</span><input type="range" class="lab-rng lab-tempo" min="60" max="200" step="1" value="180" aria-label="Tempo del test"><b class="lab-tempo-val" style="min-width:60px;">180 bpm</b>
+    </div>
+    <div class="lab-status" role="status" aria-live="polite"></div>
+    <div class="lab-nochange" role="status" aria-live="polite"></div>
   </div>
-  <div class="lab-row lab-live" hidden>
-    <span>En vivo</span>
-    <input type="range" class="lab-live-range" aria-label="Valor del control en vivo" style="flex:1 1 260px;min-width:180px;">
-    <b class="lab-live-val" style="min-width:42px;text-align:right;"></b>
-  </div>
-  <div class="lab-status" role="status" aria-live="polite"></div>
-</details>
+</section>
+<div id="controlLabSpacer" style="height:0;"></div>
 <script>
 /* ================================================================
    SEED (switch grande debajo del reloj de entrada) + CONTROL LAB (al final de la página).
@@ -29791,16 +29798,22 @@ window.addEventListener("load", sfAskPersist);
   paint();
   window.__seed = { isOn: function(){ return on; }, value: function(){ return seed; }, set: setSeed, setOn: setOn, reseed: reseed, run: run, runAsync: runAsync, mulberry32: mulberry32 };
 
-  /* ---------------- CONTROL LAB ---------------- */
+  /* ---------------- CONTROL LAB (switch ON/OFF, flotante abajo) ----------------
+     ON: el Lab queda fijo abajo y arma un test corto en loop (compases y tempo propios, Form / Intro apagados, Loop prendido) con la seed fija.
+     Cualquier control de la página que se mueva regenera el test (misma seed) y avisa "no change!" si la música salió idéntica.
+     OFF (por defecto): comprimido; devuelve compases, tempo, Form, Intro y Loop como estaban (los demás controles quedan como los dejó el usuario). */
   var box = document.getElementById("controlLab"); if(!box) return;
   function $(q){ return box.querySelector(q); }
-  var sel = $(".lab-sel"), filt = $(".lab-filter"), seedIn = $(".lab-seed"), zero = $(".lab-zero"), secs = $(".lab-secs"),
-      go = $(".lab-go"), stopB = $(".lab-stop"), refresh = $(".lab-refresh"), st = $(".lab-status"), modeSel = $(".lab-mode");
-  // Fuera de la lista: radio, mixer / volúmenes / efectos, tempo, MiX (se maneja solo) y otras herramientas de la página.
-  var LISTEXCL = /^(consolaRadio|radioVintage|rollVScroll|progresion|mv[A-Z]|cif|mgu|sf2|fav|anexo|mix(Chk|Mode)_|consolaVolume|consolaReverb|consolaDelay|consolaTempo)|^mix\w*(Vol|Rev|Dly)$/;
-  // "Poner los demás en cero" NO toca: estructura (largo, loop, Form, Intro), instrumentos, performance, Styles, Composer Configuration, etc.
+  var swBtn = $(".lab-switch"), body = $(".lab-body"), modeSel = $(".lab-mode"), seedIn = $(".lab-seed"), zeroB = $(".lab-zero"),
+      barsR = $(".lab-bars"), barsV = $(".lab-bars-val"), tempoR = $(".lab-tempo"), tempoV = $(".lab-tempo-val"),
+      st = $(".lab-status"), ncBox = $(".lab-nochange"), spacer = document.getElementById("controlLabSpacer");
+  // Controles que NO disparan el test: radio, mixer / volúmenes / efectos, tempo y largo (los maneja el Lab), MiX, selectores de instrumento, etc.
+  var LISTEXCL = /^(consolaRadio|radioVintage|rollVScroll|progresion|mv[A-Z]|cif|mgu|sf2|fav|anexo|mix(Chk|Mode)_|consolaVolume|consolaReverb|consolaDelay|consolaTempo|consolaBarsNum|consolaLoopChk|consola(24|12|Rand)BarsChk|consolaFormChk|consolaIntroChk|partimentiIntroChk)|^mix\w*(Vol|Rev|Dly)$|preset|sf2|instr/i;
+  // "Todo en cero" NO toca: estructura (largo, loop, Form, Intro), instrumentos, performance, Styles, Composer Configuration, etc.
   var NOZERO = /^(consolaNormalSlider|consolaFormChk|consolaIntroChk|consola(Chord|Bass|Melody|Drum)Chk|consolaLoopChk|consola(24|12|Rand)BarsChk|consolaAltMelodyChk|consolaPrerenderChk|consolaAutoShowChk|consolaClickChk|consolaMixTimeSigChk|consolaDynamicsSlider|consolaExprSlider|consolaSwingChk|consolaSwingSlider|mix8bitsChk|styles\w*|ivChk\d|multiSets\w*|consolaCyclesMode[AB]|consolaCycle\w*|commonChordsComposerCfg|commonChordsComposerCfgPct|commonChords\w*Pct|commonChordsTMPatSw|oneChord\w*|jazz\w*|crea\w*|chor\w*)$/;
-  var SKIPSNAP = /^(sf2LocalPicker|favFile|cif|progresion|anexo1Filter|mv|rollVScroll|consolaRadio)/;
+  function byId(id){ return document.getElementById(id); }
+  function wait(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
+  function clickIfEnabled(id){ var e = byId(id); if(e && !e.disabled) e.click(); }
   function labelOf(el){
     var t = "", l = document.querySelector('label[for="' + el.id + '"]');
     if(l) t = l.textContent; else { var c = el.closest && el.closest("label"); if(c) t = c.textContent; }
@@ -29809,82 +29822,24 @@ window.addEventListener("load", sfAskPersist);
     if(!t && el.parentElement) t = (el.parentElement.textContent || "").replace(/\s+/g, " ").trim().slice(0, 40);
     return t || el.id;
   }
-  function candidates(){
-    return Array.prototype.filter.call(document.querySelectorAll('input[type="range"][id],input[type="checkbox"][id]'), function(el){
-      return !LISTEXCL.test(el.id) && !box.contains(el);
-    });
-  }
-  function fillList(){
-    var q = (filt.value || "").toLowerCase().trim(), keep = sel.value, list = candidates();
-    var gC = document.createElement("optgroup"), gS = document.createElement("optgroup"), nC = 0, nS = 0;
-    list.forEach(function(el){
-      var txt = labelOf(el), full = txt + " (" + el.id + ")";
-      if(q && full.toLowerCase().indexOf(q) < 0) return;
-      var o = document.createElement("option"); o.value = el.id; o.textContent = full;
-      if(el.type === "checkbox"){ gC.appendChild(o); nC++; } else { gS.appendChild(o); nS++; }
-    });
-    sel.innerHTML = "";
-    gS.label = "Sliders (" + nS + ") — 0% / 50% / 100%"; gC.label = "Checkboxes (" + nC + ") — apagado / prendido";
-    if(nS) sel.appendChild(gS); if(nC) sel.appendChild(gC);
-    if(keep && sel.querySelector('option[value="' + keep + '"]')) sel.value = keep;
-    st.textContent = (nS + nC) ? "" : "Ningún control coincide con el filtro.";
-  }
-  // Random choose disponibles (los botones que existan en la página).
-  var MODE_IDS = ["creaturaBtn", "creaturaBellaBtn", "creaturaOneSetBtn", "creaturaIntervalicBtn", "partimentiBtn", "commonChordsBtn", "oneChordBtn", "jazzTunesBtn", "jazziTunesBtn"];
-  function fillModes(){
-    var keep = modeSel.value; modeSel.innerHTML = "";
-    var o0 = document.createElement("option"); o0.value = ""; o0.textContent = "El que esté activo (🔀 regenera)"; modeSel.appendChild(o0);
-    MODE_IDS.forEach(function(id){
-      var b = document.getElementById(id); if(!b) return;
-      var t = (b.textContent || "").replace(/\s+/g, " ").trim() || id;
-      var o = document.createElement("option"); o.value = id; o.textContent = t; modeSel.appendChild(o);
-    });
-    if(keep && modeSel.querySelector('option[value="' + keep + '"]')) modeSel.value = keep;
-  }
-  fillModes();
-  var filled = false;
-  box.addEventListener("toggle", function(){ if(box.open){ if(!filled){ seedIn.value = String(seed); filled = true; } fillList(); } });
-  filt.addEventListener("input", fillList);
-  refresh.addEventListener("click", fillList);
-
   function setCtl(el, v){
     try{
+      if(!el) return;
       if(el.type === "checkbox"){ if(el.checked === !!v) return; el.checked = !!v; }
       else { if(String(el.value) === String(v)) return; el.value = v; }
       el.dispatchEvent(new Event("input", { bubbles: true })); el.dispatchEvent(new Event("change", { bubbles: true }));
     }catch(_e){}
   }
-  function snapshot(){
-    var o = {};
-    Array.prototype.forEach.call(document.querySelectorAll("input[id],select[id]"), function(el){
-      if(SKIPSNAP.test(el.id) || el.type === "file" || el.type === "button" || el.type === "submit") return;
-      o[el.id] = (el.type === "checkbox" || el.type === "radio") ? !!el.checked : el.value;
+  function quiet(fn){ window.__favApplying = true; try{ return fn(); } finally { window.__favApplying = false; } }   // los handlers de la página no regeneran mientras se fijan valores
+  // Botones random choose disponibles (los que existan en la página).
+  var MODE_IDS = ["creaturaBtn", "creaturaBellaBtn", "creaturaOneSetBtn", "creaturaIntervalicBtn", "partimentiBtn", "commonChordsBtn", "oneChordBtn", "jazzTunesBtn", "jazziTunesBtn"];
+  (function(){
+    var o0 = document.createElement("option"); o0.value = ""; o0.textContent = "El que esté activo (🔀)"; modeSel.appendChild(o0);
+    MODE_IDS.forEach(function(id){
+      var b = byId(id); if(!b) return;
+      var o = document.createElement("option"); o.value = id; o.textContent = (b.textContent || "").replace(/\s+/g, " ").trim() || id; modeSel.appendChild(o);
     });
-    return o;
-  }
-  function restore(o){
-    window.__favApplying = true;
-    try{ for(var pass = 0; pass < 2; pass++) Object.keys(o).forEach(function(id){ var el = document.getElementById(id); if(el && !box.contains(el)) setCtl(el, o[id]); }); }   // 2 pasadas: el slider maestro Notes complexity pisa a sus 4 hijos al moverse
-    finally { window.__favApplying = false; }
-  }
-  function neutralize(except){
-    candidates().forEach(function(el){
-      if(el === except || NOZERO.test(el.id)) return;
-      if(el.type === "checkbox") setCtl(el, false); else setCtl(el, el.min !== "" ? el.min : 0);
-    });
-  }
-  function sliderStates(el){
-    var mn = parseFloat(el.min), mx = parseFloat(el.max), stp = parseFloat(el.step) || 1;
-    if(!isFinite(mn)) mn = 0; if(!isFinite(mx)) mx = 100;
-    if(mx - mn <= 4) { var a = []; for(var v = mn; v <= mx + 1e-9; v += stp) a.push({ v: v, l: String(v) }); return a; }
-    return [0, 0.5, 1].map(function(f){ var v = Math.round((mn + (mx - mn) * f) / stp) * stp; return { v: v, l: v + "  (" + Math.round(f * 100) + "% del recorrido)" }; });
-  }
-  function wait(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
-  var running = false, abort = false;
-  function sleepAbortable(ms){ return new Promise(function(r){ var t0 = Date.now(); (function tick(){ if(abort || Date.now() - t0 >= ms) return r(); setTimeout(tick, 200); })(); }); }
-  function clickIfEnabled(id){ var e = document.getElementById(id); if(e && !e.disabled) e.click(); }
-
-  // Motor activo (el que armó la última canción): ChordS / One Chord / Partimenti / JazzTunes; si ninguno, Creatura (sets del reloj).
+  })();
   function activeMode(){
     var cc = window.__commonChords, pt = window.__partimenti, jt = window.__jazzTunes;
     if(cc && cc.active) return cc.oneChord ? "One Chord" : "ChordS";
@@ -29892,131 +29847,147 @@ window.addEventListener("load", sfAskPersist);
     if(jt && jt.active) return "JazzTunes";
     return "Creatura";
   }
-  function noSongMsg(){
-    if(modeSel.value) return "";   // con un random choose elegido, la canción se arma desde cero
-    var rb = document.getElementById("consolaRegenPlayBtn");
-    if(rb && !rb.disabled) return "";
-    return "Primero generá una canción (CreaturaRandom, ChordS, Partimenti, etc.) y después probá el control: el Lab usa el modo que tengas activo.";
+  // Firma de lo generado (notas, tiempos, duraciones, velocidades de todas las pistas + batería): sirve para avisar "no change!".
+  function songSig(){
+    var st0 = window.__consolaState || {}, h = 2166136261 >>> 0, n = 0;
+    function mix(v){ h = Math.imul(h ^ (v | 0), 16777619) >>> 0; }
+    function ev(e){ n++; Object.keys(e).sort().forEach(function(k){ if(typeof e[k] === "number") mix(Math.round(e[k] * 1000)); }); }
+    Object.keys(st0).sort().forEach(function(k){ var a = st0[k]; if(/Events$/.test(k) && Array.isArray(a)){ mix(a.length); a.forEach(ev); } });
+    var d = (typeof window.__consolaDrums === "function") ? window.__consolaDrums() : null;
+    if(Array.isArray(d)){ mix(d.length); d.forEach(function(e){ if(e && typeof e === "object") ev(e); }); }
+    return h + ":" + n;
   }
-  // Regenera con el MISMO motor que está activo (igual que el botón 🔀) con la seed fija y el control elegido, y reproduce.
+  function barsInSong(){   // compases de la canción generada (el mayor "bar" de cualquier pista)
+    var m = -1, st0 = window.__consolaState || {};
+    Object.keys(st0).forEach(function(k){ var a = st0[k]; if(/Events$/.test(k) && Array.isArray(a)) a.forEach(function(e){ if(e && typeof e.bar === "number" && e.bar > m) m = e.bar; }); });
+    return m >= 0 ? m + 1 : parseInt(barsR.value, 10);
+  }
+  function candidates(){
+    return Array.prototype.filter.call(document.querySelectorAll('input[type="range"][id],input[type="checkbox"][id]'), function(el){ return !LISTEXCL.test(el.id) && !box.contains(el); });
+  }
+  function neutralize(){
+    quiet(function(){ candidates().forEach(function(el){
+      if(NOZERO.test(el.id)) return;
+      if(el.type === "checkbox") setCtl(el, false); else setCtl(el, el.min !== "" ? el.min : 0);
+    }); });
+  }
+
+  var ON = false, busy = false, pending = null, ov = null, lastSig = null, ignoreUntil = 0, debounceT = null;
+  function seedVal(){ return (parseInt(seedIn.value, 10) >>> 0); }
+  function applyStructure(){   // lo que el test impone: largo, tempo, sin Form ni Intro, con Loop
+    quiet(function(){
+      setCtl(byId("consolaBarsNum"), String(barsR.value));
+      setCtl(byId("consolaTempo"), String(tempoR.value));
+      setCtl(byId("consolaFormChk"), false); setCtl(byId("consolaIntroChk"), false); setCtl(byId("consolaLoopChk"), true);
+    });
+  }
   async function waitPlaying(ms){
     var t0 = Date.now();
-    while(Date.now() - t0 < ms && !abort){ var sb = document.getElementById("consolaStopBtn"); if(sb && !sb.disabled) break; await wait(150); }
+    while(Date.now() - t0 < ms){ var sb = byId("consolaStopBtn"); if(sb && !sb.disabled) break; await wait(150); }
     await wait(250);
   }
-  async function generate(tgt, value, s){
-    clickIfEnabled("consolaStopBtn");
-    await wait(300);
-    // 1) Con un random choose elegido: se aprieta ese botón con la seed fija (mismos sorteos en cada prueba) y se espera a que arranque.
-    if(modeSel.value){
-      var mb = document.getElementById(modeSel.value);
-      if(!mb) throw new Error("No encuentro el botón de ese modo.");
-      try{ window.__songKindName = (mb.textContent || "").trim() + " (Control Lab)"; }catch(_e){}
-      if(window.__seed && window.__seed.runAsync){ await window.__seed.runAsync(s, async function(){ mb.click(); await waitPlaying(25000); }); }
-      else { mb.click(); await waitPlaying(25000); }
-      clickIfEnabled("consolaStopBtn");
+  // Aprieta un random choose con la seed fija (una sola vez: sortea instrumentos, sliders, etc.) y deja de nuevo la estructura del test.
+  async function pressMode(id){
+    var mb = byId(id); if(!mb) throw new Error("No encuentro el botón de ese modo.");
+    clickIfEnabled("consolaStopBtn"); await wait(300);
+    try{ window.__songKindName = (mb.textContent || "").trim() + " (Control Lab)"; }catch(_e){}
+    if(window.__seed && window.__seed.runAsync){ await window.__seed.runAsync(seedVal(), async function(){ mb.click(); await waitPlaying(25000); }); }
+    else { mb.click(); await waitPlaying(25000); }
+    clickIfEnabled("consolaStopBtn"); await wait(300);
+    applyStructure();
+  }
+  // Regenera el test con el motor activo (como 🔀) con la seed fija y lo reproduce en loop.
+  async function regen(why, resetBase){
+    if(!ON) return;
+    if(busy){ pending = { why: why, reset: resetBase }; return; }
+    busy = true;
+    try{
+      if(resetBase) lastSig = null;
+      var hadBase = (lastSig !== null);
+      clickIfEnabled("consolaStopBtn"); await wait(250);
+      var rb = byId("consolaRegenPlayBtn");
+      if(!rb || rb.disabled) throw new Error("No hay canción para regenerar: elegí un modo.");
+      var mode = activeMode();
+      try{ window.__songKindName = mode + " (Control Lab)"; if(window.__songLog) window.__songLog.begin(mode); }catch(_e){}
+      try{ if(window.__styles && window.__styles.wants && window.__styles.wants(mode === "One Chord")) await window.__styles.load(); }catch(_e){}
+      try{ if(typeof window.__rollToFront === "function") window.__rollToFront(); }catch(_e){}
+      if(window.__seed && window.__seed.run) window.__seed.run(seedVal(), function(){ rb.click(); }); else rb.click();
       await wait(300);
-    }
-    // 2) Se fijan los controles (los demás en cero + el valor a probar: pisan lo que sorteó el random choose)
-    window.__favApplying = true;
-    try{
-      if(zero.checked) neutralize(tgt);
-      var mx = document.getElementById("mixChk_" + tgt.id); if(mx) setCtl(mx, false);   // MiX del control probado apagado: vale el valor exacto
-      setCtl(tgt, value);
-    } finally { window.__favApplying = false; }
-    var mode = activeMode();
-    if(window.__styles && window.__styles.wants && window.__styles.wants(mode === "One Chord")){ try{ await window.__styles.load(); }catch(_e){} }
-    try{ if(typeof window.__rollToFront === "function") window.__rollToFront(); }catch(_e){}
-    try{ window.__songKindName = mode + " (Control Lab)"; if(window.__songLog) window.__songLog.begin(mode); }catch(_e){}
-    // 3) 🔀: regenera con el motor activo (el que dejó el random choose) con la seed fija y reproduce.
-    var rb = document.getElementById("consolaRegenPlayBtn");
-    if(!rb || rb.disabled) throw new Error("No se pudo armar la canción de prueba con ese modo.");
-    run(s, function(){ rb.click(); });
-  }
-  async function labRun(){
-    if(running) return;
-    var tgt = document.getElementById(sel.value);
-    if(!tgt){ st.textContent = "Elegí un control de la lista."; return; }
-    var nm = noSongMsg(); if(nm){ st.textContent = nm; return; }
-    running = true; abort = false; go.disabled = true; stopB.disabled = false;
-    var snap = snapshot(), s = (parseInt(seedIn.value, 10) >>> 0), name = labelOf(tgt), ms = (parseInt(secs.value, 10) || 30) * 1000;
-    var states = tgt.type === "checkbox" ? [{ v: false, l: "APAGADO" }, { v: true, l: "PRENDIDO" }] : sliderStates(tgt);
-    try{
-      for(var i = 0; i < states.length && !abort; i++){
-        var head = "Prueba " + (i + 1) + "/" + states.length + " — " + name + " = " + states[i].l;
-        st.textContent = head + " · generando…";
-        await generate(tgt, states[i].v, s);
-        if(abort) break;
-        st.textContent = "▶ " + head + " · sonando " + (ms / 1000) + " s";
-        await sleepAbortable(ms);
-      }
-    } catch(e){ st.textContent = "Error: " + (e && e.message ? e.message : e); try{ console.error(e); }catch(_e){} }
+      var sg = songSig(), same = (lastSig !== null && sg === lastSig);
+      lastSig = sg;
+      st.textContent = "▶ Test en loop · " + barsInSong() + " compases · " + tempoR.value + " bpm · " + mode + (why ? " · " + why : "") + (hadBase && !same && why ? " · ✔ cambió" : "");
+      ncBox.textContent = same ? "⚠ no change! — " + (why || "") + ": sale exactamente la misma música." : "";
+    } catch(e){ st.textContent = "Error: " + (e && e.message ? e.message : e); ncBox.textContent = ""; try{ console.error(e); }catch(_e){} }
     finally {
-      clickIfEnabled("consolaStopBtn");
-      restore(snap);
-      var was = abort; running = false; go.disabled = false; stopB.disabled = true;
-      if(!/^Error/.test(st.textContent)) st.textContent = (was ? "Detenido" : "Listo") + " — controles repuestos como estaban.";
+      busy = false; ignoreUntil = Date.now() + 700;
+      if(pending){ var p = pending; pending = null; regen(p.why, p.reset); }
     }
   }
-  go.addEventListener("click", function(){ if(liveBusy) return; if(liveSnap) liveEnd(); labRun(); });
-
-  /* ---------------- SLIDER EN VIVO ----------------
-     Para controles tipo slider: al mover el slider "En vivo" se regenera la MISMA canción (misma seed) con ese valor y suena al instante.
-     La primera vez guarda cómo estaban los controles; ■ Parar (o elegir otro control, o cerrar el Lab) los repone. */
-  var liveRow = $(".lab-live"), liveRange = $(".lab-live-range"), liveVal = $(".lab-live-val");
-  var liveSnap = null, liveBusy = false, livePending = null, liveTimer = null, liveEndAfter = false, liveTargetId = null;
-  function selTarget(){ return document.getElementById(sel.value); }
-  function liveEnd(){
-    clearTimeout(liveTimer); livePending = null;
-    if(liveBusy){ liveEndAfter = true; return; }   // hay una generación en curso: repone apenas termine
-    if(!liveSnap) return;
+  function paintSwitch(){ swBtn.setAttribute("aria-checked", ON ? "true" : "false"); var t = swBtn.querySelector(".seed-txt"); if(t) t.textContent = ON ? "Lab ON" : "Lab OFF"; }
+  function fixSpacer(){ if(spacer) spacer.style.height = ON ? (box.offsetHeight + 90) + "px" : "0"; }
+  async function turnOn(){
+    if(ON) return;
+    ON = true; paintSwitch(); busy = true;
+    box.classList.add("lab-on"); body.hidden = false; fixSpacer();
+    st.textContent = "Armando el test…"; ncBox.textContent = ""; lastSig = null;
+    try{
+      var nn = byId("consolaBarsNum");
+      ov = { bars: nn ? nn.value : "", tempo: (byId("consolaTempo") || {}).value, form: !!(byId("consolaFormChk") || {}).checked, intro: !!(byId("consolaIntroChk") || {}).checked, loop: !!(byId("consolaLoopChk") || {}).checked };
+      clickIfEnabled("consolaStopBtn"); await wait(300);
+      applyStructure();
+      var rb = byId("consolaRegenPlayBtn"), em = modeSel.value || ((rb && !rb.disabled) ? "" : "commonChordsBtn");
+      if(em) await pressMode(em);
+    } catch(e){ st.textContent = "Error: " + (e && e.message ? e.message : e); try{ console.error(e); }catch(_e){} }
+    busy = false;
+    await regen("inicio", true);
+    fixSpacer();
+  }
+  function turnOff(){
+    if(!ON) return;
+    ON = false; clearTimeout(debounceT); pending = null; paintSwitch();
     clickIfEnabled("consolaStopBtn");
-    restore(liveSnap); liveSnap = null; liveTargetId = null;
-    if(!running){ go.disabled = false; stopB.disabled = true; }
-    st.textContent = "Listo — controles repuestos como estaban.";
+    if(ov){ var o = ov; ov = null; quiet(function(){
+      setCtl(byId("consolaBarsNum"), o.bars); setCtl(byId("consolaTempo"), o.tempo);
+      setCtl(byId("consolaFormChk"), o.form); setCtl(byId("consolaIntroChk"), o.intro); setCtl(byId("consolaLoopChk"), o.loop);
+    }); }
+    box.classList.remove("lab-on"); body.hidden = true; fixSpacer();
+    st.textContent = ""; ncBox.textContent = "";
   }
-  function syncLiveRow(){
-    if(liveSnap && liveTargetId !== sel.value) liveEnd();
-    var t = selTarget();
-    if(!t || t.type !== "range"){ liveRow.hidden = true; return; }
-    liveRow.hidden = false;
-    if(liveSnap) return;   // en plena sesión en vivo no se toca el slider
-    var mn = t.min !== "" ? t.min : "0", mx = t.max !== "" ? t.max : "100";
-    liveRange.min = mn; liveRange.max = mx; liveRange.step = t.step || "1";
-    liveRange.value = t.value; liveVal.textContent = liveRange.value;
-  }
-  async function liveApply(v){
-    if(running) return;
-    var tgt = selTarget(); if(!tgt || tgt.type !== "range") return;
-    if(liveBusy){ livePending = v; return; }
-    if(!liveSnap){ var nm2 = noSongMsg(); if(nm2){ st.textContent = nm2; return; } }
-    liveBusy = true;
-    try{
-      if(!liveSnap){ liveSnap = snapshot(); liveTargetId = tgt.id; go.disabled = true; stopB.disabled = false; }
-      var s = (parseInt(seedIn.value, 10) >>> 0), name = labelOf(tgt);
-      st.textContent = "En vivo — " + name + " = " + v + " · generando…";
-      abort = false;
-      await generate(tgt, v, s);
-      if(!liveEndAfter) st.textContent = "▶ En vivo — " + name + " = " + v + " · mové el slider para comparar (misma canción). ■ Parar repone todo.";
-    } catch(e){ st.textContent = "Error: " + (e && e.message ? e.message : e); try{ console.error(e); }catch(_e){} }
-    finally {
-      liveBusy = false;
-      if(liveEndAfter){ liveEndAfter = false; liveEnd(); }
-      else if(livePending != null){ var p = livePending; livePending = null; liveApply(p); }
-    }
-  }
-  liveRange.addEventListener("input", function(){
-    liveVal.textContent = liveRange.value;
-    clearTimeout(liveTimer);
-    liveTimer = setTimeout(function(){ liveApply(parseFloat(liveRange.value)); }, 350);   // espera a que termines de mover
-  });
-  liveRange.addEventListener("change", function(){ clearTimeout(liveTimer); liveApply(parseFloat(liveRange.value)); });
-  sel.addEventListener("change", syncLiveRow);
-  box.addEventListener("toggle", function(){ if(!box.open) liveEnd(); else syncLiveRow(); });
-  filt.addEventListener("input", syncLiveRow);
-  refresh.addEventListener("click", syncLiveRow);
+  swBtn.addEventListener("click", function(){ if(ON) turnOff(); else turnOn(); });
 
-  stopB.addEventListener("click", function(){ abort = true; clickIfEnabled("consolaStopBtn"); liveEnd(); });
+  // Cualquier control de la página que se mueva (con el Lab ON) regenera el test.
+  function ignoreTarget(el){
+    if(!el || !el.id || el.nodeType !== 1) return true;
+    if(box.contains(el) || (el.closest && el.closest("#seedCard"))) return true;
+    var tg = el.tagName, ty = el.type;
+    if(tg === "SELECT") return LISTEXCL.test(el.id);
+    if(tg !== "INPUT") return true;
+    if(ty !== "range" && ty !== "checkbox" && ty !== "number") return true;
+    return LISTEXCL.test(el.id);
+  }
+  function onCtl(e){
+    if(!ON || busy || Date.now() < ignoreUntil || window.__favApplying) return;
+    var el = e.target; if(ignoreTarget(el)) return;
+    var why = labelOf(el) + " = " + (el.type === "checkbox" ? (el.checked ? "on" : "off") : el.value);
+    clearTimeout(debounceT); debounceT = setTimeout(function(){ regen(why, false); }, 450);
+  }
+  document.addEventListener("input", onCtl, true);
+  document.addEventListener("change", onCtl, true);
+
+  // Controles propios del Lab.
+  function schedule(why, reset){ clearTimeout(debounceT); debounceT = setTimeout(function(){ regen(why, reset); }, 350); }
+  barsR.addEventListener("input", function(){ barsV.textContent = barsR.value; if(ON){ applyStructure(); schedule("Compases = " + barsR.value, true); } });
+  tempoR.addEventListener("input", function(){ tempoV.textContent = tempoR.value + " bpm"; if(ON){ clickIfEnabled("consolaStopBtn"); applyStructure(); schedule("Tempo = " + tempoR.value, true); } });
+  seedIn.addEventListener("change", function(){ if(ON) schedule("Seed = " + seedIn.value, true); });
+  modeSel.addEventListener("change", async function(){
+    if(!ON) return;
+    busy = true; st.textContent = "Cambiando de modo…"; ncBox.textContent = "";
+    try{ if(modeSel.value) await pressMode(modeSel.value); } catch(e){ st.textContent = "Error: " + (e && e.message ? e.message : e); }
+    busy = false; regen("Modo", true);
+  });
+  zeroB.addEventListener("click", function(){ if(!ON) return; neutralize(); schedule("Todo en cero", true); });
+  window.addEventListener("resize", fixSpacer);
+  try{ seedIn.value = String(window.__seed ? window.__seed.value() : 1234); }catch(_e){}
 })();
 </script>
 </body>
