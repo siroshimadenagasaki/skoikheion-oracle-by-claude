@@ -1052,6 +1052,14 @@
     text-transform:uppercase;color:var(--ink-muted);
   }
   .mix-channel input[type=range]{width:110px;accent-color:var(--gold);}
+  /* Niveles de instrumentos: faders verticales (min abajo, max arriba) */
+  .mix-grid.mix-vert .mix-channel input[type=range]{writing-mode:vertical-lr;direction:rtl;width:auto;height:140px;}
+  /* EFFECTS: reverb + delay (maestros y por pista) en un bloque plegable */
+  .fx-details{margin:6px 0 14px;border-top:1px solid var(--line);padding-top:8px;}
+  .fx-details>summary{cursor:pointer;text-align:center;list-style:none;font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);font-weight:700;}
+  .fx-details>summary::-webkit-details-marker{display:none;}
+  .fx-details>summary::before{content:'\25B8  ';}
+  .fx-details[open]>summary::before{content:'\25BE  ';}
   .mix-val{font-family:'JetBrains Mono',monospace;color:var(--ink-muted);font-size:11px;}
   .mix-val-row{display:flex;align-items:center;gap:6px;}
   .mix-focus{width:11px;height:11px;margin:0;accent-color:var(--gold);cursor:pointer;}
@@ -1681,6 +1689,17 @@
       <span id="consolaExportStatus" role="status" aria-live="polite" style="font-size:12px;color:var(--ink-muted);"></span>
       </div>
     </div>
+    <div class="clock-card seed-card" id="seedCard">
+      <button type="button" class="seed-switch" id="seedSwitchBtn" role="switch" aria-checked="false" title="Seed: ON = el azar sale de una secuencia fija. Cada vez que generás una canción (CreaturaRandom, ChordS, Partimenti, JazzTunes, etc.) con los mismos controles sale la MISMA canción, así podés mover un control y escuchar solo qué cambia. OFF = todo al azar, como siempre (no se toca nada).">
+        <span class="seed-knob"></span><span class="seed-txt">Seed OFF</span>
+      </button>
+      <div class="seed-row">
+        <span>Seed</span>
+        <input type="number" class="seed-num" min="0" max="4294967295" step="1" value="1234" aria-label="Número de seed">
+        <button type="button" class="chip seed-dice" title="Sortear otro seed">&#127922;</button>
+      </div>
+      <div class="seed-hint">OFF: todo al azar, como siempre. ON: misma canción cada vez que generás, hasta que cambies un control o el seed.</div>
+    </div>
     <div class="clock-card multiset-card" id="multiSetsCard">
       <div class="multiset-head">
         <span class="multiset-title">Multi Sets Input</span>
@@ -1725,30 +1744,6 @@
     <h2>Mixer</h2>
     <div class="collapsible-content collapsed" id="mixerContent">
       <div style="display:flex;flex-wrap:wrap;gap:8px 28px;justify-content:center;margin-bottom:12px;">
-      <div class="consola-field" style="background-color:transparent !important;" title="Nivel general del reverb — envío compartido, con un impulso sintético generado en el navegador (no carga ningún archivo). Cada pista tiene además su propio nivel de envío en el Mixer, más abajo (&quot;Reverb (envío por pista)&quot;); este slider escala a todas juntas.">
-        <label for="consolaReverbAmount">Reverb</label>
-        <input type="range" id="consolaReverbAmount" min="0" max="100" value="50" step="1">
-        <span class="consola-val" id="consolaReverbAmountVal">50%</span>
-      </div>
-      <div class="consola-field" style="background-color:transparent !important;" title="Duración de la cola del reverb (≈ lo que tarda en apagarse). 2.4 s = el sonido de siempre. Al soltar el slider se regenera el impulso sintético; mientras lo arrastrás solo cambia el número, para no gastar CPU.">
-        <label for="consolaReverbDecay">Reverb decay</label>
-        <input type="range" id="consolaReverbDecay" min="0.3" max="6" value="2.4" step="0.1">
-        <span class="consola-val" id="consolaReverbDecayVal">2.4 s</span>
-      </div>
-      <div class="consola-field" style="background-color:transparent !important;" title="Nivel general del delay (eco) — envío compartido, un solo DelayNode con realimentación y filtro pasabajos, sincronizado con el Tempo. 0% = apagado (default). Cada pista tiene además su propio nivel de envío más abajo (&quot;Delay (per-track send)&quot;); este slider escala a todas juntas.">
-        <label for="consolaDelayAmount">Delay</label>
-        <input type="range" id="consolaDelayAmount" min="0" max="100" value="0" step="1">
-        <span class="consola-val" id="consolaDelayAmountVal">0%</span>
-      </div>
-      <div class="consola-field" style="background-color:transparent !important;" title="Tiempo del delay, como fracción del pulso: sigue al slider Tempo. Corchea con puntillo (3/16) es el clásico.">
-        <label for="consolaDelayTime">Delay time</label>
-        <select id="consolaDelayTime">
-          <option value="1">1/4</option>
-          <option value="0.75" selected>1/8 dotted</option>
-          <option value="0.5">1/8</option>
-          <option value="0.25">1/16</option>
-        </select>
-      </div>
       <div class="consola-field" style="background-color:transparent !important;">
         <label for="consolaVolume">Volume master</label>
         <input type="range" id="consolaVolume" min="0" max="100" value="80" step="1">
@@ -1769,7 +1764,7 @@
         <button type="button" id="velLanesToggle" class="drum-roll-toggle" aria-expanded="false" aria-controls="velLanesHost" title="Muestra/oculta un carril de velocity por pista (una barra por ataque, alineado con los piano rolls). Oculto por defecto: no consume nada mientras está cerrado.">&#9656; Velocity per track</button>
         <div id="velLanesHost" hidden></div>
       </div>
-      <div class="mix-grid">
+      <div class="mix-grid mix-vert">
         <div class="mix-channel">
           <label for="mixDrumVol">&#129345; Drums</label>
           <input type="range" id="mixDrumVol" min="0" max="150" value="105" step="1">
@@ -1851,6 +1846,34 @@
           </div>
         </div>
       </div>
+      <details class="fx-details" id="mixerEffects">
+        <summary>EFFECTS</summary>
+        <div style="display:flex;flex-wrap:wrap;gap:8px 28px;justify-content:center;margin:10px 0 12px;">
+      <div class="consola-field" style="background-color:transparent !important;" title="Nivel general del reverb — envío compartido, con un impulso sintético generado en el navegador (no carga ningún archivo). Cada pista tiene además su propio nivel de envío en el Mixer, más abajo (&quot;Reverb (envío por pista)&quot;); este slider escala a todas juntas.">
+        <label for="consolaReverbAmount">Reverb</label>
+        <input type="range" id="consolaReverbAmount" min="0" max="100" value="50" step="1">
+        <span class="consola-val" id="consolaReverbAmountVal">50%</span>
+      </div>
+      <div class="consola-field" style="background-color:transparent !important;" title="Duración de la cola del reverb (≈ lo que tarda en apagarse). 2.4 s = el sonido de siempre. Al soltar el slider se regenera el impulso sintético; mientras lo arrastrás solo cambia el número, para no gastar CPU.">
+        <label for="consolaReverbDecay">Reverb decay</label>
+        <input type="range" id="consolaReverbDecay" min="0.3" max="6" value="2.4" step="0.1">
+        <span class="consola-val" id="consolaReverbDecayVal">2.4 s</span>
+      </div>
+      <div class="consola-field" style="background-color:transparent !important;" title="Nivel general del delay (eco) — envío compartido, un solo DelayNode con realimentación y filtro pasabajos, sincronizado con el Tempo. 0% = apagado (default). Cada pista tiene además su propio nivel de envío más abajo (&quot;Delay (per-track send)&quot;); este slider escala a todas juntas.">
+        <label for="consolaDelayAmount">Delay</label>
+        <input type="range" id="consolaDelayAmount" min="0" max="100" value="0" step="1">
+        <span class="consola-val" id="consolaDelayAmountVal">0%</span>
+      </div>
+      <div class="consola-field" style="background-color:transparent !important;" title="Tiempo del delay, como fracción del pulso: sigue al slider Tempo. Corchea con puntillo (3/16) es el clásico.">
+        <label for="consolaDelayTime">Delay time</label>
+        <select id="consolaDelayTime">
+          <option value="1">1/4</option>
+          <option value="0.75" selected>1/8 dotted</option>
+          <option value="0.5">1/8</option>
+          <option value="0.25">1/16</option>
+        </select>
+      </div>
+        </div>
       <div class="mix-preset-label" style="width:100%;text-align:center;margin:2px 0 -6px;">Reverb (per-track send)</div>
       <div class="mix-grid" title="Multiplicador de esta pista sobre el slider maestro Reverb (arriba, junto a Volume master). 100% = usa el nivel general tal cual; 0% = esta pista nunca llega al reverb.">
         <div class="mix-channel">
@@ -1937,6 +1960,7 @@
           <span class="mix-val" id="mixMelodyDoubleDlyVal">100%</span>
         </div>
       </div>
+      </details>
       <div class="mix-styles">
         <span>Styles (preset set)</span>
         <button class="chip" id="presetBaroqueBtn" type="button" title="Set de presets: Armonía → Clavecín, Bajo → Fagot, Melodía → Flauta, Melodía doblada → Clavecín (prende el doblaje).">Baroque</button>
@@ -16690,6 +16714,7 @@ function runAnalysis() {
     return api;
   })();
   window.__commonChords = COMMONCHORDS;
+  window.__mix = MIX;   // MiX expuesto para el switch Seed / Control Lab (fija la semilla de la automatización de sliders)
   /* ================================================================
      STYLES — módulo "🎛️ Styles" (dentro de la tarjeta ChordS).
      Patrones de bajo, acompañamiento y batería leídos de los estilos .STY de Band in a Box (carpeta Styles/bib_styles.json.gz:
@@ -29651,6 +29676,231 @@ window.addEventListener("load", sfAskPersist);
   btn.addEventListener("click", function(e){ e.stopPropagation(); open = !open; sync(); });
   new MutationObserver(sync).observe(el, {childList:true, characterData:true, subtree:true});
   sync();
+})();
+</script>
+<style>
+.seed-card{display:flex;flex-direction:column;align-items:stretch;gap:8px;padding:12px 14px;}
+.seed-switch{position:relative;width:100%;height:64px;border-radius:32px;border:2px solid var(--ink-muted,#888);background:transparent;color:var(--ink-muted,#888);font-size:22px;font-weight:800;letter-spacing:.06em;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s,border-color .15s,color .15s;}
+.seed-switch .seed-knob{position:absolute;left:6px;top:6px;width:44px;height:44px;border-radius:50%;background:var(--ink-muted,#888);transition:left .15s,background .15s;}
+.seed-switch[aria-checked="true"]{border-color:var(--gold,#d4a537);color:var(--gold,#d4a537);background:rgba(212,165,55,.12);}
+.seed-switch[aria-checked="true"] .seed-knob{left:calc(100% - 50px);background:var(--gold,#d4a537);}
+.seed-row{display:flex;align-items:center;justify-content:center;gap:8px;font-size:13px;color:var(--ink-muted,#888);}
+.seed-num{width:120px;}
+.seed-hint{font-size:11px;color:var(--ink-muted,#888);text-align:center;line-height:1.35;}
+#controlLab{max-width:980px;margin:18px auto 40px;padding:10px 14px;}
+#controlLab>summary{cursor:pointer;font-weight:800;font-size:15px;}
+#controlLab .lab-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:8px 0;font-size:12px;color:var(--ink-muted,#888);}
+#controlLab .lab-sel{flex:1 1 320px;min-width:220px;max-width:100%;}
+#controlLab .lab-seed{width:110px;}
+#controlLab .lab-help{font-size:12px;color:var(--ink-muted,#888);line-height:1.4;margin:8px 0;}
+#controlLab .lab-status{font-size:13px;font-weight:700;min-height:20px;}
+</style>
+<details class="clock-card" id="controlLab">
+  <summary>&#128300; Control Lab</summary>
+  <p class="lab-help">Elegí un control y apretá Probar. Genera la MISMA canción ChordS (misma seed) varias veces, cambiando solo ese control, y las reproduce una tras otra: sliders en 0%, 50% y 100%; checkboxes apagado y prendido. Al terminar vuelve todo como estaba.</p>
+  <div class="lab-row">
+    <input type="search" class="lab-filter" placeholder="Filtrar controles (ej. simult, triplets, textures)…" aria-label="Filtrar controles">
+    <button type="button" class="chip lab-refresh" title="Actualizar la lista de controles">&#8635;</button>
+  </div>
+  <div class="lab-row"><select class="lab-sel" aria-label="Control a probar"></select></div>
+  <div class="lab-row">
+    <span>Seed</span><input type="number" class="lab-seed" min="0" max="4294967295" step="1" value="1234" aria-label="Seed de la prueba">
+    <label style="display:flex;align-items:center;gap:4px;cursor:pointer;" title="Pone en cero los demás sliders y destilda los demás checkboxes (no toca tempo, volúmenes, instrumentos, largo, Form ni Composer Configuration), así solo se escucha el efecto del control elegido."><input type="checkbox" class="lab-zero" checked> Poner los demás en cero</label>
+    <span>Duración</span>
+    <select class="lab-secs" aria-label="Segundos por prueba"><option value="15">15 s</option><option value="30" selected>30 s</option><option value="60">60 s</option></select>
+    <button type="button" class="chip primary lab-go">&#9654; Probar</button>
+    <button type="button" class="chip lab-stop" disabled>&#9632; Parar</button>
+  </div>
+  <div class="lab-status" role="status" aria-live="polite"></div>
+</details>
+<script>
+/* ================================================================
+   SEED (switch grande debajo del reloj de entrada) + CONTROL LAB (al final de la página).
+   Seed OFF = no se toca nada (Math.random original). Seed ON = Math.random sale de una secuencia fija (mulberry32) que se
+   reinicia al empezar cada canción (window.__songLog.begin y el botón compose), y la semilla de MiX se fija igual.
+   Control Lab: genera la misma canción ChordS varias veces con distinta posición de UN control y las reproduce en secuencia.
+   Los inputs de esta sección no tienen id a propósito: así los favoritos no los guardan.
+   ================================================================ */
+(function(){
+  var KEY = "stoikheionSeedValue.v1", seed = 1234, on = false, cur = null, orig = Math.random;
+  try{ var s0 = parseInt(localStorage.getItem(KEY), 10); if(isFinite(s0) && s0 >= 0) seed = s0 >>> 0; }catch(_e){}
+  function mulberry32(a){ return function(){ a |= 0; a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  function mixSeed(v){ try{ if(window.__mix && window.__mix.setSeed) window.__mix.setSeed(v); }catch(_e){} }
+  // Azar "por sitio de llamada": cada lugar del código que pide Math.random() tiene su PROPIA secuencia (derivada de la seed).
+  // Así, un control que cambia cuántos números pide una parte del motor no corre los sorteos de las demás partes:
+  // misma seed + un solo control distinto = canciones comparables (no otra canción distinta).
+  function hashStr(str){ var h = 2166136261 >>> 0; for(var i = 0; i < str.length; i++){ h ^= str.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return h >>> 0; }
+  function siteRng(sv){
+    var streams = Object.create(null);
+    return function __seedRandom(){
+      var L = (new Error().stack || "").split("\n"), i = 0;
+      for(; i < L.length; i++) if(L[i].indexOf("__seedRandom") >= 0) break;
+      var key = (L[i + 1] || "") + "|" + (L[i + 2] || "");
+      var g = streams[key] || (streams[key] = mulberry32((sv ^ hashStr(key)) >>> 0));
+      return g();
+    };
+  }
+  function reseed(){ cur = siteRng(seed); if(on) Math.random = cur; mixSeed(seed); }
+  var btn = document.getElementById("seedSwitchBtn"), card = document.getElementById("seedCard");
+  var numIn = card ? card.querySelector(".seed-num") : null, dice = card ? card.querySelector(".seed-dice") : null;
+  function paint(){
+    if(!btn) return;
+    btn.setAttribute("aria-checked", on ? "true" : "false");
+    var t = btn.querySelector(".seed-txt"); if(t) t.textContent = on ? "Seed ON" : "Seed OFF";
+  }
+  function setOn(v){
+    if(v === on) return;
+    on = v;
+    if(on){ reseed(); Math.random = cur; } else { Math.random = orig; mixSeed(null); }
+    paint();
+  }
+  function setSeed(n){
+    n = parseInt(n, 10); if(!isFinite(n) || n < 0) n = 0; seed = n >>> 0;
+    if(numIn) numIn.value = String(seed);
+    try{ localStorage.setItem(KEY, String(seed)); }catch(_e){}
+    if(on) reseed();
+  }
+  // Corre fn() (síncrona) con una secuencia de azar fija propia y repone lo que había (sea Seed ON u OFF).
+  function run(s, fn){
+    var prev = Math.random;
+    Math.random = siteRng(s >>> 0); mixSeed(s >>> 0);
+    try{ return fn(); } finally { Math.random = prev; mixSeed(on ? seed : null); }
+  }
+  if(numIn){ numIn.value = String(seed); numIn.addEventListener("change", function(){ setSeed(numIn.value); }); }
+  if(dice) dice.addEventListener("click", function(){ setSeed(Math.floor(orig() * 4294967296)); });
+  if(btn) btn.addEventListener("click", function(){ setOn(!on); });
+  // Cada canción nueva arranca la secuencia desde el principio (solo con Seed ON).
+  var SLg = window.__songLog;
+  if(SLg && typeof SLg.begin === "function" && !SLg.__seedHooked){
+    var ob = SLg.begin; SLg.begin = function(){ if(on) reseed(); return ob.apply(this, arguments); }; SLg.__seedHooked = true;
+  }
+  var cmp = document.getElementById("composeBtn");
+  if(cmp) cmp.addEventListener("click", function(){ if(on) reseed(); }, true);
+  paint();
+  window.__seed = { isOn: function(){ return on; }, value: function(){ return seed; }, set: setSeed, setOn: setOn, reseed: reseed, run: run, mulberry32: mulberry32 };
+
+  /* ---------------- CONTROL LAB ---------------- */
+  var box = document.getElementById("controlLab"); if(!box) return;
+  function $(q){ return box.querySelector(q); }
+  var sel = $(".lab-sel"), filt = $(".lab-filter"), seedIn = $(".lab-seed"), zero = $(".lab-zero"), secs = $(".lab-secs"),
+      go = $(".lab-go"), stopB = $(".lab-stop"), refresh = $(".lab-refresh"), st = $(".lab-status");
+  // Fuera de la lista: radio, mixer / volúmenes / efectos, tempo, MiX (se maneja solo) y otras herramientas de la página.
+  var LISTEXCL = /^(consolaRadio|radioVintage|rollVScroll|progresion|mv[A-Z]|cif|mgu|sf2|fav|anexo|mix(Chk|Mode)_|consolaVolume|consolaReverb|consolaDelay|consolaTempo)|^mix\w*(Vol|Rev|Dly)$/;
+  // "Poner los demás en cero" NO toca: estructura (largo, loop, Form, Intro), instrumentos, performance, Styles, Composer Configuration, etc.
+  var NOZERO = /^(consolaNormalSlider|consolaFormChk|consolaIntroChk|consola(Chord|Bass|Melody|Drum)Chk|consolaLoopChk|consola(24|12|Rand)BarsChk|consolaAltMelodyChk|consolaPrerenderChk|consolaAutoShowChk|consolaClickChk|consolaMixTimeSigChk|consolaDynamicsSlider|consolaExprSlider|consolaSwingChk|consolaSwingSlider|mix8bitsChk|styles\w*|ivChk\d|multiSets\w*|consolaCyclesMode[AB]|consolaCycle\w*|commonChordsComposerCfg|commonChordsComposerCfgPct|commonChords\w*Pct|commonChordsTMPatSw|oneChord\w*|jazz\w*|crea\w*|chor\w*)$/;
+  var SKIPSNAP = /^(sf2LocalPicker|favFile|cif|progresion|anexo1Filter|mv|rollVScroll|consolaRadio)/;
+  function labelOf(el){
+    var t = "", l = document.querySelector('label[for="' + el.id + '"]');
+    if(l) t = l.textContent; else { var c = el.closest && el.closest("label"); if(c) t = c.textContent; }
+    t = (t || "").replace(/\s+/g, " ").trim();
+    if(!t) t = (el.getAttribute("aria-label") || "").trim();
+    if(!t && el.parentElement) t = (el.parentElement.textContent || "").replace(/\s+/g, " ").trim().slice(0, 40);
+    return t || el.id;
+  }
+  function candidates(){
+    return Array.prototype.filter.call(document.querySelectorAll('input[type="range"][id],input[type="checkbox"][id]'), function(el){
+      return !LISTEXCL.test(el.id) && !box.contains(el);
+    });
+  }
+  function fillList(){
+    var q = (filt.value || "").toLowerCase().trim(), keep = sel.value, list = candidates();
+    var gC = document.createElement("optgroup"), gS = document.createElement("optgroup"), nC = 0, nS = 0;
+    list.forEach(function(el){
+      var txt = labelOf(el), full = txt + " (" + el.id + ")";
+      if(q && full.toLowerCase().indexOf(q) < 0) return;
+      var o = document.createElement("option"); o.value = el.id; o.textContent = full;
+      if(el.type === "checkbox"){ gC.appendChild(o); nC++; } else { gS.appendChild(o); nS++; }
+    });
+    sel.innerHTML = "";
+    gS.label = "Sliders (" + nS + ") — 0% / 50% / 100%"; gC.label = "Checkboxes (" + nC + ") — apagado / prendido";
+    if(nS) sel.appendChild(gS); if(nC) sel.appendChild(gC);
+    if(keep && sel.querySelector('option[value="' + keep + '"]')) sel.value = keep;
+    st.textContent = (nS + nC) ? "" : "Ningún control coincide con el filtro.";
+  }
+  var filled = false;
+  box.addEventListener("toggle", function(){ if(box.open){ if(!filled){ seedIn.value = String(seed); filled = true; } fillList(); } });
+  filt.addEventListener("input", fillList);
+  refresh.addEventListener("click", fillList);
+
+  function setCtl(el, v){
+    try{
+      if(el.type === "checkbox"){ if(el.checked === !!v) return; el.checked = !!v; }
+      else { if(String(el.value) === String(v)) return; el.value = v; }
+      el.dispatchEvent(new Event("input", { bubbles: true })); el.dispatchEvent(new Event("change", { bubbles: true }));
+    }catch(_e){}
+  }
+  function snapshot(){
+    var o = {};
+    Array.prototype.forEach.call(document.querySelectorAll("input[id],select[id]"), function(el){
+      if(SKIPSNAP.test(el.id) || el.type === "file" || el.type === "button" || el.type === "submit") return;
+      o[el.id] = (el.type === "checkbox" || el.type === "radio") ? !!el.checked : el.value;
+    });
+    return o;
+  }
+  function restore(o){
+    window.__favApplying = true;
+    try{ for(var pass = 0; pass < 2; pass++) Object.keys(o).forEach(function(id){ var el = document.getElementById(id); if(el && !box.contains(el)) setCtl(el, o[id]); }); }   // 2 pasadas: el slider maestro Notes complexity pisa a sus 4 hijos al moverse
+    finally { window.__favApplying = false; }
+  }
+  function neutralize(except){
+    candidates().forEach(function(el){
+      if(el === except || NOZERO.test(el.id)) return;
+      if(el.type === "checkbox") setCtl(el, false); else setCtl(el, el.min !== "" ? el.min : 0);
+    });
+  }
+  function sliderStates(el){
+    var mn = parseFloat(el.min), mx = parseFloat(el.max), stp = parseFloat(el.step) || 1;
+    if(!isFinite(mn)) mn = 0; if(!isFinite(mx)) mx = 100;
+    if(mx - mn <= 4) { var a = []; for(var v = mn; v <= mx + 1e-9; v += stp) a.push({ v: v, l: String(v) }); return a; }
+    return [0, 0.5, 1].map(function(f){ var v = Math.round((mn + (mx - mn) * f) / stp) * stp; return { v: v, l: v + "  (" + Math.round(f * 100) + "% del recorrido)" }; });
+  }
+  function wait(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
+  var running = false, abort = false;
+  function sleepAbortable(ms){ return new Promise(function(r){ var t0 = Date.now(); (function tick(){ if(abort || Date.now() - t0 >= ms) return r(); setTimeout(tick, 200); })(); }); }
+  function clickIfEnabled(id){ var e = document.getElementById(id); if(e && !e.disabled) e.click(); }
+
+  async function generate(tgt, value, s){
+    clickIfEnabled("consolaStopBtn");
+    await wait(300);
+    window.__favApplying = true;
+    try{
+      if(zero.checked) neutralize(tgt);
+      var mx = document.getElementById("mixChk_" + tgt.id); if(mx) setCtl(mx, false);   // MiX del control probado apagado: vale el valor exacto
+      setCtl(tgt, value);
+    } finally { window.__favApplying = false; }
+    if(window.__styles && window.__styles.wants && window.__styles.wants(false)){ try{ await window.__styles.load(); }catch(_e){} }
+    try{ if(typeof window.__rollToFront === "function") window.__rollToFront(); }catch(_e){}
+    try{ window.__songKindName = "ChordS (Control Lab)"; if(window.__songLog) window.__songLog.begin("ChordS"); }catch(_e){}
+    run(s, function(){ window.__commonChords.start(); });
+    clickIfEnabled("consolaPlayBtn");
+  }
+  async function labRun(){
+    if(running) return;
+    var tgt = document.getElementById(sel.value);
+    if(!tgt){ st.textContent = "Elegí un control de la lista."; return; }
+    if(!window.__commonChords || typeof window.__commonChords.start !== "function"){ st.textContent = "No encuentro el motor ChordS."; return; }
+    running = true; abort = false; go.disabled = true; stopB.disabled = false;
+    var snap = snapshot(), s = (parseInt(seedIn.value, 10) >>> 0), name = labelOf(tgt), ms = (parseInt(secs.value, 10) || 30) * 1000;
+    var states = tgt.type === "checkbox" ? [{ v: false, l: "APAGADO" }, { v: true, l: "PRENDIDO" }] : sliderStates(tgt);
+    try{
+      for(var i = 0; i < states.length && !abort; i++){
+        var head = "Prueba " + (i + 1) + "/" + states.length + " — " + name + " = " + states[i].l;
+        st.textContent = head + " · generando…";
+        await generate(tgt, states[i].v, s);
+        if(abort) break;
+        st.textContent = "▶ " + head + " · sonando " + (ms / 1000) + " s";
+        await sleepAbortable(ms);
+      }
+    } catch(e){ st.textContent = "Error: " + (e && e.message ? e.message : e); try{ console.error(e); }catch(_e){} }
+    finally {
+      clickIfEnabled("consolaStopBtn");
+      restore(snap);
+      var was = abort; running = false; go.disabled = false; stopB.disabled = true;
+      if(!/^Error/.test(st.textContent)) st.textContent = (was ? "Detenido" : "Listo") + " — controles repuestos como estaban.";
+    }
+  }
+  go.addEventListener("click", labRun);
+  stopB.addEventListener("click", function(){ abort = true; clickIfEnabled("consolaStopBtn"); });
 })();
 </script>
 </body>
