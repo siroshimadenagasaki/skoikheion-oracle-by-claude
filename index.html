@@ -29697,11 +29697,12 @@ window.addEventListener("load", sfAskPersist);
 </style>
 <details class="clock-card" id="controlLab">
   <summary>&#128300; Control Lab</summary>
-  <p class="lab-help">Elegí un control y apretá Probar. Genera la MISMA canción ChordS (misma seed) varias veces, cambiando solo ese control, y las reproduce una tras otra: sliders en 0%, 50% y 100%; checkboxes apagado y prendido. Al terminar vuelve todo como estaba. En los sliders aparece además un slider "En vivo": al moverlo regenera la misma canción con ese valor y suena al instante (■ Parar repone todo).</p>
+  <p class="lab-help">Elegí un control y apretá Probar. Regenera la MISMA canción (misma seed) con el modo que tengas activo (CreaturaRandom, ChordS, Partimenti, etc.; generá una antes), cambiando solo ese control, y las reproduce una tras otra: sliders en 0%, 50% y 100%; checkboxes apagado y prendido. Al terminar vuelve todo como estaba. En los sliders aparece además un slider "En vivo": al moverlo regenera la misma canción con ese valor y suena al instante (■ Parar repone todo).</p>
   <div class="lab-row">
     <input type="search" class="lab-filter" placeholder="Filtrar controles (ej. simult, triplets, textures)…" aria-label="Filtrar controles">
     <button type="button" class="chip lab-refresh" title="Actualizar la lista de controles">&#8635;</button>
   </div>
+  <div class="lab-row"><span>Modo</span><select class="lab-mode" aria-label="Modo (random choose) con el que se genera" title="Con qué botón se genera la canción de prueba. 'El que esté activo' regenera (🔀) con el modo que ya sonó; los demás aprietan ese random choose con la seed fija y después aplican el control."></select></div>
   <div class="lab-row"><select class="lab-sel" aria-label="Control a probar"></select></div>
   <div class="lab-row">
     <span>Seed</span><input type="number" class="lab-seed" min="0" max="4294967295" step="1" value="1234" aria-label="Seed de la prueba">
@@ -29771,6 +29772,12 @@ window.addEventListener("load", sfAskPersist);
     Math.random = siteRng(s >>> 0); mixSeed(s >>> 0);
     try{ return fn(); } finally { Math.random = prev; mixSeed(on ? seed : null); }
   }
+  // Igual que run(), pero espera una función async (p. ej. apretar un random choose y esperar a que termine): el azar fijo vale todo ese tiempo.
+  async function runAsync(s, fn){
+    var prev = Math.random;
+    Math.random = siteRng(s >>> 0); mixSeed(s >>> 0);
+    try{ return await fn(); } finally { Math.random = prev; mixSeed(on ? seed : null); }
+  }
   if(numIn){ numIn.value = String(seed); numIn.addEventListener("change", function(){ setSeed(numIn.value); }); }
   if(dice) dice.addEventListener("click", function(){ setSeed(Math.floor(orig() * 4294967296)); });
   if(btn) btn.addEventListener("click", function(){ setOn(!on); });
@@ -29782,13 +29789,13 @@ window.addEventListener("load", sfAskPersist);
   var cmp = document.getElementById("composeBtn");
   if(cmp) cmp.addEventListener("click", function(){ if(on) reseed(); }, true);
   paint();
-  window.__seed = { isOn: function(){ return on; }, value: function(){ return seed; }, set: setSeed, setOn: setOn, reseed: reseed, run: run, mulberry32: mulberry32 };
+  window.__seed = { isOn: function(){ return on; }, value: function(){ return seed; }, set: setSeed, setOn: setOn, reseed: reseed, run: run, runAsync: runAsync, mulberry32: mulberry32 };
 
   /* ---------------- CONTROL LAB ---------------- */
   var box = document.getElementById("controlLab"); if(!box) return;
   function $(q){ return box.querySelector(q); }
   var sel = $(".lab-sel"), filt = $(".lab-filter"), seedIn = $(".lab-seed"), zero = $(".lab-zero"), secs = $(".lab-secs"),
-      go = $(".lab-go"), stopB = $(".lab-stop"), refresh = $(".lab-refresh"), st = $(".lab-status");
+      go = $(".lab-go"), stopB = $(".lab-stop"), refresh = $(".lab-refresh"), st = $(".lab-status"), modeSel = $(".lab-mode");
   // Fuera de la lista: radio, mixer / volúmenes / efectos, tempo, MiX (se maneja solo) y otras herramientas de la página.
   var LISTEXCL = /^(consolaRadio|radioVintage|rollVScroll|progresion|mv[A-Z]|cif|mgu|sf2|fav|anexo|mix(Chk|Mode)_|consolaVolume|consolaReverb|consolaDelay|consolaTempo)|^mix\w*(Vol|Rev|Dly)$/;
   // "Poner los demás en cero" NO toca: estructura (largo, loop, Form, Intro), instrumentos, performance, Styles, Composer Configuration, etc.
@@ -29822,6 +29829,19 @@ window.addEventListener("load", sfAskPersist);
     if(keep && sel.querySelector('option[value="' + keep + '"]')) sel.value = keep;
     st.textContent = (nS + nC) ? "" : "Ningún control coincide con el filtro.";
   }
+  // Random choose disponibles (los botones que existan en la página).
+  var MODE_IDS = ["creaturaBtn", "creaturaBellaBtn", "creaturaOneSetBtn", "creaturaIntervalicBtn", "partimentiBtn", "commonChordsBtn", "oneChordBtn", "jazzTunesBtn", "jazziTunesBtn"];
+  function fillModes(){
+    var keep = modeSel.value; modeSel.innerHTML = "";
+    var o0 = document.createElement("option"); o0.value = ""; o0.textContent = "El que esté activo (🔀 regenera)"; modeSel.appendChild(o0);
+    MODE_IDS.forEach(function(id){
+      var b = document.getElementById(id); if(!b) return;
+      var t = (b.textContent || "").replace(/\s+/g, " ").trim() || id;
+      var o = document.createElement("option"); o.value = id; o.textContent = t; modeSel.appendChild(o);
+    });
+    if(keep && modeSel.querySelector('option[value="' + keep + '"]')) modeSel.value = keep;
+  }
+  fillModes();
   var filled = false;
   box.addEventListener("toggle", function(){ if(box.open){ if(!filled){ seedIn.value = String(seed); filled = true; } fillList(); } });
   filt.addEventListener("input", fillList);
@@ -29864,26 +29884,60 @@ window.addEventListener("load", sfAskPersist);
   function sleepAbortable(ms){ return new Promise(function(r){ var t0 = Date.now(); (function tick(){ if(abort || Date.now() - t0 >= ms) return r(); setTimeout(tick, 200); })(); }); }
   function clickIfEnabled(id){ var e = document.getElementById(id); if(e && !e.disabled) e.click(); }
 
+  // Motor activo (el que armó la última canción): ChordS / One Chord / Partimenti / JazzTunes; si ninguno, Creatura (sets del reloj).
+  function activeMode(){
+    var cc = window.__commonChords, pt = window.__partimenti, jt = window.__jazzTunes;
+    if(cc && cc.active) return cc.oneChord ? "One Chord" : "ChordS";
+    if(pt && pt.active) return "Partimenti";
+    if(jt && jt.active) return "JazzTunes";
+    return "Creatura";
+  }
+  function noSongMsg(){
+    if(modeSel.value) return "";   // con un random choose elegido, la canción se arma desde cero
+    var rb = document.getElementById("consolaRegenPlayBtn");
+    if(rb && !rb.disabled) return "";
+    return "Primero generá una canción (CreaturaRandom, ChordS, Partimenti, etc.) y después probá el control: el Lab usa el modo que tengas activo.";
+  }
+  // Regenera con el MISMO motor que está activo (igual que el botón 🔀) con la seed fija y el control elegido, y reproduce.
+  async function waitPlaying(ms){
+    var t0 = Date.now();
+    while(Date.now() - t0 < ms && !abort){ var sb = document.getElementById("consolaStopBtn"); if(sb && !sb.disabled) break; await wait(150); }
+    await wait(250);
+  }
   async function generate(tgt, value, s){
     clickIfEnabled("consolaStopBtn");
     await wait(300);
+    // 1) Con un random choose elegido: se aprieta ese botón con la seed fija (mismos sorteos en cada prueba) y se espera a que arranque.
+    if(modeSel.value){
+      var mb = document.getElementById(modeSel.value);
+      if(!mb) throw new Error("No encuentro el botón de ese modo.");
+      try{ window.__songKindName = (mb.textContent || "").trim() + " (Control Lab)"; }catch(_e){}
+      if(window.__seed && window.__seed.runAsync){ await window.__seed.runAsync(s, async function(){ mb.click(); await waitPlaying(25000); }); }
+      else { mb.click(); await waitPlaying(25000); }
+      clickIfEnabled("consolaStopBtn");
+      await wait(300);
+    }
+    // 2) Se fijan los controles (los demás en cero + el valor a probar: pisan lo que sorteó el random choose)
     window.__favApplying = true;
     try{
       if(zero.checked) neutralize(tgt);
       var mx = document.getElementById("mixChk_" + tgt.id); if(mx) setCtl(mx, false);   // MiX del control probado apagado: vale el valor exacto
       setCtl(tgt, value);
     } finally { window.__favApplying = false; }
-    if(window.__styles && window.__styles.wants && window.__styles.wants(false)){ try{ await window.__styles.load(); }catch(_e){} }
+    var mode = activeMode();
+    if(window.__styles && window.__styles.wants && window.__styles.wants(mode === "One Chord")){ try{ await window.__styles.load(); }catch(_e){} }
     try{ if(typeof window.__rollToFront === "function") window.__rollToFront(); }catch(_e){}
-    try{ window.__songKindName = "ChordS (Control Lab)"; if(window.__songLog) window.__songLog.begin("ChordS"); }catch(_e){}
-    run(s, function(){ window.__commonChords.start(); });
-    clickIfEnabled("consolaPlayBtn");
+    try{ window.__songKindName = mode + " (Control Lab)"; if(window.__songLog) window.__songLog.begin(mode); }catch(_e){}
+    // 3) 🔀: regenera con el motor activo (el que dejó el random choose) con la seed fija y reproduce.
+    var rb = document.getElementById("consolaRegenPlayBtn");
+    if(!rb || rb.disabled) throw new Error("No se pudo armar la canción de prueba con ese modo.");
+    run(s, function(){ rb.click(); });
   }
   async function labRun(){
     if(running) return;
     var tgt = document.getElementById(sel.value);
     if(!tgt){ st.textContent = "Elegí un control de la lista."; return; }
-    if(!window.__commonChords || typeof window.__commonChords.start !== "function"){ st.textContent = "No encuentro el motor ChordS."; return; }
+    var nm = noSongMsg(); if(nm){ st.textContent = nm; return; }
     running = true; abort = false; go.disabled = true; stopB.disabled = false;
     var snap = snapshot(), s = (parseInt(seedIn.value, 10) >>> 0), name = labelOf(tgt), ms = (parseInt(secs.value, 10) || 30) * 1000;
     var states = tgt.type === "checkbox" ? [{ v: false, l: "APAGADO" }, { v: true, l: "PRENDIDO" }] : sliderStates(tgt);
@@ -29935,6 +29989,7 @@ window.addEventListener("load", sfAskPersist);
     if(running) return;
     var tgt = selTarget(); if(!tgt || tgt.type !== "range") return;
     if(liveBusy){ livePending = v; return; }
+    if(!liveSnap){ var nm2 = noSongMsg(); if(nm2){ st.textContent = nm2; return; } }
     liveBusy = true;
     try{
       if(!liveSnap){ liveSnap = snapshot(); liveTargetId = tgt.id; go.disabled = true; stopB.disabled = false; }
