@@ -119,8 +119,8 @@
     flex-direction:column;
     gap:26px;
     width:100%;
-    max-width:360px;
-    justify-self:center;
+    max-width:720px; /* el doble del ancho de antes (360px): más espacio para los controles */
+    justify-self:end; /* siempre pegado a la derecha: no tapa la parte izquierda de la pantalla */
   }
   @media (max-width:760px){
     .stage{grid-template-columns:1fr;}
@@ -6798,7 +6798,7 @@ function sfIsDefaultId(id) { return SF_DEFAULT_FILES.some((d) => sfDefaultId(d) 
 // cae al sintetizador de batería.
 const SF_LEGACY_FILES = {
   piano:       { file: "Piano default.sf2",                                     bank: 0, program: 0  },
-  epiano:      { file: "Extra v2/Keys/ E.Pïano 1.sf2",      bank: 0, program: 4  },
+  epiano:      { file: "Extra v2/Keys/E.Piano 1.sf2",      bank: 0, program: 4  },
   harpsichord: { file: "Extra v2/Keys/Harpsichord hardcore.sf2",      bank: 0, program: 6  },
   celesta:     { file: "Extra v2/Percusive melodic/Celesta.sf2",      bank: 0, program: 8  },
   strings1:    { file: "Extra v2/Brass & Strings/Super strings.sf2",   bank: 0, program: 0 },
@@ -17282,7 +17282,8 @@ function runAnalysis() {
       dis:     { short: "disonancia", name: "7ª y retardos bajan por grado", tip: "Los retardos (4–3, 7–6) resuelven bajando por grado (Open Music Theory, 4ª especie). La 7ª del acorde que baja por grado ya era regla blanda del motor (Fenaroli): acá pasa a regla dura." },
       dirleap: { short: "dirección", name: "Saltos y cambio de sentido", tip: "UVM: los saltos grandes (6ªs y 8ª) llevan cambio de sentido antes y después; la 5ª lo necesita de un lado; dos saltos seguidos en el mismo sentido solo si arpegian una tríada u octava y están enmarcados por cambios de sentido." },
       par3:    { short: "3as/6as paralelas", name: "Máx. 3 terceras (o sextas) seguidas", tip: "UVM: no más de tres terceras consecutivas (ni sextas, ni décimas) entre un par de voces. (El curso lo dice para 2 voces: aplicarlo a cada par de las 4 es decisión mía.)" },
-      ends:    { short: "inicio/final", name: "Inicio y final", tip: "UVM: se abre con 8ª, 5ª arriba o unísono respecto del bajo y se cierra en 8ª o unísono. Acá: primer acorde con el soprano a 8ª/5ª del bajo; último con el soprano en la tónica." }
+      ends:    { short: "inicio/final", name: "Inicio y final", tip: "UVM: se abre con 8ª, 5ª arriba o unísono respecto del bajo y se cierra en 8ª o unísono. Acá: primer acorde con el soprano a 8ª/5ª del bajo; último con el soprano en la tónica." },
+      bass:    { short: "bajo", name: "Bajo", tip: "Movimiento en el bajo con las mismas reglas: los bajos del partimento (la nota de cada acorde) NO se cambian ni se mueven de lugar; lo que se agrega son figuras al final de su duración (nota de paso entre bajos a distancia de 3ª, aproximación por grado al próximo bajo, bordadura en un bajo repetido). Un salto del bajo que rompe la regla de saltos (6ª mayor, 7ª, tritono) se rellena con una nota intermedia. Cada figura cumple: saltos de Fux, queda debajo de tenor y alto, sin 5tas/8vas paralelas ni 2ª/7ª menor contra el soprano. No se toca el primer ni el último acorde, ni el salto entre celdas. Elección mía (no está en las fuentes): qué figuras y con qué probabilidad (pasos 70 %, aproximaciones 50 %, bordaduras 50 %). Destildado: el bajo queda como el partimento dado." }
     };
     function ctpTriad(a, b, c){                                  // ¿las tres alturas forman una tríada mayor o menor (cualquier inversión)?
       var p = uniq([mod(a, 12), mod(b, 12), mod(c, 12)]).sort(function(x, y){ return x - y; });
@@ -18908,6 +18909,70 @@ function runAnalysis() {
         }
         melodyEvents.sort(function(a, b2){ return a.startBeat - b2.startBeat; });
       }
+      // TestContrapunctus · Bajo (casilla "Bajo" de TestContrapunctus, prendida por defecto): el bajo también pasa por las reglas CTP. Los bajos del partimento NO se tocan; se les agregan
+      // FIGURAS al final de su duración (movimiento): nota de paso, aproximación por grado o bordadura. Un salto que rompe la regla de saltos se rellena con una nota intermedia.
+      // Se arma ANTES de Chromatism/Cycles: esos módulos transportan cada celda entera (figuras incluidas). No cruza celdas, ni toca el primer y el último acorde.
+      var ctpBassN = null;
+      if(song.ctp && song.ctp.rules && song.ctp.rules.bass){
+        ctpBassN = { fill: 0, pass: 0, appr: 0, neigh: 0, unfixed: 0 };
+        (function(){
+          var KPc = song.key % 12, isMinS = song.mode === "minor", MAJs = [0, 2, 4, 5, 7, 9, 11], HMINs = [0, 2, 3, 5, 7, 8, 11];
+          var nChords = song.chords.length;
+          var slotOf = function(t0){ var k; for(k = slotRefs.length - 1; k >= 0; k--) if(slotRefs[k].abs <= t0 + 1e-6) return slotRefs[k]; return null; };
+          var barOfB = function(t0){ var b0 = 0; while(b0 + 1 < NUM_BARS && RHYTHM.start(b0 + 1) <= t0 + 1e-6) b0++; return b0; };
+          var overl = function(arr, s0, e0){ return arr.filter(function(ev){ return ev.startBeat < e0 - 1e-6 && ev.startBeat + ev.durBeats > s0 + 1e-6; }); };
+          var sopAt = function(t0){ var best = null; melodyEvents.forEach(function(ev){ if(ev.startBeat <= t0 + 1e-6 && ev.startBeat + ev.durBeats > t0 + 1e-6 && (!best || ev.startBeat >= best.startBeat)) best = ev; }); return best ? best.midi : null; };
+          var perfPar = function(b0, s0, b1, s1){ if(s0 === null || s1 === null) return false; var db = b1 - b0, ds = s1 - s0; if(!db || !ds || (db > 0) !== (ds > 0)) return false; var i0 = ((s0 - b0) % 12 + 12) % 12, i1 = ((s1 - b1) % 12 + 12) % 12; return (i1 === 0 || i1 === 7) && i0 === i1; };
+          var prev = null, out = [], evs = bassEvents.slice().sort(function(x, y){ return x.startBeat - y.startBeat; });
+          evs.forEach(function(cur, n){
+            out.push(cur);
+            var nxt = evs[n + 1], pr = evs[n - 1] || null;
+            if(!nxt || Math.abs(cur.startBeat + cur.durBeats - nxt.startBeat) > 1e-6 || cur.durBeats < 1 - 1e-6) return;
+            var sc = slotOf(cur.startBeat), sn = slotOf(nxt.startBeat);
+            if(!sc || !sn || sc.idx === 0 || sn.idx >= nChords - 1 || sc.idx >= nChords - 1) return;           // no el primer ni el último acorde
+            if(Math.abs(sn.abs - nxt.startBeat) < 1e-6 && sn.ch.cellStart) return;                              // no cruza celdas (cada celda se transporta aparte)
+            var cc = sc.ch, isMinC = cc.minorSec != null ? cc.minorSec : isMinS, scale = isMinC ? HMINs : MAJs;
+            var inSc = function(m){ return scale.indexOf((((m - KPc) % 12) + 12) % 12) >= 0; };
+            var cPcs = [cc.bass, cc.t, cc.a, cc.s].map(function(m){ return ((m % 12) + 12) % 12; }), nPcs = [sn.ch.bass, sn.ch.t, sn.ch.a, sn.ch.s].map(function(m){ return ((m % 12) + 12) % 12; });
+            var D = nxt.midi - cur.midi, A = Math.abs(D), f = cur.durBeats >= 2 - 1e-6 ? 1 : 0.5, fs = cur.startBeat + cur.durBeats - f, fe = cur.startBeat + cur.durBeats;
+            var leapBad = !core.ctpLeapOK(cur.midi, nxt.midi, KPc, isMinC);
+            var upper = overl(chordEvents, fs, fe), sops = overl(melodyEvents, fs, fe);
+            var okAbove = function(x){
+              if(x < 28 || x > 62) return false;
+              if(upper.some(function(ev){ return x >= ev.midi; })) return false;                                  // el bajo queda debajo de tenor y alto
+              if(sops.some(function(ev){ var ic = (((ev.midi - x) % 12) + 12) % 12; return ev.midi <= x || ic === 1 || ic === 11; })) return false;   // sin 2ª/7ª menor contra el soprano
+              if(perfPar(cur.midi, sopAt(fs - 0.01), x, sopAt(fs))) return false;                                // sin 5tas/8vas paralelas con el soprano
+              return true;
+            };
+            var dirOK = function(x){ var m1 = pr ? cur.midi - pr.midi : null; return core.ctpDirOK(cur.midi, null, m1, x - cur.midi) && core.ctpDirOK(x, m1 === null ? null : x - cur.midi, x - cur.midi, nxt.midi - x); };
+            var X = null, kind = null, x;
+            if(leapBad){                                                                                          // relleno obligatorio: una nota que parte el salto en dos saltos permitidos
+              var bestC = 1e9;
+              for(x = Math.min(cur.midi, nxt.midi); x <= Math.max(cur.midi, nxt.midi); x++){
+                if(x === cur.midi || x === nxt.midi || !(inSc(x) || cPcs.indexOf(((x % 12) + 12) % 12) >= 0)) continue;
+                if(!core.ctpLeapOK(cur.midi, x, KPc, isMinC) || !core.ctpLeapOK(x, nxt.midi, KPc, isMinC) || !okAbove(x)) continue;
+                var cost = Math.abs(x - (cur.midi + nxt.midi) / 2) + (nPcs.indexOf(((x % 12) + 12) % 12) >= 0 || cPcs.indexOf(((x % 12) + 12) % 12) >= 0 ? 0 : 3);
+                if(cost < bestC){ bestC = cost; X = x; kind = "fill"; }
+              }
+              if(X === null) ctpBassN.unfixed++;
+            } else if(A >= 3 && A <= 4 && Math.random() < 0.7){                                                 // nota de paso entre bajos a distancia de 3ª
+              for(x = Math.min(cur.midi, nxt.midi) + 1; x < Math.max(cur.midi, nxt.midi); x++) if(inSc(x) && Math.abs(x - cur.midi) <= 2 && Math.abs(x - nxt.midi) <= 2 && okAbove(x) && dirOK(x)){ X = x; kind = "pass"; break; }
+            } else if(A >= 5 && Math.random() < 0.5){                                                           // aproximación por grado al próximo bajo, desde el lado del bajo actual
+              var sg = D > 0 ? -1 : 1, cands = [1, 2].map(function(s){ return nxt.midi + sg * s; }).filter(function(m){ return inSc(m) && m !== cur.midi && core.ctpLeapOK(cur.midi, m, KPc, isMinC) && okAbove(m) && dirOK(m); });
+              if(cands.length){ X = cands[Math.floor(Math.random() * cands.length)]; kind = "appr"; }
+            } else if(D === 0 && cur.durBeats >= 2 - 1e-6 && Math.random() < 0.5){                              // bordadura en un bajo repetido
+              var nc = [1, 2, -1, -2].map(function(s){ return cur.midi + s; }).filter(function(m){ return inSc(m) && okAbove(m) && dirOK(m); });
+              if(nc.length){ X = nc[Math.floor(Math.random() * nc.length)]; kind = "neigh"; }
+            }
+            if(X === null) return;
+            cur.durBeats -= f;
+            out.push({ midi: X, startBeat: fs, durBeats: f, bar: barOfB(fs), fig: "ctpB" });
+            ctpBassN[kind]++;
+          });
+          bassEvents.length = 0;
+          out.sort(function(x, y){ return x.startBeat - y.startBeat; }).forEach(function(ev){ bassEvents.push(ev); });
+        })();
+      }
       // Chromatism · modo 2 (casilla #partimentiChromaTr, test): con todo ya armado en la tonalidad, cada celda del cuerpo se transporta d semitonos (d al azar entre -máx y +máx,
       // máx = slider Chromatism × curva MiX × 6). La primera celda y la cadencia final quedan en la tonalidad. Se mueven armonía, bajo y melodías; la batería no.
       var chromaTrN = null, cycOff = 0, cycRunLeft = 0, cycRunVal = 0;
@@ -18998,6 +19063,7 @@ function runAnalysis() {
         var AU = { par: "5as/8as paralelas", leap: "saltos", leapB: "saltos del bajo dado", hid: "directas", ovl: "solapamiento", dis: "disonancia", dirleap: "dirección", par3: "3as/6as", ends: "inicio/final" };
         ctpTxt = " · TestContrapunctus: " + (bad.length ? bad.map(function(k){ return au[k] + "× " + AU[k]; }).join(", ") : "0 infracciones") +
                  " [aflojó " + (song.stats.ctpL1 || 0) + " + sin reglas " + (song.stats.ctpL2 || 0) + " acordes; soprano liso " + song.ctp.stats.dimPlain + "]";
+        if(ctpBassN) ctpTxt += " · bajo: " + (ctpBassN.pass + ctpBassN.appr + ctpBassN.neigh + ctpBassN.fill) + " figuras (" + ctpBassN.pass + " paso, " + ctpBassN.appr + " aprox., " + ctpBassN.neigh + " bord., " + ctpBassN.fill + " relleno" + (ctpBassN.unfixed ? ", " + ctpBassN.unfixed + " salto sin arreglo" : "") + ")";
       }
       var sub = document.getElementById("consolaSongSets");
       if(sub) sub.textContent = "(Partimenti · experimental · " + keyName + (chromaTrN ? (cycOn ? " · Cycles celdas " : " · Chromatism celdas ") + chromaTrN.map(function(d){ return (d > 0 ? "+" : "") + d; }).join(" ") : "") + (space ? " · Space" : "") + (ocmN !== null ? " · Movimientos " + ocmN : "") + (foxN !== null ? " · Fouxbourdon " + foxN : "") + (song.mod && song.stats.modCells ? " · Modulatorias " + song.stats.modCells : "") + (song.schemata && song.stats.schtCells ? " · Schemata " + song.stats.schtCells : "") + (song.cyc && song.mode !== "minor" ? " · Ciclos " + song.stats.cycCells + (song.stats.cycCells === 1 ? " ciclo" : " ciclos") : "") + (song.mycad ? " · MyCadences " + song.stats.myCells + (song.stats.myCells === 1 ? " celda" : " celdas") : "") + (song.rofo && song.stats.rofoSteps ? " · RofO " + Math.round(100 * song.stats.rofoVar / song.stats.rofoSteps) + "% variantes" : (song.rofo ? " · RofO" : "")) + " · " + (tempo.name ? tempo.name + " " : "") + "♩=" + tempo.bpm + " · dim " + dimPct + "%" + (tex ? " · textura " + tex.name + (texDblOn ? " + voces duplicadas" : "") : "") + (silPct !== 50 ? " · silences " + silPct + "%" : " · silences") + (muSilPlan ? " · musicSilence " + muSilPct + "% (" + muSilPlan.n + (muSilPlan.n === 1 ? " pausa" : " pausas") + (muSilPlan.n ? ", " + muSilPlan.sec.toFixed(1) + " s" : "") + ")" : "") + (innerN !== null ? " · internal_movement " + innerN + (innerN === 1 ? " figura" : " figuras") + " (" + innerDimN + " rápidas · dim interna " + innerDimPct + "%)" : "") + " · " + N + " acordes · " + dens + " por compás · " +
