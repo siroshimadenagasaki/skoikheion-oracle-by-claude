@@ -18380,7 +18380,7 @@ function runAnalysis() {
         sl.appendChild(rg); sl.appendChild(vv); row.appendChild(sl);
         xb.appendChild(row);
       }
-      mixRow("Schemata", "Esquemas galantes (Romanesca, Prinner, Meyer, Do-Re-Mi, Sol-Fa-Mi, Aprile, Jupiter, Pastorella, Fenaroli, Ponte, Passo Indietro, Quiescenza) en las celdas del cuerpo: 0% = ninguno, 100% = solo esquemas.", "SchMix", "SchMixPct");
+      mixRow("Schemata (galantes)", "Esquemas galantes (Romanesca, Prinner, Meyer, Do-Re-Mi, Sol-Fa-Mi, Aprile, Jupiter, Pastorella, Fenaroli, Ponte, Passo Indietro, Quiescenza) en las celdas del cuerpo: 0% = ninguno, 100% = solo esquemas.", "SchMix", "SchMixPct");
       mixRow("Cadencias", "Cadencias (simple, compuesta, doble) en las celdas del cuerpo: 0% = ninguna en el medio (la final se mantiene), 100% = solo cadencias.", "CadMix", "CadMixPct");
       b.appendChild(xb);
       // RofO: Regla de la octava con tus reemplazos de acordes (datos de tus .gp). Tildado: la canción es de Regla ↑/↓ y cada paso mezcla el acorde base con una variante.
@@ -18447,11 +18447,11 @@ function runAnalysis() {
       mdb.appendChild(mdw); b.appendChild(mdb);
       // Schemata: tu biblioteca de My_schemattas._v6.gp. Tildado: con probabilidad p cada celda del cuerpo es uno de tus esquemas (Romanesca, Prinner, Fonte, Monte, Ut re mi...).
       var stb = mk("div", "padding:2px 0 6px;");
-      var sth = mk("div", "font-size:12px;font-weight:700;color:var(--ink-muted);margin-bottom:2px;", "Schemata");
+      var sth = mk("div", "font-size:12px;font-weight:700;color:var(--ink-muted);margin-bottom:2px;", "Schemata (mi biblioteca)");
       sth.title = "Schemata: tu biblioteca de My_schemattas._v6.gp (" + core.SCHT.u.length + " unidades: Romanesca y sus variantes, Prinner, Fonte, Monte, Ut re mi, Fenaroli, Quiescenza). Con probabilidad p, cada celda del cuerpo de la canción es una de ellas. Algunas modulan: la celda siguiente vuelve a la tónica de la canción.";
       stb.appendChild(sth);
       var stw = mk("div", "display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;");
-      var stChk = label("Schemata", "Usa tus esquemas (Romanesca, Prinner, Fonte...) como celdas (valen desde la próxima canción: 🔀 / G).", "opt", "schemata", true);
+      var stChk = label("Schemata (mi biblioteca)", "Usa tus esquemas (Romanesca, Prinner, Fonte...) como celdas (valen desde la próxima canción: 🔀 / G).", "opt", "schemata", true);
       stChk.firstChild.id = "partimentiSchemata"; stw.appendChild(stChk);
       var stl = mk("label", LBL); stl.title = "Proporción de celdas que son esquemas tuyos en vez de la generada (0 = ninguna, 100 = siempre que haya uno que entre).";
       var str_ = mk("input"); str_.type = "range"; str_.min = 0; str_.max = 100; str_.step = 5; str_.value = 30; str_.id = "partimentiSchemataPct"; str_.style.cssText = "width:90px;";
