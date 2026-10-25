@@ -30106,5 +30106,119 @@ window.addEventListener("load", sfAskPersist);
   try{ seedIn.value = String(window.__seed ? window.__seed.value() : 1234); }catch(_e){}
 })();
 </script>
+<style id="qhelpCss">
+  .qhelp-btn{display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;width:14px;height:14px;min-width:14px;margin:0 3px;padding:0;border-radius:50%;border:1px solid var(--gold-dim);background:transparent;color:var(--gold);font:700 9px/1 'JetBrains Mono',monospace;cursor:pointer;vertical-align:middle;flex:0 0 auto;opacity:.7;}
+  .qhelp-btn:hover,.qhelp-btn.on{opacity:1;background:var(--gold);color:var(--bg);}
+  #qhelpPop{position:fixed;z-index:100000;display:none;box-sizing:border-box;max-width:min(340px,calc(100vw - 16px));max-height:50vh;overflow:auto;padding:8px 10px;background:var(--surface-2);color:var(--ink);border:1px solid var(--gold-dim);border-radius:8px;box-shadow:0 6px 24px rgba(0,0,0,.55);font-size:12px;line-height:1.4;white-space:normal;}
+  #qhelpPop b{display:block;margin-bottom:3px;color:var(--gold);}
+</style>
+<script id="qhelpJs">
+/* Botón "?" junto a cada checkbox y slider: muestra una descripción breve.
+   El texto sale del tooltip (title) que ya tenga el control, su etiqueta o el bloque que lo contiene; los que no tenían, se describen acá (QH_ID / QH_GROUP). */
+(function(){
+  var QH_ID = {
+    consolaVolume: "Volumen general de toda la salida (todas las pistas juntas). El volumen de cada pista se ajusta en el Mixer.",
+    consolaChordChk: "Prende o apaga la pista de armonía (acordes). Apagada, no se genera ni suena.",
+    consolaBassChk: "Prende o apaga la pista de bajo. Apagada, no se genera ni suena.",
+    consolaMelodyChk: "Prende o apaga la pista de melodía. Apagada, no se genera ni suena.",
+    consolaDrumChk: "Prende o apaga la pista de batería. Apagada, no se genera ni suena.",
+    mixDrumVol: "Volumen de la pista de batería (0 a 150%).",
+    mixBassVol: "Volumen de la pista de bajo (0 a 150%).",
+    mixChordVol: "Volumen de la pista de armonía (0 a 150%).",
+    mixMelodyVol: "Volumen de la pista de melodía (0 a 150%).",
+    cifSymbolsToggle: "Muestra los cifrados con símbolos especiales (Δ ø ° +) en vez de texto (Maj7, m7(♭5), dim7, aug).",
+    mguCh: "Al reproducir una canción MGU en este módulo, hace sonar (o no) los acordes.",
+    mguBa: "Al reproducir una canción MGU en este módulo, hace sonar (o no) el bajo.",
+    mguMe: "Al reproducir una canción MGU en este módulo, hace sonar (o no) la melodía.",
+    progresionTempo: "Velocidad en BPM (40 a 200) de la progresión de acordes de este módulo.",
+    mvTempo: "Velocidad en BPM (40 a 200) de los 4 acordes de este módulo."
+  };
+  // Controles generados sin id/título: se describen por el bloque donde viven.
+  var QH_GROUP = [
+    ["#commonChordsFamilies", "Familia de acordes de ChordS. Si tildás una o más, ChordS usa solo acordes de esas familias; sin ninguna tildada (o con All), usa todas."],
+    ["#commonChordsScales", "Escala de ChordS. Si tildás una o más, solo entran acordes que tengan algún modo en esas escalas (así la melodía siempre toca esa escala); sin ninguna tildada, usa todas."]
+  ];
+  var QH_PREFIX = [
+    [/^partimentiCycles_/, "Peso (%) de este intervalo en los ciclos de Partimenti (por cuánto se transpone el ciclo). Entre todos los intervalos no pasan de 100%; lo que falta lo completa Chromatism."]
+  ];
+  var QH_LABEL = {
+    "descartar": "Marca este beat para que deje de salir en el sorteo de beats (se guarda en este navegador). Para borrarlo del todo hay que sacarlo de la biblioteca y de Midi/Drum Beats/."
+  };
+  var SEL = "input[type=checkbox],input[type=range]";
+  function norm(s){ return (s || "").replace(/\s+/g, " ").trim(); }
+  function labelEl(i){
+    var l = i.closest("label");
+    if(!l && i.id){ var f = document.querySelector('label[for="' + i.id + '"]'); if(f && f.parentNode === i.parentNode) l = f; }
+    return l;
+  }
+  function labelText(l){
+    if(!l) return "";
+    var c = l.cloneNode(true);
+    Array.prototype.forEach.call(c.querySelectorAll("input,select,span,button"), function(n){ n.remove(); });
+    var t = norm(c.textContent);
+    return t || norm(l.textContent);
+  }
+  function attrTitle(e){ return norm(e.getAttribute && e.getAttribute("title")); }
+  function descFor(i, lab){
+    var d = i.id && QH_ID[i.id]; if(d) return d;
+    d = attrTitle(i); if(d) return d;
+    if(lab){ d = attrTitle(lab); if(d) return d; }
+    var e = i.parentElement, k = 0;
+    while(e && e !== document.body && k < 5){ d = attrTitle(e); if(d) return d; e = e.parentElement; k++; }
+    var j;
+    for(j = 0; j < QH_PREFIX.length; j++) if(i.id && QH_PREFIX[j][0].test(i.id)) return QH_PREFIX[j][1];
+    for(j = 0; j < QH_GROUP.length; j++) if(i.closest(QH_GROUP[j][0])) return QH_GROUP[j][1];
+    var lt = labelText(lab); if(QH_LABEL[lt]) return QH_LABEL[lt];
+    return norm(i.getAttribute("aria-label"));
+  }
+  var pop = null, cur = null;
+  function closePop(){ if(pop) pop.style.display = "none"; if(cur) cur.classList.remove("on"); cur = null; }
+  function openPop(btn){
+    if(!pop){ pop = document.createElement("div"); pop.id = "qhelpPop"; pop.setAttribute("role", "tooltip"); document.body.appendChild(pop); }
+    if(cur) cur.classList.remove("on");
+    cur = btn; btn.classList.add("on");
+    pop.innerHTML = "";
+    if(btn._qhTitle){ var b = document.createElement("b"); b.textContent = btn._qhTitle; pop.appendChild(b); }
+    pop.appendChild(document.createTextNode(btn._qhText));
+    pop.style.display = "block"; pop.style.left = "0px"; pop.style.top = "0px";
+    var r = btn.getBoundingClientRect(), w = pop.offsetWidth, h = pop.offsetHeight;
+    var x = Math.max(8, Math.min(r.left, window.innerWidth - w - 8));
+    var y = r.bottom + 6; if(y + h > window.innerHeight - 8) y = Math.max(8, r.top - h - 6);
+    pop.style.left = x + "px"; pop.style.top = y + "px";
+  }
+  function decorate(i){
+    if(i.dataset.qh || i.hasAttribute("hidden") || i.closest(".ivector-cell") || i.closest("#qhelpPop")) return;
+    i.dataset.qh = "1";
+    var lab = labelEl(i), text = descFor(i, lab);
+    if(!text) return;
+    var btn = document.createElement("button");
+    btn.type = "button"; btn.className = "qhelp-btn"; btn.textContent = "?";
+    btn.setAttribute("aria-label", "Ayuda: " + (labelText(lab) || i.id || "control"));
+    btn._qhText = text; btn._qhTitle = labelText(lab);
+    btn.addEventListener("click", function(e){ e.preventDefault(); e.stopPropagation(); if(cur === btn) closePop(); else openPop(btn); });
+    if(i.type === "range" && lab && !lab.contains(i)) lab.appendChild(btn);   // slider con etiqueta aparte: el "?" va al lado del nombre
+    else (lab || i).insertAdjacentElement("afterend", btn);
+  }
+  function scan(root){ Array.prototype.forEach.call((root || document).querySelectorAll(SEL), decorate); }
+  document.addEventListener("click", function(e){ if(pop && cur && !pop.contains(e.target)) closePop(); }, true);
+  document.addEventListener("keydown", function(e){ if(e.key === "Escape") closePop(); });
+  window.addEventListener("scroll", closePop, true);
+  window.addEventListener("resize", closePop);
+  var timer = null;
+  function later(){ if(timer) return; timer = setTimeout(function(){ timer = null; scan(); }, 250); }
+  new MutationObserver(function(ms){
+    for(var a = 0; a < ms.length; a++){
+      var ad = ms[a].addedNodes;
+      for(var b = 0; b < ad.length; b++){
+        var n = ad[b];
+        if(n.nodeType !== 1 || n.namespaceURI !== "http://www.w3.org/1999/xhtml") continue;
+        if(n.tagName === "INPUT" || (n.querySelector && n.querySelector(SEL))){ later(); return; }
+      }
+    }
+  }).observe(document.body, { childList: true, subtree: true });
+  scan();
+  window.addEventListener("load", function(){ scan(); });
+})();
+</script>
 </body>
 </html>
