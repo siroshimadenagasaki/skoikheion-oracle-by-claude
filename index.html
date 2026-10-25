@@ -557,7 +557,7 @@
   .clock-stage{position:relative;max-width:424px;margin:0 auto;padding:0 52px;box-sizing:border-box;}
   button.chip.rot-side{position:absolute;top:50%;transform:translateY(-50%);z-index:2;font-size:9px;line-height:1.15;padding:5px 6px;border-radius:10px;text-align:center;}
   button.chip.rot-left{left:0;} button.chip.rot-right{right:0;}
-  .clock-actions{display:flex;justify-content:center;gap:10px;margin-top:22px;flex-wrap:wrap;}
+  .clock-actions{display:flex;justify-content:center;align-items:flex-start;gap:10px;margin-top:22px;flex-wrap:wrap;}
   button.chip{
     font-family:'JetBrains Mono',monospace;
     font-size:11px;
@@ -965,6 +965,7 @@
   .consola-field input[type=range]:disabled{opacity:.4;}
   .consola-val{font-family:'JetBrains Mono',monospace;color:var(--ink-muted);font-size:11.5px;}
   .consola-loop{flex-direction:row;align-items:center;gap:8px;}
+  .prerender-field{justify-content:center;}
   .consola-loop input[type=checkbox]{width:16px;height:16px;accent-color:var(--gold);cursor:pointer;}
   .consola-loop label{cursor:pointer;}
   .consola-instruments{gap:8px;}
@@ -1430,6 +1431,7 @@
   body.roll-front #consolaRollsLayer .consola-roll-wrap svg{cursor:pointer;}
   /* "+ sounds": Real sound (SoundFont) y loadExtra contraídos por defecto */
   .sounds-group{display:flex;flex-direction:column;align-items:center;gap:8px;}
+  .clock-actions > .sounds-group{flex:1 1 100%;}
   .sounds-group .collapsible-content.collapsed{display:none;}
   .sounds-toggle::before{content:"+ ";}
   .sounds-toggle[aria-expanded="true"]::before{content:"\2212 ";}
@@ -1581,7 +1583,7 @@
       </div>
       </div>
       <div class="clock-actions">
-        <div style="display:flex;flex-direction:column;align-items:stretch;gap:6px;">
+        <div style="display:flex;flex-direction:column;align-items:stretch;gap:6px;flex:1 1 100%;">
           <div id="consolaTransportRow" style="display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;gap:8px;">
             <button type="button" class="chip primary" id="consolaPlayBtn" title="Reproduce el segmento en loop — repite siempre la misma secuencia (la última generada) hasta que la cambies con 🔀 o elijas otras notas.">&#9658; Play</button>
             <button type="button" class="chip chip-small" id="consolaRegenPlayBtn" disabled title="Atajo: tecla G. Detiene lo que suene, sortea una variación nueva del segmento (mismo set de notas elegido) y la reproduce de una — funciona también mientras está sonando.">&#128256;</button>
