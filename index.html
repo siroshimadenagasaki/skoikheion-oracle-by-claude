@@ -1598,10 +1598,10 @@
             <button type="button" class="chip" id="consolaStopBtn" disabled>&#9632; Stop</button>
           </div>
           <div class="seed-bar" id="seedCard" data-random="on">
-            <button type="button" class="seed-switch seed-small" id="seedSwitchBtn" role="switch" aria-checked="true" title="Random ON (por defecto): todo al azar, como siempre (no se toca nada). Random OFF: el azar sale de una secuencia fija (seed); cada vez que generás una canción (CreaturaRandom, ChordS, Partimenti, JazzTunes, etc.) con los mismos controles sale la MISMA canción, así podés mover un control y escuchar solo qué cambia.">
+            <button type="button" class="seed-switch seed-small" id="seedSwitchBtn" role="switch" aria-checked="true" title="Random ON (por defecto): cada canción nueva sortea su propia seed y la muestra en el campo. Random OFF: se queda con la seed del campo; cada vez que generás una canción (CreaturaRandom, ChordS, Partimenti, JazzTunes, etc.) con los mismos controles sale la MISMA canción. Si sale una linda: pasá a Random OFF y cambiá un ajuste para escuchar solo qué cambia.">
               <span class="seed-knob"></span><span class="seed-txt">Random ON</span>
             </button>
-            <div class="seed-row" title="Número de seed: solo cuenta con Random OFF">
+            <div class="seed-row" title="Seed de la canción en curso. Con Random OFF se mantiene; si la escribís o sorteás con el dado, pasa a Random OFF">
               <span>Seed</span>
               <input type="number" class="seed-num" min="0" max="4294967295" step="1" value="1234" aria-label="Número de seed">
               <button type="button" class="chip seed-dice" title="Sortear otro seed">&#127922;</button>
@@ -29779,7 +29779,7 @@ window.addEventListener("load", sfAskPersist);
 .seed-bar .seed-num{width:104px;}
 .seed-bar .seed-row{gap:5px;font-size:12px;flex:none;}
 .seed-bar .seed-dice{padding:4px 8px;}
-.seed-bar[data-random="on"] .seed-row{opacity:.55;}
+
 #controlLab{max-width:980px;margin:18px auto 40px;padding:10px 14px;}
 #controlLab .lab-head{display:flex;align-items:center;justify-content:space-between;gap:12px;}
 #controlLab .lab-title{font-size:15px;font-weight:800;}
@@ -29858,8 +29858,19 @@ window.addEventListener("load", sfAskPersist);
   function setOn(v){
     if(v === on) return;
     on = v;
-    if(on){ reseed(); Math.random = cur; } else { Math.random = orig; mixSeed(null); }
+    if(on){ clearTimeout(genT); reseed(); Math.random = cur; } else { clearTimeout(genT); Math.random = orig; mixSeed(null); }
     paint();
+  }
+  // Random ON: cada canción nueva sortea SU seed (se ve en el campo) y el motor genera con esa seed; así, si sale una linda, se pasa a
+  // Random OFF y se cambia un ajuste con la misma seed. La seed rige solo la generación (de SLbegin / Compose hasta que arranca la canción).
+  var genT = null;
+  function endGen(){ clearTimeout(genT); if(!on){ Math.random = orig; mixSeed(null); } }
+  function beginRandom(){
+    seed = (orig() * 4294967296) >>> 0;
+    if(numIn) numIn.value = String(seed);
+    try{ localStorage.setItem(KEY, String(seed)); }catch(_e){}
+    reseed(); Math.random = cur;
+    clearTimeout(genT); genT = setTimeout(endGen, 30000);
   }
   function setSeed(n){
     n = parseInt(n, 10); if(!isFinite(n) || n < 0) n = 0; seed = n >>> 0;
@@ -29879,16 +29890,17 @@ window.addEventListener("load", sfAskPersist);
     Math.random = siteRng(s >>> 0); mixSeed(s >>> 0);
     try{ return await fn(); } finally { Math.random = prev; mixSeed(on ? seed : null); }
   }
-  if(numIn){ numIn.value = String(seed); numIn.addEventListener("change", function(){ setSeed(numIn.value); }); }
-  if(dice) dice.addEventListener("click", function(){ setSeed(Math.floor(orig() * 4294967296)); });
+  if(numIn){ numIn.value = String(seed); numIn.addEventListener("change", function(){ setSeed(numIn.value); setOn(true); }); }
+  if(dice) dice.addEventListener("click", function(){ setSeed(Math.floor(orig() * 4294967296)); setOn(true); });
   if(btn) btn.addEventListener("click", function(){ setOn(!on); });
   // Cada canción nueva arranca la secuencia desde el principio (solo con Seed ON).
   var SLg = window.__songLog;
   if(SLg && typeof SLg.begin === "function" && !SLg.__seedHooked){
-    var ob = SLg.begin; SLg.begin = function(){ if(on) reseed(); return ob.apply(this, arguments); }; SLg.__seedHooked = true;
+    var ob = SLg.begin; SLg.begin = function(){ if(on){ reseed(); if(numIn) numIn.value = String(seed); } else beginRandom(); return ob.apply(this, arguments); }; SLg.__seedHooked = true;
+    var os = SLg.stamp; SLg.stamp = function(){ var r = os.apply(this, arguments); endGen(); return r; };   // la canción ya está armada
   }
   var cmp = document.getElementById("composeBtn");
-  if(cmp) cmp.addEventListener("click", function(){ if(on) reseed(); }, true);
+  if(cmp) cmp.addEventListener("click", function(){ if(on){ reseed(); if(numIn) numIn.value = String(seed); } else beginRandom(); }, true);
   paint();
   window.__seed = { isOn: function(){ return on; }, value: function(){ return seed; }, set: setSeed, setOn: setOn, reseed: reseed, run: run, runAsync: runAsync, mulberry32: mulberry32 };
 
