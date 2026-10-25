@@ -2065,7 +2065,14 @@
     <button class="module-toggle" aria-expanded="false" aria-controls="foundationsContent" onclick="toggleModule(this)"></button>
     <h2>Fundations</h2>
     <div class="collapsible-content collapsed" id="foundationsContent">
-    <p class="consola-status">Siempre activas, sin control: TEMPODENSITY, SPEEDLIMIT, PITCHFX. Form es la estructura de la canción y no depende de Composer Configuration.</p>
+    <p class="consola-status">Funciones de base: prendidas por defecto y no dependen del switch de Composer Configuration. Apagalas para escuchar cómo suena sin ellas. (PITCHFX no está acá: lo activan glissando / bend&darr; de Ornaments y bendv2, que están en Composer Configuration.)</p>
+      <div class="consola-field consola-instruments">
+        <label>Tempo y velocidad</label>
+        <div class="consola-inst-row">
+          <span class="consola-inst-toggle" title="TEMPODENSITY: la armonía se adapta al tempo. Con el tempo vigente al generar, quita los ataques de armonía más seguidos de lo tocable (separación mínima 0,22 s si hay un acorde de 3+ notas, 0,11 s con notas sueltas); el acorde anterior se alarga para tapar el hueco. A tempo bajo no cambia nada. Solo quita ataques, nunca agrega ni cambia notas. Apagada = la armonía queda como la arma el motor, aunque a tempo alto sea intocable. Se calcula al generar."><input type="checkbox" id="consolaTempoDensityChk" checked><label for="consolaTempoDensityChk">TEMPODENSITY</label></span>
+          <span class="consola-inst-toggle" title="SPEEDLIMIT: límite de velocidad de las líneas de una sola nota según el tempo. Separación mínima entre ataques: 0,09 s en Melody, Melody n2 y bebopMelody (unas 11 notas por segundo) y 0,12 s en Bass y moreComping; la nota anterior se alarga para tapar el hueco. A tempo bajo no cambia nada. Solo quita ataques. Apagada = ráfagas sin límite a tempo alto. Se calcula al generar."><input type="checkbox" id="consolaSpeedLimitChk" checked><label for="consolaSpeedLimitChk">SPEEDLIMIT</label></span>
+        </div>
+      </div>
       <div class="consola-field" title="Form: prendido por defecto. La canción se arma con SECCIONES: Intro, A y, al azar, B / C / D (una, dos, tres o ninguna) y Coda. Los compases se AGREGAN: A es el largo de siempre (12 / 24 / 4–48 / el número a mano) y suman Intro y Coda (2 a 4 compases cada una) y cada parte B / C / D (4 a 12), con tope de 96 en total. Cada sección tiene su propia instrumentación (armonía / bajo / melodía / batería): el Intro arranca con un solo instrumento, en A entran otros, B / C / D alternan banda completa y versión reducida (baja la intensidad, a veces sin melodía o sin batería) y la sección siguiente vuelve, y la Coda cierra con 1–2 instrumentos más suave. Dos secciones seguidas nunca suenan igual. No se escribe ninguna nota nueva: el set no se traiciona. El piano roll marca cada sección en celeste (Intro, A, B…). Si Form se aplica, el Intro suelto no suena (la intro es una sección de Form). Vale en el motor libre (CreaturaRandom / CreaturA / Intervalic.Creature), en Simplicity, en ChordS y en Partimenti (ahí es el mismo interruptor que el Form de Partimenti); en JazzTunes no se aplica. En los RANDOM CHOOSE (menos JazzTunes) Form se sortea solo: 75% prendido / 25% apagado."><span class="consola-inst-toggle"><input type="checkbox" id="consolaFormChk" checked><label for="consolaFormChk">Form</label></span></div>
     </div>
   </div>
@@ -14909,6 +14916,7 @@ function runAnalysis() {
       return v > 0 ? v : 100;
     }
     function apply(events){
+      var tdEl = document.getElementById("consolaTempoDensityChk"); if(tdEl && !tdEl.checked) return events;   // casilla de Fundations: apagada = armonía sin límite de tempo
       if(!events || events.length < 2) return events;
       var spb = 60 / bpm();
       var evs = events.slice().sort(function(a, b){ return a.startBeat - b.startBeat || a.midi - b.midi; });
@@ -14981,6 +14989,7 @@ function runAnalysis() {
       return out.sort(function(a, b){ return a.startBeat - b.startBeat || a.midi - b.midi; });
     }
     function apply(st){
+      var slEl = document.getElementById("consolaSpeedLimitChk"); if(slEl && !slEl.checked) return;   // casilla de Fundations: apagada = líneas sin límite de velocidad
       Object.keys(GAPS).forEach(function(k){ if(st[k] && st[k].length) st[k] = limit(st[k], GAPS[k]); });
     }
     return { apply: apply, limit: limit, GAPS: GAPS };
