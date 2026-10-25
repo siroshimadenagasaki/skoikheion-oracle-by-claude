@@ -2061,22 +2061,6 @@
     </div>
   </div>
 
-<div class="overlay-card consola-card collapsible-card" id="foundationsCard">
-    <button class="module-toggle" aria-expanded="false" aria-controls="foundationsContent" onclick="toggleModule(this)"></button>
-    <h2>Fundations</h2>
-    <div class="collapsible-content collapsed" id="foundationsContent">
-    <p class="consola-status">Funciones de base: prendidas por defecto y no dependen del switch de Composer Configuration. Apagalas para escuchar cómo suena sin ellas. (PITCHFX no está acá: lo activan glissando / bend&darr; de Ornaments y bendv2, que están en Composer Configuration.)</p>
-      <div class="consola-field consola-instruments">
-        <label>Tempo y velocidad</label>
-        <div class="consola-inst-row">
-          <span class="consola-inst-toggle" title="TEMPODENSITY: la armonía se adapta al tempo. Con el tempo vigente al generar, quita los ataques de armonía más seguidos de lo tocable (separación mínima 0,22 s si hay un acorde de 3+ notas, 0,11 s con notas sueltas); el acorde anterior se alarga para tapar el hueco. A tempo bajo no cambia nada. Solo quita ataques, nunca agrega ni cambia notas. Apagada = la armonía queda como la arma el motor, aunque a tempo alto sea intocable. Se calcula al generar."><input type="checkbox" id="consolaTempoDensityChk" checked><label for="consolaTempoDensityChk">TEMPODENSITY</label></span>
-          <span class="consola-inst-toggle" title="SPEEDLIMIT: límite de velocidad de las líneas de una sola nota según el tempo. Separación mínima entre ataques: 0,09 s en Melody, Melody n2 y bebopMelody (unas 11 notas por segundo) y 0,12 s en Bass y moreComping; la nota anterior se alarga para tapar el hueco. A tempo bajo no cambia nada. Solo quita ataques. Apagada = ráfagas sin límite a tempo alto. Se calcula al generar."><input type="checkbox" id="consolaSpeedLimitChk" checked><label for="consolaSpeedLimitChk">SPEEDLIMIT</label></span>
-        </div>
-      </div>
-      <div class="consola-field" title="Form: prendido por defecto. La canción se arma con SECCIONES: Intro, A y, al azar, B / C / D (una, dos, tres o ninguna) y Coda. Los compases se AGREGAN: A es el largo de siempre (12 / 24 / 4–48 / el número a mano) y suman Intro y Coda (2 a 4 compases cada una) y cada parte B / C / D (4 a 12), con tope de 96 en total. Cada sección tiene su propia instrumentación (armonía / bajo / melodía / batería): el Intro arranca con un solo instrumento, en A entran otros, B / C / D alternan banda completa y versión reducida (baja la intensidad, a veces sin melodía o sin batería) y la sección siguiente vuelve, y la Coda cierra con 1–2 instrumentos más suave. Dos secciones seguidas nunca suenan igual. No se escribe ninguna nota nueva: el set no se traiciona. El piano roll marca cada sección en celeste (Intro, A, B…). Si Form se aplica, el Intro suelto no suena (la intro es una sección de Form). Vale en el motor libre (CreaturaRandom / CreaturA / Intervalic.Creature), en Simplicity, en ChordS y en Partimenti (ahí es el mismo interruptor que el Form de Partimenti); en JazzTunes no se aplica. En los RANDOM CHOOSE (menos JazzTunes) Form se sortea solo: 75% prendido / 25% apagado."><span class="consola-inst-toggle"><input type="checkbox" id="consolaFormChk" checked><label for="consolaFormChk">Form</label></span></div>
-    </div>
-  </div>
-
 <div class="overlay-card consola-card collapsible-card" id="consolaCard">
     <button class="module-toggle" aria-expanded="false" aria-controls="consolaContent" onclick="toggleModule(this)"></button>
     <button type="button" class="module-fs-toggle fullscreen-btn" data-fs-card="consolaCard" title="Pantalla completa">⛶ Full screen</button>
@@ -2118,6 +2102,14 @@
         <label for="consolaBarsNum" title="Cantidad de compases a mano (1–96). Si hay un número acá manda sobre los checkboxes; vacío = vale el checkbox tildado.">bars</label>
         <input type="number" id="consolaBarsNum" min="1" max="96" step="1" placeholder="–" title="Cantidad de compases a mano (1–96). Si hay un número acá manda sobre los checkboxes; vacío = vale el checkbox tildado." style="width:58px;">
       </div>
+              <div class="consola-field consola-instruments">
+        <label>Playability</label>
+        <div class="consola-inst-row">
+          <span class="consola-inst-toggle" title="TEMPODENSITY: la armonía se adapta al tempo. Con el tempo vigente al generar, quita los ataques de armonía más seguidos de lo tocable (separación mínima 0,22 s si hay un acorde de 3+ notas, 0,11 s con notas sueltas); el acorde anterior se alarga para tapar el hueco. A tempo bajo no cambia nada. Solo quita ataques, nunca agrega ni cambia notas. Apagada = la armonía queda como la arma el motor, aunque a tempo alto sea intocable. Se calcula al generar."><input type="checkbox" id="consolaTempoDensityChk" checked><label for="consolaTempoDensityChk">TEMPODENSITY</label></span>
+          <span class="consola-inst-toggle" title="SPEEDLIMIT: límite de velocidad de las líneas de una sola nota según el tempo. Separación mínima entre ataques: 0,09 s en Melody, Melody n2 y bebopMelody (unas 11 notas por segundo) y 0,12 s en Bass y moreComping; la nota anterior se alarga para tapar el hueco. A tempo bajo no cambia nada. Solo quita ataques. Apagada = ráfagas sin límite a tempo alto. Se calcula al generar."><input type="checkbox" id="consolaSpeedLimitChk" checked><label for="consolaSpeedLimitChk">SPEEDLIMIT</label></span>
+        </div>
+      </div>
+      <div class="consola-field" title="Form: prendido por defecto. La canción se arma con SECCIONES: Intro, A y, al azar, B / C / D (una, dos, tres o ninguna) y Coda. Los compases se AGREGAN: A es el largo de siempre (12 / 24 / 4–48 / el número a mano) y suman Intro y Coda (2 a 4 compases cada una) y cada parte B / C / D (4 a 12), con tope de 96 en total. Cada sección tiene su propia instrumentación (armonía / bajo / melodía / batería): el Intro arranca con un solo instrumento, en A entran otros, B / C / D alternan banda completa y versión reducida (baja la intensidad, a veces sin melodía o sin batería) y la sección siguiente vuelve, y la Coda cierra con 1–2 instrumentos más suave. Dos secciones seguidas nunca suenan igual. No se escribe ninguna nota nueva: el set no se traiciona. El piano roll marca cada sección en celeste (Intro, A, B…). Si Form se aplica, el Intro suelto no suena (la intro es una sección de Form). Vale en el motor libre (CreaturaRandom / CreaturA / Intervalic.Creature), en Simplicity, en ChordS y en Partimenti (ahí es el mismo interruptor que el Form de Partimenti); en JazzTunes no se aplica. En los RANDOM CHOOSE (menos JazzTunes) Form se sortea solo: 75% prendido / 25% apagado."><span class="consola-inst-toggle"><input type="checkbox" id="consolaFormChk" checked><label for="consolaFormChk">Form</label></span></div>
         </div>
       </div>
       <div class="consola-field consola-instruments" title="Sliders de complejidad armónica y opciones (Subsets, Supersets, More repetition, Notas comunes) del motor libre, agrupados y contraídos por defecto para simplificar la vista — mismos controles de siempre, en el mismo lugar.">
@@ -14916,7 +14908,7 @@ function runAnalysis() {
       return v > 0 ? v : 100;
     }
     function apply(events){
-      var tdEl = document.getElementById("consolaTempoDensityChk"); if(tdEl && !tdEl.checked) return events;   // casilla de Fundations: apagada = armonía sin límite de tempo
+      var tdEl = document.getElementById("consolaTempoDensityChk"); if(tdEl && !tdEl.checked) return events;   // casilla de Specs: apagada = armonía sin límite de tempo
       if(!events || events.length < 2) return events;
       var spb = 60 / bpm();
       var evs = events.slice().sort(function(a, b){ return a.startBeat - b.startBeat || a.midi - b.midi; });
@@ -14989,7 +14981,7 @@ function runAnalysis() {
       return out.sort(function(a, b){ return a.startBeat - b.startBeat || a.midi - b.midi; });
     }
     function apply(st){
-      var slEl = document.getElementById("consolaSpeedLimitChk"); if(slEl && !slEl.checked) return;   // casilla de Fundations: apagada = líneas sin límite de velocidad
+      var slEl = document.getElementById("consolaSpeedLimitChk"); if(slEl && !slEl.checked) return;   // casilla de Specs: apagada = líneas sin límite de velocidad
       Object.keys(GAPS).forEach(function(k){ if(st[k] && st[k].length) st[k] = limit(st[k], GAPS[k]); });
     }
     return { apply: apply, limit: limit, GAPS: GAPS };
@@ -15803,7 +15795,7 @@ function runAnalysis() {
   })();
 
   // Composer Configuration apagado en ChordS (checkbox ⚙️ Config): ChordS se arma con los controles de esta tarjeta en cero / destildados
-  // (Chord simultaneity, bendv3 y los mix). Los controles de la tarjeta Fundations ya NO se neutralizan: valen siempre. Se fijan solo mientras se arma la canción y después se reponen tal cual.
+  // (Chord simultaneity, bendv3 y los mix). Se fijan solo mientras se arma la canción y después se reponen tal cual.
   // NO se tocan: Chords (cuántos acordes por compás: es la densidad propia de ChordS) ni la estructura (largo, tempo, loop, Form, Intro).
   var CFG_OFF_ZERO = ["consolaChordSimulSlider", "consolaHarmBendV3Chk",
     "mixChk_consolaChordSimulSlider", "mixChk_consolaNotesComplexitySlider", "mixChk_consolaChordsSlider", "mixMode_consolaChordSimulSlider", "mixMode_consolaNotesComplexitySlider", "mixMode_consolaChordsSlider"];
@@ -30229,122 +30221,179 @@ window.addEventListener("load", sfAskPersist);
 })();
 </script>
 <style id="procCss">
-  .proc{margin:4px 0 8px;}
-  .proc>summary{font-size:12px;color:var(--ink-muted);cursor:pointer;font-weight:700;}
-  .proc-row{display:flex;flex-wrap:wrap;gap:4px;padding:6px 0 0 8px;}
-  .proc-st{font-family:inherit;font-size:12px;padding:3px 9px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink-muted);cursor:pointer;display:inline-flex;align-items:center;gap:5px;}
-  .proc-st i{width:8px;height:8px;border-radius:50%;background:var(--pc);display:inline-block;}
-  .proc-st.on{color:var(--ink);border-color:var(--pc);background:var(--surface-2);}
-  .proc-st[data-p="1"]{--pc:#7fb69a;}.proc-st[data-p="2"]{--pc:var(--violet);}.proc-st[data-p="3"]{--pc:var(--gold);}
-  .proc-dt{margin:6px 0 0 8px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);font-size:12px;color:var(--ink);line-height:1.5;}
-  .proc-dt h4{margin:0;font-size:13px;font-weight:700;}
-  .proc-dt code{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-muted);}
-  .proc-dt ul{margin:4px 0 0;padding-left:16px;}
-  .proc-dt .k{margin-top:6px;color:var(--gold);}
+details.proc{margin:4px 0 8px;border:1px solid var(--line,#3a3a4a);border-radius:10px;background:var(--surface-2,#23232f)}
+details.proc>summary{cursor:pointer;font-size:12px;padding:6px 10px;color:var(--ink-muted,#999);font-weight:700;list-style:none}
+details.proc>summary::-webkit-details-marker{display:none}
+.px-wrap{padding:8px 10px 10px}
+.px-g{font-size:12px;color:var(--ink-muted,#999);margin:0 0 6px}
+.px-row{display:flex;justify-content:space-between;position:relative;padding:6px 0 2px}
+.px-row:before{content:"";position:absolute;left:6%;right:6%;top:26px;height:2px;background:var(--line,#3a3a4a)}
+.px-st{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;background:none;border:none;padding:0;font-family:inherit;color:var(--ink-muted,#999);position:relative}
+.px-dot{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;border:2px solid var(--line,#3a3a4a);background:var(--surface-2,#23232f);transition:transform .15s,background .15s}
+.px-st:hover .px-dot{transform:scale(1.1)}
+.px-lb{font-size:10.5px;text-align:center;line-height:1.2;max-width:64px}
+.px-st.on .px-lb{color:var(--ink,#eee);font-weight:700}
+.px-st[data-p="1"] .px-dot{border-color:#5fb878}.px-st[data-p="2"] .px-dot{border-color:var(--violet,#9b7bd8)}.px-st[data-p="3"] .px-dot{border-color:var(--gold,#d4a73a)}
+.px-st[data-p="1"].on .px-dot{background:rgba(95,184,120,.28)}.px-st[data-p="2"].on .px-dot{background:rgba(155,123,216,.3)}.px-st[data-p="3"].on .px-dot{background:rgba(212,167,58,.3)}
+.px-dt{border:1px solid var(--line,#3a3a4a);border-radius:8px;padding:8px 12px;background:var(--surface,#1b1b24);margin-top:8px}
+.px-dt h4{margin:0;font-size:13px;color:var(--ink,#eee)}
+.px-dt code{display:block;font-size:11px;color:var(--ink-muted,#999);margin:1px 0 6px}
+.px-dt ul{margin:0;padding-left:18px;font-size:12.5px;line-height:1.55;color:var(--ink,#eee)}
+.px-dt .k{margin-top:8px;font-size:12px;padding:6px 10px;border-radius:8px;background:rgba(155,123,216,.18);color:var(--ink,#eee)}
+.px-leg{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--ink-muted,#999);margin:0 0 6px}
+.px-leg i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px}
+.px-mx{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px}
+.px-mx th,.px-mx td{padding:5px 3px;text-align:center;border-bottom:1px solid var(--line,#3a3a4a)}
+.px-mx th{font-size:10.5px;color:var(--ink,#eee)}
+.px-mx td:first-child,.px-mx th:first-child{text-align:left;width:34%;color:var(--ink,#eee)}
+.px-mx td{color:var(--ink-muted,#999);font-size:14px}
+.px-note{font-size:11.5px;color:var(--ink-muted,#999);margin-top:6px}
 </style>
 <script>
-/* PROCESO por modo: diagrama de etapas debajo de cada bloque de modo (por ahora botones informativos; luego serán switches on/off). Fases: 1 preparación · 2 generación · 3 retoques. */
+// "🧩 Proceso" debajo de cada modo: recorrido de etapas (lazy, al abrir). Más una comparación de qué etapas corre cada modo.
 (function(){
-  var D = {
-    common: [
-      ["Arranque",1,"Arranque","Stop + tempo",["Trae el piano roll al frente y abre el log de la canción","Stop + espera 300 ms","Tempo al azar 30–120 BPM, antes de generar: el motor lo lee al armar"]],
-      ["Random choose",1,"Random choose (pre)","rcPre('common')",["Deshace lo de la canción anterior: drums, 8bits, voces","Sortea bars (24/12/4–48), Melody n2/n3, Beats, bendv3, Intro, Form y BlockwithMelody por sección"]],
-      ["Styles",1,"Styles (optativo)","__styles.load()",["Solo si está tildado «usar con ChordS»: carga bib_styles.json.gz"]],
-      ["start()",2,"start()","COMMONCHORDS.start()",["Apaga JazzTunes, activa ChordS y llama a regenerateConsola → build()"]],
-      ["Build",2,"Build de acordes","buildCore()",["Pool de 56 acordes filtrado por familias y escalas","Por compás: cuántos acordes (slider Chords), cuál, inversión y modo","Bajo, armonía y melodía en el modo del acorde","Composer Configuration, solo si está ON: Triplets, Syncopation, Ornaments, silencios, NoRep, BlockwithMelody, musicSilence","Siempre: tempo density, speed limit, Melody n3, textures, dinámica, batería, Styles, Form"],"Composer Configuration es un interruptor dentro del build."],
-      ["Retoques",3,"Random choose (post)","rcPost('common')",["Voces, 8bits 5%, Drums 5%, reverb: corre DESPUÉS de armar la canción"]]
-    ],
-    onechord: [
-      ["Arranque",1,"Arranque","Stop + tempo",["Igual que ChordS: piano roll al frente, Stop + 300 ms, tempo 30–120"]],
-      ["Random choose",1,"Random choose (pre)","rcPre('common')",["Igual que ChordS"]],
-      ["Styles",1,"Styles","__styles.wants(true)",["Linkeado a Styles por defecto (en ChordS se pide aparte)"]],
-      ["start(true)",2,"start(true)","COMMONCHORDS.start(true)",["Marca oneChord = true y regenera"]],
-      ["Build",2,"Build de un solo acorde","buildCore() con oneChord",["Sortea UN acorde y UN modo y los repite en todos los compases","Variantes (slider): reemplazos de la misma escala apilados en 3as/4as/5as","Opción 12bars: exactamente 12 compases, sin Form","La melodía queda vacía; el bajo sigue el acorde base","Mismos post-procesos que ChordS"],"Todo igual a ChordS salvo el sorteo de acordes."],
-      ["Retoques",3,"Random choose (post)","rcPost('common')",["Después de armar, como ChordS"]]
-    ],
-    creatura: [
-      ["Sliders",1,"Sorteo de controles","randomizeSliders()",["Melody n2 50/50 · Simplicity 0–50%","Cycles al azar · Chromatism 2–40% · Chords 20–60%","Triplets 0–100% · Spaces 0–100% · Rapid runs 0–30%","Swing on/off (30–100%)"]],
-      ["Sets",1,"Sorteo de sets","randomizeAndFill()",["Máximo de notas 5–8, modo Mezcla","2, 3, 4 o 5 sets, igual probabilidad","Random: al azar · CreaturA: por jerarquía del índice · Intervalic: por vector interválico","One.Set: un set por sección de Form"]],
-      ["Random choose",1,"Random choose + voces","rcPre → voces/tempo → rcPost",["Todo ANTES de generar: rcPre, tempo 30–120, reverb 40–70%, silencios 0–10%, moreComping, presets de armonía y melodía, y recién después rcPost"],"Acá rcPost corre antes de generar; en ChordS corre después."],
-      ["Compose",1,"Compose","multiSetsComposeBtn",["Reparte los sets entre los compases (MULTISETS.assign)","Después: Mix time signatures ON, Stop y espera 2 s"]],
-      ["Regenerar",2,"Regenerar: motor libre","regenerateConsola()",["Progresión y armonía al azar con Triplets, More repetition y Sustain","Bajo y melodía, Ornaments, moreComping, bebopMelody, Melody n2","Simplicity mezcla compás a compás con el motor simple","Luego: Syncopation, silencios, NoRep, BlockwithMelody, tempo density, speed limit, Melody n3, textures, melody_2follows, dinámica, batería, musicSilence, Form"],"Sin interruptor: todas las etapas corren y mandan sus sliders (0% = no-op)."]
-    ],
-    partimenti: [
-      ["Arranque",1,"Arranque","Stop",["Apaga RadioClassical, Stop, espera 300 ms"]],
-      ["Controles",1,"Sorteo de controles","PARTIMENTI.randomize()",["Disminución, silencios, internal movement: 0–100","MyCadences, RofO, Cycles, Modulatorias, Schemata, OCM, Fouxbourdon: on/off","Tipo: 40% mayor, 40% menor, 20% mixta","Celdas de schema al azar"]],
-      ["Random choose",1,"Random choose (pre)","rcPre('partimenti')",["Mismos sorteos de largo, melodías, Intro y Form"]],
-      ["start()",2,"start()","PARTIMENTI.start()",["Apaga ChordS y JazzTunes","Al entrar: set de presets clavecín + batería a 0%","Melody n2 siempre clavecín"]],
-      ["Plan",2,"Build: plan de la canción","PARTIMENTI.build()",["Form, compás propio y tempo propio (setTempo)","Ritmo armónico: 1, 2 o 4 acordes por compás (20/50/30%)","core.compose: tonalidad, cadencias, schemata, ciclos, modulaciones"]],
-      ["Voces",2,"Voces por compás","",["Bajo (el partimento), tenor, alto, soprano con diminuciones","Melody n2 apoyada en el alto","Textura de armonía por bloque, internal movement"]],
-      ["Post",2,"Post-procesos propios","",["Tempo density, speed limit, Norepetitions propio, Melody n3, wide.range, Chord simultaneity propio","Triplets OFF, batería, musicSilence propio, Form, auditoría TestContrapunctus"],"No pasa por Composer Configuration: sin Triplets, Syncopation, Ornaments ni BlockwithMelody."],
-      ["Retoques",3,"Random choose (post)","rcPost('partimenti')",["Corre después de armar la canción"]]
-    ],
-    jazz: [
-      ["Arranque",1,"Arranque","Stop",["Apaga RadioClassical, deshabilita el botón, Stop"]],
-      ["Canción",1,"Sorteo de canción","JAZZTUNES.pick()",["JazzTunes: un MGU de Band in a box SONGS (hasta MAX_TRIES intentos)","Jazz.i.Tunes: un tema de la lista iReal Pro","O la que elijas en el selector"]],
-      ["Random choose",1,"Random choose (pre)","rcPre('jazz')",["Sorteos habituales de bars, melodías, Intro, Form…"]],
-      ["Defaults",1,"jazzDefaults()","",["PISA lo anterior: Reharmonization on 50%, Tempo & Expression None, Chromatism 100, Chords 100, bars sin tildar, Melody n2/n3 off, Beats/Cycles/Intro off, BlockwithMelody 30–100, Reverb 35"],"Tras el random choose, los defaults de JazzTunes mandan."],
-      ["start(P)",2,"start(P)","JAZZTUNES.start(P)",["Apaga ChordS y Partimenti","Fija el tempo de la canción (MGU) o deja el actual (iReal)"]],
-      ["Build",2,"Build de la canción","JAZZTUNES.build()",["Form OFF; compás y largo los dicta la canción","Reharmonization de los acordes","Voicing por acorde; bajo normal o Walking","MGU: la melodía es la de la canción · iReal: la inventa el motor libre + Ornaments","Melody n2, moreComping, bebopMelody"]],
-      ["Post",2,"Post-procesos","",["BlockwithMelody, tempo density, speed limit (no toca la melodía MGU), Melody n3, textures, dinámica, batería","Solo en iReal: silencios y Norepetitions"]],
-      ["Retoques",3,"Random choose (post)","rcPost('jazz')",["Corre después de armar la canción"]]
-    ],
-    creapart: [
-      ["Prepara",1,"Prepara como Creatura","runCreaPart()",["Elige modo de mezcla: mixbysection, Totalfusion o Layers","Form se sortea 75% on · Mix time signatures OFF","Sliders, sets, rcPre, voces/tempo, rcPost y Compose, igual que Creatura; Stop y espera 2 s"]],
-      ["Fase 1",2,"Fase 1: Creatura","regenerateConsola()",["Genera la canción completa y guarda una foto de las pistas"]],
-      ["Fase 2",2,"Fase 2: Partimenti","PARTIMENTI.build()",["Mismo compás, tempo y largo; SIN start(): no toca presets ni batería","Si los largos no coinciden, queda Creatura sola"]],
-      ["Transporte",2,"Transporte","",["Lleva Partimenti a la tónica del primer set de Creatura"]],
-      ["Mezcla",2,"Mezcla según el modo","",["mixbysection: bloques de 4 compases, 50% de cada uno","Totalfusion: bajo y voces de Partimenti llevados al set de cada compás","Layers: solo el bajo de Partimenti; lo demás de Creatura","Batería siempre la de Creatura"],"Cada motor hace su propia pasada de post-procesos; no hay una sobre la mezcla."]
-    ],
-    chorpart: [
-      ["Arranque",1,"Stop, tempo y random choose","",["Elige el modo de mezcla · Mix time signatures OFF","Stop + 300 ms, tempo 30–120","rcPre('common') y rcPost('common') seguidos, ANTES de generar"],"En ChordS el rcPost corre después; acá, antes."],
-      ["ChordS",2,"Fase 1: ChordS","make(mode,false,'chords')",["Activa ChordS y regenera: build completo de acordes, con Styles si está tildado"]],
-      ["Partimenti",2,"Fase 2: Partimenti","PARTIMENTI.build()",["Mismo compás, tempo y largo; sin start()"]],
-      ["Mezcla",2,"Transporte y mezcla","",["Mismo transporte y los tres modos de mezcla","Al final apaga ChordS, para que 🔀 vuelva a Creatura"]]
-    ]
-  };
-  var ORDER = [["creaturaBtn","creatura"],["creaturaBellaBtn","creatura"],["commonChordsBtn","common"],["oneChordBtn","onechord"],["partimentiBtn","partimenti"],["jazzTunesBtn","jazz"],["jazziTunesBtn","jazz"],["creaturaIntervalicBtn","creatura"],["creaturaOneSetBtn","creatura"],["creaPartBtn","creapart"],["chorPartBtn","chorpart"]];
-  function build(det, data){
-    var row = document.createElement("div"); row.className = "proc-row";
-    var dt = document.createElement("div"); dt.className = "proc-dt";
-    var btns = [];
-    function show(i){
-      var s = data[i];
-      btns.forEach(function(b, k){ b.classList.toggle("on", k === i); });
-      dt.textContent = "";
-      var h = document.createElement("h4"); h.textContent = (i + 1) + ". " + s[2]; dt.appendChild(h);
-      if(s[3]){ var c = document.createElement("code"); c.textContent = s[3]; dt.appendChild(c); }
-      if(s[4] && s[4].length){ var ul = document.createElement("ul"); s[4].forEach(function(t){ var li = document.createElement("li"); li.textContent = t; ul.appendChild(li); }); dt.appendChild(ul); }
-      if(s[5]){ var k2 = document.createElement("div"); k2.className = "k"; k2.textContent = s[5]; dt.appendChild(k2); }
-    }
-    data.forEach(function(s, i){
-      var b = document.createElement("button"); b.type = "button"; b.className = "proc-st"; b.setAttribute("data-p", s[1]);
-      var dot = document.createElement("i"); b.appendChild(dot);
-      b.appendChild(document.createTextNode((i + 1) + " " + s[0]));
-      b.addEventListener("click", function(){ show(i); });
-      btns.push(b); row.appendChild(b);
-    });
-    det.appendChild(row); det.appendChild(dt); show(0);
-  }
-  try {
-    var first = document.getElementById("creaturaBtn");
-    if(!first || !first.parentNode || !first.parentNode.parentNode) return;
-    var box = first.parentNode.parentNode;
-    function rowOf(el){ while(el && el.parentNode !== box) el = el.parentNode; return el; }
-    var rows = ORDER.map(function(o){ var b = document.getElementById(o[0]); return b ? rowOf(b) : null; });
-    ORDER.forEach(function(o, i){
-      var r = rows[i]; if(!r) return;
-      var nxt = null, j;
-      for(j = i + 1; j < rows.length; j++){ if(rows[j] && rows[j] !== r){ nxt = rows[j]; break; } }
-      if(nxt && !(r.compareDocumentPosition(nxt) & 4)) nxt = r.nextSibling;   // orden inesperado en el DOM: debajo de su propia fila
-      var det = document.createElement("details"); det.className = "proc"; det.setAttribute("data-proc", o[1]);
-      var sm = document.createElement("summary"); sm.textContent = "🧩 Proceso"; det.appendChild(sm);
-      det.addEventListener("toggle", function(){ if(det.open && !det._built){ det._built = true; build(det, D[o[1]]); } });
-      box.insertBefore(det, nxt);
-    });
-  } catch(e){ try{ console.warn("PROCESO por modo:", e); }catch(_e){} }
+var MODES=[
+{n:"ChordS",g:"Acordes de una base de 56, no sets",d:5,s:[
+["pointer","Clic",1,"Clic en ChordS","runCommonChords()",["Ignora el clic si ya hay algo generándose","Abre el log y trae el piano roll al frente"]],
+["player-stop","Arranque",1,"Stop y tempo","",["Stop + espera 300 ms","Tempo al azar 30–120 BPM, antes de generar"]],
+["dice-3","Random choose",1,"Random choose (pre)","rcPre('common')",["bars (24/12/4–48), Melody n2/n3, Beats, bendv3, Intro, Form, BlockwithMelody por sección"]],
+["database","Styles",1,"Styles (optativo)","__styles.load()",["Solo si está tildado «usar con ChordS»"]],
+["power","start()",2,"start()","COMMONCHORDS.start()",["Apaga JazzTunes, activa ChordS y llama a regenerateConsola → build()"]],
+["tool","Build",2,"Build de acordes","buildCore()",["Pool de 56 acordes filtrado por familias y escalas","Por compás: cuántos acordes (slider Chords), cuál, inversión, modo","Bajo, armonía y melodía en el modo del acorde","Composer Configuration: solo si su switch está ON (Triplets, Syncopation, Ornaments, silencios, NoRep, BlockwithMelody, musicSilence)","Después: tempo density y speed limit (casillas de Specs), Melody n3, textures, dinámica, batería y Form, según Composer Configuration y Specs; Styles si está tildado"],"El switch ON/OFF de Composer Configuration vale para todos los modos: en OFF sus controles quedan en 0."],
+["adjustments","Retoques",3,"Random choose (post)","rcPost('common')",["Voces, 8bits 5%, Drums 5%, reverb: corre DESPUÉS de armar la canción"]],
+["player-play","Play",3,"Play","startPlayback()",["Revisa soundfonts (hasta 8 s) y agenda en Web Audio"]]
+]},
+{n:"One Chord",g:"ChordS con UN acorde para toda la canción, sin melodía",d:5,s:[
+["pointer","Clic",1,"Clic en One Chord","runOneChord()",["Mismo arranque que ChordS"]],
+["player-stop","Arranque",1,"Stop y tempo","",["Stop + 300 ms · tempo 30–120"]],
+["dice-3","Random choose",1,"Random choose (pre)","rcPre('common')",["Igual que ChordS"]],
+["database","Styles",1,"Styles","__styles.wants(true)",["Linkeado a Styles por defecto (ChordS lo pide aparte)"]],
+["power","start(true)",2,"start(true)","COMMONCHORDS.start(true)",["Marca oneChord = true y regenera"]],
+["tool","Build",2,"Build de un solo acorde","buildCore() con oneChord",["Sortea UN acorde y UN modo y los repite en todos los compases","Variantes (slider): reemplazos de la misma escala apilados en 3as/4as/5as","Opción 12bars: exactamente 12 compases, sin Form","La melodía queda vacía; el bajo sigue el acorde base","Mismos post-procesos que ChordS"],"Todo igual a ChordS salvo el sorteo de acordes."],
+["adjustments","Retoques",3,"Random choose (post)","rcPost('common')",["Después de armar, como ChordS"]],
+["player-play","Play",3,"Play","startPlayback()",[]]
+]},
+{n:"Creatura",g:"Sets al azar (Random, CreaturA, Intervalic, One.Set) sobre el motor libre",d:6,s:[
+["pointer","Clic",1,"Clic en la creatura","runCreatura(bella)",["Bloquea los botones y trae el piano roll","One.Set marca __oneSet: un set por sección de Form"]],
+["arrows-shuffle","Sliders",1,"Sorteo de controles","randomizeSliders()",["Melody n2 50/50 · Simplicity 0–50%","Cycles al azar · Chromatism 2–40% · Chords 20–60%","Triplets 0–100% · Spaces 0–100% · Rapid runs 0–30%","Swing on/off (30–100%)"]],
+["layers-intersect","Sets",1,"Sorteo de sets","randomizeAndFill()",["Máximo de notas 5–8, modo Mezcla","2, 3, 4 o 5 sets, igual probabilidad","Random: al azar · CreaturA: por jerarquía del índice · Intervalic: por vector interválico"]],
+["dice-3","Random choose",1,"Random choose + voces","rcPre → voces/tempo → rcPost",["Todo ANTES de generar: rcPre, tempo 30–120, reverb 40–70%, silencios 0–10%, moreComping, presets de armonía y melodía, y recién después rcPost"],"Acá rcPost corre antes de generar; en ChordS corre después."],
+["wand","Compose",1,"Compose","multiSetsComposeBtn",["Reparte los sets entre los compases (MULTISETS.assign)","Después: Mix time signatures ON, Stop y espera 2 s"]],
+["tool","Regenerar",2,"Regenerar: motor libre","regenerateConsola()",["Progresión y armonía al azar con Triplets, More repetition y Sustain","Bajo y melodía, Ornaments, moreComping, bebopMelody, Melody n2","Simplicity mezcla compás a compás con el motor simple","Luego: Syncopation, silencios, NoRep, BlockwithMelody, tempo density, speed limit, Melody n3, textures, melody_2follows, dinámica, batería, musicSilence, Form"],"Con el switch de Composer Configuration en OFF, sus controles quedan en 0 y las etapas no hacen nada (0% = no-op)."],
+["player-play","Play",3,"Play y radio","startPlayback()",["Con RadioMode ON engancha otra vuelta del mismo tipo"]]
+]},
+{n:"Partimenti",g:"Bajo inventado realizado a 4 voces, con motor propio",d:5,s:[
+["pointer","Clic",1,"Clic en Partimenti","runPartimenti()",["Apaga RadioClassical, Stop, espera 300 ms"]],
+["arrows-shuffle","Controles",1,"Sorteo de controles","PARTIMENTI.randomize()",["Disminución, silencios, internal movement: 0–100","MyCadences, RofO, Cycles, Modulatorias, Schemata, OCM, Fouxbourdon: on/off","Tipo: 40% mayor, 40% menor, 20% mixta","Celdas de schema al azar"]],
+["dice-3","Random choose",1,"Random choose (pre)","rcPre('partimenti')",["Mismos sorteos de largo, melodías, Intro y Form"]],
+["power","start()",2,"start()","PARTIMENTI.start()",["Apaga ChordS y JazzTunes","Al entrar: set de presets clavecín + batería a 0%","Melody n2 siempre clavecín"]],
+["tool","Plan",2,"Build: plan de la canción","PARTIMENTI.build()",["Form, compás propio y tempo propio (setTempo)","Ritmo armónico: 1, 2 o 4 acordes por compás (20/50/30%)","core.compose: tonalidad, cadencias, schemata, ciclos, modulaciones"]],
+["music","Voces",2,"Voces por compás","",["Bajo (el partimento), tenor, alto, soprano con diminuciones","Melody n2 apoyada en el alto","Textura de armonía por bloque, internal movement"]],
+["adjustments","Post",2,"Post-procesos propios","",["Tempo density, speed limit, Norepetitions propio, Melody n3, wide.range, Chord simultaneity propio","Triplets OFF, batería, musicSilence propio, Form, auditoría TestContrapunctus"],"No pasa por Composer Configuration: sin Triplets, Syncopation, Ornaments ni BlockwithMelody."],
+["player-play","Play",3,"rcPost y Play","rcPost('partimenti')",["rcPost corre después de armar, y luego suena"]]
+]},
+{n:"JazzTunes / Jazz.i.Tunes",g:"Una canción real: acordes de Band in a Box o de iReal Pro",d:4,s:[
+["pointer","Clic",1,"Clic en JazzTunes","runJazzTunes()",["Apaga RadioClassical, deshabilita el botón, Stop"]],
+["database","Canción",1,"Sorteo de canción","JAZZTUNES.pick()",["JazzTunes: un MGU de Band in a box SONGS (hasta MAX_TRIES intentos)","Jazz.i.Tunes: un tema de la lista iReal Pro","O la que elijas en el selector"]],
+["dice-3","Random choose",1,"Random choose (pre)","rcPre('jazz')",["Sorteos habituales de bars, melodías, Intro, Form…"]],
+["settings","Defaults",1,"jazzDefaults()","",["PISA lo anterior: Reharmonization on 50%, Tempo & Expression None, Chromatism 100, Chords 100, bars sin tildar, Melody n2/n3 off, Beats/Cycles/Intro off, BlockwithMelody 30–100, Reverb 35"],"Tras el random choose, los defaults de JazzTunes mandan."],
+["power","start(P)",2,"start(P)","JAZZTUNES.start(P)",["Apaga ChordS y Partimenti","Fija el tempo de la canción (MGU) o deja el actual (iReal)"]],
+["tool","Build",2,"Build de la canción","JAZZTUNES.build()",["Form OFF; compás y largo los dicta la canción","Reharmonization de los acordes","Voicing por acorde; bajo normal o Walking","MGU: la melodía es la de la canción · iReal: la inventa el motor libre + Ornaments","Melody n2, moreComping, bebopMelody"]],
+["adjustments","Post",2,"Post-procesos","",["BlockwithMelody, tempo density, speed limit (no toca la melodía MGU), Melody n3, textures, dinámica, batería","Solo en iReal: silencios y Norepetitions"]],
+["player-play","Play",3,"rcPost y Play","rcPost('jazz')",["rcPost después de armar, y suena"]]
+]},
+{n:"Creatura+Partimenti",g:"Mezcla de dos motores: Creatura genera, Partimenti se funde encima",d:5,s:[
+["pointer","Clic",1,"Clic","runCreaPart()",["Elige modo: mixbysection, Totalfusion o Layers","Form se sortea 75% on · Mix time signatures OFF"]],
+["layers-intersect","Creatura",1,"Prepara como Creatura","",["Sliders, sets, rcPre, voces/tempo, rcPost y Compose, igual que Creatura","Stop y espera 2 s"]],
+["tool","Fase 1",2,"Fase 1: Creatura","regenerateConsola()",["Genera la canción completa y guarda una foto de las pistas"]],
+["music","Fase 2",2,"Fase 2: Partimenti","PARTIMENTI.build()",["Mismo compás, tempo y largo; SIN start(): no toca presets ni batería","Si los largos no coinciden, queda Creatura sola"]],
+["arrows-shuffle","Transporte",2,"Transporte","",["Lleva Partimenti a la tónica del primer set de Creatura"]],
+["wand","Mezcla",2,"Mezcla según el modo","",["mixbysection: bloques de 4 compases, 50% de cada uno","Totalfusion: bajo y voces de Partimenti llevados al set de cada compás","Layers: solo el bajo de Partimenti; lo demás de Creatura","Batería siempre la de Creatura"],"Solo hay UNA pasada de post-procesos por motor, no una sobre la mezcla."],
+["player-play","Play",3,"Play","startPlayback()",["Escribe las pistas, el roll y suena"]]
+]},
+{n:"Chords+Partimenti",g:"Igual que la anterior pero la base es ChordS",d:3,s:[
+["pointer","Clic",1,"Clic","runChorPart()",["Elige el modo de mezcla · Mix time signatures OFF"]],
+["player-stop","Arranque",1,"Stop, tempo y random choose","",["Stop + 300 ms, tempo 30–120","rcPre('common') y rcPost('common') seguidos, ANTES de generar"],"En ChordS el rcPost corre después; acá, antes."],
+["power","ChordS",2,"Fase 1: ChordS","make(mode,false,'chords')",["Activa ChordS y regenera: build completo de acordes, con Styles si está tildado"]],
+["music","Partimenti",2,"Fase 2: Partimenti","PARTIMENTI.build()",["Mismo compás, tempo y largo; sin start()"]],
+["wand","Mezcla",2,"Transporte y mezcla","",["Mismo transporte y los tres modos de mezcla","Al final apaga ChordS, para que 🔀 vuelva a Creatura"]],
+["player-play","Play",3,"Play","startPlayback()",[]]
+]}
+];
+
+var ICON={"pointer":"👆","player-stop":"⏹","dice-3":"🎲","database":"🗄","power":"⏻","tool":"🔧","adjustments":"🎚","player-play":"▶","arrows-shuffle":"🔀","layers-intersect":"🗂","wand":"🪄","music":"🎵","settings":"⚙"};
+var KEY={"ChordS":"common","One Chord":"onechord","Creatura":"creatura","Partimenti":"partimenti","JazzTunes / Jazz.i.Tunes":"jazz","Creatura+Partimenti":"creapart","Chords+Partimenti":"chorpart"};
+var D={};
+MODES.forEach(function(m){
+  var s=m.s.slice(), d=m.d;
+  if(s[0][1]==="Clic"){ s.shift(); d--; }               // sin la etapa de clic
+  var L=s[s.length-1];
+  if(L[1]==="Play"||L[1]==="Play y radio"){ s.pop(); }   // sin la etapa de play
+  else if(/Play/.test(L[1])){ L=L.slice(); L[1]="rcPost"; L[3]="Random choose (post)"; s[s.length-1]=L; }
+  D[KEY[m.n]]={n:m.n,g:m.g,d:Math.max(0,Math.min(d,s.length-1)),s:s};
+});
+var C=["ChordS","One Chord","Creatura","Partim.","Jazz","Crea+Part","Chords+Part"];
+var R=[
+["Composer Configuration (switch ON/OFF; Triplets, Syncopation, Ornaments, NoRep, BlockwithMelody)","◐◐●○◐●◐"],
+["Sets (Multi Sets / Compose)","○○●○○●○"],
+["Base de 56 acordes","●●○○○○●"],
+["Motor de Partimenti (schemata, cadencias)","○○○●○●●"],
+["Canción real (Band in a Box / iReal)","○○○○●○○"],
+["Form (secciones)","●◐●●○●●"],
+["Styles (Band in a Box)","◐◐○○○○◐"],
+["Tempo density + speed limit (casillas de Specs)","●●●●●●●"],
+["Melody n3","●●●●●●●"],
+["Texturas / Ostinato de armonía","●●●○●◐◐"],
+["musicSilence","◐◐●●○●◐"],
+["Random choose pre antes de generar","●●●●●●●"],
+["Random choose post DESPUÉS de generar","●●○●●○○"]
+];
+function el(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e;}
+function build(det,k){
+  var m=D[k],wrap=el("div","px-wrap");
+  var leg=el("div","px-leg");leg.innerHTML='<span><i style="background:#5fb878"></i>Preparación</span><span><i style="background:var(--violet,#9b7bd8)"></i>Generación</span><span><i style="background:var(--gold,#d4a73a)"></i>Sonido</span>';
+  wrap.appendChild(leg);wrap.appendChild(el("div","px-g",m.g));
+  var row=el("div","px-row"),dt=el("div","px-dt"),btns=[];
+  function show(i){var s=m.s[i];btns.forEach(function(b,j){b.classList.toggle("on",j===i);});dt.textContent="";
+    dt.appendChild(el("h4",null,(i+1)+". "+s[3]));if(s[4])dt.appendChild(el("code",null,s[4]));
+    if(s[5]&&s[5].length){var ul=el("ul");s[5].forEach(function(x){ul.appendChild(el("li",null,x));});dt.appendChild(ul);}
+    if(s[6])dt.appendChild(el("div","k",s[6]));}
+  m.s.forEach(function(s,i){var b=el("button","px-st");b.type="button";b.setAttribute("data-p",s[2]);
+    b.appendChild(el("span","px-dot",ICON[s[0]]||"•"));b.appendChild(el("span","px-lb",s[1]));
+    b.addEventListener("click",function(){show(i);});btns.push(b);row.appendChild(b);});
+  wrap.appendChild(row);wrap.appendChild(dt);det.appendChild(wrap);show(m.d);
+}
+function buildMx(det){
+  var wrap=el("div","px-wrap"),t=el("table","px-mx"),h=el("tr");h.appendChild(el("th"));C.forEach(function(x){h.appendChild(el("th",null,x));});t.appendChild(h);
+  R.forEach(function(r){var tr=el("tr");tr.appendChild(el("td",null,r[0]));r[1].split("").forEach(function(x){tr.appendChild(el("td",null,x));});t.appendChild(tr);});
+  wrap.appendChild(t);wrap.appendChild(el("div","px-note","● siempre · ◐ según su config o según qué motor aporta cada compás · ○ no corre, o usa una versión propia."));det.appendChild(wrap);
+}
+var ORDER=[["creaturaBtn","creatura"],["creaturaBellaBtn","creatura"],["commonChordsBtn","common"],["oneChordBtn","onechord"],["partimentiBtn","partimenti"],["jazzTunesBtn","jazz"],["jazziTunesBtn","jazz"],["creaturaIntervalicBtn","creatura"],["creaturaOneSetBtn","creatura"],["creaPartBtn","creapart"],["chorPartBtn","chorpart"]];
+try{
+  var first=document.getElementById("creaturaBtn");
+  if(!first||!first.parentNode||!first.parentNode.parentNode)return;
+  var box=first.parentNode.parentNode;
+  function rowOf(e){while(e&&e.parentNode!==box)e=e.parentNode;return e;}
+  var rows=ORDER.map(function(o){var b=document.getElementById(o[0]);return b?rowOf(b):null;});
+  ORDER.forEach(function(o,i){
+    var r=rows[i];if(!r)return;
+    var nxt=null,j;for(j=i+1;j<rows.length;j++){if(rows[j]&&rows[j]!==r){nxt=rows[j];break;}}
+    if(nxt&&!(r.compareDocumentPosition(nxt)&4))nxt=r.nextSibling;
+    var det=document.createElement("details");det.className="proc";det.setAttribute("data-proc",o[1]);
+    var sm=document.createElement("summary");sm.textContent="🧩 Proceso";det.appendChild(sm);
+    det.addEventListener("toggle",function(){if(det.open&&!det._built){det._built=true;build(det,o[1]);}});
+    box.insertBefore(det,nxt);
+  });
+  var last=null;rows.forEach(function(r){if(r)last=r;});
+  if(last){var mx=document.createElement("details");mx.className="proc";mx.setAttribute("data-proc","matriz");
+    var ms=document.createElement("summary");ms.textContent="📊 Comparar modos: qué etapas corre cada uno";mx.appendChild(ms);
+    mx.addEventListener("toggle",function(){if(mx.open&&!mx._built){mx._built=true;buildMx(mx);}});
+    var ref=last.nextSibling;while(ref&&ref.nodeType===1&&ref.matches&&ref.matches("details.proc"))ref=ref.nextSibling;
+    box.insertBefore(mx,ref);}
+}catch(e){try{console.warn("PROCESO por modo:",e);}catch(_e){}}
 })();
 </script>
+
 <style id="ccSwitchCss">
 .cc-switch{display:flex;align-items:center;justify-content:center;gap:12px;margin:6px 0 12px;flex-wrap:wrap}
 .cc-switch button{position:relative;width:112px;height:44px;border-radius:22px;border:1px solid var(--line,#444);background:var(--surface-2,#2a2a38);cursor:pointer;padding:0;transition:.2s}
