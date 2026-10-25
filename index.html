@@ -15780,7 +15780,33 @@ function runAnalysis() {
     return { on: on, melody: melody, harmony: harmony, setScale: setScale, clearScale: clearScale };
   })();
 
+  // Composer Configuration apagado en ChordS (checkbox ⚙️ Config): ChordS se arma como si TODOS los controles de la tarjeta que antes valían siempre estuvieran en cero / destildados
+  // (Dynamics, Chord simultaneity, Melody n3, wide.range, Harmony textures, controles de la batería...). Se fijan solo mientras se arma la canción y después se reponen tal cual.
+  // NO se tocan: Chords (cuántos acordes por compás: es la densidad propia de ChordS) ni la estructura (largo, tempo, loop, Form, Intro).
+  var CFG_OFF_ZERO = ["consolaChordSimulSlider", "consolaDynamicsSlider", "consolaRhythmBwmSlider", "consolaHarmTexSlider",
+    "consolaMoreRepRhyChk", "consolaBeatsChk", "consolaDrumSoloChk", "consolaMicroTimingChk", "consolaAsymmetricChk", "consolaDisplacementChk", "consolaMixTimeSigChk",
+    "consolaHT_wide", "consolaHarmTexChk", "consolaHarmOst2Chk", "consolaHarmBendV3Chk", "consolaMelody3Chk",
+    "mixChk_consolaChordSimulSlider", "mixChk_consolaNotesComplexitySlider", "mixChk_consolaChordsSlider", "mixMode_consolaChordSimulSlider", "mixMode_consolaNotesComplexitySlider", "mixMode_consolaChordsSlider"];
+  function cfgOffNeutralize(){
+    try{
+      if(!(window.__commonChords && window.__commonChords.active)) return null;
+      var cb = document.getElementById("commonChordsComposerCfg"); if(!cb || cb.checked) return null;
+      var tm = document.getElementById("commonChordsTMPat"), tsw = document.getElementById("commonChordsTMPatSw");
+      if(tm && tm.checked && tsw && +tsw.value >= 1) return null;   // TestMelody+Patterns en ComposerConfig / both fuerza Composer Configuration
+      var saved = [];
+      CFG_OFF_ZERO.forEach(function(id){
+        var el = document.getElementById(id); if(!el) return;
+        if(el.type === "checkbox"){ saved.push([el, el.checked]); el.checked = false; }
+        else { saved.push([el, el.value]); el.value = el.min !== "" && el.min != null ? el.min : 0; }
+      });
+      return function(){ saved.forEach(function(x){ if(x[0].type === "checkbox") x[0].checked = x[1]; else x[0].value = x[1]; }); };
+    }catch(_e){ return null; }
+  }
   function regenerateConsola(){
+    var _nz = cfgOffNeutralize();
+    try{ return regenerateConsolaCore(); } finally { if(_nz) _nz(); }
+  }
+  function regenerateConsolaCore(){
     if(window.__favApplying) return; // ♥ Favoritos: mientras se repone un favorito, los controles no regeneran (pisarían la música guardada)
     NUM_BARS = FORM.begin(desiredNumBars(true), false); // Form (How to play): suma los compases de Intro / B / C / D / Coda al largo de siempre (sin Form o en otros motores = el largo de siempre)
     RHYTHM.recompute();
