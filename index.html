@@ -1434,15 +1434,6 @@
   .sounds-toggle::before{content:"+ ";}
   .sounds-toggle[aria-expanded="true"]::before{content:"\2212 ";}
   #consolaRollsLayer > *{transform:translateY(var(--roll-shift,0vh));flex:none;}
-  /* Presets elegidos (random choose): arriba a la izquierda del piano roll, solo lectura */
-  #consolaRollsLayer > #consolaPresetsView{position:absolute;top:78px;left:32px;transform:none;max-width:min(46vw,320px);pointer-events:none;
-    font:600 clamp(9px,.9vw,11px)/1.2 'JetBrains Mono',monospace;color:var(--ink-muted);text-align:left;}
-  #consolaPresetsView:empty{display:none;}
-  #consolaPresetsView .pv-h{color:var(--gold);font-weight:700;letter-spacing:.04em;margin-bottom:2px;}
-  #consolaPresetsView .pv-r{display:flex;gap:8px;white-space:nowrap;}
-  #consolaPresetsView .pv-r span{flex:none;opacity:.8;}
-  #consolaPresetsView .pv-r span::after{content:":";}
-  #consolaPresetsView .pv-r i{font-style:normal;overflow:hidden;text-overflow:ellipsis;color:var(--ink,inherit);}
   #rollVScroll{position:fixed;left:3px;top:50%;transform:translateY(-50%);z-index:50;width:10px;height:55px;margin:0;padding:0;opacity:.55;cursor:pointer;writing-mode:vertical-lr;direction:rtl;accent-color:var(--gold);}
   #rollVScroll:hover{opacity:1;}
   #consolaRollsLayer .consola-empty{display:none;}
@@ -1536,7 +1527,6 @@
     <div id="consolaSongHead"><div id="consolaSongTitle" aria-live="polite"></div><span id="consolaSongBpm" title="Tempo actual"></span><span id="consolaSongVec" title="Vector intervalico elegido para esta canción (Intervalic.Creature)"></span><button type="button" id="consolaSongSetsBtn" hidden aria-expanded="false" title="Mostrar / ocultar los acordes de la canción">+</button></div>
     <div id="consolaSongMode" aria-live="polite"></div>
     <div id="consolaSongSets" aria-live="polite"></div>
-    <div id="consolaPresetsView" aria-live="polite" title="Presets que quedaron en cada pista de esta canción (los que sorteó el random choose)"></div>
     <div id="consolaBebopRollLabel" style="margin-bottom:6px;font-size:12px;font-weight:600;color:var(--ink-muted);padding-top:0;">🎷 bebopMelody — separate piano roll (isolated from the main one)</div>
     <div class="consola-roll-wrap" id="consolaBebopRollHost" style="min-height:60px;margin-bottom:20px;"></div>
     <div class="consola-roll-wrap" id="consolaRollHost"></div>
@@ -20093,6 +20083,7 @@ function runAnalysis() {
     items.forEach(function(it){
       var span = document.createElement("span");
       span.innerHTML = '<span class="sw" style="background:'+it[0]+'"></span>'+it[1];
+      span.setAttribute("data-leg", it[1]);
       var sid = LEGEND_PRESET[it[1]];   // instrumento (preset) elegido para esa pista, entre paréntesis de la leyenda
       if(sid){
         var pn = document.createElement("span");
@@ -20102,6 +20093,7 @@ function runAnalysis() {
       wrap.appendChild(span);
     });
     host.insertBefore(wrap, svg);   // leyenda chiquita arriba del piano roll
+    try{ if(window.__songLog && window.__songLog.applyLegend) window.__songLog.applyLegend(); }catch(_e){}   // presets de la canción en la leyenda
     updateExportBtns();
   }
   // Leyenda del piano roll: qué preset (instrumento) tiene elegido cada pista con color. Se refresca sola al cambiar un selector de presets.
@@ -20672,6 +20664,102 @@ function runAnalysis() {
     return reverbBusGain;
   }
 
+
+  // 🔎 __trackMon — monitor de sonido por pista (solo mide; no cambia lo que suena).
+  // Por cada bus de pista cuenta las voces conectadas (notas que realmente se programaron) y, con un AnalyserNode,
+  // mide cada 250 ms si hay señal. Cruza eso con las notas que la pista debería tener y con el mixer:
+  //   · notas>0 y voces=0  → "no se programó" (preset en mute, pista apagada o scheduler que no la alcanzó)
+  //   · voces>0 y señal=0  → "SILENCIO" (soundfont sin cargar / ganancia 0 / contexto parado)
+  // Se lee con window.__trackMon.report() (también va en 📝 Log → Copy) y avisa solo, ~8 s después del Play.
+  var TRACKMON = window.__trackMon = (function(){
+    var T = {}, tr = {}, on = false, t0 = 0, timer = 0, warnT = 0;
+    var NAMES = { chord:"Armonía", chordDouble:"Armonía doble", bass:"Bajo", bassDouble:"Bajo doble", melody:"Melodía", melodyDouble:"Melodía doble", comping2:"Comping 2", bebop:"Bebop", melody2:"Melodía n2", melody3:"Melodía n3", drum:"Batería" };
+    var EVK = { chord:"chordEvents", chordDouble:"chordEvents", bass:"bassEvents", bassDouble:"bassEvents", melody:"melodyEvents", melodyDouble:"melodyEvents", comping2:"comping2Events", bebop:"bebopEvents", melody2:"melody2Events", melody3:"melody3Events" };
+    var PK = { chord:"harmony", chordDouble:"chordDouble", bass:"bass", bassDouble:"bassDouble", melody:"melody", melodyDouble:"melodyDouble", comping2:"comping2", bebop:"bebop", melody2:"melody2", melody3:"melody3", drum:"drum" };
+    function rec(k){ return tr[k] || (tr[k] = { voices:0, samples:0, sig:0, peak:0, an:null, buf:null }); }
+    var oc = AudioNode.prototype.connect;
+    AudioNode.prototype.connect = function(d){
+      try{ if(on && d && d.__trk) rec(d.__trk).voices++; }catch(_e){}
+      return oc.apply(this, arguments);
+    };
+    T.attach = function(ctx, nodes){
+      try{
+        if(typeof OfflineAudioContext !== "undefined" && ctx instanceof OfflineAudioContext) return;   // export / prerender: no se mide
+        Object.keys(nodes).forEach(function(k){
+          var n = nodes[k]; if(!n) return;
+          n.__trk = k;
+          var r = rec(k);
+          if(r.anCtx !== ctx){ r.an = ctx.createAnalyser(); r.an.fftSize = 1024; r.buf = new Float32Array(1024); r.anCtx = ctx; oc.call(n, r.an); }
+        });
+        T.ctx = ctx;
+        if(!timer) timer = setInterval(sample, 250);
+      }catch(e){}
+    };
+    function sample(){
+      if(!on || !T.ctx || T.ctx.state !== "running") return;
+      Object.keys(tr).forEach(function(k){
+        var r = tr[k]; if(!r.an) return;
+        r.an.getFloatTimeDomainData(r.buf);
+        var pk = 0; for(var i = 0; i < r.buf.length; i++){ var a = Math.abs(r.buf[i]); if(a > pk) pk = a; }
+        r.samples++; if(pk > 0.0005) r.sig++; if(pk > r.peak) r.peak = pk;
+      });
+    }
+    T.begin = function(){
+      tr = {}; on = true; t0 = performance.now();
+      try{ if(T.ctx && T.nodes) T.attach(T.ctx, T.nodes); }catch(_e){}
+      clearTimeout(warnT);
+      warnT = setTimeout(function(){
+        try{
+          var bad = T.bad();
+          if(bad.length){
+            var m = "⚠ Sin sonido: " + bad.map(function(b){ return b.name + " (" + b.why + ")"; }).join(" · ");
+            console.warn("[Track monitor] " + m, T.data());
+            var st = document.getElementById("consolaPrerenderStatus"); if(st) st.textContent = m;
+          }
+        }catch(_e){}
+      }, 8000);
+    };
+    T.stop = function(){ on = false; clearTimeout(warnT); };
+    function expected(k){
+      try{
+        if(k === "drum") return (typeof drumEvents !== "undefined" && drumEvents) ? drumEvents.length : 0;
+        var a = state[EVK[k]]; return a ? a.length : 0;
+      }catch(_e){ return 0; }
+    }
+    function preset(k){ try{ return mixPresets[PK[k]]; }catch(_e){ return null; } }
+    T.data = function(){
+      var out = {};
+      Object.keys(NAMES).forEach(function(k){
+        var r = tr[k] || { voices:0, samples:0, sig:0, peak:0 }, ev = expected(k), pr = preset(k), g = 1;
+        try{ g = audioGain(k === "chord" ? "chord" : k); }catch(_e){}
+        var why = "", ok = true;
+        if(ev > 0){
+          if(pr === "mute" || pr === null && (k === "chordDouble" || k === "melodyDouble" || k === "bassDouble" || k === "bebop")){ why = "preset en mute"; ok = true; }
+          else if(g === 0){ why = "volumen de mezcla en 0 (no suena a propósito)"; ok = true; }
+          else if(r.samples <= 20){ why = "sin medición suficiente (dar Play y esperar 6 s)"; ok = true; }
+          else if(r.voices === 0 && r.samples > 20){ why = "no se programó ninguna nota"; ok = false; }
+          else if(r.voices > 0 && r.samples > 20 && r.sig === 0){ why = "SILENCIO: " + r.voices + " voces conectadas, 0 señal"; ok = false; }
+        }
+        out[k] = { name:NAMES[k], eventos:ev, voces:r.voices, muestras:r.samples, conSenal:r.sig, pico:Math.round(r.peak * 1000) / 1000, preset:pr, ok:ok, why:why };
+      });
+      return out;
+    };
+    T.bad = function(){
+      var d = T.data();
+      return Object.keys(d).filter(function(k){ return !d[k].ok; }).map(function(k){ return { track:k, name:d[k].name, why:d[k].why }; });
+    };
+    T.report = function(){
+      var d = T.data(), L = ["🔎 Monitor por pista (señal real en cada bus)"];
+      Object.keys(d).forEach(function(k){
+        var x = d[k];
+        if(!x.eventos && !x.voces) return;
+        L.push("   " + (x.ok ? "✔" : "✖") + " " + x.name + ": " + x.eventos + " notas/vuelta · " + x.voces + " voces · señal en " + x.conSenal + "/" + x.muestras + " muestras · pico " + x.pico + (x.preset ? " · " + String(x.preset).replace(/^sf:x_/, "").replace(/%20/g, " ") : "") + (x.why ? " → " + x.why : ""));
+      });
+      if(L.length === 1) L.push("   (sin datos: dar Play primero)");
+      return L.join("\n");
+    };
+    return T;
+  })();
   function ensureInstrumentGains(ctx){
     var master = ensureMasterGain(ctx);
     if(!chordGainNode){
@@ -20754,7 +20842,9 @@ function runAnalysis() {
         delaySendGains[track] = dsend;
       }
     });
-    return { chord: chordGainNode, bass: bassGainNode, bassDouble: bassDoubleGainNode, melody: melodyGainNode, melodyDouble: melodyDoubleGainNode, chordDouble: chordDoubleGainNode, drum: drumGainNode, comping2: comping2GainNode, bebop: bebopGainNode, melody2: melody2GainNode, melody3: melody3GainNode };
+    var _gn = { chord: chordGainNode, bass: bassGainNode, bassDouble: bassDoubleGainNode, melody: melodyGainNode, melodyDouble: melodyDoubleGainNode, chordDouble: chordDoubleGainNode, drum: drumGainNode, comping2: comping2GainNode, bebop: bebopGainNode, melody2: melody2GainNode, melody3: melody3GainNode };
+    try{ if(window.__trackMon){ window.__trackMon.nodes = _gn; window.__trackMon.attach(ctx, _gn); } }catch(_e){}
+    return _gn;
   }
   // Cambia el nivel de un canal en caliente (mientras suena o no) — usa
   // setTargetAtTime, igual que el volumen general, para que no haga clic.
@@ -24341,6 +24431,7 @@ function runAnalysis() {
     var dest = ensureMasterGain(ctx);
     voices = new Set();
     try{ window.__perf.begin(ctx); }catch(eP0){}   // ⏱ diagnóstico de rendimiento
+    try{ window.__trackMon.begin(); }catch(eP0b){}   // 🔎 monitor de sonido por pista
     var tempoEl = document.getElementById("consolaTempo");
     var bpm = parseInt(tempoEl.value, 10);
     var spb = 60/bpm;
@@ -24543,6 +24634,7 @@ function runAnalysis() {
         L.push("   deriva reloj de audio vs real: " + Math.round(drift) + " ms (cambios de estado: " + (S.states.length ? S.states.join(", ") : "ninguno") + ")");
       }
       L.push("   modo: " + (window.matchMedia && matchMedia("(display-mode: standalone)").matches ? "app instalada" : "navegador") + " · " + (navigator.userAgent.indexOf("iPhone") >= 0 ? "iPhone" : navigator.userAgent.indexOf("Android") >= 0 ? "Android" : "PC"));
+      try{ if(window.__trackMon) L.push("", window.__trackMon.report()); }catch(_e){}
       return L.join("\n");
     };
     return P;
@@ -24580,7 +24672,7 @@ function runAnalysis() {
       return st;
     }
     // 🎛 Presets elegidos: instrumento que quedó en cada pista CON notas (los sortea el random choose; los "mute" no se muestran).
-    // Se pinta arriba a la izquierda del piano roll (#consolaPresetsView) y se guarda en el favorito (.json, campo presetView).
+    // Se pinta en la leyenda chica del piano roll y se guarda en el favorito (.json, campo presetView).
     var VIEW_EV = { harmony: "chordEvents", chordDouble: "chordEvents", melody: "melodyEvents", melodyDouble: "melodyEvents", bebop: "bebopEvents",
                     melody2: "melody2Events", melody3: "melody3Events", comping2: "comping2Events", bass: "bassEvents", bassDouble: "bassEvents" };
     function presetView(){
@@ -24597,16 +24689,34 @@ function runAnalysis() {
       return out;
     }
     function pvEsc(t){ return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+    // Los presets de la canción se muestran en la leyenda chica del piano roll (junto al color de cada pista); las pistas que no están en la leyenda (doble, bebop, batería) se agregan al final con el mismo formato.
+    var LEG_OF = { "Armonía":"Harmony", "Bajo":"Bass", "Melodía":"Melody", "Comping 2":"moreComping", "Melodía n2":"Melody n2", "Melodía n3":"Melody n3" };
+    function applyLegend(){
+      var v = L.legendView;
+      Array.prototype.forEach.call(document.querySelectorAll(".consola-legend.top"), function(wrap){
+        Array.prototype.forEach.call(wrap.querySelectorAll(".pv-x"), function(x){ x.remove(); });
+        if(!v) return;
+        var used = {};
+        v.forEach(function(r){
+          var leg = LEG_OF[r[0]], item = leg && wrap.querySelector('[data-leg="' + leg + '"]'), pn = item && item.querySelector(".pn");
+          if(pn){ pn.textContent = "\u00b7 " + r[1]; used[r[0]] = 1; }
+        });
+        v.forEach(function(r){
+          if(used[r[0]]) return;
+          if(LEG_OF[r[0]]) return;   // pista de la leyenda que no está dibujada (sin notas)
+          var sp = document.createElement("span"); sp.className = "pv-x";
+          sp.innerHTML = pvEsc(r[0]) + '<span class="pn">\u00b7 ' + pvEsc(r[1]) + '</span>';
+          wrap.appendChild(sp);
+        });
+      });
+    }
+    L.applyLegend = applyLegend;
     function paintPresets(e){
-      var box = document.getElementById("consolaPresetsView");
-      if(!box) return;
       var pv = L.pendingView, v, fav = !!(pv && pv.title === txt("consolaSongTitle"));
       if(fav) v = pv.view;                  // favorito recién abierto: los presets guardados con él
       else v = (e && e.stamped && e.presetView) ? e.presetView : presetView();     // canción ya registrada (o Previous/Next): su vista; si no, la de ahora
-      if(!v.length){ box.innerHTML = ""; return; }
-      var mode = (!fav && e && txt("consolaSongTitle")) ? modeName(e.kind) : "";   // favorito abierto: el modo guardado no es confiable, no se muestra
-      box.innerHTML = '<div class="pv-h">Presets' + (mode ? ' · ' + pvEsc(mode) : '') + '</div>' +
-        v.map(function(r){ return '<div class="pv-r"><span>' + pvEsc(r[0]) + '</span><i>' + pvEsc(r[1]) + '</i></div>'; }).join("");
+      L.legendView = v && v.length ? v : null;
+      applyLegend();
     }
     // "(modo)" debajo del título: el tipo con el que se armó la canción (CreaturaRandom, ChordS, One Chord, Partimenti, JazzTunes...). Se pinta cuando cambia el título y al volver con Previous / Next.
     function modeName(k){ k = (k && k.name) || k || ""; return String(k).replace(/\s*\(.*?\)\s*/g, " ").trim(); }   // "Manual (sin sorteo)" → "Manual"
