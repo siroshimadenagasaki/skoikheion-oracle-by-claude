@@ -1434,6 +1434,15 @@
   .sounds-toggle::before{content:"+ ";}
   .sounds-toggle[aria-expanded="true"]::before{content:"\2212 ";}
   #consolaRollsLayer > *{transform:translateY(var(--roll-shift,0vh));flex:none;}
+  /* Presets elegidos (random choose): arriba a la izquierda del piano roll, solo lectura */
+  #consolaRollsLayer > #consolaPresetsView{position:absolute;top:78px;left:32px;transform:none;max-width:min(46vw,320px);pointer-events:none;
+    font:600 clamp(9px,.9vw,11px)/1.2 'JetBrains Mono',monospace;color:var(--ink-muted);text-align:left;}
+  #consolaPresetsView:empty{display:none;}
+  #consolaPresetsView .pv-h{color:var(--gold);font-weight:700;letter-spacing:.04em;margin-bottom:2px;}
+  #consolaPresetsView .pv-r{display:flex;gap:8px;white-space:nowrap;}
+  #consolaPresetsView .pv-r span{flex:none;opacity:.8;}
+  #consolaPresetsView .pv-r span::after{content:":";}
+  #consolaPresetsView .pv-r i{font-style:normal;overflow:hidden;text-overflow:ellipsis;color:var(--ink,inherit);}
   #rollVScroll{position:fixed;left:3px;top:50%;transform:translateY(-50%);z-index:50;width:10px;height:55px;margin:0;padding:0;opacity:.55;cursor:pointer;writing-mode:vertical-lr;direction:rtl;accent-color:var(--gold);}
   #rollVScroll:hover{opacity:1;}
   #consolaRollsLayer .consola-empty{display:none;}
@@ -1527,6 +1536,7 @@
     <div id="consolaSongHead"><div id="consolaSongTitle" aria-live="polite"></div><span id="consolaSongBpm" title="Tempo actual"></span><span id="consolaSongVec" title="Vector intervalico elegido para esta canción (Intervalic.Creature)"></span><button type="button" id="consolaSongSetsBtn" hidden aria-expanded="false" title="Mostrar / ocultar los acordes de la canción">+</button></div>
     <div id="consolaSongMode" aria-live="polite"></div>
     <div id="consolaSongSets" aria-live="polite"></div>
+    <div id="consolaPresetsView" aria-live="polite" title="Presets que quedaron en cada pista de esta canción (los que sorteó el random choose)"></div>
     <div id="consolaBebopRollLabel" style="margin-bottom:6px;font-size:12px;font-weight:600;color:var(--ink-muted);padding-top:0;">🎷 bebopMelody — separate piano roll (isolated from the main one)</div>
     <div class="consola-roll-wrap" id="consolaBebopRollHost" style="min-height:60px;margin-bottom:20px;"></div>
     <div class="consola-roll-wrap" id="consolaRollHost"></div>
@@ -1586,6 +1596,16 @@
             <button type="button" class="chip primary" id="consolaPlayBtn" title="Reproduce el segmento en loop — repite siempre la misma secuencia (la última generada) hasta que la cambies con 🔀 o elijas otras notas.">&#9658; Play</button>
             <button type="button" class="chip chip-small" id="consolaRegenPlayBtn" disabled title="Atajo: tecla G. Detiene lo que suene, sortea una variación nueva del segmento (mismo set de notas elegido) y la reproduce de una — funciona también mientras está sonando.">&#128256;</button>
             <button type="button" class="chip" id="consolaStopBtn" disabled>&#9632; Stop</button>
+          </div>
+          <div class="seed-bar" id="seedCard" data-random="on">
+            <button type="button" class="seed-switch seed-small" id="seedSwitchBtn" role="switch" aria-checked="true" title="Random ON (por defecto): todo al azar, como siempre (no se toca nada). Random OFF: el azar sale de una secuencia fija (seed); cada vez que generás una canción (CreaturaRandom, ChordS, Partimenti, JazzTunes, etc.) con los mismos controles sale la MISMA canción, así podés mover un control y escuchar solo qué cambia.">
+              <span class="seed-knob"></span><span class="seed-txt">Random ON</span>
+            </button>
+            <div class="seed-row" title="Número de seed: solo cuenta con Random OFF">
+              <span>Seed</span>
+              <input type="number" class="seed-num" min="0" max="4294967295" step="1" value="1234" aria-label="Número de seed">
+              <button type="button" class="chip seed-dice" title="Sortear otro seed">&#127922;</button>
+            </div>
           </div>
           <div style="display:flex;align-items:stretch;gap:6px;"><button class="chip primary" style="flex:1;" id="creaturaBtn" type="button" title="Corre sola la secuencia: sortea Chromatism (2–40%), Chords (20–60%), Triplets (0–100%), Melodic/Harmonic/RythmSpace (0–100%) y Rapid runs (0–30%), Simplicity (0–50%), Melody n2 (on/off al azar) y una combinación totalmente al azar de Cycles (intervalos + Chromatism; prende Cycles) → Random Fill (5 o 2 sets al azar; 2–3/2–4/2–5 notas, modo Mezcla) → Compose → tilda Mix time signatures → Detener → espera 2s → 🔀 Regenerar. Una sola pasada por click.">🪄 CreaturaRandom</button><button type="button" class="chip" data-radio-only="random" style="flex:0 0 auto;padding-left:8px;padding-right:8px;" aria-label="Radio: solo CreaturaRandom" title="Radio (player): abre el mismo player del RADIO! pero limitado a CreaturaRandom: cada canción nueva es de CreaturaRandom (Next / Previous / Stop, historial, log y export iguales). Con la radio prendida en este modo, apretarlo de nuevo la detiene; para volver al sorteo entre todos los modos usá el botón RADIO!.">📻</button></div>
           <div style="display:flex;align-items:stretch;gap:6px;"><button class="chip primary" style="flex:1;" id="creaturaBellaBtn" type="button" title="Igual que CreaturaRandom (mismos sliders, incluidos Simplicity 0–50%, Melody n2 on/off y Cycles al azar; Compose, Mix time signatures, Detener, espera 2s y Regenerar), pero los 5 o 2 sets salen SOLO del índice del libro (jerarquías de sets) y con más probabilidad cuanto mayor es su jerarquía: dentro de cada cardinalidad (3 hasta el máximo del slider, el índice no tiene sets de 2 notas) el set 1 del índice es el más probable y el último el menos probable. Cada set sale transportado a una tónica al azar.">🪄 CreaturA</button><button type="button" class="chip" data-radio-only="bella" style="flex:0 0 auto;padding-left:8px;padding-right:8px;" aria-label="Radio: solo CreaturA" title="Radio (player): abre el mismo player del RADIO! pero limitado a CreaturA: cada canción nueva es de CreaturA (Next / Previous / Stop, historial, log y export iguales). Con la radio prendida en este modo, apretarlo de nuevo la detiene; para volver al sorteo entre todos los modos usá el botón RADIO!.">📻</button></div>
@@ -1688,17 +1708,6 @@
       <button type="button" class="chip" id="consolaExportMp3Btn" disabled title="Renderiza el segmento actual (una vuelta + cola de reverb) con los timbres, volúmenes y reverb que estás usando y lo descarga como MP3. La primera vez baja el codificador MP3 (lamejs) de internet.">&#11015; Export MP3</button>
       <span id="consolaExportStatus" role="status" aria-live="polite" style="font-size:12px;color:var(--ink-muted);"></span>
       </div>
-    </div>
-    <div class="clock-card seed-card" id="seedCard">
-      <button type="button" class="seed-switch" id="seedSwitchBtn" role="switch" aria-checked="false" title="Seed: ON = el azar sale de una secuencia fija. Cada vez que generás una canción (CreaturaRandom, ChordS, Partimenti, JazzTunes, etc.) con los mismos controles sale la MISMA canción, así podés mover un control y escuchar solo qué cambia. OFF = todo al azar, como siempre (no se toca nada).">
-        <span class="seed-knob"></span><span class="seed-txt">Seed OFF</span>
-      </button>
-      <div class="seed-row">
-        <span>Seed</span>
-        <input type="number" class="seed-num" min="0" max="4294967295" step="1" value="1234" aria-label="Número de seed">
-        <button type="button" class="chip seed-dice" title="Sortear otro seed">&#127922;</button>
-      </div>
-      <div class="seed-hint">OFF: todo al azar, como siempre. ON: misma canción cada vez que generás, hasta que cambies un control o el seed.</div>
     </div>
     <div class="clock-card multiset-card" id="multiSetsCard">
       <div class="multiset-head">
@@ -24570,6 +24579,35 @@ function runAnalysis() {
       });
       return st;
     }
+    // 🎛 Presets elegidos: instrumento que quedó en cada pista CON notas (los sortea el random choose; los "mute" no se muestran).
+    // Se pinta arriba a la izquierda del piano roll (#consolaPresetsView) y se guarda en el favorito (.json, campo presetView).
+    var VIEW_EV = { harmony: "chordEvents", chordDouble: "chordEvents", melody: "melodyEvents", melodyDouble: "melodyEvents", bebop: "bebopEvents",
+                    melody2: "melody2Events", melody3: "melody3Events", comping2: "comping2Events", bass: "bassEvents", bassDouble: "bassEvents" };
+    function presetView(){
+      var out = [];
+      PRESETS.forEach(function(p){
+        var k = mixPresets[p[1]];
+        if(k == null || k === "mute") return;
+        var ev = p[1] === "drum" ? drumEvents : state[VIEW_EV[p[1]]];
+        if(ev && ev.length === 0) return;   // pista sin notas: no suena
+        var el = document.getElementById(p[0]), name = String(k).replace(/^sf:x_/, "").replace(/%20/g, " ");
+        if(el && el.value === k && el.selectedIndex >= 0 && el.options[el.selectedIndex]) name = el.options[el.selectedIndex].text;
+        out.push([p[2], name]);
+      });
+      return out;
+    }
+    function pvEsc(t){ return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+    function paintPresets(e){
+      var box = document.getElementById("consolaPresetsView");
+      if(!box) return;
+      var pv = L.pendingView, v, fav = !!(pv && pv.title === txt("consolaSongTitle"));
+      if(fav) v = pv.view;                  // favorito recién abierto: los presets guardados con él
+      else v = (e && e.stamped && e.presetView) ? e.presetView : presetView();     // canción ya registrada (o Previous/Next): su vista; si no, la de ahora
+      if(!v.length){ box.innerHTML = ""; return; }
+      var mode = (!fav && e && txt("consolaSongTitle")) ? modeName(e.kind) : "";   // favorito abierto: el modo guardado no es confiable, no se muestra
+      box.innerHTML = '<div class="pv-h">Presets' + (mode ? ' · ' + pvEsc(mode) : '') + '</div>' +
+        v.map(function(r){ return '<div class="pv-r"><span>' + pvEsc(r[0]) + '</span><i>' + pvEsc(r[1]) + '</i></div>'; }).join("");
+    }
     // "(modo)" debajo del título: el tipo con el que se armó la canción (CreaturaRandom, ChordS, One Chord, Partimenti, JazzTunes...). Se pinta cuando cambia el título y al volver con Previous / Next.
     function modeName(k){ k = (k && k.name) || k || ""; return String(k).replace(/\s*\(.*?\)\s*/g, " ").trim(); }   // "Manual (sin sorteo)" → "Manual"
     function paintMode(e){
@@ -24577,11 +24615,15 @@ function runAnalysis() {
       if(!el) return;
       var n = (e && txt("consolaSongTitle")) ? modeName(e.kind) : "";
       el.textContent = n ? "(" + n + ")" : "";
+      paintPresets(e);
     }
     function fill(e){
       e.title = txt("consolaSongTitle");
       e.sets = txt("consolaSongSets");
       e.state = snapState();
+      var pv = L.pendingView;   // favorito recién abierto: mantiene la vista que se guardó con él
+      e.presetView = (pv && pv.title === e.title) ? pv.view : presetView();
+      L.pendingView = null;
       e.stamped = true;
       paintMode(e);
     }
@@ -24614,6 +24656,13 @@ function runAnalysis() {
       L.ver++;
     };
     L.curId = function(){ return L.cur ? L.cur.id : 0; };
+    L.presetView = presetView;                                      // lo que suena ahora (el favorito lo guarda)
+    L.repaintPresets = function(){ paintPresets(L.cur); };          // al terminar cada sorteo del random choose
+    L.showPresets = function(view, title){                          // al abrir un favorito: vuelve a mostrar los presets guardados
+      if(!Array.isArray(view) || !view.length) return;
+      L.pendingView = { title: title == null ? txt("consolaSongTitle") : title, view: view };
+      paintPresets({ stamped: true, presetView: view, kind: window.__radioMixLast || "" });
+    };
     L.entryText = function(e){
       var n = ["#" + e.id + " · " + (e.kind || "—") + " · " + (e.title || "(sin título)")];
       if(e.sets) n.push("   " + e.sets);
@@ -24780,6 +24829,7 @@ function runAnalysis() {
         name: title || "Favorito", title: title, sets: setsEl ? setsEl.textContent : "", kind: window.__radioMixLast || "", vec: SONGTITLE.vec(),
         engine: { numBars: NUM_BARS, totalBeats: TOTAL_BEATS, form: FORM.save(), tempo: tempoEl ? tempoEl.value : null, rhythm: RHYTHM.save(), dyn: DYNAMICS.getPlan(), mdInterval: (alt && alt.checked) ? -7 : -12 },
         presets: Object.assign({}, mixPresets),
+        presetView: (window.__songLog && window.__songLog.presetView) ? window.__songLog.presetView() : [],   // presets mostrados arriba a la izquierda del piano roll
         tracks: { chord: state.chordEvents, bass: state.bassEvents, melody: state.melodyEvents, comping2: state.comping2Events, bebop: state.bebopEvents,
                   melody2: state.melody2Events, melody3: state.melody3Events, drum: drumEvents },
         harmony: { slotChords: state.slotChords, progression: state.progression, roles: state.roles, rootChord: state.rootChord },
@@ -24835,6 +24885,7 @@ function runAnalysis() {
       try{
         writeControls(o.controls || {});
         window.__radioHist.applyEntry(entryOf(o));    // mismo camino que Previous/Next: eventos, armonía, presets, tempo, compases, dinámica y título
+        try{ if(window.__songLog) window.__songLog.showPresets(o.presetView, o.title || ""); }catch(_ep){}   // presets guardados con el favorito
         var exprSel = document.getElementById("consolaExprSelect");
         if(exprSel && exprSel.value === "auto" && o.expr && o.expr.auto) EXPR.setAuto(o.expr.auto); else EXPR.reroll();
       } finally { window.__favApplying = false; }
@@ -26684,6 +26735,7 @@ function runAnalysis() {
             var rv = document.getElementById("consolaReverbAmount");
             if(rv){ rv.value = 60 + rnd(41); rv.dispatchEvent(new Event("input", { bubbles: true })); SL("Reverb (RANDOM CHOOSE 60–100%)", rv.value + "% — la song tiene espacio o silencios"); }
           } else SL("Reverb (RANDOM CHOOSE 60–100%)", "no se sortea (poco espacio y poco silencio)");
+          try{ if(window.__songLog) window.__songLog.repaintPresets(); }catch(_e){}   // presets ya definitivos: se muestran arriba a la izquierda del piano roll
         }
       };
     })();
@@ -29714,6 +29766,20 @@ window.addEventListener("load", sfAskPersist);
 .seed-row{display:flex;align-items:center;justify-content:center;gap:8px;font-size:13px;color:var(--ink-muted,#888);}
 .seed-num{width:120px;}
 .seed-hint{font-size:11px;color:var(--ink-muted,#888);text-align:center;line-height:1.35;}
+/* Play / regenerar / Stop más grandes */
+#consolaTransportRow{gap:10px !important;flex-wrap:nowrap !important;}
+#consolaTransportRow #consolaPlayBtn,#consolaTransportRow #consolaStopBtn{flex:1 1 0;min-height:52px;padding:12px 18px;font-size:20px;font-weight:800;border-radius:14px;white-space:nowrap;}
+#consolaTransportRow #consolaRegenPlayBtn{flex:none;min-height:52px;min-width:60px;padding:10px 16px;font-size:26px;line-height:1;border-radius:14px;}
+.seed-bar{display:flex;flex-wrap:nowrap;align-items:center;gap:6px;}
+.seed-switch.seed-small{width:126px;height:32px;border-radius:16px;font-size:12px;letter-spacing:.02em;flex:none;padding:0 0 0 24px;white-space:nowrap;}
+.seed-switch.seed-small[aria-checked="true"]{padding:0 24px 0 0;}
+.seed-switch.seed-small .seed-knob{left:4px;top:4px;width:20px;height:20px;}
+.seed-switch.seed-small[aria-checked="true"] .seed-knob{left:calc(100% - 24px);}
+.seed-bar .seed-row{justify-content:flex-start;}
+.seed-bar .seed-num{width:104px;}
+.seed-bar .seed-row{gap:5px;font-size:12px;flex:none;}
+.seed-bar .seed-dice{padding:4px 8px;}
+.seed-bar[data-random="on"] .seed-row{opacity:.55;}
 #controlLab{max-width:980px;margin:18px auto 40px;padding:10px 14px;}
 #controlLab .lab-head{display:flex;align-items:center;justify-content:space-between;gap:12px;}
 #controlLab .lab-title{font-size:15px;font-weight:800;}
@@ -29754,7 +29820,7 @@ window.addEventListener("load", sfAskPersist);
 <div id="controlLabSpacer" style="height:0;"></div>
 <script>
 /* ================================================================
-   SEED (switch grande debajo del reloj de entrada) + CONTROL LAB (al final de la página).
+   SEED / RANDOM ON-OFF (switch entre Play-Stop y los random choose; Random ON = seed OFF) + CONTROL LAB (al final de la página).
    Seed OFF = no se toca nada (Math.random original). Seed ON = Math.random sale de una secuencia fija (mulberry32) que se
    reinicia al empezar cada canción (window.__songLog.begin y el botón compose), y la semilla de MiX se fija igual.
    Control Lab: genera la misma canción ChordS varias veces con distinta posición de UN control y las reproduce en secuencia.
@@ -29784,8 +29850,10 @@ window.addEventListener("load", sfAskPersist);
   var numIn = card ? card.querySelector(".seed-num") : null, dice = card ? card.querySelector(".seed-dice") : null;
   function paint(){
     if(!btn) return;
-    btn.setAttribute("aria-checked", on ? "true" : "false");
-    var t = btn.querySelector(".seed-txt"); if(t) t.textContent = on ? "Seed ON" : "Seed OFF";
+    // "Random ON" = seed apagado (azar de siempre); "Random OFF" = seed prendido (secuencia fija).
+    btn.setAttribute("aria-checked", on ? "false" : "true");
+    var t = btn.querySelector(".seed-txt"); if(t) t.textContent = on ? "Random OFF" : "Random ON";
+    if(card) card.setAttribute("data-random", on ? "off" : "on");
   }
   function setOn(v){
     if(v === on) return;
