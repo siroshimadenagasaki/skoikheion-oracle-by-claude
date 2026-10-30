@@ -1438,6 +1438,39 @@
   #consolaRollsLayer > *{transform:translateY(var(--roll-shift,0vh));flex:none;}
   #rollVScroll{position:fixed;left:3px;top:50%;transform:translateY(-50%);z-index:50;width:10px;height:55px;margin:0;padding:0;opacity:.55;cursor:pointer;writing-mode:vertical-lr;direction:rtl;accent-color:var(--gold);}
   #rollVScroll:hover{opacity:1;}
+  /* ---- Chart: cifrado grande tipo Real Book sobre el piano roll (apagado por defecto) ---- */
+  #chartModeBtn{position:fixed;top:76px;left:10px;z-index:120;height:32px;padding:0 8px;border-radius:16px;border:2px solid var(--gold);background:var(--bg);color:var(--gold);font:700 12px/1 'JetBrains Mono',monospace;cursor:pointer;white-space:nowrap;}
+  #chartModeBtn[aria-pressed="true"]{background:var(--gold);color:var(--bg);}
+  #chartCtl{position:fixed;top:116px;left:10px;z-index:120;display:flex;flex-direction:column;gap:6px;}
+  #chartCtl[hidden]{display:none;}
+  #chartCtl select{width:66px;height:26px;font:600 11px 'JetBrains Mono',monospace;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:0 2px;}
+  #consolaChartHost{display:none;}
+  body.chart-mode #consolaRollHost, body.chart-mode #consolaBebopRollHost, body.chart-mode #consolaBebopRollLabel{display:none !important;}
+  body.chart-mode #consolaChartHost{display:flex;flex-direction:column;flex:1 1 auto;min-height:0;width:100%;box-sizing:border-box;padding:4px 20px 6px 100px;}
+  .chart-grid{flex:1 1 auto;min-height:0;display:grid;}
+  .chart-row{position:relative;display:grid;align-items:stretch;border-left:4px solid var(--ink);min-height:0;}
+  .chart-bar{position:relative;min-width:0;border-right:2px solid var(--ink);border-bottom:1px solid var(--line);}
+  .chart-bar.dbl{border-right:7px double var(--ink);}
+  .chart-bar.end{border-right:6px solid var(--ink);}
+  .chart-bar.empty{border-right-color:transparent;border-bottom-color:transparent;}
+  .chart-bar.now{background:rgba(255,210,90,.14);}
+  .chart-ch{position:absolute;top:50%;transform:translateY(-50%);font-family:"Helvetica Neue",Arial,sans-serif;font-size:var(--cf);font-weight:600;color:var(--ink);white-space:nowrap;line-height:1;}
+  .chart-ch.cur .chart-main{color:var(--gold);}
+  .chart-main{line-height:1.1;}
+  .chart-a{font-size:.6em;position:relative;top:-.35em;}
+  .chart-q{font-size:.58em;position:relative;top:-.45em;margin-left:.04em;}
+  .chart-b{font-size:.66em;margin-left:.04em;}
+  .chart-rep{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font:600 var(--cf) "Helvetica Neue",Arial,sans-serif;color:var(--ink-muted);}
+  .chart-bar.now .chart-rep{color:var(--gold);}
+  .chart-t{font-size:.46em;font-weight:600;margin-top:.12em;opacity:.9;}
+  .chart-ch.cur .chart-t{color:var(--gold);opacity:1;}
+  .chart-cc{font-family:'JetBrains Mono',monospace;font-size:.36em;font-weight:700;color:#3ddc84;margin-top:.25em;}
+  .chart-sec{position:absolute;top:3px;left:5px;font:700 calc(var(--cf)*.3)/1 'JetBrains Mono',monospace;color:var(--gold);border:2px solid var(--gold);padding:.1em .35em;border-radius:3px;}
+  .chart-sig{position:absolute;top:3px;right:6px;font:700 calc(var(--cf)*.28)/1 'JetBrains Mono',monospace;color:var(--ink-muted);}
+  .chart-num{position:absolute;bottom:2px;left:5px;font:600 calc(var(--cf)*.22)/1 'JetBrains Mono',monospace;color:var(--ink-muted);}
+  .chart-ph{position:absolute;top:0;bottom:0;width:3px;margin-left:-1px;background:var(--gold);opacity:.9;pointer-events:none;}
+  .chart-foot{flex:none;text-align:center;font:11px 'JetBrains Mono',monospace;color:var(--ink-muted);padding:3px 4px 0;}
+  .chart-empty{margin:auto;color:var(--ink-muted);font-size:14px;}
   #consolaRollsLayer .consola-empty{display:none;}
   #consolaRollsLayer .consola-roll-wrap{overflow-x:hidden;border:none;border-radius:0;margin-bottom:0 !important;background-image:none;background-color:transparent;}
   .wrap{position:relative;z-index:1;}
@@ -1474,6 +1507,12 @@
   <div class="sf2-load-detail" id="extraLoadDetail"></div>
 </div>
 
+<!-- Indicador de render del ⚡ Prerender (mismas clases = mismo estilo y tamaño que el de Loading sounds; ocupa el primer lugar libre: 14 / 60 / 106 px) -->
+<div class="sf2-load-overlay sf2-load-hidden" id="renderLoadOverlay">
+  <span class="sf2-load-label" id="renderLoadLabel">&#9889; Rendering&hellip; 0%</span>
+  <span class="sf2-load-bar"><span class="sf2-load-bar-fill" id="renderLoadBarFill"></span></span>
+</div>
+
 <!-- Fondo de página: avatar detrás del texto -->
 <div class="page-bg-avatar"></div>
 
@@ -1497,6 +1536,11 @@
 </div>
 
 <button type="button" class="shortcuts-roll-btn" id="rollFrontBtn" aria-pressed="false" title="Traer el piano roll al primer plano (otro clic lo devuelve al fondo)">+</button>
+<button type="button" id="chartModeBtn" aria-pressed="false" title="Chart: muestra el cifrado del piano roll en grande, en staves tipo Real Book, y sigue la canción en tiempo real. Apagado por defecto.">🎼 Chart</button>
+<div id="chartCtl" hidden>
+  <select id="chartBpsSel" title="Compases por stave"><option value="2">2 bars</option><option value="4" selected>4 bars</option><option value="6">6 bars</option></select>
+  <select id="chartSymSel" title="Cantidad de cifrados por compás: 1 = el cifrado principal; 2 = suma el cifrado verde de ChordS (si la canción lo tiene)"><option value="1" selected>1 sym</option><option value="2">2 sym</option></select>
+</div>
 
 <!-- Botonera de Navegación "Ir a:" -->
 <div class="nav-modules is-collapsed" id="navModules">
@@ -1532,6 +1576,7 @@
     <div id="consolaBebopRollLabel" style="margin-bottom:6px;font-size:12px;font-weight:600;color:var(--ink-muted);padding-top:0;">🎷 bebopMelody — separate piano roll (isolated from the main one)</div>
     <div class="consola-roll-wrap" id="consolaBebopRollHost" style="min-height:60px;margin-bottom:20px;"></div>
     <div class="consola-roll-wrap" id="consolaRollHost"></div>
+    <div id="consolaChartHost"></div>
     </div>
 
 <div class="wrap">
@@ -1695,6 +1740,7 @@
         <input type="checkbox" id="consolaPrerenderChk">
         <label for="consolaPrerenderChk">⚡ Prerender</label>
         <span class="consola-val" id="consolaPrerenderStatus"></span>
+        <button type="button" class="chip toggle" id="stkMonBtn" aria-pressed="false" title="Monitor de recursos en vivo: RAM estimada (soundfonts y cachés), atraso del hilo principal, fps, deriva del reloj de audio, voces. Apagado por defecto.">📊 Monitor</button>
       </div>
       <div class="consola-export" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px;justify-content:center;">
       <button type="button" class="chip" id="consolaExportMidiBtn" disabled title="Descarga el segmento actual como archivo MIDI (.mid): una pista por instrumento (armonía, dobles, bajo, melodía, moreComping, bebopMelody, batería en canal 10) con el tempo y los compases actuales.">&#11015; Export MIDI</button>
@@ -6837,11 +6883,20 @@ const sfFontByUrl = {};      // url -> .sf2 parseado
 const sfStateByUrl = {};     // url -> loading | ready | error
 const sfLoadPromiseByUrl = {};
 let sfOnCatalogChange = null; // lo asigna el módulo SetMusicBox (sfBuildPresetSelects)
+// Optimización (2026-10-30): con ~70 soundfonts cargando, esto se llamaba decenas de veces y cada
+// llamada reconstruía TODOS los selectores de presets (11+ selects × todos los presets de todos los
+// .sf2) en el hilo principal. Ahora las llamadas se juntan en una sola reconstrucción cada 250 ms.
+// sfExtraVersion sigue subiendo al instante (los cachés de índices dependen de eso).
+let sfCatalogTimer = 0;
 function sfNotifyCatalogChange(bumpVersion) {
   if (bumpVersion) sfExtraVersion++;
-  if (typeof sfOnCatalogChange === "function") {
-    try { sfOnCatalogChange(); } catch (err) { console.error("Could not rebuild the preset selectors:", err); }
-  }
+  if (sfCatalogTimer) return;
+  sfCatalogTimer = setTimeout(function () {
+    sfCatalogTimer = 0;
+    if (typeof sfOnCatalogChange === "function") {
+      try { sfOnCatalogChange(); } catch (err) { console.error("Could not rebuild the preset selectors:", err); }
+    }
+  }, 250);
 }
 function sfUrlForPath(path) { return path.split("/").map(encodeURIComponent).join("/"); }
 // Tag para el caché de AudioBuffers (sf2BufferFor): el mismo .sf2 usa el
@@ -7097,6 +7152,8 @@ function sfLoadFontOnce(url) {
 Promise.resolve(sfDiscoverReady).catch(() => {}).then(() => {
   return Promise.all(sfAutoFiles().map((f) => sfLoadFontOnce(sfUrlForPath(SF_ROOT_DIR + "/" + f))));
 }).then(() => {
+  // ?noextras en la URL → no cargar los extras al abrir (se cargan apretando loadExtra). Sin el parámetro, todo igual que antes.
+  if (/[?&]noextras\b/.test(location.search)) { sfLog("?noextras: extras NO se cargan al abrir"); return; }
   const b = document.getElementById("loadExtraBtn");
   if (b && !b.disabled) b.click();
 }).catch((err) => { console.error("Auto-load of extras:", err); });
@@ -20146,6 +20203,7 @@ function runAnalysis() {
       msg.className = "consola-empty";
       msg.textContent = "Select at least 2 notes above (clock or piano) to build the segment.";
       host.appendChild(msg);
+      if(window.__chartRefresh) window.__chartRefresh();
       updateExportBtns();
       return;
     }
@@ -20295,6 +20353,7 @@ function runAnalysis() {
     });
     host.insertBefore(wrap, svg);   // leyenda chiquita arriba del piano roll
     try{ if(window.__songLog && window.__songLog.applyLegend) window.__songLog.applyLegend(); }catch(_e){}   // presets de la canción en la leyenda
+    if(window.__chartRefresh) window.__chartRefresh();   // modo Chart (si está prendido)
     updateExportBtns();
   }
   // Leyenda del piano roll: qué preset (instrumento) tiene elegido cada pista con color. Se refresca sola al cambiar un selector de presets.
@@ -20307,6 +20366,239 @@ function runAnalysis() {
     Array.prototype.forEach.call(document.querySelectorAll(".consola-legend .pn[data-sel]"), function(el){ el.textContent = "\u00b7 " + legendPresetName(el.getAttribute("data-sel")); });
   }
   document.addEventListener("change", function(e){ var t = e.target; if(t && t.classList && t.classList.contains("mix-preset-select")) refreshLegendPresets(); });
+
+  /* ================================================================
+     CHART — cifrado grande tipo Real Book, en tiempo real (botón "🎼 Chart", apagado por defecto)
+     Lee lo mismo que el cifrado del piano roll (state.slotChords + cifradoLabelForSlot) y lo acomoda en staves de 2 / 4 (default) / 6 compases,
+     tantos staves como entren en pantalla. El compás y el acorde en curso se marcan con el playhead (tickPlayhead -> __chartTick).
+     Al terminar el último stave de la pantalla pasa a la página siguiente. Sección de Form = recuadro; compás distinto de 4/4 = etiqueta.
+     ================================================================ */
+  var CHART = (function(){
+    var host = document.getElementById("consolaChartHost");
+    var btn = document.getElementById("chartModeBtn");
+    var ctl = document.getElementById("chartCtl");
+    var selB = document.getElementById("chartBpsSel");
+    var selS = document.getElementById("chartSymSel");
+    if(!host || !btn) return null;
+    var on = false, addedFront = false, bps = 4, syms = 1;
+    var bars = [], starts = [];
+    var page = -1, rowsFit = 1, baseFont = 24, curBar = -1, curItem = -2, ph = null, barEls = [], itemEls = [];
+    try{
+      var sb = parseInt(localStorage.getItem("chartBps"), 10); if(sb === 2 || sb === 4 || sb === 6) bps = sb;
+      if(localStorage.getItem("chartSyms") === "2") syms = 2;
+    }catch(_e){}
+    if(selB) selB.value = String(bps);
+    if(selS) selS.value = String(syms);
+
+    // Cifrado del Chart: raiz + calidad SOLO si el acorde reconocido cabe completo en el set (nunca afirma notas que no suenan);
+    // las notas del set que ese acorde no explica van entre parentesis como grados sobre la raiz (2♭ 2 3♭ 3 4 4♯ 5 6♭ 6 7♭ 7), y el bajo ajeno como /X.
+    var CHART_DEG = {1:"2♭", 2:"2", 3:"3♭", 4:"3", 5:"4", 6:"4♯", 7:"5", 8:"6♭", 9:"6", 10:"7♭", 11:"7"};
+    function chartLabel(chordMidi, bassMidi){
+      var pcs = Array.from(new Set(chordMidi.map(mod12)));
+      var r = bestRootQuality(pcs);
+      var rel = new Set(pcs.map(function(pc){ return mod12(pc - r.rootPc); }));
+      var ac = r.acorde;
+      var ok = ac.intervalos.every(function(iv){ return rel.has(iv.semitono); });
+      var covered = {0: true};
+      if(ok) ac.intervalos.forEach(function(iv){ covered[iv.semitono] = true; });
+      var rest = [];
+      rel.forEach(function(x){ if(!covered[x]) rest.push(x); });
+      rest.sort(function(a, b){ return a - b; });
+      var sym = ok ? (ac.simbolo || "") : "";
+      if(ok && ac.id === "maj7" && rel.has(2)){ sym = "9Δ"; covered[2] = true; rest = rest.filter(function(x){ return x !== 2; }); }   // Δ + 9ª = 9Δ (como el dominante con 9ª, que el sistema ya nombra 9)
+      var s = CIFRADO_ROOT_BY_PC[r.rootPc] + sym;
+      if(rest.length) s += "(" + rest.map(function(x){ return CHART_DEG[x]; }).join(" ") + ")";
+      if(bassMidi != null && mod12(bassMidi) !== r.rootPc) s += "/" + CIFRADO_ROOT_BY_PC[mod12(bassMidi)];
+      return s;
+    }
+
+    // Datos por compás: un cifrado por reataque de armonía (los compases "sostenidos" de un acorde de 2 compases quedan vacíos, como en un Real Book)
+    function build(){
+      bars = []; starts = [];
+      var n = NUM_BARS;
+      if(!state.chordEvents.length || !n) return;
+      var secAt = {};
+      if(FORM.active()){ (FORM.sections() || []).forEach(function(s){ secAt[s.b0] = s.name; }); }
+      var prevSig = null;
+      for(var b = 0; b < n; b++){
+        var st = RHYTHM.start(b), bb = RHYTHM.beats(b);
+        var slots = (state.slotChords && state.slotChords[b]) || [];
+        var items = [];
+        slots.forEach(function(slot){
+          if(slot.held) return;
+          var bassEv = findSoundingNote(state.bassEvents, st + slot.startBeat);
+          var lab;
+          try{ lab = chartLabel(slot.chord, bassEv ? bassEv.midi : null); }catch(_e){ lab = "?"; }
+          items.push({ pos: slot.startBeat, label: lab, cc: (slot.ccLabel && slot.ccLabel !== lab) ? slot.ccLabel : "" });
+        });
+        var dd = [];   // un cifrado que se repite seguido dentro del compas se pone una sola vez
+        items.forEach(function(it){ var l = dd[dd.length - 1]; if(l && l.label === it.label && (syms !== 2 || l.cc === it.cc)) return; dd.push(it); });
+        items = dd;
+        var sig = RHYTHM.label(b);
+        bars.push({ start: st, beats: bb, items: items, section: secAt[b] || "", sig: (sig !== prevSig && !(prevSig === null && sig === "4/4")) ? sig : "", secEnd: false });
+        prevSig = sig;
+        starts.push(st);
+      }
+      starts.push(RHYTHM.start(n));
+      for(var i = 0; i < bars.length - 1; i++) if(bars[i + 1].section) bars[i].secEnd = true;
+      var keyOf = function(B){ return B.items.map(function(it){ return it.label + (syms === 2 ? "~" + it.cc : ""); }).join("|"); };
+      for(var j = 1; j < bars.length; j++){ if(bars[j].items.length && bars[j - 1].items.length && keyOf(bars[j]) === keyOf(bars[j - 1])) bars[j].repeat = true; }   // mismo cifrado que el compas anterior: %
+    }
+
+    function chordEl(it, n, k){
+      var el = document.createElement("div");
+      el.className = "chart-ch";
+      el.style.left = "calc(" + (k / n * 100).toFixed(2) + "% + 9px)";
+      el.setAttribute("data-share", String(1 / n));
+      var main = document.createElement("div");
+      main.className = "chart-main";
+      var m = /^([A-G])([♭♯]?)(.*?)(\([^)]*\))?(\/[A-G][♭♯]?)?$/.exec(it.label);
+      if(m){
+        main.appendChild(document.createTextNode(m[1]));
+        [["chart-a", m[2]], ["chart-q", m[3]], ["chart-b", m[5]]].forEach(function(p){
+          if(!p[1]) return;
+          var s = document.createElement("span"); s.className = p[0]; s.textContent = p[1]; main.appendChild(s);
+        });
+      } else main.textContent = it.label;
+      el.appendChild(main);
+      if(m && m[4]){ var tl = document.createElement("div"); tl.className = "chart-t"; tl.textContent = m[4]; el.appendChild(tl); }   // notas que el acorde no explica, como grados
+      if(syms === 2 && it.cc){
+        var cc = document.createElement("div"); cc.className = "chart-cc"; cc.textContent = it.cc; el.appendChild(cc);
+      }
+      return el;
+    }
+
+    function renderPage(p){
+      host.innerHTML = "";
+      barEls = []; itemEls = []; curBar = -1; curItem = -2;
+      ph = document.createElement("div"); ph.className = "chart-ph";
+      if(!bars.length){
+        var msg = document.createElement("div"); msg.className = "chart-empty";
+        msg.textContent = "Generate a song to see its chart.";
+        host.appendChild(msg); page = -1; return;
+      }
+      var W = host.clientWidth, H = host.clientHeight;
+      if(!H) H = Math.max(200, window.innerHeight - 170);
+      if(!W) W = Math.max(300, window.innerWidth - 100);
+      var barW = Math.max(60, (W - 28) / bps);
+      baseFont = Math.max(16, Math.min(barW * 0.27, 62));
+      var rowMin = baseFont * (syms === 2 ? 2.7 : 2.1);
+      rowsFit = Math.max(1, Math.floor((H - 18) / rowMin));
+      var totalRows = Math.ceil(bars.length / bps);
+      var pages = Math.max(1, Math.ceil(totalRows / rowsFit));
+      p = Math.max(0, Math.min(pages - 1, p)); page = p;
+      var grid = document.createElement("div");
+      grid.className = "chart-grid";
+      grid.style.setProperty("--cf", baseFont.toFixed(1) + "px");
+      grid.style.gridTemplateRows = "repeat(" + rowsFit + ",minmax(0,1fr))";
+      var firstBar = -1, lastBar = -1;
+      for(var r = 0; r < rowsFit; r++){
+        var row = p * rowsFit + r;
+        if(row >= totalRows) break;
+        var rowEl = document.createElement("div");
+        rowEl.className = "chart-row";
+        rowEl.style.gridTemplateColumns = "repeat(" + bps + ",minmax(0,1fr))";
+        for(var c = 0; c < bps; c++){
+          var bi = row * bps + c;
+          var cell = document.createElement("div");
+          cell.className = "chart-bar";
+          if(bi >= bars.length){ cell.className += " empty"; rowEl.appendChild(cell); continue; }
+          var B = bars[bi];
+          if(bi === bars.length - 1) cell.className += " end"; else if(B.secEnd) cell.className += " dbl";
+          if(firstBar < 0) firstBar = bi; lastBar = bi;
+          if(B.section){ var sc = document.createElement("div"); sc.className = "chart-sec"; sc.textContent = B.section; cell.appendChild(sc); }
+          if(B.sig){ var sg = document.createElement("div"); sg.className = "chart-sig"; sg.textContent = B.sig; cell.appendChild(sg); }
+          if(c === 0){ var nm = document.createElement("div"); nm.className = "chart-num"; nm.textContent = String(bi + 1); cell.appendChild(nm); }
+          var els = [];
+          if(B.repeat){ var rp = document.createElement("div"); rp.className = "chart-rep"; rp.textContent = "%"; cell.appendChild(rp); }
+          else B.items.forEach(function(it, k){ var e = chordEl(it, B.items.length, k); cell.appendChild(e); els.push(e); });
+          itemEls[bi] = els; barEls[bi] = cell;
+          rowEl.appendChild(cell);
+        }
+        grid.appendChild(rowEl);
+      }
+      host.appendChild(grid);
+      var foot = document.createElement("div"); foot.className = "chart-foot";
+      foot.textContent = "bars " + (firstBar + 1) + "–" + (lastBar + 1) + " of " + bars.length + (pages > 1 ? "  ·  page " + (p + 1) + "/" + pages : "");
+      host.appendChild(foot);
+      // cifrados largos: se achican para entrar en su parte del compás
+      Array.prototype.forEach.call(grid.querySelectorAll(".chart-ch"), function(el){
+        var cell = el.parentNode, share = parseFloat(el.getAttribute("data-share")) || 1;
+        var allowed = cell.clientWidth * share - 14, w = el.scrollWidth;
+        if(allowed > 20 && w > allowed) el.style.fontSize = Math.max(11, baseFont * allowed / w).toFixed(1) + "px";
+      });
+    }
+
+    function tick(beats){
+      if(!on || !bars.length) return;
+      var bi = curBar;
+      if(bi < 0 || beats < starts[bi] - 1e-6 || beats >= starts[bi + 1] - 1e-6){
+        bi = 0;
+        for(var i = 0; i < bars.length; i++){ if(beats >= starts[i] - 1e-6) bi = i; else break; }
+      }
+      var pg = Math.floor(Math.floor(bi / bps) / rowsFit);
+      if(pg !== page) renderPage(pg);
+      var B = bars[bi], inBar = beats - starts[bi];
+      if(bi !== curBar){
+        if(curBar >= 0 && barEls[curBar]) barEls[curBar].classList.remove("now");
+        if(curBar >= 0 && itemEls[curBar]) itemEls[curBar].forEach(function(e){ e.classList.remove("cur"); });
+        var cell = barEls[bi];
+        if(cell){ cell.classList.add("now"); cell.appendChild(ph); }
+        curBar = bi; curItem = -2;
+      }
+      var ii = -1;
+      for(var k = 0; k < B.items.length; k++) if(B.items[k].pos <= inBar + 1e-6) ii = k;
+      if(ii !== curItem){
+        var els = itemEls[bi] || [];
+        els.forEach(function(e, k2){ e.classList.toggle("cur", k2 === ii); });
+        curItem = ii;
+      }
+      ph.style.left = Math.max(0, Math.min(100, inBar / B.beats * 100)).toFixed(1) + "%";
+    }
+
+    function refresh(){
+      if(!on) return;
+      build();
+      renderPage(0);
+    }
+
+    function syncFrontBtn(front){
+      var rb = document.getElementById("rollFrontBtn");
+      if(!rb) return;
+      rb.setAttribute("aria-pressed", front ? "true" : "false");
+      rb.textContent = front ? "−" : "+";
+    }
+    function setOn(v){
+      on = !!v;
+      document.body.classList.toggle("chart-mode", on);
+      btn.setAttribute("aria-pressed", on ? "true" : "false");
+      if(ctl) ctl.hidden = !on;
+      if(on){
+        if(!document.body.classList.contains("roll-front")){ addedFront = true; document.body.classList.add("roll-front"); syncFrontBtn(true); }   // el Chart se lee en primer plano
+        refresh();
+      } else {
+        if(addedFront){ document.body.classList.remove("roll-front"); syncFrontBtn(false); }
+        addedFront = false;
+        host.innerHTML = ""; page = -1; curBar = -1;
+      }
+    }
+    btn.addEventListener("click", function(){ setOn(!on); });
+    if(selB) selB.addEventListener("change", function(){
+      bps = parseInt(selB.value, 10) || 4;
+      try{ localStorage.setItem("chartBps", String(bps)); }catch(_e){}
+      refresh();
+    });
+    if(selS) selS.addEventListener("change", function(){
+      syms = selS.value === "2" ? 2 : 1;
+      try{ localStorage.setItem("chartSyms", String(syms)); }catch(_e){}
+      refresh();
+    });
+    var rzT = null;
+    window.addEventListener("resize", function(){ if(!on) return; if(rzT) cancelAnimationFrame(rzT); rzT = requestAnimationFrame(function(){ var keep = curBar >= 0 ? Math.floor(Math.floor(curBar / bps) / rowsFit) : 0; renderPage(keep); }); });
+    window.__chartRefresh = refresh;
+    window.__chartTick = tick;
+    return { setOn: setOn, isOn: function(){ return on; } };
+  })();
 
   // Piano roll SEPARADO para bebopMelody — a pedido: antes compartía el
   // roll principal (mismas filas/rango que armonía+bajo+melodía), lo que
@@ -24290,6 +24582,7 @@ function runAnalysis() {
         var x = MARGIN_L + beats*PPB;
         var xs = x.toFixed(1);
         if(ph){ ph.setAttribute("x1", xs); ph.setAttribute("x2", xs); }
+        if(window.__chartTick) window.__chartTick(beats);   // modo Chart: compás / acorde en curso
         if(phDrum){ phDrum.setAttribute("x1", xs); phDrum.setAttribute("x2", xs); }
         if(phBebop){ phBebop.setAttribute("x1", xs); phBebop.setAttribute("x2", xs); }
         if(!shown){
@@ -24350,6 +24643,26 @@ function runAnalysis() {
   function prStatus(msg){
     var el = document.getElementById("consolaPrerenderStatus");
     if(el) el.textContent = msg || "";
+    if(!msg) prOverlayHide();
+  }
+  // Barra de progreso del render (mismo look y tamaño que "Loading sounds"). Se coloca en el primer lugar libre:
+  // 14 px (Loading sounds), 60 px (Loading extras) o 106 px si ambos están a la vista.
+  var prOvTimer = 0;
+  function prOverlay(label, pct){
+    var ov = document.getElementById("renderLoadOverlay"); if(!ov) return;
+    clearTimeout(prOvTimer);
+    var s1 = document.getElementById("sf2LoadOverlay"), s2 = document.getElementById("extraLoadOverlay");
+    var busy1 = !!(s1 && !s1.classList.contains("sf2-load-hidden")), busy2 = !!(s2 && !s2.classList.contains("sf2-load-hidden"));
+    ov.style.top = (!busy1 ? 14 : !busy2 ? 60 : 106) + "px";
+    var l = document.getElementById("renderLoadLabel"), f = document.getElementById("renderLoadBarFill");
+    if(l) l.textContent = label + " " + pct + "%";
+    if(f) f.style.width = pct + "%";
+    ov.classList.remove("sf2-load-hidden");
+  }
+  function prOverlayHide(delayMs){
+    var ov = document.getElementById("renderLoadOverlay"); if(!ov) return;
+    clearTimeout(prOvTimer);
+    prOvTimer = setTimeout(function(){ ov.classList.add("sf2-load-hidden"); }, delayMs || 0);
   }
   function prActiveTracks(){
     var out = [];
@@ -24482,11 +24795,13 @@ function runAnalysis() {
         var waitStart = performance.now();
         while(prFontsLoading(tracks) && performance.now() - waitStart < 20000){
           prStatus("⏳ Waiting for SoundFonts…");
+          prOverlay("⏳ Waiting for SoundFonts…", 0);
           await new Promise(function(r){ setTimeout(r, 200); });
           if(token !== prToken) return;
         }
         for(var k = 0; k < tracks.length; k++){
           prStatus("⏳ Rendering " + (k + 1) + "/" + tracks.length + "…");
+          prOverlay("⚡ Rendering " + (k + 1) + "/" + tracks.length + "…", Math.round(k / tracks.length * 100));
           await yieldToUI();
           if(token !== prToken) return;
           var rendered = await renderTrackDry(tracks[k], sr, spb, loopDur, rsnap);
@@ -24513,7 +24828,11 @@ function runAnalysis() {
           srcs.push(node);
         });
         playing = true;
+        // Optimización (2026-10-30): el audio ya está horneado en `bufs`; la copia float32 de los samples del SoundFont
+        // (sf2BufferCache) ya no hace falta durante la reproducción. Se suelta para bajar la RAM; se regenera sola en el próximo render.
+        try{ sf2BufferCache.clear(); }catch(eC){}
         prStatus("✓ rendered " + ((performance.now() - t0perf) / 1000).toFixed(1) + " s");
+        prOverlay("⚡ Rendered ✓", 100); prOverlayHide(900);
         var loopChk = document.getElementById("consolaLoopChk");
         if(looping){
           schedulerTimer = setInterval(function(){
@@ -24532,6 +24851,7 @@ function runAnalysis() {
         console.error("Prerender failed; using live mode:", err);
         if(token !== prToken) return;
         prStatus("⚠ prerender failed → live mode");
+        prOverlayHide();
         startPlaybackLive();
       }
     })();
@@ -24818,6 +25138,7 @@ function runAnalysis() {
       try{ var v = voices ? voices.size : 0; if(v > S.vMax) S.vMax = v; }catch(e){}
     };
     P.dur = function(ms){ if(S && S.dur.length < MAXN) S.dur.push(ms); };
+    P.live = function(){ try{ return voices ? voices.size : 0; }catch(e){ return 0; } };   // voces vivas ahora (lo lee el 📊 Monitor)
     P.skip = function(lateSec){ if(!S) return; S.skips++; var ms = lateSec * 1000; S.skipTot += ms; if(ms > S.skipMax) S.skipMax = ms; };
     P.report = function(){
       if(!S) return "⏱ PERF: sin datos (todavía no se reprodujo nada)";
@@ -25724,6 +26045,7 @@ function runAnalysis() {
     playing = false;
     window.__radioKind = null; // cualquier Detener / 🔀 / Compose apaga el RadioMode
     prToken = (prToken | 0) + 1; // cancela un prerender en curso
+    prOverlayHide();
     var prSt = document.getElementById("consolaPrerenderStatus");
     if(prSt && prSt.textContent.indexOf("⏳") === 0) prSt.textContent = "";
     if(schedulerTimer){ clearInterval(schedulerTimer); schedulerTimer = null; }
@@ -30810,6 +31132,137 @@ try{
   // 🎹 Partimenti › ⚙️ Config (celdas, esquemas, cadencias, ciclos, adornos, contrapunto...). Quedan activos: Form, Intro, compás, Tempo automático y los parámetros de Cycles.
   make({ sw: "partimentiCfgSwitch", box: "partimentiConfig", txtOn: "", txtOff: "", idOnly: true,
     keep: /^(partimentiFormChk|partimentiIntroChk|partimentiTS(Num|Den)|partimentiAutoTempo|partimentiCyclesMode[AB]|partimentiCyclesChangeDur|partimentiCycles_\w+)$/ });
+})();
+</script>
+<script>
+/* ============================================================
+   📊 MONITOR DE RECURSOS (solo mide; no cambia lo que suena)
+   Botón "📊 Monitor" junto a ⚡ Prerender. Apagado por defecto: apagado no corre nada.
+   Qué muestra (cada 1 s):
+   · RAM estimada: soundfonts (el ArrayBuffer entero de cada .sf2 queda vivo) + caché float32 de samples. iOS no deja leer la
+     memoria real desde JS; esto es lo que ESTA página retiene de forma verificable, no el total del proceso.
+   · Hilo principal: atraso de un timer de 250 ms (p95/máx de los últimos 10 s) y fps. Más de 100 ms = hilo ocupado.
+   · Audio: estado, sampleRate, latencias y deriva del reloj de audio contra el real en 10 s (si se atrasa, el hilo de audio no da abasto).
+   · Voces vivas ahora / máximo.
+   JS no puede leer el % de CPU: atraso + fps + deriva son los indicadores indirectos.
+   Si está prendido, cada 10 s deja una línea "MON …" en el 📝 Log (que se guarda aunque iOS mate la página): al reabrir, la sesión
+   anterior muestra cuánta RAM había justo antes del corte. El estado prendido/apagado se recuerda.
+   ============================================================ */
+(function(){
+  var btn = document.getElementById("stkMonBtn");
+  if(!btn) return;
+  var KEY = "stkMonOn", LAGN = 40, box = null, pre = null, tI = 0, lI = 0, raf = 0, on = false;
+  var lags = [], ring = [], frames = 0, fpsT = 0, fps = 0, lastLag = 0, nTick = 0, lastText = "";
+  var peak = { ram: 0, voices: 0, lag: 0, drift: 0 };
+
+  function mb(n){ return Math.round(n / 1048576); }
+  function r1(x){ return Math.round(x * 10) / 10; }
+  function pct(a, q){ if(!a.length) return 0; var b = a.slice().sort(function(x, y){ return x - y; }); return b[Math.min(b.length - 1, Math.floor(q * b.length))]; }
+
+  function ram(){
+    var seen = new Set(), fonts = 0, nf = 0, cache = 0, nc = 0;
+    function add(f){ try{ if(f && f.samples && f.samples.buffer && !seen.has(f.samples.buffer)){ seen.add(f.samples.buffer); fonts += f.samples.buffer.byteLength; nf++; } }catch(e){} }
+    try{ if(typeof sfFontByUrl !== "undefined") for(var u in sfFontByUrl) add(sfFontByUrl[u]); }catch(e){}
+    try{ if(typeof hifiFontByKey !== "undefined") for(var k in hifiFontByKey) add(hifiFontByKey[k]); }catch(e){}
+    try{ if(typeof sf2Font !== "undefined") add(sf2Font); if(typeof sf2DrumsFont !== "undefined") add(sf2DrumsFont); if(typeof sf2PercFont !== "undefined") add(sf2PercFont); }catch(e){}
+    try{ if(typeof sf2BufferCache !== "undefined") sf2BufferCache.forEach(function(b){ cache += b.length * b.numberOfChannels * 4; nc++; }); }catch(e){}
+    return { fonts: fonts, nf: nf, cache: cache, nc: nc };
+  }
+
+  function sample(){
+    var ctx = null; try{ ctx = (typeof audioCtx !== "undefined") ? audioCtx : null; }catch(e){}
+    var n = performance.now();
+    // fps
+    if(fpsT){ fps = frames * 1000 / (n - fpsT); }
+    frames = 0; fpsT = n;
+    // deriva del reloj de audio en una ventana de ~10 s (solo mientras corre y la pestaña está visible)
+    var drift = null;
+    if(ctx && ctx.state === "running" && !document.hidden){
+      ring.push({ a: ctx.currentTime, t: n });
+      if(ring.length > 11) ring.shift();
+      if(ring.length >= 3){ var f = ring[0], l = ring[ring.length - 1]; drift = (l.a - f.a) * 1000 - (l.t - f.t); }
+    } else { ring.length = 0; }
+    var m = ram(), total = m.fonts + m.cache;
+    var voices = 0, vmax = 0;
+    try{ if(window.__perf && window.__perf.live) voices = window.__perf.live(); }catch(e){}
+    var lagP95 = pct(lags, 0.95), lagMax = pct(lags, 1);
+    if(total > peak.ram) peak.ram = total;
+    if(voices > peak.voices) peak.voices = voices;
+    if(lagMax > peak.lag) peak.lag = lagMax;
+    if(drift != null && Math.abs(drift) > peak.drift) peak.drift = Math.abs(drift);
+    var L = [];
+    L.push("📊 MONITOR · " + (document.hidden ? "pestaña oculta" : "visible"));
+    L.push("RAM  ≈" + mb(total) + " MB (pico " + mb(peak.ram) + ")  ·  fonts " + mb(m.fonts) + " MB (" + m.nf + ")  ·  caché f32 " + mb(m.cache) + " MB (" + m.nc + ")");
+    if(performance.memory) L.push("JS heap " + mb(performance.memory.usedJSHeapSize) + " / " + mb(performance.memory.jsHeapSizeLimit) + " MB (solo Chrome)");
+    L.push("HILO atraso timer p95 " + r1(lagP95) + " · máx " + r1(lagMax) + " ms (pico " + r1(peak.lag) + ")  ·  " + Math.round(fps) + " fps");
+    if(ctx) L.push("AUDIO " + ctx.state + " · " + ctx.sampleRate + " Hz · base " + (ctx.baseLatency != null ? r1(ctx.baseLatency * 1000) : "?") + " ms · out " + (ctx.outputLatency != null ? r1(ctx.outputLatency * 1000) : "?") + " ms");
+    else L.push("AUDIO sin contexto todavía (se crea al primer Play)");
+    L.push("DERIVA reloj audio vs real (10 s): " + (drift == null ? "—" : Math.round(drift) + " ms") + "  ·  voces " + voices + " (pico " + peak.voices + ")");
+    var al = [];
+    if(lagMax > 100) al.push("hilo principal ocupado (>100 ms)");
+    if(drift != null && drift < -40) al.push("el reloj de audio se atrasa");
+    if(ctx && ctx.state !== "running" && ctx.state !== "suspended") al.push("AudioContext " + ctx.state);
+    if(!document.hidden && ctx && ctx.state === "running" && fps && fps < 30) al.push("fps bajos");
+    L.push(al.length ? "⚠ " + al.join(" · ") : "✓ sin alertas");
+    lastText = L.join("\n");
+    if(pre) pre.textContent = lastText;
+    // línea al 📝 Log cada 10 s (sobrevive si iOS mata la página)
+    if(++nTick % 10 === 0){
+      try{ if(typeof sfLog === "function") sfLog("MON ram≈" + mb(total) + "MB (fonts " + mb(m.fonts) + " + f32 " + mb(m.cache) + ") lag p95/max " + r1(lagP95) + "/" + r1(lagMax) + "ms fps " + Math.round(fps) + " deriva " + (drift == null ? "-" : Math.round(drift)) + "ms voces " + voices); }catch(e){}
+    }
+  }
+
+  function build(){
+    if(box) return;
+    box = document.createElement("div");
+    box.id = "stkMonBox";
+    box.style.cssText = "position:fixed;left:8px;bottom:8px;z-index:99998;max-width:min(94vw,430px);background:rgba(10,12,16,.88);color:#cfe;border:1px solid rgba(255,255,255,.18);border-radius:8px;padding:6px 8px;font:10px/1.4 ui-monospace,Menlo,Consolas,monospace;";
+    pre = document.createElement("pre");
+    pre.style.cssText = "margin:0;white-space:pre-wrap;word-break:break-word;font:inherit;color:inherit;";
+    var row = document.createElement("div");
+    row.style.cssText = "display:flex;gap:6px;margin-top:5px;flex-wrap:wrap;";
+    function b(label, title, fn){
+      var e = document.createElement("button"); e.type = "button"; e.textContent = label; e.title = title;
+      e.style.cssText = "font:inherit;color:#cfe;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.25);border-radius:5px;padding:2px 7px;cursor:pointer;";
+      e.addEventListener("click", fn); row.appendChild(e); return e;
+    }
+    b("Copy", "Copia este informe al portapapeles", function(){
+      try{ navigator.clipboard.writeText(lastText); }catch(e){
+        try{ var r = document.createRange(); r.selectNodeContents(pre); var s = getSelection(); s.removeAllRanges(); s.addRange(r); }catch(e2){}
+      }
+    });
+    b("Picos 0", "Reinicia los picos", function(){ peak = { ram: 0, voices: 0, lag: 0, drift: 0 }; lags.length = 0; sample(); });
+    b("Soltar caché f32", "Vacía sf2BufferCache (copias float32 de samples). Usalo en reposo: en modo en vivo se regenera nota a nota y puede costar CPU un rato.", function(){
+      try{ sf2BufferCache.clear(); }catch(e){} sample();
+    });
+    b("✕", "Cierra el monitor", function(){ setOn(false); });
+    box.appendChild(pre); box.appendChild(row);
+    document.body.appendChild(box);
+  }
+
+  function loop(){ frames++; raf = requestAnimationFrame(loop); }
+  function setOn(v){
+    on = !!v;
+    btn.setAttribute("aria-pressed", on ? "true" : "false");
+    try{ localStorage.setItem(KEY, on ? "1" : "0"); }catch(e){}
+    if(on){
+      build(); box.hidden = false;
+      lags.length = 0; ring.length = 0; frames = 0; fpsT = 0; lastLag = performance.now();
+      lI = setInterval(function(){
+        var n = performance.now();
+        if(!document.hidden){ var lag = n - lastLag - 250; lags.push(lag < 0 ? 0 : lag); if(lags.length > LAGN) lags.shift(); }
+        lastLag = n;
+      }, 250);
+      tI = setInterval(sample, 1000);
+      raf = requestAnimationFrame(loop);
+      sample();
+    } else {
+      clearInterval(lI); clearInterval(tI); cancelAnimationFrame(raf); lI = tI = raf = 0;
+      if(box) box.hidden = true;
+    }
+  }
+  btn.addEventListener("click", function(){ setOn(!on); });
+  try{ if(localStorage.getItem(KEY) === "1") setOn(true); }catch(e){}
 })();
 </script>
 </body>
