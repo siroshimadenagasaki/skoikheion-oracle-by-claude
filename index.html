@@ -1466,7 +1466,10 @@
   .chart-ch.cur .chart-t{color:var(--gold);opacity:1;}
   .chart-cc{font-family:'JetBrains Mono',monospace;font-size:.36em;font-weight:700;color:#3ddc84;margin-top:.25em;}
   .chart-sec{position:absolute;top:3px;left:5px;font:700 calc(var(--cf)*.3)/1 'JetBrains Mono',monospace;color:var(--gold);border:2px solid var(--gold);padding:.1em .35em;border-radius:3px;}
-  .chart-sig{position:absolute;top:3px;right:6px;font:700 calc(var(--cf)*.28)/1 'JetBrains Mono',monospace;color:var(--ink-muted);}
+  .chart-bar{--g:0px;}
+  .chart-bar.has-sig{--g:calc(var(--cf)*.8);}
+  .chart-sig{position:absolute;left:5px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;align-items:center;font:700 calc(var(--cf)*.5)/.9 "Helvetica Neue",Arial,sans-serif;color:var(--ink);pointer-events:none;}
+  .chart-deg{position:absolute;bottom:2px;right:6px;max-width:80%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:600 calc(var(--cf)*.22)/1 'JetBrains Mono',monospace;color:#3ddc84;pointer-events:none;}
   .chart-num{position:absolute;bottom:2px;left:5px;font:600 calc(var(--cf)*.22)/1 'JetBrains Mono',monospace;color:var(--ink-muted);}
   .chart-ph{position:absolute;top:0;bottom:0;width:3px;margin-left:-1px;background:var(--gold);opacity:.9;pointer-events:none;}
   .chart-foot{flex:none;text-align:center;font:11px 'JetBrains Mono',monospace;color:var(--ink-muted);padding:3px 4px 0;}
@@ -20379,7 +20382,7 @@ function runAnalysis() {
      CHART — cifrado grande tipo Real Book, en tiempo real (botón "🎼 Chart", apagado por defecto)
      Lee lo mismo que el cifrado del piano roll (state.slotChords + cifradoLabelForSlot) y lo acomoda en staves de 2 / 4 (default) / 6 compases,
      tantos staves como entren en pantalla. El compás y el acorde en curso se marcan con el playhead (tickPlayhead -> __chartTick).
-     Al terminar el último stave de la pantalla pasa a la página siguiente. Sección de Form = recuadro; compás distinto de 4/4 = etiqueta.
+     Al terminar el último stave de la pantalla pasa a la página siguiente. Sección de Form = recuadro; time signature apilado (3 sobre 4) al inicio y en cada cambio de compás.
      ================================================================ */
   var CHART = (function(){
     var host = document.getElementById("consolaChartHost");
@@ -20420,6 +20423,14 @@ function runAnalysis() {
       return s;
     }
 
+    // Grados del acorde sobre su raiz, en orden y sin el 1 (misma notacion que los parentesis: 2♭ 2 3♭ 3 4 4♯ 5 6♭ 6 7♭ 7)
+    function chartDegrees(chordMidi){
+      var pcs = Array.from(new Set(chordMidi.map(mod12)));
+      var r = bestRootQuality(pcs);
+      return pcs.map(function(pc){ return mod12(pc - r.rootPc); }).filter(function(x){ return x !== 0; })
+        .sort(function(a, b){ return a - b; }).map(function(x){ return CHART_DEG[x]; }).join(" ");
+    }
+
     // Datos por compás: un cifrado por reataque de armonía (los compases "sostenidos" de un acorde de 2 compases quedan vacíos, como en un Real Book)
     function build(){
       bars = []; starts = [];
@@ -20437,13 +20448,14 @@ function runAnalysis() {
           var bassEv = findSoundingNote(state.bassEvents, st + slot.startBeat);
           var lab;
           try{ lab = chartLabel(slot.chord, bassEv ? bassEv.midi : null); }catch(_e){ lab = "?"; }
-          items.push({ pos: slot.startBeat, label: lab, cc: (slot.ccLabel && slot.ccLabel !== lab) ? slot.ccLabel : "" });
+          var dg = ""; try{ dg = chartDegrees(slot.chord); }catch(_e){}
+          items.push({ pos: slot.startBeat, label: lab, degs: dg, cc: (slot.ccLabel && slot.ccLabel !== lab) ? slot.ccLabel : "" });
         });
         var dd = [];   // un cifrado que se repite seguido dentro del compas se pone una sola vez
         items.forEach(function(it){ var l = dd[dd.length - 1]; if(l && l.label === it.label && (syms !== 2 || l.cc === it.cc)) return; dd.push(it); });
         items = dd;
         var sig = RHYTHM.label(b);
-        bars.push({ start: st, beats: bb, items: items, section: secAt[b] || "", sig: (sig !== prevSig && !(prevSig === null && sig === "4/4")) ? sig : "", secEnd: false });
+        bars.push({ start: st, beats: bb, items: items, section: secAt[b] || "", sig: (prevSig === null || sig !== prevSig) ? sig : "", secEnd: false });
         prevSig = sig;
         starts.push(st);
       }
@@ -20456,7 +20468,7 @@ function runAnalysis() {
     function chordEl(it, n, k){
       var el = document.createElement("div");
       el.className = "chart-ch";
-      el.style.left = "calc(" + (k / n * 100).toFixed(2) + "% + 9px)";
+      el.style.left = "calc(var(--g) + (100% - var(--g)) * " + (k / n).toFixed(4) + " + 9px)";
       el.setAttribute("data-share", String(1 / n));
       var main = document.createElement("div");
       main.className = "chart-main";
@@ -20515,11 +20527,19 @@ function runAnalysis() {
           if(bi === bars.length - 1) cell.className += " end"; else if(B.secEnd) cell.className += " dbl";
           if(firstBar < 0) firstBar = bi; lastBar = bi;
           if(B.section){ var sc = document.createElement("div"); sc.className = "chart-sec"; sc.textContent = B.section; cell.appendChild(sc); }
-          if(B.sig){ var sg = document.createElement("div"); sg.className = "chart-sig"; sg.textContent = B.sig; cell.appendChild(sg); }
+          if(B.sig){
+            var sp = B.sig.split("/"), sg = document.createElement("div"); sg.className = "chart-sig"; sg.title = "Time signature " + B.sig;
+            sg.innerHTML = "<span>" + sp[0] + "</span><span>" + sp[1] + "</span>";   // compás apilado (3 sobre 4), como en un Real Book
+            cell.appendChild(sg); cell.className += " has-sig";
+          }
           if(c === 0){ var nm = document.createElement("div"); nm.className = "chart-num"; nm.textContent = String(bi + 1); cell.appendChild(nm); }
           var els = [];
           if(B.repeat){ var rp = document.createElement("div"); rp.className = "chart-rep"; rp.textContent = "%"; cell.appendChild(rp); }
-          else B.items.forEach(function(it, k){ var e = chordEl(it, B.items.length, k); cell.appendChild(e); els.push(e); });
+          else {
+            B.items.forEach(function(it, k){ var e = chordEl(it, B.items.length, k); cell.appendChild(e); els.push(e); });
+            var dgs = B.items.map(function(it){ return it.degs; }).filter(Boolean);
+            if(dgs.length){ var dv = document.createElement("div"); dv.className = "chart-deg"; dv.textContent = dgs.join("  \u00b7  "); cell.appendChild(dv); }   // grados de cada acorde (sin el 1), abajo a la derecha
+          }
           itemEls[bi] = els; barEls[bi] = cell;
           rowEl.appendChild(cell);
         }
@@ -20532,7 +20552,8 @@ function runAnalysis() {
       // cifrados largos: se achican para entrar en su parte del compás
       Array.prototype.forEach.call(grid.querySelectorAll(".chart-ch"), function(el){
         var cell = el.parentNode, share = parseFloat(el.getAttribute("data-share")) || 1;
-        var allowed = cell.clientWidth * share - 14, w = el.scrollWidth;
+        var gut = cell.classList.contains("has-sig") ? baseFont * 0.8 : 0;
+        var allowed = (cell.clientWidth - gut) * share - 14, w = el.scrollWidth;
         if(allowed > 20 && w > allowed) el.style.fontSize = Math.max(11, baseFont * allowed / w).toFixed(1) + "px";
       });
     }
