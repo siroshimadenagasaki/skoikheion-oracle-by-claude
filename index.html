@@ -6256,6 +6256,8 @@ const SF2_GEN_DEFAULTS = {
 function sf2Tc2Sec(tc) { return Math.pow(2, tc / 1200); }
 function sf2Cb2Amp(cb) { return Math.pow(10, -cb / 200); }
 
+// MIDI INSTRUMENT: con la bandera puesta la pagina NO baja ni parsea ningun .sf2 y las notas salen por MIDI (ver bloque al final de la pagina).
+window.__midiOnly = (function(){ try{ return localStorage.getItem("stoikMidiOnly") === "1"; }catch(e){ return false; } })();
 let sf2State = "idle"; // idle | loading | ready | error
 let sf2Font = null;        // Instruments.sf2 (parseado)
 let sf2DrumsFont = null;   // Drums.sf2 (parseado)
@@ -6760,6 +6762,7 @@ const SYNTHS = {
 let currentSynth = "pad";
 
 function playSynthTone(freq, opts) {
+  if (window.__midiOnly) return;
   const engine = SYNTHS[currentSynth] || SYNTHS.pad;
   engine.fn(freq, opts);
 }
@@ -7071,6 +7074,7 @@ function sfReleaseSlot() {
   if (next) next(); else sfSlotsBusy--;
 }
 function sfLoadFontOnce(url) {
+  if (window.__midiOnly) return Promise.resolve(null);   // MIDI INSTRUMENT: no se carga ningun soundfont
   if (!sfLoadPromiseByUrl[url]) {
     sfStateByUrl[url] = "loading";
     sfLoadingNow.add(url); sfRefreshLoadNow();
@@ -7099,6 +7103,7 @@ function sfLoadFontOnce(url) {
         sfLog("[" + sf2BasenameOfUrl(url) + "] parseando " + sfFmtMB(abuf.byteLength));
         sfDetailSet(url, { phase: "parseando " + sfFmtMB(abuf.byteLength) });
         await new Promise((r) => setTimeout(r, 0)); // deja pintar el estado antes del parseo (bloquea el hilo)
+        if (window.__midiOnly) { sfLoadingNow.delete(url); sfRefreshLoadNow(); delete sfLoadPromiseByUrl[url]; sfStateByUrl[url] = "idle"; return null; }   // MIDI INSTRUMENT: llego tarde, se descarta
         const font = sf2ParseFont(abuf);
         sfLog("[" + sf2BasenameOfUrl(url) + "] LISTO");
         sfFontByUrl[url] = font;
@@ -7260,7 +7265,7 @@ async function sfEnsurePresetsLoaded(keys, timeoutMs) {
   return { notFound, notReady };
 }
 loadExtraBtn.addEventListener("click", async function () {
-  if (loadExtraBtn.disabled) return;
+  if (loadExtraBtn.disabled || window.__midiOnly) return;
   hifiEnabled = true;
   loadExtraBtn.disabled = true;
   loadExtraBtn.textContent = "loadExtra … 0%";
@@ -7306,6 +7311,7 @@ loadExtraBtn.addEventListener("click", async function () {
   if (c) c.addEventListener("click", () => { const o = document.getElementById("extraLoadOverlay"); if (o) o.classList.add("sf2-load-hidden"); });
 })();
 async function sf2Activate(btn) {
+  if (window.__midiOnly) { sf2State = "idle"; try{ btn.textContent = "\ud83c\udfb9 MIDI INSTRUMENT (sin soundfonts)"; btn.disabled = true; sf2HideLoadOverlay(); }catch(e){} return; }
   sf2State = "loading";
   btn.disabled = true;
   try {
@@ -7321,6 +7327,7 @@ async function sf2Activate(btn) {
       btn.textContent = "🎼 Loading " + pct + "%…";
       sf2UpdateLoadOverlay(pct);
     })));
+    if (window.__midiOnly) { sf2State = "idle"; sf2HideLoadOverlay(); return; }
     sf2Font = sfFontByUrl[sfLegacyUrl("piano")] || null;
     sf2DrumsFont = sfFontByUrl[sfLegacyUrl("kit")] || null;
     sf2PercFont = null;
@@ -7347,6 +7354,7 @@ async function sf2Activate(btn) {
   }
 }
 function sf2ToggleBtnClick(e) {
+  if (window.__midiOnly) return;
   const btn = e.currentTarget;
   if (sf2State === "ready") {
     if (currentSynth === "sf2") {
@@ -21717,6 +21725,7 @@ function runAnalysis() {
   var sm2CacheExtraVer = 0;        // sfExtraVersion al momento de cachear (sube cuando termina de cargar un .sf2 extra)
   var sm2CacheHifiRefs = {};       // key -> referencia de hifiFontByKey[key] al momento de cachear
   function sm2UsingSF2(){
+    if(window.__midiOnly) return true;   // MIDI INSTRUMENT: el camino "soundfont" queda siempre activo (playSM2Voice lo desvia a MIDI)
     return typeof sf2State !== "undefined" && sf2State === "ready" && !!sf2Font &&
       typeof currentSynth !== "undefined" && currentSynth === "sf2";
   }
@@ -21821,7 +21830,28 @@ function runAnalysis() {
     MM.f[k] = (MM.f[k] || 0) + 1;
     return false;
   }
+  // MIDI INSTRUMENT: canal MIDI por pista (el nodo de ganancia de la pista identifica de donde viene la nota). Bateria = canal 10 (indice 9).
+  function midiChanFor(dest){
+    if(dest === chordGainNode) return 0;
+    if(dest === bassGainNode) return 1;
+    if(dest === melodyGainNode) return 2;
+    if(dest === melodyDoubleGainNode) return 3;
+    if(dest === chordDoubleGainNode) return 4;
+    if(dest === bassDoubleGainNode) return 5;
+    if(dest === comping2GainNode) return 6;
+    if(dest === bebopGainNode) return 7;
+    if(dest === drumGainNode) return 9;
+    if(dest === melody2GainNode) return 10;
+    if(dest === melody3GainNode) return 11;
+    return 12;
+  }
   function playSM2Voice(ctx, dest, presetKey, midi, startTime, duration, gain, vel){
+    if(window.__midiOnly){
+      var mo = window.__MIDIOUT;
+      if(dest && dest.gain && dest.gain.value < 0.0001) return true;   // pista en 0% / muteada en el mixer: no manda nada
+      if(mo) mo.note(ctx, midiChanFor(dest), midi, vel, startTime, duration);
+      return true;                                                      // true = "ya sono": no cae al sintetizador de respaldo
+    }
     var presetIdx = sm2PresetIdxFor(presetKey);
     if(presetIdx < 0) return mmFail(presetKey, "soundfont no cargado");
     var resolved = sm2ResolveFontAndProgram(presetKey);
@@ -26043,6 +26073,7 @@ function runAnalysis() {
 
   function stopPlayback(){
     playing = false;
+    try{ if(window.__MIDIOUT) window.__MIDIOUT.panic(); }catch(eMo){}   // MIDI INSTRUMENT: corta lo que haya quedado sonando en Ableton
     window.__radioKind = null; // cualquier Detener / 🔀 / Compose apaga el RadioMode
     prToken = (prToken | 0) + 1; // cancela un prerender en curso
     prOverlayHide();
@@ -31263,6 +31294,104 @@ try{
   }
   btn.addEventListener("click", function(){ setOn(!on); });
   try{ if(localStorage.getItem(KEY) === "1") setOn(true); }catch(e){}
+})();
+</script>
+
+<!-- ===== MIDI INSTRUMENT: la pagina manda MIDI en vivo (Web MIDI) a un puerto virtual -> Ableton Live como modulo de sonidos ===== -->
+<div id="midiInstrumentBar" style="margin:28px auto 36px;max-width:760px;padding:14px 16px;border:1px solid var(--gold,#c9a24a);border-radius:12px;text-align:center;font:13px/1.4 system-ui,sans-serif;">
+  <button type="button" id="midiInstrumentBtn" aria-pressed="false" style="padding:9px 18px;border-radius:999px;border:1px solid var(--gold,#c9a24a);background:transparent;color:inherit;font:600 14px system-ui,sans-serif;cursor:pointer;">&#127929; MIDI INSTRUMENT</button>
+  <label style="margin-left:12px;">Puerto: <select id="midiInstrumentPort" style="max-width:260px;"></select></label>
+  <div id="midiInstrumentStatus" style="margin-top:8px;opacity:.85;">Apagado. Al activarlo: la pagina no carga soundfonts (descarta los cargados) y envia MIDI al puerto elegido, un canal por pista (Armonia 1, Bajo 2, Melodia 3, Melodia doble 4, Armonia doble 5, Bajo doble 6, Comping 7, Bebop 8, Bateria 10, Melodia n2 11, Melodia n3 12).</div>
+</div>
+<script>
+(function(){
+  var KEY = "stoikMidiOnly", KEYP = "stoikMidiPort";
+  var btn = document.getElementById("midiInstrumentBtn"), sel = document.getElementById("midiInstrumentPort"), st = document.getElementById("midiInstrumentStatus");
+  var access = null, out = null, sent = 0;
+  function say(t){ st.textContent = t; }
+  function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+  function lsSet(k, v){ try{ if(v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); }catch(e){} }
+
+  function fillPorts(){
+    var prev = (out && out.id) || null, saved = lsGet(KEYP), list = access ? Array.from(access.outputs.values()) : [];
+    sel.innerHTML = "";
+    list.forEach(function(o){ var op = document.createElement("option"); op.value = o.id; op.textContent = o.name + (o.manufacturer ? " (" + o.manufacturer + ")" : ""); sel.appendChild(op); });
+    if(!list.length){ out = null; return; }
+    var pick = list.find(function(o){ return o.id === prev; }) ||
+               list.find(function(o){ return o.name === saved; }) ||
+               list.find(function(o){ return /IAC|loopMIDI|virtual|Ableton/i.test(o.name); }) || list[0];
+    out = pick; sel.value = pick.id;
+  }
+  sel.addEventListener("change", function(){
+    if(!access) return;
+    var o = access.outputs.get(sel.value); if(!o) return;
+    MIDIOUT.panic(); out = o; lsSet(KEYP, o.name); say("MIDI INSTRUMENT activo -> " + o.name);
+  });
+
+  function connect(){
+    if(!navigator.requestMIDIAccess){ say("Este navegador no soporta Web MIDI. Usa Chrome o Edge."); return Promise.resolve(false); }
+    return navigator.requestMIDIAccess({ sysex: false }).then(function(a){
+      access = a; a.onstatechange = function(){ fillPorts(); if(!out) say("MIDI INSTRUMENT activo, pero no hay puerto MIDI de salida. Activa el IAC Driver (Mac) o loopMIDI (Windows)."); };
+      fillPorts();
+      if(!out){ say("MIDI INSTRUMENT activo, pero no hay puerto MIDI de salida. Activa el IAC Driver (Mac) o loopMIDI (Windows)."); }
+      else say("MIDI INSTRUMENT activo -> " + out.name);
+      return true;
+    }, function(err){ say("No se pudo acceder a MIDI: " + (err && err.message || err)); return false; });
+  }
+
+  // Quita de memoria todo soundfont ya cargado (y cancela lo que estaba por cargarse: ver window.__midiOnly en sfLoadFontOnce/sf2Activate).
+  function flushSoundfonts(){
+    try{ sf2Font = null; sf2DrumsFont = null; sf2PercFont = null; sf2State = "idle"; currentSynth = "pad"; }catch(e){}
+    try{ Object.keys(sfFontByUrl).forEach(function(k){ sfFontByUrl[k] = null; }); }catch(e){}
+    try{ Object.keys(sfStateByUrl).forEach(function(k){ delete sfStateByUrl[k]; }); Object.keys(sfLoadPromiseByUrl).forEach(function(k){ delete sfLoadPromiseByUrl[k]; }); }catch(e){}
+    try{ Object.keys(hifiFontByKey).forEach(function(k){ hifiFontByKey[k] = null; }); }catch(e){}
+    try{ sf2BufferCache.clear(); }catch(e){}
+    try{ var b = document.getElementById("sf2Btn"); if(b){ b.textContent = "🎹 MIDI INSTRUMENT (sin soundfonts)"; b.disabled = true; b.setAttribute("aria-pressed", "false"); } }catch(e){}
+    try{ sf2HideLoadOverlay(); }catch(e){}
+    try{ sfNotifyCatalogChange(false); }catch(e){}
+  }
+
+  var MIDIOUT = window.__MIDIOUT = {
+    note: function(ctx, ch, midi, vel, tCtx, dur){
+      if(!out) return;
+      midi = Math.round(midi); if(midi < 0 || midi > 127) return;
+      var v = Math.max(1, Math.min(127, Math.round(vel != null ? vel : 96)));
+      var ts, nowP = performance.now();
+      try{ var o = ctx.getOutputTimestamp(); ts = (o && o.contextTime > 0) ? o.performanceTime + (tCtx - o.contextTime) * 1000 : nowP + (tCtx - ctx.currentTime) * 1000; }catch(e){ ts = nowP + (tCtx - ctx.currentTime) * 1000; }
+      if(ts < nowP) ts = nowP;
+      try{
+        out.send([0x90 | ch, midi, v], ts);
+        out.send([0x80 | ch, midi, 0], ts + Math.max(20, dur * 1000));
+        sent++;
+      }catch(e){}
+    },
+    panic: function(){
+      if(!out) return;
+      try{ if(typeof out.clear === "function") out.clear(); }catch(e){}
+      try{ for(var c = 0; c < 16; c++){ out.send([0xB0 | c, 123, 0]); out.send([0xB0 | c, 120, 0]); } }catch(e){}
+    },
+    sent: function(){ return sent; }
+  };
+
+  function turnOn(){
+    window.__midiOnly = true; lsSet(KEY, "1");
+    try{ if(window.consolaStopPlayback) window.consolaStopPlayback(); }catch(e){}
+    flushSoundfonts();
+    btn.setAttribute("aria-pressed", "true"); btn.textContent = "🎹 MIDI INSTRUMENT ✓";
+    return connect();
+  }
+  function turnOff(){
+    MIDIOUT.panic(); lsSet(KEY, null);
+    say("Apagando: recargando la pagina para volver a cargar los soundfonts...");
+    setTimeout(function(){ location.reload(); }, 200);   // los soundfonts descartados solo vuelven recargando
+  }
+  btn.addEventListener("click", function(){ if(window.__midiOnly) turnOff(); else turnOn(); });
+
+  // La pagina se reabrio con el modo prendido: ya arranco sin soundfonts; pide el acceso MIDI (algunos navegadores lo piden con un clic).
+  if(window.__midiOnly){
+    btn.setAttribute("aria-pressed", "true"); btn.textContent = "🎹 MIDI INSTRUMENT ✓";
+    connect();
+  }
 })();
 </script>
 </body>
