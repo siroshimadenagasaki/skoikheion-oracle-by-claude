@@ -1474,6 +1474,50 @@
   .chart-ph{position:absolute;top:0;bottom:0;width:3px;margin-left:-1px;background:var(--gold);opacity:.9;pointer-events:none;}
   .chart-foot{flex:none;text-align:center;font:11px 'JetBrains Mono',monospace;color:var(--ink-muted);padding:3px 4px 0;}
   .chart-empty{margin:auto;color:var(--ink-muted);font-size:14px;}
+
+  /* ---- Chart: controles y módulos opcionales (cada módulo = su propio bloque CHART-MOD; ver el JS) ---- */
+  .chart-opt{display:flex;align-items:center;gap:3px;font:600 10px 'JetBrains Mono',monospace;color:var(--ink);cursor:pointer;white-space:nowrap;}
+  .chart-opt input{margin:0;}
+  .chart-optrow{display:flex;align-items:center;gap:4px;}
+  #chartPlusWrap{position:relative;}
+  #chartPlusBtn{width:66px;height:26px;font:700 14px 'JetBrains Mono',monospace;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:6px;cursor:pointer;}
+  #chartPlusBtn[aria-expanded="true"]{border-color:var(--gold);color:var(--gold);}
+  #chartPlusPanel{position:absolute;left:72px;top:0;width:214px;display:flex;flex-direction:column;gap:6px;padding:8px 10px;background:var(--bg);border:1px solid var(--line);border-radius:8px;z-index:130;}
+  #chartPlusPanel[hidden]{display:none;}
+  #chartPlusPanel .chart-opt{font-size:11px;}
+  .chart-grid .chart-ch{top:calc(50% + var(--ct,0px)/2);}
+  .chart-grid .chart-sig, .chart-grid .chart-rep{top:calc(50% + var(--ct,0px)/2);}
+  .chart-grid .chart-sec{top:calc(3px + var(--ct,0px));}
+  .chart-zl{position:absolute;left:0;right:0;pointer-events:none;z-index:2;}
+  /* >>> CHART-MOD:curve */
+  .chart-zl svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible;}
+  .chart-zl .bpm{position:absolute;font:700 1em/1 'JetBrains Mono',monospace;color:#ff8a50;white-space:nowrap;transform:translate(-50%,-115%);}
+  .chart-zl .bpm.lo{transform:translate(-50%,15%);}
+  .chart-zl .bpm.l0{transform:translate(0,-50%);}
+  /* <<< CHART-MOD:curve */
+  /* >>> CHART-MOD:ital */
+  .chart-zl .it{position:absolute;top:0;font-style:italic;font-weight:700;font-family:Georgia,'Times New Roman',serif;line-height:1;white-space:nowrap;padding-left:3px;}
+  .chart-zl .itl{position:absolute;bottom:2px;height:0;border-top:2px dashed currentColor;}
+  .chart-zl .itl.ar::after{content:"";position:absolute;right:-1px;top:-5px;border-left:7px solid currentColor;border-top:4px solid transparent;border-bottom:4px solid transparent;}
+  .chart-zl .itl.tk::after{content:"";position:absolute;right:0;top:-6px;height:9px;border-right:2px solid currentColor;}
+  /* <<< CHART-MOD:ital */
+  /* >>> CHART-MOD:br */
+  .chart-zl .brl{position:absolute;bottom:2px;border-top:2px solid #5ec8c8;height:5px;}
+  .chart-zl .brl.s{border-left:2px solid #5ec8c8;}
+  .chart-zl .brl.e{border-right:2px solid #5ec8c8;}
+  .chart-zl .brt{position:absolute;top:0;font:700 1em/1 'JetBrains Mono',monospace;color:#5ec8c8;white-space:nowrap;padding-left:3px;}
+  /* <<< CHART-MOD:br */
+  /* >>> CHART-MOD:key */
+  .chart-kc{position:absolute;inset:0;pointer-events:none;}
+  .chart-key{position:absolute;top:calc(2px + var(--ct,0px));right:6px;font:700 calc(var(--cf)*.24)/1 'JetBrains Mono',monospace;pointer-events:none;}
+  /* <<< CHART-MOD:key */
+  /* >>> CHART-MOD:cn */
+  .chart-cn{position:absolute;right:6px;bottom:calc(var(--cf)*.3 + 3px);max-width:90%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:600 calc(var(--cf)*.22)/1 'JetBrains Mono',monospace;color:#5ec8ff;pointer-events:none;}
+  /* <<< CHART-MOD:cn */
+  /* >>> CHART-MOD:soon */
+  .chart-bar.soon{background:rgba(255,160,40,.26);box-shadow:inset 0 0 0 2px rgba(255,160,40,.6);}
+  .chart-ch.soon .chart-main{color:#ffa028;}
+  /* <<< CHART-MOD:soon */
   #consolaRollsLayer .consola-empty{display:none;}
   #consolaRollsLayer .consola-roll-wrap{overflow-x:hidden;border:none;border-radius:0;margin-bottom:0 !important;background-image:none;background-color:transparent;}
   .wrap{position:relative;z-index:1;}
@@ -20392,7 +20436,8 @@ function runAnalysis() {
     var selS = document.getElementById("chartSymSel");
     if(!host || !btn) return null;
     var on = false, addedFront = false, bps = 4, syms = 1;
-    var bars = [], starts = [];
+    var bars = [], starts = [], seq = [];
+    var MODS = [], modOn = {}, uiBuilt = false, ctx = { tw: null, si: -1, nx: null, beats: 0 };
     var page = -1, rowsFit = 1, baseFont = 24, curBar = -1, curItem = -2, ph = null, barEls = [], itemEls = [];
     try{
       var sb = parseInt(localStorage.getItem("chartBps"), 10); if(sb === 2 || sb === 4 || sb === 6) bps = sb;
@@ -20431,9 +20476,60 @@ function runAnalysis() {
         .sort(function(a, b){ return a - b; }).map(function(x){ return CHART_DEG[x]; }).join(" ");
     }
 
+    // ---- Módulos opcionales del Chart (curva de tempo, marcas italianas, ayudas de improvisación) ----
+    // Cada módulo vive en su propio bloque "CHART-MOD:<id>" más abajo y se registra con window.__chartMod({...}):
+    //   id, label, title, def (prendido por defecto), core (checkbox suelto; si no, va en el panel "+"), zone/zoneMin/zi (franja arriba del compás),
+    //   analyze(ctx), row(ctx,rowEl,primerCompás,zona), cell(ctx,cellEl,bi,B,c), tick(ctx,bi,ii), off().
+    // Para quitar uno: borrar su bloque (JS y CSS). Un error dentro de un módulo se atrapa y NO rompe el Chart.
+    window.__chartMod = function(m){ MODS.push(m); modOn[m.id] = !!m.def; };
+    function safe(m, fn, a, b, c, d, e){ try{ return m[fn](a, b, c, d, e); }catch(err){ if(window.console) console.error("[chart:" + m.id + "." + fn + "]", err); } }
+    function analyzeAll(){
+      ctx.bars = bars; ctx.starts = starts; ctx.seq = seq; ctx.bps = bps; ctx.baseFont = baseFont;
+      MODS.forEach(function(m){ if(modOn[m.id] && m.analyze) safe(m, "analyze", ctx); });
+    }
+    // clase armónica del acorde sobre su raiz: m (menor), hd (semidisminuido), dim, dom (3ª mayor + 7ª menor), maj, x (otro)
+    function chordClass(rpc, pcs){
+      var rel = new Set(pcs.map(function(pc){ return mod12(pc - rpc); }));
+      var m3 = rel.has(3), M3 = rel.has(4), b7 = rel.has(10), d5 = rel.has(6) && !rel.has(7);
+      if(m3 && d5 && b7) return "hd";
+      if(m3 && d5 && rel.has(9)) return "dim";
+      if(M3 && b7) return "dom";
+      if(M3) return "maj";
+      if(m3) return "m";
+      return "x";
+    }
+    function optLabel(m){
+      var lb = document.createElement("label"); lb.className = "chart-opt"; lb.title = m.title || "";
+      var cb = document.createElement("input"); cb.type = "checkbox"; cb.id = "chartMod_" + m.id; cb.checked = !!modOn[m.id];
+      cb.addEventListener("change", function(){
+        modOn[m.id] = cb.checked;
+        if(!cb.checked && m.off) safe(m, "off");
+        if(on){ analyzeAll(); renderPage(0); }
+      });
+      lb.appendChild(cb); lb.appendChild(document.createTextNode(m.label));
+      var row = document.createElement("div"); row.className = "chart-optrow"; row.appendChild(lb);   // el "?" de ayuda de la app queda al lado, en la misma fila
+      return row;
+    }
+    function buildUI(){
+      if(uiBuilt || !ctl) return; uiBuilt = true;
+      var opt = [];
+      MODS.forEach(function(m){ if(m.core) ctl.appendChild(optLabel(m)); else opt.push(m); });
+      if(!opt.length) return;
+      var wrap = document.createElement("div"); wrap.id = "chartPlusWrap";
+      var pb = document.createElement("button"); pb.type = "button"; pb.id = "chartPlusBtn"; pb.textContent = "+"; pb.setAttribute("aria-expanded", "false");
+      pb.title = "Ayudas para improvisar sobre el Chart (todas apagadas por defecto; cada una es independiente)";
+      var pn = document.createElement("div"); pn.id = "chartPlusPanel"; pn.hidden = true;
+      opt.forEach(function(m){ pn.appendChild(optLabel(m)); });
+      pb.addEventListener("click", function(){ var open = pn.hidden; pn.hidden = !open; pb.setAttribute("aria-expanded", open ? "true" : "false"); pb.textContent = open ? "\u2212" : "+"; });
+      wrap.appendChild(pb); wrap.appendChild(pn); ctl.appendChild(wrap);
+    }
+    function modCell(cell, bi, B, c){
+      MODS.forEach(function(m){ if(modOn[m.id] && m.cell) safe(m, "cell", ctx, cell, bi, B, c); });
+    }
+
     // Datos por compás: un cifrado por reataque de armonía (los compases "sostenidos" de un acorde de 2 compases quedan vacíos, como en un Real Book)
     function build(){
-      bars = []; starts = [];
+      bars = []; starts = []; seq = [];
       var n = NUM_BARS;
       if(!state.chordEvents.length || !n) return;
       var secAt = {};
@@ -20449,7 +20545,8 @@ function runAnalysis() {
           var lab;
           try{ lab = chartLabel(slot.chord, bassEv ? bassEv.midi : null); }catch(_e){ lab = "?"; }
           var dg = ""; try{ dg = chartDegrees(slot.chord); }catch(_e){}
-          items.push({ pos: slot.startBeat, label: lab, degs: dg, cc: (slot.ccLabel && slot.ccLabel !== lab) ? slot.ccLabel : "" });
+          var up = [], rq = null; try{ up = Array.from(new Set(slot.chord.map(mod12))); rq = bestRootQuality(up); }catch(_e){}
+          items.push({ pos: slot.startBeat, label: lab, degs: dg, cc: (slot.ccLabel && slot.ccLabel !== lab) ? slot.ccLabel : "", chord: slot.chord, pcs: up, rpc: rq ? rq.rootPc : -1, cls: rq ? chordClass(rq.rootPc, up) : "x" });
         });
         var dd = [];   // un cifrado que se repite seguido dentro del compas se pone una sola vez
         items.forEach(function(it){ var l = dd[dd.length - 1]; if(l && l.label === it.label && (syms !== 2 || l.cc === it.cc)) return; dd.push(it); });
@@ -20463,6 +20560,7 @@ function runAnalysis() {
       for(var i = 0; i < bars.length - 1; i++) if(bars[i + 1].section) bars[i].secEnd = true;
       var keyOf = function(B){ return B.items.map(function(it){ return it.label + (syms === 2 ? "~" + it.cc : ""); }).join("|"); };
       for(var j = 1; j < bars.length; j++){ if(bars[j].items.length && bars[j - 1].items.length && keyOf(bars[j]) === keyOf(bars[j - 1])) bars[j].repeat = true; }   // mismo cifrado que el compas anterior: %
+      bars.forEach(function(B, bi2){ B.items.forEach(function(it, k2){ seq.push({ bi: bi2, k: k2, abs: B.start + it.pos, item: it }); }); });   // secuencia plana de acordes (la usan los módulos)
     }
 
     function chordEl(it, n, k){
@@ -20490,7 +20588,7 @@ function runAnalysis() {
 
     function renderPage(p){
       host.innerHTML = "";
-      barEls = []; itemEls = []; curBar = -1; curItem = -2;
+      barEls = []; itemEls = []; curBar = -1; curItem = -2; ctx.barEls = barEls; ctx.itemEls = itemEls;
       ph = document.createElement("div"); ph.className = "chart-ph";
       if(!bars.length){
         var msg = document.createElement("div"); msg.className = "chart-empty";
@@ -20502,7 +20600,14 @@ function runAnalysis() {
       if(!W) W = Math.max(300, window.innerWidth - 100);
       var barW = Math.max(60, (W - 28) / bps);
       baseFont = Math.max(16, Math.min(barW * 0.27, 62));
-      var rowMin = baseFont * (syms === 2 ? 2.7 : 2.1);
+      var zones = {}, zoneTot = 0;
+      MODS.slice().sort(function(a, b){ return (a.zi || 99) - (b.zi || 99); }).forEach(function(m){
+        if(!modOn[m.id] || !m.zone) return;
+        var zh = Math.max(m.zone * baseFont, m.zoneMin || 0);
+        zones[m.id] = { top: zoneTot, h: zh }; zoneTot += zh;
+      });
+      ctx.baseFont = baseFont; ctx.bps = bps; ctx.host = host;
+      var rowMin = baseFont * (syms === 2 ? 2.7 : 2.1) + zoneTot;
       rowsFit = Math.max(1, Math.floor((H - 18) / rowMin));
       var totalRows = Math.ceil(bars.length / bps);
       var pages = Math.max(1, Math.ceil(totalRows / rowsFit));
@@ -20510,6 +20615,7 @@ function runAnalysis() {
       var grid = document.createElement("div");
       grid.className = "chart-grid";
       grid.style.setProperty("--cf", baseFont.toFixed(1) + "px");
+      grid.style.setProperty("--ct", zoneTot.toFixed(1) + "px");
       grid.style.gridTemplateRows = "repeat(" + rowsFit + ",minmax(0,1fr))";
       var firstBar = -1, lastBar = -1;
       for(var r = 0; r < rowsFit; r++){
@@ -20526,6 +20632,7 @@ function runAnalysis() {
           var B = bars[bi];
           if(bi === bars.length - 1) cell.className += " end"; else if(B.secEnd) cell.className += " dbl";
           if(firstBar < 0) firstBar = bi; lastBar = bi;
+          modCell(cell, bi, B, c);
           if(B.section){ var sc = document.createElement("div"); sc.className = "chart-sec"; sc.textContent = B.section; cell.appendChild(sc); }
           if(B.sig){
             var sp = B.sig.split("/"), sg = document.createElement("div"); sg.className = "chart-sig"; sg.title = "Time signature " + B.sig;
@@ -20543,6 +20650,7 @@ function runAnalysis() {
           itemEls[bi] = els; barEls[bi] = cell;
           rowEl.appendChild(cell);
         }
+        MODS.forEach(function(m){ if(modOn[m.id] && m.row) safe(m, "row", ctx, rowEl, row * bps, zones[m.id] || { top: 0, h: 0 }); });
         grid.appendChild(rowEl);
       }
       host.appendChild(grid);
@@ -20558,8 +20666,9 @@ function runAnalysis() {
       });
     }
 
-    function tick(beats){
+    function tick(beats, tw){
       if(!on || !bars.length) return;
+      if(tw && tw !== ctx.tw){ ctx.tw = tw; analyzeAll(); renderPage(Math.max(0, page)); }   // otra vuelta = otro mapa de tempo: se redibuja la curva
       var bi = curBar;
       if(bi < 0 || beats < starts[bi] - 1e-6 || beats >= starts[bi + 1] - 1e-6){
         bi = 0;
@@ -20583,11 +20692,15 @@ function runAnalysis() {
         curItem = ii;
       }
       ph.style.left = Math.max(0, Math.min(100, inBar / B.beats * 100)).toFixed(1) + "%";
+      var si = -1; for(var q = 0; q < seq.length; q++){ if(seq[q].abs <= beats + 1e-6) si = q; else break; }
+      ctx.si = si; ctx.nx = (si + 1 < seq.length) ? seq[si + 1] : null; ctx.beats = beats;
+      MODS.forEach(function(m){ if(modOn[m.id] && m.tick) safe(m, "tick", ctx, bi, ii); });
     }
 
     function refresh(){
       if(!on) return;
       build();
+      ctx.tw = null; analyzeAll();
       renderPage(0);
     }
 
@@ -20604,8 +20717,10 @@ function runAnalysis() {
       if(ctl) ctl.hidden = !on;
       if(on){
         if(!document.body.classList.contains("roll-front")){ addedFront = true; document.body.classList.add("roll-front"); syncFrontBtn(true); }   // el Chart se lee en primer plano
+        buildUI();
         refresh();
       } else {
+        MODS.forEach(function(m){ if(m.off) safe(m, "off"); });
         if(addedFront){ document.body.classList.remove("roll-front"); syncFrontBtn(false); }
         addedFront = false;
         host.innerHTML = ""; page = -1; curBar = -1;
@@ -20628,6 +20743,371 @@ function runAnalysis() {
     window.__chartTick = tick;
     return { setOn: setOn, isOn: function(){ return on; } };
   })();
+
+  /* >>> CHART-MOD:curve — línea de tiempo: curva de tempo sobre cada stave (prendida por defecto).
+     Lee el mapa de Tempo & Expression de la vuelta en curso (tw.f: beat -> tiempo) y dibuja el BPM local de cada pulso. Para sacarlo: borrar este bloque. */
+  (function(){
+    if(!window.__chartMod) return;
+    var S = [], lo = 0.88, hi = 1.12, base = 0;
+    function analyze(ctx){
+      var tw = ctx.tw || EXPR.currentBase(), el = document.getElementById("consolaTempo");
+      base = el ? parseInt(el.value, 10) : 0; if(!(base > 0)) base = 100;
+      var mn = 1, mx = 1;
+      S = ctx.bars.map(function(B){
+        var n = Math.max(1, Math.round(B.beats)), out = [];
+        for(var j = 0; j < n; j++){
+          var t0 = B.start + j * B.beats / n, t1 = B.start + (j + 1) * B.beats / n;
+          var sp = (tw.f(t1) - tw.f(t0)) / (t1 - t0);
+          var r = sp > 0 ? 1 / sp : 1;
+          if(r < mn) mn = r; if(r > mx) mx = r;
+          out.push(r);
+        }
+        return out;
+      });
+      lo = Math.max(0.35, Math.min(mn, 0.88) - 0.03); hi = Math.min(2.5, Math.max(mx, 1.12) + 0.03);
+    }
+    function Y(r){ return 100 * (1 - (r - lo) / (hi - lo)); }
+    function row(ctx, rowEl, first, z){
+      var NS = "http://www.w3.org/2000/svg", last = Math.min(ctx.bars.length - 1, first + ctx.bps - 1);
+      var layer = document.createElement("div"); layer.className = "chart-zl"; layer.style.top = z.top + "px"; layer.style.height = z.h + "px";
+      layer.style.fontSize = Math.max(10, ctx.baseFont * 0.28).toFixed(1) + "px";
+      var svg = document.createElementNS(NS, "svg"); svg.setAttribute("viewBox", "0 0 1000 100"); svg.setAttribute("preserveAspectRatio", "none");
+      var bl = document.createElementNS(NS, "line"); bl.setAttribute("x1", 0); bl.setAttribute("x2", 1000); bl.setAttribute("y1", Y(1)); bl.setAttribute("y2", Y(1));
+      bl.setAttribute("stroke", "rgba(255,255,255,.28)"); bl.setAttribute("stroke-width", 1); bl.setAttribute("stroke-dasharray", "6 5"); bl.setAttribute("vector-effect", "non-scaling-stroke");
+      svg.appendChild(bl);
+      var pts = [], ext = null, extX = 0, extR = 1, firstPt = null;
+      for(var b = first; b <= last; b++){
+        var arr = S[b] || [];
+        for(var j = 0; j < arr.length; j++){
+          var x = ((b - first) + (j + 0.5) / arr.length) / ctx.bps * 1000;
+          pts.push([x, Y(arr[j])]);
+          if(ext === null || Math.abs(arr[j] - 1) > Math.abs(extR - 1)){ ext = true; extR = arr[j]; extX = x / 10; }
+          if(!firstPt) firstPt = arr[j];
+        }
+      }
+      if(pts.length){
+        pts.unshift([0, pts[0][1]]); pts.push([(last - first + 1) / ctx.bps * 1000, pts[pts.length - 1][1]]);
+        var path = document.createElementNS(NS, "polyline");
+        path.setAttribute("points", pts.map(function(p){ return p[0].toFixed(1) + "," + p[1].toFixed(1); }).join(" "));
+        path.setAttribute("fill", "none"); path.setAttribute("stroke", "#ff8a50"); path.setAttribute("stroke-width", 2.2);
+        path.setAttribute("stroke-linejoin", "round"); path.setAttribute("vector-effect", "non-scaling-stroke");
+        svg.appendChild(path);
+      }
+      layer.appendChild(svg);
+      if(firstPt){
+        var l0 = document.createElement("span"); l0.className = "bpm l0"; l0.textContent = String(Math.round(base * firstPt));
+        l0.style.left = "3px"; l0.style.top = (Y(firstPt) < 50 ? Y(firstPt) + 28 : Y(firstPt) - 28) + "%"; layer.appendChild(l0);
+        if(Math.abs(extR - 1) >= 0.06 && extX > 8){
+          var lb = document.createElement("span"); lb.className = "bpm" + (extR < 1 ? " lo" : ""); lb.textContent = String(Math.round(base * extR));
+          lb.style.left = extX.toFixed(1) + "%"; lb.style.top = Y(extR) + "%"; layer.appendChild(lb);
+        }
+      }
+      rowEl.appendChild(layer);
+    }
+    window.__chartMod({ id: "curve", core: true, def: true, label: "tempo", zone: 0.42, zoneMin: 28, zi: 2, analyze: analyze, row: row,
+      title: "Línea de tiempo: curva de tempo sobre cada stave. Sube = más rápido, baja = más lento; la línea punteada es el BPM elegido. Sigue el mapa de Tempo & Expression de la vuelta que suena (prendida por defecto)." });
+  })();
+  /* <<< CHART-MOD:curve */
+
+  /* >>> CHART-MOD:ital — marcas italianas (accel., rit., fermata, a tempo, rubato, ad lib., cresc., dim.) (apagado por defecto).
+     Salen del preset de Tempo & Expression (en Auto, del perfil de la canción), no se adivinan de la curva. Para sacarlo: borrar este bloque. */
+  (function(){
+    if(!window.__chartMod) return;
+    var M = [];
+    var COL = { tempo: "#e8e8e8", accel: "#ff8a50", rit: "#5ec8ff", ferm: "#ffd25a", atempo: "#3ddc84", adlib: "#c9a0ff", rub: "#c9a0ff", dyn: "#ffd25a" };
+    function onsets(){
+      var ev = (state && state.chordEvents) ? state.chordEvents : [], a = [], o = [], i;
+      for(i = 0; i < ev.length; i++) if(ev[i] && ev[i].startBeat != null) a.push(ev[i]);
+      a.sort(function(x, y){ return x.startBeat - y.startBeat; });
+      for(i = 0; i < a.length; i++){
+        var e = a[i].startBeat + (a[i].durBeats || 0);
+        if(!o.length || a[i].startBeat - o[o.length - 1].t > 0.3) o.push({ t: a[i].startBeat, e: e });
+        else if(e > o[o.length - 1].e) o[o.length - 1].e = e;
+      }
+      return o;
+    }
+    function compute(ctx){
+      var bars = ctx.bars, starts = ctx.starts, n = bars.length, out = [];
+      if(!n) return out;
+      var T = starts[n];
+      function at(beat){ var i = 0; for(var k = 0; k < n; k++){ if(beat >= starts[k] - 1e-6) i = k; else break; } return i + Math.max(0, Math.min(0.999, (beat - starts[i]) / bars[i].beats)); }
+      function mk(text, b0, b1, kind){ out.push({ text: text, x0: at(b0), x1: b1 != null ? (b1 >= T - 1e-6 ? n : at(b1)) : null, kind: kind }); }
+      var bEl = document.getElementById("consolaTempo"), bpm = bEl ? parseInt(bEl.value, 10) : 0;
+      mk("\u2669 = " + (bpm > 0 ? bpm : "?"), 0, null, "tempo");
+      var tw = EXPR.currentBase();
+      if(tw && tw.on){
+        var sel = document.getElementById("consolaExprSelect"), key = sel ? sel.value : "auto", BPB = BEATS_PER_BAR;
+        var Lend = Math.min(T, Math.max(2 * BPB, 0.125 * T));
+        if(key === "auto"){
+          var P = EXPR.autoProfile();
+          if(P && !P.strict){
+            var has = function(k){ return P.parts.indexOf(k) >= 0; }, on = onsets(), nOn = on.length;
+            if(has("adlibIntro")){ var Li = Math.min(0.34 * T, 4 * BPB); mk("ad lib.", 0, Li, "adlib"); if(Li < T - BPB) mk("a tempo", Li, null, "atempo"); }
+            if(has("rubatoLight") || has("rubatoHard")) mk("rubato", 0, null, "rub");
+            if(has("fermStart") && nOn){
+              var nn = Math.min(P.startN, nOn), f0 = on[0].t, f1 = on[nn - 1].e > on[nn - 1].t ? on[nn - 1].e : (nn < nOn ? on[nn].t : on[nn - 1].t + BPB);
+              if(f1 > f0 + 4 * BPB) f1 = f0 + 4 * BPB;
+              mk("fermata", f0, null, "ferm"); if(f1 < T - BPB) mk("a tempo", f1, null, "atempo");
+            }
+            if(has("accelClose")) mk("accel.", 0.55 * T, T - Math.max(BPB, 0.1 * T), "accel");
+            if(has("ritEnd")) mk("rit.", T - Lend, T, "rit");
+            if(has("fermEnd") && nOn) mk("fermata", on[nOn - 1].t, null, "ferm");
+          }
+        } else if(key === "rubato") mk("rubato", 0, null, "rub");
+        else if(key === "accel") mk("accel.", 0, T, "accel");
+        else if(key === "rit") mk("rit.", 0, T, "rit");
+        else if(key === "ritEnd") mk("rit.", T - Lend, T, "rit");
+        else if(key === "cresc") mk("cresc.", 0, T, "dyn");
+        else if(key === "dim") mk("dim.", 0, T, "dyn");
+        else if(key === "stringendo"){ mk("string.", 0, T, "accel"); }
+        else if(key === "morendo") mk("morendo", 0, T, "rit");
+        else if(key === "adlib") mk("ad lib.", 0, null, "adlib");
+      }
+      out.sort(function(a, b){ return a.x0 - b.x0; });
+      var end = -1;   // textos que se pisan: se corren hacia la derecha
+      out.forEach(function(m){
+        if(m.x0 < end){ m.x0 = end; if(m.x1 != null && m.x1 < m.x0 + 0.2) m.x1 = Math.min(n, m.x0 + 0.2); }
+        end = m.x0 + m.text.length * 0.045 + 0.04;
+      });
+      return out;
+    }
+    function analyze(ctx){ M = compute(ctx); }
+    function row(ctx, rowEl, first, z){
+      var last = Math.min(ctx.bars.length - 1, first + ctx.bps - 1);
+      var layer = document.createElement("div"); layer.className = "chart-zl"; layer.style.top = z.top + "px"; layer.style.height = z.h + "px";
+      layer.style.fontSize = Math.max(11, ctx.baseFont * 0.26).toFixed(1) + "px";
+      function pct(x){ return ((x - first) / ctx.bps * 100).toFixed(2) + "%"; }
+      M.forEach(function(m){
+        var col = COL[m.kind] || "#fff";
+        if(m.x0 >= first && m.x0 < last + 1){
+          var t = document.createElement("span"); t.className = "it"; t.textContent = m.text; t.style.left = pct(m.x0); t.style.color = col; layer.appendChild(t);
+        }
+        if(m.x1 != null){
+          var s0 = Math.max(m.x0, first), e0 = Math.min(m.x1, last + 1);
+          if(e0 > s0 + 0.01){
+            var ln = document.createElement("div"); ln.className = "itl"; ln.style.left = pct(s0); ln.style.width = ((e0 - s0) / ctx.bps * 100).toFixed(2) + "%"; ln.style.color = col;
+            if(e0 >= m.x1 - 1e-6) ln.className += (m.kind === "accel" ? " ar" : (m.kind === "rit" ? " tk" : ""));
+            layer.appendChild(ln);
+          }
+        }
+      });
+      rowEl.appendChild(layer);
+    }
+    window.__chartMod({ id: "ital", core: true, def: false, label: "ital.", zone: 0.34, zoneMin: 18, zi: 1, analyze: analyze, row: row, off: function(){ M = []; },
+      title: "Marcas italianas sobre los compases: tempo inicial, accel., rit., fermata, a tempo, rubato, ad lib., cresc., dim. Salen del preset de Tempo & Expression (en Auto, del perfil de la canción). Apagado por defecto." });
+  })();
+  /* <<< CHART-MOD:ital */
+
+  /* >>> CHART-MOD:fret — mini diapasón (afinación estándar) con la zona del acorde actual y la del próximo (apagado por defecto). Para sacarlo: borrar este bloque. */
+  (function(){
+    if(!window.__chartMod) return;
+    var panel = null, lastSi = -2, fPrev = 3, STR = [64, 59, 55, 50, 45, 40];   // e B G D A E (de arriba hacia abajo)
+    function ensure(){
+      if(panel) return panel;
+      panel = document.createElement("div"); panel.id = "chartFret";
+      panel.style.cssText = "position:fixed;right:14px;bottom:56px;width:276px;z-index:125;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:5px 7px 3px;pointer-events:none;font:600 10px 'JetBrains Mono',monospace;color:var(--ink);";
+      document.body.appendChild(panel); return panel;
+    }
+    function win(pcs, near, lo, hi){
+      var bf = lo, bs = -1e9;
+      for(var f = lo; f <= hi; f++){
+        var cov = {}, c = 0;
+        for(var s = 0; s < 6; s++) for(var fr = f; fr <= f + 4; fr++){ var pc = (STR[s] + fr) % 12; if(pcs.indexOf(pc) >= 0 && !cov[pc]){ cov[pc] = 1; c++; } }
+        var sc = c * 100 - Math.abs(f - near) * 4;
+        if(sc > bs){ bs = sc; bf = f; }
+      }
+      return bf;
+    }
+    function draw(cur, nxt){
+      var p = ensure(), fc = win(cur.pcs, fPrev, 0, 12); fPrev = fc;
+      var a = fc <= 1 ? 0 : fc - 1, K = a === 0 ? 8 : 9, fn = nxt ? win(nxt.pcs, fc, a, Math.min(12, a + 4)) : -1;
+      var x0 = 26, fw = 25, y0 = 12, sg = 13, W = x0 + K * fw + 8, H = y0 + 5 * sg + 18;
+      function fx(n){ return a === 0 ? (n === 0 ? x0 - 11 : x0 + (n - 0.5) * fw) : x0 + (n - a + 0.5) * fw; }
+      var h = "<div style='display:flex;gap:10px;padding-bottom:2px'><span style='color:#ffd25a'>\u25cf " + cur.label + "</span>" + (nxt ? "<span style='color:#5ec8ff'>\u25cb " + nxt.label + "</span>" : "") + "</div>";
+      h += "<svg viewBox='0 0 " + W + " " + H + "' width='100%' style='display:block'>";
+      for(var s = 0; s < 6; s++) h += "<line x1='" + x0 + "' x2='" + (x0 + K * fw) + "' y1='" + (y0 + s * sg) + "' y2='" + (y0 + s * sg) + "' stroke='rgba(255,255,255,.35)' stroke-width='1'/>";
+      for(var i = 0; i <= K; i++) h += "<line x1='" + (x0 + i * fw) + "' x2='" + (x0 + i * fw) + "' y1='" + y0 + "' y2='" + (y0 + 5 * sg) + "' stroke='rgba(255,255,255,.35)' stroke-width='" + (i === 0 && a === 0 ? 3 : 1) + "'/>";
+      for(var n = (a === 0 ? 1 : a); n <= (a === 0 ? K : a + K - 1); n++) h += "<text x='" + fx(n) + "' y='" + (H - 3) + "' fill='rgba(255,255,255,.55)' font-size='9' text-anchor='middle'>" + n + "</text>";
+      if(nxt && fn >= 0) for(s = 0; s < 6; s++) for(var fr = fn; fr <= fn + 4; fr++){
+        if(nxt.pcs.indexOf((STR[s] + fr) % 12) < 0) continue;
+        h += "<circle cx='" + fx(fr) + "' cy='" + (y0 + s * sg) + "' r='5.6' fill='none' stroke='#5ec8ff' stroke-width='1.6' stroke-dasharray='3 2'/>";
+      }
+      for(s = 0; s < 6; s++) for(fr = fc; fr <= fc + 4; fr++){
+        var pc = (STR[s] + fr) % 12; if(cur.pcs.indexOf(pc) < 0) continue;
+        h += "<circle cx='" + fx(fr) + "' cy='" + (y0 + s * sg) + "' r='4.2' fill='#ffd25a'" + (pc === cur.rpc ? " stroke='#fff' stroke-width='1.6'" : "") + "/>";
+      }
+      p.innerHTML = h + "</svg>";
+    }
+    function tick(ctx){
+      if(ctx.si < 0 || ctx.si === lastSi) return;
+      lastSi = ctx.si;
+      var cur = ctx.seq[ctx.si].item; if(!cur || !cur.pcs.length) return;
+      draw(cur, ctx.nx ? ctx.nx.item : null);
+    }
+    function off(){ if(panel){ panel.remove(); panel = null; } lastSi = -2; fPrev = 3; }
+    window.__chartMod({ id: "fret", label: "diapasón", tick: tick, off: off,
+      title: "Mini diapasón (afinación estándar): en dorado las notas del acorde actual en su zona de 5 trastes (anillo blanco = raíz), en celeste punteado la zona más cercana del próximo acorde. Es un mapa de zona, no una digitación." });
+  })();
+  /* <<< CHART-MOD:fret */
+
+  /* >>> CHART-MOD:soon — anticipación del próximo acorde: se enciende ~1 pulso antes del cambio (apagado por defecto). Para sacarlo: borrar este bloque. */
+  (function(){
+    if(!window.__chartMod) return;
+    var prev = [];
+    function clr(){ prev.forEach(function(e){ e.classList.remove("soon"); }); prev = []; }
+    function tick(ctx){
+      var nx = ctx.nx, want = [];
+      if(nx){
+        var dt = nx.abs - ctx.beats;
+        if(dt > 1e-6 && dt <= 1.0 + 1e-6){
+          var els = ctx.itemEls && ctx.itemEls[nx.bi];
+          if(els && els[nx.k]) want.push(els[nx.k]);
+          if(nx.item.pos < 1e-6 && ctx.barEls && ctx.barEls[nx.bi]) want.push(ctx.barEls[nx.bi]);
+        }
+      }
+      var same = want.length === prev.length && want.every(function(e, i){ return e === prev[i]; });
+      if(same) return;
+      clr(); want.forEach(function(e){ e.classList.add("soon"); }); prev = want;
+    }
+    window.__chartMod({ id: "soon", label: "anticipar", tick: tick, off: clr,
+      title: "Un pulso antes de que cambie el acorde, se enciende en ámbar el compás o el acorde que viene, para llegar preparado." });
+  })();
+  /* <<< CHART-MOD:soon */
+
+  /* >>> CHART-MOD:br — brackets de ii–V–I con su tonalidad (apagado por defecto). Para sacarlo: borrar este bloque. */
+  (function(){
+    if(!window.__chartMod) return;
+    var BR = [];
+    function analyze(ctx){
+      BR = [];
+      var C = [], T = ctx.starts[ctx.bars.length];
+      ctx.seq.forEach(function(e){
+        if(e.item.rpc < 0) return;
+        var p = C[C.length - 1];
+        if(p && p.rpc === e.item.rpc && p.cls === e.item.cls) return;
+        C.push({ rpc: e.item.rpc, cls: e.item.cls, a: e.abs });
+      });
+      for(var i = 0; i < C.length; i++) C[i].z = i + 1 < C.length ? C[i + 1].a : T;
+      for(i = 0; i + 2 < C.length; ){
+        var a = C[i], b = C[i + 1], c = C[i + 2];
+        var iiOk = a.cls === "m" || a.cls === "hd", vOk = b.cls === "dom";
+        var iOk = c.cls === "maj" || ((c.cls === "m") && true);
+        if(iiOk && vOk && iOk && b.rpc === (a.rpc + 5) % 12 && c.rpc === (b.rpc + 5) % 12 && (a.cls !== "hd" || c.cls === "m")){
+          var minor = c.cls === "m";
+          BR.push({ a0: a.a, a1: c.z, label: "ii\u2013V\u2013" + (minor ? "i" : "I") + " " + CIFRADO_ROOT_BY_PC[c.rpc] + (minor ? "m" : "") });
+          i += 3;
+        } else i++;
+      }
+    }
+    function row(ctx, rowEl, first, z){
+      if(!BR.length) return;
+      var n = ctx.bars.length, last = Math.min(n - 1, first + ctx.bps - 1);
+      function xOf(abs){ var k = 0; for(var q = 0; q < n; q++){ if(abs >= ctx.starts[q] - 1e-6) k = q; else break; } if(abs >= ctx.starts[n] - 1e-6) return n; return k + (abs - ctx.starts[k]) / ctx.bars[k].beats; }
+      var layer = document.createElement("div"); layer.className = "chart-zl"; layer.style.top = z.top + "px"; layer.style.height = z.h + "px";
+      layer.style.fontSize = Math.max(10, ctx.baseFont * 0.22).toFixed(1) + "px";
+      function pct(x){ return ((x - first) / ctx.bps * 100).toFixed(2) + "%"; }
+      var any = false;
+      BR.forEach(function(b){
+        var x0 = xOf(b.a0), x1 = xOf(b.a1), s0 = Math.max(x0, first), e0 = Math.min(x1, last + 1);
+        if(e0 <= s0 + 0.01) return;
+        any = true;
+        var ln = document.createElement("div"); ln.className = "brl" + (x0 >= first ? " s" : "") + (x1 <= last + 1 ? " e" : "");
+        ln.style.left = pct(s0); ln.style.width = ((e0 - s0) / ctx.bps * 100).toFixed(2) + "%"; layer.appendChild(ln);
+        if(x0 >= first){ var t = document.createElement("span"); t.className = "brt"; t.textContent = b.label; t.style.left = pct(x0); layer.appendChild(t); }
+      });
+      if(any) rowEl.appendChild(layer);
+    }
+    window.__chartMod({ id: "br", label: "ii-V-I", zone: 0.3, zoneMin: 20, zi: 3, analyze: analyze, row: row, off: function(){ BR = []; },
+      title: "Brackets de ii–V–I con su tonalidad. Detecta ii (m7 o m7b5) – V7 – I (Δ o m) con las raíces a quinta descendente (cuarta ascendente). Solo marca lo que realmente aparece en la canción." });
+  })();
+  /* <<< CHART-MOD:br */
+
+  /* >>> CHART-MOD:key — color de fondo por centro tonal (apagado por defecto). Para sacarlo: borrar este bloque. */
+  (function(){
+    if(!window.__chartMod) return;
+    var KEY = [], MAJ = [0, 2, 4, 5, 7, 9, 11], MIN = [0, 2, 3, 5, 7, 8, 10, 11], SC = [];
+    for(var k0 = 0; k0 < 24; k0++){ var st = {}; (k0 < 12 ? MAJ : MIN).forEach(function(d){ st[((k0 % 12) + d) % 12] = 1; }); SC.push(st); }
+    function emit(k, it){
+      var t = k % 12, S = SC[k], inn = 0, out = 0;
+      it.pcs.forEach(function(pc){ if(S[pc]) inn++; else out++; });
+      var e = inn - 1.6 * out;
+      if(it.rpc === t) e += k < 12 ? (it.cls === "maj" ? 1.2 : 0.4) : ((it.cls === "m" || it.cls === "hd") ? 1.2 : 0.4);
+      if(it.cls === "dom" && it.rpc === (t + 7) % 12) e += 0.6;
+      return e;
+    }
+    function analyze(ctx){
+      KEY = [];
+      var G = [], idxOf = [];   // acordes distintos seguidos
+      ctx.seq.forEach(function(e, i){
+        var it = e.item, sig = it.rpc + "|" + it.cls + "|" + it.pcs.slice().sort().join(",");
+        if(it.rpc < 0){ idxOf[i] = G.length - 1; return; }
+        if(G.length && G[G.length - 1].sig === sig){ idxOf[i] = G.length - 1; return; }
+        G.push({ it: it, sig: sig }); idxOf[i] = G.length - 1;
+      });
+      if(!G.length) return;
+      var PEN = 2.5, dp = [], bp = [], k, j, i;
+      for(i = 0; i < G.length; i++){
+        dp[i] = []; bp[i] = [];
+        for(k = 0; k < 24; k++){
+          var e = emit(k, G[i].it);
+          if(i === 0){ dp[i][k] = e; bp[i][k] = -1; continue; }
+          var best = -1e9, bj = k;
+          for(j = 0; j < 24; j++){ var v = dp[i - 1][j] - (j === k ? 0 : PEN); if(v > best){ best = v; bj = j; } }
+          dp[i][k] = best + e; bp[i][k] = bj;
+        }
+      }
+      var bk = 0, bv = -1e9; for(k = 0; k < 24; k++) if(dp[G.length - 1][k] > bv){ bv = dp[G.length - 1][k]; bk = k; }
+      var path = []; for(i = G.length - 1; i >= 0; i--){ path[i] = bk; bk = bp[i][bk]; }
+      var prev = -1;
+      ctx.bars.forEach(function(B, bi){
+        var si = -1; for(var q = 0; q < ctx.seq.length; q++){ if(ctx.seq[q].bi === bi){ si = q; break; } }
+        var kk = si >= 0 && idxOf[si] >= 0 ? path[idxOf[si]] : prev;
+        if(kk < 0) kk = path[0];
+        KEY[bi] = { k: kk, chg: kk !== prev }; prev = kk;
+      });
+    }
+    function cell(ctx, cellEl, bi, B){
+      var K = KEY[bi]; if(!K) return;
+      var t = K.k % 12, hue = ((K.k < 12 ? t : (t + 3) % 12)) * 30;   // los relativos (C / Am) comparten color
+      var bg = document.createElement("div"); bg.className = "chart-kc"; bg.style.background = "hsla(" + hue + ",65%,55%,.17)";
+      cellEl.insertBefore(bg, cellEl.firstChild);
+      if(K.chg){
+        var lb = document.createElement("div"); lb.className = "chart-key"; lb.style.color = "hsl(" + hue + ",75%,72%)";
+        lb.textContent = CIFRADO_ROOT_BY_PC[t] + (K.k >= 12 ? "m" : ""); cellEl.appendChild(lb);
+      }
+    }
+    window.__chartMod({ id: "key", label: "color tonal", analyze: analyze, cell: cell, off: function(){ KEY = []; },
+      title: "Color de fondo por centro tonal (C y Am comparten color) y la tonalidad al cambiar. Se deduce del cifrado (suavizado para que no salte de tonalidad a cada acorde); si el cifrado es ambiguo puede errar." });
+  })();
+  /* <<< CHART-MOD:key */
+
+  /* >>> CHART-MOD:cn — notas comunes con el acorde siguiente (apagado por defecto). Para sacarlo: borrar este bloque. */
+  (function(){
+    if(!window.__chartMod) return;
+    var CN = [];
+    function analyze(ctx){
+      CN = [];
+      var s = ctx.seq;
+      s.forEach(function(e, i){
+        var it = e.item, nx = null;
+        if(it.rpc < 0) return;
+        for(var j = i + 1; j < s.length; j++){ if(s[j].item.pcs.slice().sort().join() !== it.pcs.slice().sort().join()){ nx = s[j].item; break; } }
+        if(!nx) return;
+        var sh = it.pcs.filter(function(pc){ return nx.pcs.indexOf(pc) >= 0; });
+        if(!sh.length) return;
+        sh.sort(function(a, b){ return ((a - it.rpc + 12) % 12) - ((b - it.rpc + 12) % 12); });
+        (CN[e.bi] = CN[e.bi] || []).push(sh.map(function(pc){ return CIFRADO_ROOT_BY_PC[pc]; }).join(" "));
+      });
+    }
+    function cell(ctx, cellEl, bi, B){
+      if(B.repeat || !CN[bi]) return;
+      var d = document.createElement("div"); d.className = "chart-cn"; d.textContent = "\u2248 " + CN[bi].join("  \u00b7  ");
+      d.title = "Notas que se repiten en el acorde siguiente"; cellEl.appendChild(d);
+    }
+    window.__chartMod({ id: "cn", label: "notas comunes", analyze: analyze, cell: cell, off: function(){ CN = []; },
+      title: "Abajo a la derecha de cada compás: las notas que el acorde comparte con el siguiente (\u2248 F D). Son las que podés mantener para unir los dos acordes sin saltos." });
+  })();
+  /* <<< CHART-MOD:cn */
 
   // Piano roll SEPARADO para bebopMelody — a pedido: antes compartía el
   // roll principal (mismas filas/rango que armonía+bajo+melodía), lo que
@@ -24633,7 +25113,7 @@ function runAnalysis() {
         var x = MARGIN_L + beats*PPB;
         var xs = x.toFixed(1);
         if(ph){ ph.setAttribute("x1", xs); ph.setAttribute("x2", xs); }
-        if(window.__chartTick) window.__chartTick(beats);   // modo Chart: compás / acorde en curso
+        if(window.__chartTick) window.__chartTick(beats, tw);   // modo Chart: compás / acorde en curso
         if(phDrum){ phDrum.setAttribute("x1", xs); phDrum.setAttribute("x2", xs); }
         if(phBebop){ phBebop.setAttribute("x1", xs); phBebop.setAttribute("x2", xs); }
         if(!shown){
