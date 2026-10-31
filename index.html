@@ -31321,7 +31321,27 @@ try{
 <!-- ===== MIDI INSTRUMENT: la pagina manda MIDI en vivo (Web MIDI) a un puerto virtual -> Ableton Live como modulo de sonidos ===== -->
 <div id="midiInstrumentBar" style="margin:28px auto 36px;max-width:760px;padding:14px 16px;border:1px solid var(--gold,#c9a24a);border-radius:12px;text-align:center;font:13px/1.4 system-ui,sans-serif;">
   <button type="button" id="midiInstrumentBtn" aria-pressed="false" style="padding:9px 18px;border-radius:999px;border:1px solid var(--gold,#c9a24a);background:transparent;color:inherit;font:600 14px system-ui,sans-serif;cursor:pointer;">&#127929; MIDI INSTRUMENT</button>
+  <button type="button" id="midiChanHelpBtn" aria-expanded="false" title="Canal MIDI de cada instrumento" style="margin-left:6px;width:30px;height:30px;border-radius:50%;border:1px solid var(--gold,#c9a24a);background:transparent;color:inherit;font:700 14px system-ui,sans-serif;cursor:pointer;">?</button>
   <label style="margin-left:12px;">Puerto: <select id="midiInstrumentPort" style="max-width:260px;"></select></label>
+  <div id="midiChanHelp" hidden style="margin:10px auto 0;max-width:420px;text-align:left;">
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead><tr><th style="text-align:left;padding:3px 8px;border-bottom:1px solid var(--gold,#c9a24a);">Instrumento</th><th style="text-align:right;padding:3px 8px;border-bottom:1px solid var(--gold,#c9a24a);">Canal MIDI</th></tr></thead>
+      <tbody>
+        <tr><td style="padding:2px 8px;">Armon&iacute;a</td><td style="text-align:right;padding:2px 8px;">1</td></tr>
+        <tr><td style="padding:2px 8px;">Bajo</td><td style="text-align:right;padding:2px 8px;">2</td></tr>
+        <tr><td style="padding:2px 8px;">Melod&iacute;a</td><td style="text-align:right;padding:2px 8px;">3</td></tr>
+        <tr><td style="padding:2px 8px;">Melod&iacute;a doble</td><td style="text-align:right;padding:2px 8px;">4</td></tr>
+        <tr><td style="padding:2px 8px;">Armon&iacute;a doble</td><td style="text-align:right;padding:2px 8px;">5</td></tr>
+        <tr><td style="padding:2px 8px;">Bajo doble</td><td style="text-align:right;padding:2px 8px;">6</td></tr>
+        <tr><td style="padding:2px 8px;">Comping</td><td style="text-align:right;padding:2px 8px;">7</td></tr>
+        <tr><td style="padding:2px 8px;">Bebop</td><td style="text-align:right;padding:2px 8px;">8</td></tr>
+        <tr><td style="padding:2px 8px;">Bater&iacute;a</td><td style="text-align:right;padding:2px 8px;">10</td></tr>
+        <tr><td style="padding:2px 8px;">Melod&iacute;a n2</td><td style="text-align:right;padding:2px 8px;">11</td></tr>
+        <tr><td style="padding:2px 8px;">Melod&iacute;a n3</td><td style="text-align:right;padding:2px 8px;">12</td></tr>
+        <tr><td style="padding:2px 8px;">Cualquier otra pista</td><td style="text-align:right;padding:2px 8px;">13</td></tr>
+      </tbody>
+    </table>
+  </div>
   <div id="midiInstrumentStatus" style="margin-top:8px;opacity:.85;">Apagado. Al activarlo: la pagina no carga soundfonts (descarta los cargados) y envia MIDI al puerto elegido, un canal por pista (Armonia 1, Bajo 2, Melodia 3, Melodia doble 4, Armonia doble 5, Bajo doble 6, Comping 7, Bebop 8, Bateria 10, Melodia n2 11, Melodia n3 12).</div>
 </div>
 <script>
@@ -31329,6 +31349,8 @@ try{
   var KEY = "stoikMidiOnly", KEYP = "stoikMidiPort";
   var btn = document.getElementById("midiInstrumentBtn"), sel = document.getElementById("midiInstrumentPort"), st = document.getElementById("midiInstrumentStatus");
   var access = null, out = null, sent = 0;
+  (function(){ var hb = document.getElementById("midiChanHelpBtn"), hp = document.getElementById("midiChanHelp");
+    hb.addEventListener("click", function(){ hp.hidden = !hp.hidden; hb.setAttribute("aria-expanded", String(!hp.hidden)); }); })();
   function say(t){ st.textContent = t; }
   function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
   function lsSet(k, v){ try{ if(v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); }catch(e){} }
