@@ -20905,7 +20905,7 @@ function runAnalysis() {
     function ensure(){
       if(panel) return panel;
       panel = document.createElement("div"); panel.id = "chartFret";
-      panel.style.cssText = "position:fixed;right:14px;bottom:56px;width:276px;z-index:125;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:5px 7px 3px;pointer-events:none;font:600 10px 'JetBrains Mono',monospace;color:var(--ink);";
+      panel.style.cssText = "position:fixed;right:14px;bottom:56px;width:828px;max-width:calc(100vw - 28px);z-index:125;background:var(--bg);border:2px solid var(--line);border-radius:14px;padding:15px 21px 9px;pointer-events:none;font:600 30px 'JetBrains Mono',monospace;color:var(--ink);";
       document.body.appendChild(panel); return panel;
     }
     function win(pcs, near, lo, hi){
@@ -20923,7 +20923,7 @@ function runAnalysis() {
       var a = fc <= 1 ? 0 : fc - 1, K = a === 0 ? 8 : 9, fn = nxt ? win(nxt.pcs, fc, a, Math.min(12, a + 4)) : -1;
       var x0 = 26, fw = 25, y0 = 12, sg = 13, W = x0 + K * fw + 8, H = y0 + 5 * sg + 18;
       function fx(n){ return a === 0 ? (n === 0 ? x0 - 11 : x0 + (n - 0.5) * fw) : x0 + (n - a + 0.5) * fw; }
-      var h = "<div style='display:flex;gap:10px;padding-bottom:2px'><span style='color:#ffd25a'>\u25cf " + cur.label + "</span>" + (nxt ? "<span style='color:#5ec8ff'>\u25cb " + nxt.label + "</span>" : "") + "</div>";
+      var h = "<div style='display:flex;gap:30px;padding-bottom:6px'><span style='color:#ffd25a'>\u25cf " + cur.label + "</span>" + (nxt ? "<span style='color:#5ec8ff'>\u25cb " + nxt.label + "</span>" : "") + "</div>";
       h += "<svg viewBox='0 0 " + W + " " + H + "' width='100%' style='display:block'>";
       for(var s = 0; s < 6; s++) h += "<line x1='" + x0 + "' x2='" + (x0 + K * fw) + "' y1='" + (y0 + s * sg) + "' y2='" + (y0 + s * sg) + "' stroke='rgba(255,255,255,.35)' stroke-width='1'/>";
       for(var i = 0; i <= K; i++) h += "<line x1='" + (x0 + i * fw) + "' x2='" + (x0 + i * fw) + "' y1='" + y0 + "' y2='" + (y0 + 5 * sg) + "' stroke='rgba(255,255,255,.35)' stroke-width='" + (i === 0 && a === 0 ? 3 : 1) + "'/>";
