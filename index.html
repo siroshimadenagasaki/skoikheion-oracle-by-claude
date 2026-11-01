@@ -20950,6 +20950,32 @@ function runAnalysis() {
   })();
   /* <<< CHART-MOD:fret */
 
+  /* >>> CHART-MIC — micro player arriba a la derecha del Chart (previous / play / stop / next). Usa los mismos controles que el Player (window.__radioPlayer) y que Media Session. Solo se ve con el Chart prendido. Para sacarlo: borrar este bloque. */
+  (function(){
+    var st = document.createElement("style");
+    st.textContent = "#chartMic{display:none;position:fixed;top:44px;right:56px;z-index:126;gap:2px;padding:2px 3px;background:var(--bg);border:1px solid var(--line);border-radius:12px;}" +
+      "body.chart-mode #chartMic{display:flex;}" +
+      "#chartMic button{width:22px;height:20px;padding:0;border:0;border-radius:8px;background:transparent;color:var(--ink);font:700 11px/1 'JetBrains Mono',monospace;cursor:pointer;}" +
+      "#chartMic button:hover{background:var(--line);color:var(--gold);}";
+    document.head.appendChild(st);
+    var box = document.createElement("div"); box.id = "chartMic";
+    function rp(){ return window.__radioPlayer || null; }
+    function click(id){ var b = document.getElementById(id); if(b && !b.disabled) b.click(); }
+    var B = [
+      ["⏮", "Canción anterior (Previous del Player)", function(){ var r = rp(); if(r) r.prev(); }],
+      ["▶", "Play (retoma la pausa, o reproduce)", function(){ var r = rp(); if(r && r.paused){ r.resume(); return; } if(r && r.resumable){ r.start(); return; } click("consolaPlayBtn"); }],
+      ["■", "Stop", function(){ var r = rp(); if(r && r.isOn()){ r.stop(); return; } click("consolaStopBtn"); }],
+      ["⏭", "Canción siguiente (Next del Player)", function(){ var r = rp(); if(r) r.next(); }]
+    ];
+    B.forEach(function(d){
+      var b = document.createElement("button"); b.type = "button"; b.textContent = d[0]; b.title = d[1]; b.setAttribute("aria-label", d[1]);
+      b.addEventListener("click", function(e){ e.stopPropagation(); try{ d[2](); }catch(err){ if(window.console) console.error("[chart:mic]", err); } });
+      box.appendChild(b);
+    });
+    document.body.appendChild(box);
+  })();
+  /* <<< CHART-MIC */
+
   /* >>> CHART-MOD:soon — anticipación del próximo acorde: se enciende ~1 pulso antes del cambio (apagado por defecto). Para sacarlo: borrar este bloque. */
   (function(){
     if(!window.__chartMod) return;
