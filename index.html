@@ -1441,10 +1441,21 @@
   /* ---- Chart: cifrado grande tipo Real Book sobre el piano roll (apagado por defecto) ---- */
   #chartModeBtn{position:fixed;top:76px;left:10px;z-index:120;height:32px;padding:0 8px;border-radius:16px;border:2px solid var(--gold);background:var(--bg);color:var(--gold);font:700 12px/1 'JetBrains Mono',monospace;cursor:pointer;white-space:nowrap;}
   #chartModeBtn[aria-pressed="true"]{background:var(--gold);color:var(--bg);}
-  #chartCtl{position:fixed;top:116px;left:10px;z-index:120;display:flex;flex-direction:column;gap:6px;}
+  #chartCtl{position:fixed;top:152px;left:10px;z-index:120;display:flex;flex-direction:column;gap:6px;}
   #chartCtl[hidden]{display:none;}
   #chartCtl select{width:66px;height:26px;font:600 11px 'JetBrains Mono',monospace;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:0 2px;}
+  #chartRollBtn{position:fixed;top:112px;left:10px;z-index:120;height:32px;padding:0 8px;border-radius:16px;border:2px solid var(--gold);background:var(--bg);color:var(--gold);font:700 12px/1 'JetBrains Mono',monospace;cursor:pointer;white-space:nowrap;}
+  #chartRollBtn[aria-pressed="true"]{background:var(--gold);color:var(--bg);}
   #consolaChartHost{display:none;}
+  /* Chart + transparency (módulo CHART-MOD:transp): el roll original queda de fondo, atenuado como en la página de inicio */
+  body.chart-mode.chart-transp #consolaRollHost{display:block !important;position:absolute;left:0;right:0;top:50%;translate:0 -50%;z-index:-1;opacity:.45;pointer-events:none;}
+  /* pianoRoll/Charts: tira de cifrado alineada con el roll (foreignObject dentro del svg del roll, debajo del teclado fijo) */
+  .chart-hystrip{position:relative;background:var(--bg);border-bottom:1px solid var(--line);pointer-events:none;overflow:hidden;--ct:0px;}
+  .chart-hystrip .chart-bar{position:absolute;top:0;height:100%;box-sizing:border-box;}
+  .chart-hystrip .chart-bar.first{border-left:3px solid var(--ink);}
+  .chart-hystrip .chart-sec{font-size:11px;top:3px;}
+  .chart-hystrip .chart-deg{font-size:10px;}
+  .chart-hystrip .chart-num{font-size:10px;}
   body.chart-mode #consolaRollHost, body.chart-mode #consolaBebopRollHost, body.chart-mode #consolaBebopRollLabel{display:none !important;}
   body.chart-mode #consolaChartHost{display:flex;flex-direction:column;flex:1 1 auto;min-height:0;width:100%;box-sizing:border-box;padding:4px 20px 6px 100px;}
   .chart-grid{flex:1 1 auto;min-height:0;display:grid;}
@@ -1584,6 +1595,7 @@
 
 <button type="button" class="shortcuts-roll-btn" id="rollFrontBtn" aria-pressed="false" title="Traer el piano roll al primer plano (otro clic lo devuelve al fondo)">+</button>
 <button type="button" id="chartModeBtn" aria-pressed="false" title="Chart: muestra el cifrado del piano roll en grande, en staves tipo Real Book, y sigue la canción en tiempo real. Apagado por defecto.">🎼 Chart</button>
+<button type="button" id="chartRollBtn" aria-pressed="false" title="pianoRoll/Charts: el piano roll original (con scroll) y encima una tira de cifrado tipo Real Book alineada compás por compás. Apagado por defecto.">🎹 pianoRoll/Charts</button>
 <div id="chartCtl" hidden>
   <select id="chartBpsSel" title="Compases por stave"><option value="2">2 bars</option><option value="4" selected>4 bars</option><option value="6">6 bars</option></select>
   <select id="chartSymSel" title="Cantidad de cifrados por compás: 1 = el cifrado principal; 2 = suma el cifrado verde de ChordS (si la canción lo tiene)"><option value="1" selected>1 sym</option><option value="2">2 sym</option></select>
@@ -20431,11 +20443,12 @@ function runAnalysis() {
   var CHART = (function(){
     var host = document.getElementById("consolaChartHost");
     var btn = document.getElementById("chartModeBtn");
+    var btnHy = document.getElementById("chartRollBtn");
     var ctl = document.getElementById("chartCtl");
     var selB = document.getElementById("chartBpsSel");
     var selS = document.getElementById("chartSymSel");
     if(!host || !btn) return null;
-    var on = false, addedFront = false, bps = 4, syms = 1;
+    var on = false, hy = false, addedFront = false, bps = 4, syms = 1;
     var bars = [], starts = [], seq = [];
     var MODS = [], modOn = {}, uiBuilt = false, ctx = { tw: null, si: -1, nx: null, beats: 0 };
     var page = -1, rowsFit = 1, baseFont = 24, curBar = -1, curItem = -2, ph = null, barEls = [], itemEls = [];
@@ -20667,15 +20680,14 @@ function runAnalysis() {
     }
 
     function tick(beats, tw){
-      if(!on || !bars.length) return;
-      if(tw && tw !== ctx.tw){ ctx.tw = tw; analyzeAll(); renderPage(Math.max(0, page)); }   // otra vuelta = otro mapa de tempo: se redibuja la curva
+      if(!(on || hy) || !bars.length) return;
+      if(!hy && tw && tw !== ctx.tw){ ctx.tw = tw; analyzeAll(); renderPage(Math.max(0, page)); }   // otra vuelta = otro mapa de tempo: se redibuja la curva
       var bi = curBar;
       if(bi < 0 || beats < starts[bi] - 1e-6 || beats >= starts[bi + 1] - 1e-6){
         bi = 0;
         for(var i = 0; i < bars.length; i++){ if(beats >= starts[i] - 1e-6) bi = i; else break; }
       }
-      var pg = Math.floor(Math.floor(bi / bps) / rowsFit);
-      if(pg !== page) renderPage(pg);
+      if(!hy){ var pg = Math.floor(Math.floor(bi / bps) / rowsFit); if(pg !== page) renderPage(pg); }
       var B = bars[bi], inBar = beats - starts[bi];
       if(bi !== curBar){
         if(curBar >= 0 && barEls[curBar]) barEls[curBar].classList.remove("now");
@@ -20692,12 +20704,14 @@ function runAnalysis() {
         curItem = ii;
       }
       ph.style.left = Math.max(0, Math.min(100, inBar / B.beats * 100)).toFixed(1) + "%";
+      if(hy) return;   // pianoRoll/Charts: sin módulos
       var si = -1; for(var q = 0; q < seq.length; q++){ if(seq[q].abs <= beats + 1e-6) si = q; else break; }
       ctx.si = si; ctx.nx = (si + 1 < seq.length) ? seq[si + 1] : null; ctx.beats = beats;
       MODS.forEach(function(m){ if(modOn[m.id] && m.tick) safe(m, "tick", ctx, bi, ii); });
     }
 
     function refresh(){
+      if(hy){ build(); renderStrip(); return; }
       if(!on) return;
       build();
       ctx.tw = null; analyzeAll();
@@ -20711,6 +20725,7 @@ function runAnalysis() {
       rb.textContent = front ? "−" : "+";
     }
     function setOn(v){
+      if(v && hy) setHy(false);
       on = !!v;
       document.body.classList.toggle("chart-mode", on);
       btn.setAttribute("aria-pressed", on ? "true" : "false");
@@ -20726,6 +20741,68 @@ function runAnalysis() {
         host.innerHTML = ""; page = -1; curBar = -1;
       }
     }
+
+    // ---- pianoRoll/Charts: una sola tira de cifrado alineada con el roll original (39 px por pulso), dentro del svg del roll ----
+    var HY_H = 84, HY_FONT = 26;
+    function removeStrip(){ Array.prototype.forEach.call(document.querySelectorAll(".chart-hy-fo"), function(n){ n.remove(); }); }
+    function renderStrip(){
+      removeStrip(); barEls = []; itemEls = []; curBar = -1; curItem = -2;
+      ph = document.createElement("div"); ph.className = "chart-ph";
+      var rh = document.getElementById("consolaRollHost"), svg = rh && rh.querySelector("svg");
+      if(!svg || !bars.length) return;
+      var NS = "http://www.w3.org/2000/svg";
+      var W = parseFloat(svg.getAttribute("width")) || svg.getBoundingClientRect().width;
+      var fo = document.createElementNS(NS, "foreignObject");
+      fo.setAttribute("class", "chart-hy-fo"); fo.setAttribute("x", "0"); fo.setAttribute("y", "0"); fo.setAttribute("width", String(W)); fo.setAttribute("height", String(HY_H));
+      var strip = document.createElement("div");
+      strip.className = "chart-hystrip"; strip.style.width = W + "px"; strip.style.height = HY_H + "px"; strip.style.setProperty("--cf", HY_FONT + "px");
+      bars.forEach(function(B, bi){
+        var cell = document.createElement("div");
+        cell.className = "chart-bar" + (bi === 0 ? " first" : "");
+        cell.style.left = (MARGIN_L + B.start * PPB) + "px"; cell.style.width = (B.beats * PPB) + "px";
+        if(bi === bars.length - 1) cell.className += " end"; else if(B.secEnd) cell.className += " dbl";
+        if(B.section){ var sc = document.createElement("div"); sc.className = "chart-sec"; sc.textContent = B.section; cell.appendChild(sc); }
+        if(B.sig){
+          var sp = B.sig.split("/"), sg = document.createElement("div"); sg.className = "chart-sig"; sg.title = "Time signature " + B.sig;
+          sg.innerHTML = "<span>" + sp[0] + "</span><span>" + sp[1] + "</span>";
+          cell.appendChild(sg); cell.className += " has-sig";
+        }
+        var nm = document.createElement("div"); nm.className = "chart-num"; nm.textContent = String(bi + 1); cell.appendChild(nm);
+        var els = [];
+        if(B.repeat){ var rp = document.createElement("div"); rp.className = "chart-rep"; rp.textContent = "%"; cell.appendChild(rp); }
+        else {
+          B.items.forEach(function(it, k){ var e = chordEl(it, B.items.length, k); cell.appendChild(e); els.push(e); });
+          var dgs = B.items.map(function(it){ return it.degs; }).filter(Boolean);
+          if(dgs.length){ var dv = document.createElement("div"); dv.className = "chart-deg"; dv.textContent = dgs.join("  ·  "); cell.appendChild(dv); }
+        }
+        itemEls[bi] = els; barEls[bi] = cell; strip.appendChild(cell);
+      });
+      fo.appendChild(strip);
+      var kb = svg.querySelector(".consola-kb-fixed");
+      if(kb) svg.insertBefore(fo, kb); else svg.appendChild(fo);   // el teclado fijo queda por encima de la tira
+      Array.prototype.forEach.call(strip.querySelectorAll(".chart-ch"), function(el){
+        var cell = el.parentNode, share = parseFloat(el.getAttribute("data-share")) || 1;
+        var gut = cell.classList.contains("has-sig") ? HY_FONT * 0.8 : 0;
+        var allowed = (cell.clientWidth - gut) * share - 14, w = el.scrollWidth;
+        if(allowed > 20 && w > allowed) el.style.fontSize = Math.max(9, HY_FONT * allowed / w).toFixed(1) + "px";
+      });
+    }
+    function setHy(v){
+      v = !!v;
+      if(v && on) setOn(false);
+      hy = v;
+      document.body.classList.toggle("chart-hybrid", hy);
+      if(btnHy) btnHy.setAttribute("aria-pressed", hy ? "true" : "false");
+      if(hy){
+        if(!document.body.classList.contains("roll-front")){ addedFront = true; document.body.classList.add("roll-front"); syncFrontBtn(true); }
+        refresh();
+      } else {
+        removeStrip(); barEls = []; itemEls = []; curBar = -1;
+        if(addedFront){ document.body.classList.remove("roll-front"); syncFrontBtn(false); }
+        addedFront = false;
+      }
+    }
+    if(btnHy) btnHy.addEventListener("click", function(){ setHy(!hy); });
     btn.addEventListener("click", function(){ setOn(!on); });
     if(selB) selB.addEventListener("change", function(){
       bps = parseInt(selB.value, 10) || 4;
@@ -20741,7 +20818,7 @@ function runAnalysis() {
     window.addEventListener("resize", function(){ if(!on) return; if(rzT) cancelAnimationFrame(rzT); rzT = requestAnimationFrame(function(){ var keep = curBar >= 0 ? Math.floor(Math.floor(curBar / bps) / rowsFit) : 0; renderPage(keep); }); });
     window.__chartRefresh = refresh;
     window.__chartTick = tick;
-    return { setOn: setOn, isOn: function(){ return on; } };
+    return { setOn: setOn, setHy: setHy, isOn: function(){ return on; }, isHy: function(){ return hy; } };
   })();
 
   /* >>> CHART-MOD:curve — línea de tiempo: curva de tempo sobre cada stave (prendida por defecto).
@@ -20949,6 +21026,16 @@ function runAnalysis() {
       title: "Mini diapasón (afinación estándar): en dorado las notas del acorde actual en su zona de 5 trastes (anillo blanco = raíz), en celeste punteado la zona más cercana del próximo acorde. Es un mapa de zona, no una digitación." });
   })();
   /* <<< CHART-MOD:fret */
+
+  /* >>> CHART-MOD:transp — transparency: el piano roll original queda de fondo (atenuado, como en la página de inicio) detrás del Chart. Prendido por defecto. Para sacarlo: borrar este bloque y su CSS. */
+  (function(){
+    if(!window.__chartMod) return;
+    window.__chartMod({ id: "transp", label: "transparency", def: true,
+      title: "Muestra el piano roll original de fondo, atenuado como en la página de inicio, detrás del Chart. Destildado: el Chart queda como antes (fondo opaco).",
+      analyze: function(){ document.body.classList.add("chart-transp"); },
+      off: function(){ document.body.classList.remove("chart-transp"); } });
+  })();
+  /* <<< CHART-MOD:transp */
 
   /* >>> CHART-MIC — micro player arriba a la derecha del Chart (previous / play / stop / next). Usa los mismos controles que el Player (window.__radioPlayer) y que Media Session. Fijo: se ve siempre, con o sin Chart. Para sacarlo: borrar este bloque. */
   (function(){
