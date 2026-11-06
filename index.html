@@ -20817,6 +20817,17 @@ function runAnalysis() {
     var rzT = null;
     window.addEventListener("resize", function(){ if(!on) return; if(rzT) cancelAnimationFrame(rzT); rzT = requestAnimationFrame(function(){ var keep = curBar >= 0 ? Math.floor(Math.floor(curBar / bps) / rowsFit) : 0; renderPage(keep); }); });
     window.__chartRefresh = refresh;
+    window.__chartRollTarget = function(x){   // scrollLeft que pone la línea de playhead del roll de fondo en la misma x (pantalla) que el cursor del Chart
+      if(hy){   // pianoRoll/Charts: el cursor va un compás más adelante del borde, así al pasar de compás todavía se ve el anterior
+        var rh2 = document.getElementById("consolaRollHost");
+        if(!rh2 || curBar < 0 || !bars[curBar]) return null;
+        var pb = bars[Math.max(0, curBar - 1)];
+        return Math.max(0, Math.min(rh2.scrollWidth - rh2.clientWidth, x - (MARGIN_L + pb.beats * PPB)));
+      }
+      if(!on || !ph || !ph.isConnected || !document.body.classList.contains("chart-transp")) return null;
+      var rh = document.getElementById("consolaRollHost"); if(!rh) return null;
+      return x - (ph.getBoundingClientRect().left + 1 - rh.getBoundingClientRect().left);
+    };
     window.__chartTick = tick;
     return { setOn: setOn, setHy: setHy, isOn: function(){ return on; }, isHy: function(){ return hy; } };
   })();
@@ -25193,12 +25204,14 @@ function runAnalysis() {
     var lastS = -1, lastSD = -1, lastSB = -1, lastSV = -1;
     var hostVel = null, maxSV = 0;
     var shown = false;
+    var svgMain = null, lastRem = 0;   // chart+transparency: desplazamiento extra del svg cuando el scroll no alcanza
     var kbMain = null, kbBebop = null;   // teclados fijos (se mueven junto con el scroll)
     var tw = tw0 || EXPR.ident;          // Tempo & Expression: mapa de la vuelta en curso (el playhead sigue al audio)
     function measure(){
       ph = document.getElementById("consolaPlayhead");               // el roll se redibuja al enganchar una canción nueva (radio): el playhead es un elemento nuevo
       phBebop = document.getElementById("consolaBebopPlayhead");
       kbMain = host ? host.querySelector(".consola-kb-fixed") : null;
+      svgMain = host ? host.querySelector("svg") : null; lastRem = NaN;
       kbBebop = hostBebop ? hostBebop.querySelector(".consola-kb-fixed") : null;
       // el roll de batería se puede volver a dibujar mientras suena
       phDrum = document.getElementById("consolaDrumPlayhead");
@@ -25236,7 +25249,10 @@ function runAnalysis() {
         }
         // Auto-scroll horizontal: sigue al playhead para que siempre
         // quede a la vista; al reiniciar el loop el scroll salta con él.
-        var target = Math.round(Math.min(maxS, Math.max(0, x - AUTOSCROLL_MARGIN)));
+        var want = window.__chartRollTarget ? window.__chartRollTarget(x) : null;   // Chart + transparency: la línea del roll cae justo bajo el cursor del Chart
+        var target = Math.round(Math.min(maxS, Math.max(0, want == null ? x - AUTOSCROLL_MARGIN : want)));
+        var rem = want == null ? 0 : Math.round(want) - target;
+        if(svgMain && rem !== lastRem){ svgMain.style.transform = rem ? "translateX(" + (-rem) + "px)" : ""; lastRem = rem; }
         if(host && target !== lastS){ host.scrollLeft = target; lastS = target; if(kbMain) kbMain.setAttribute("transform", "translate(" + target + ",0)"); }
         if(hostDrum && !hostDrum.hidden){
           var tD = Math.round(Math.min(maxSD, Math.max(0, x - AUTOSCROLL_MARGIN)));
