@@ -1449,6 +1449,11 @@
   #consolaChartHost{display:none;}
   /* Chart + transparency (módulo CHART-MOD:transp): el roll original queda de fondo, atenuado como en la página de inicio */
   body.chart-mode.chart-transp #consolaRollHost{display:block !important;position:absolute;left:0;right:0;top:50%;translate:0 -50%;z-index:-1;opacity:.45;pointer-events:none;}
+  /* transparency_v2: miniatura del roll en cada compás; +Opacity: fondo más opaco */
+  body.chart-mode.chart-transp.chart-transp2 #consolaRollHost{display:none !important;}
+  .chart-mini{position:absolute;inset:0;width:100%;height:100%;opacity:.5;pointer-events:none;}
+  body.chart-opac .chart-mini{opacity:.95;}
+  body.chart-opac.chart-mode.chart-transp #consolaRollHost{opacity:.85;}
   /* pianoRoll/Charts: tira de cifrado alineada con el roll (foreignObject dentro del svg del roll, debajo del teclado fijo) */
   .chart-hystrip{position:relative;background:var(--bg);border-bottom:1px solid var(--line);pointer-events:none;overflow:hidden;--ct:0px;}
   .chart-hystrip .chart-bar{position:absolute;top:0;height:100%;box-sizing:border-box;}
@@ -21047,6 +21052,51 @@ function runAnalysis() {
       off: function(){ document.body.classList.remove("chart-transp"); } });
   })();
   /* <<< CHART-MOD:transp */
+
+  /* >>> CHART-MOD:transp2 — transparency_v2: una miniatura del piano roll dentro de cada compás del Chart (del tamaño exacto del compás, mismo rango de notas en todos). Prendido por defecto; apaga el roll grande de fondo. Para sacarlo: borrar este bloque y su CSS. */
+  (function(){
+    if(!window.__chartMod) return;
+    var TR = [["chordEvents","var(--c-bar1)"],["bassEvents","var(--c-bass)"],["comping2Events","var(--c-comping2)"],["melody2Events","var(--c-melody2)"],["melody3Events","var(--c-melody3)"],["melodyEvents","var(--c-melody)"]];
+    var lo = 0, hi = 0;
+    function analyze(){
+      document.body.classList.add("chart-transp2");
+      var mn = 1e9, mx = -1e9;
+      TR.forEach(function(t){ (state[t[0]] || []).forEach(function(e){ if(e.midi < mn) mn = e.midi; if(e.midi > mx) mx = e.midi; }); });
+      if(mn > mx){ mn = 60; mx = 72; }
+      lo = mn; hi = mx;
+    }
+    function cell(ctx, cellEl, bi, B){
+      var NS = "http://www.w3.org/2000/svg", rows = hi - lo + 1, t0 = B.start, t1 = B.start + B.beats;
+      var svg = document.createElementNS(NS, "svg");
+      svg.setAttribute("class", "chart-mini"); svg.setAttribute("viewBox", "0 0 100 100"); svg.setAttribute("preserveAspectRatio", "none");
+      TR.forEach(function(t){
+        (state[t[0]] || []).forEach(function(e){
+          var a = e.startBeat, b = e.startBeat + e.durBeats;
+          if(b <= t0 + 1e-6 || a >= t1 - 1e-6) return;
+          var x = (Math.max(a, t0) - t0) / B.beats * 100, w = (Math.min(b, t1) - Math.max(a, t0)) / B.beats * 100;
+          var r = document.createElementNS(NS, "rect");
+          r.setAttribute("x", x.toFixed(2)); r.setAttribute("y", ((hi - e.midi) / rows * 100).toFixed(2));
+          r.setAttribute("width", Math.max(w, 1.2).toFixed(2)); r.setAttribute("height", (100 / rows).toFixed(2)); r.setAttribute("fill", t[1]);
+          svg.appendChild(r);
+        });
+      });
+      cellEl.insertBefore(svg, cellEl.firstChild);
+    }
+    window.__chartMod({ id: "transp2", label: "transparency_v2", def: true, analyze: analyze, cell: cell,
+      title: "Una miniatura del piano roll dentro de cada compás del Chart (mismo rango de notas en todos los compases). Apaga el roll grande de fondo.",
+      off: function(){ document.body.classList.remove("chart-transp2"); } });
+  })();
+  /* <<< CHART-MOD:transp2 */
+
+  /* >>> CHART-MOD:opac — +Opacity: el piano roll de fondo (miniaturas y roll grande) se ve más opaco. Apagado por defecto. Para sacarlo: borrar este bloque y su CSS. */
+  (function(){
+    if(!window.__chartMod) return;
+    window.__chartMod({ id: "opac", label: "+Opacity", def: false,
+      title: "Deja más opaco el piano roll de fondo (las miniaturas de transparency_v2 y el roll grande de transparency).",
+      analyze: function(){ document.body.classList.add("chart-opac"); },
+      off: function(){ document.body.classList.remove("chart-opac"); } });
+  })();
+  /* <<< CHART-MOD:opac */
 
   /* >>> CHART-MIC — micro player arriba a la derecha del Chart (previous / play / stop / next). Usa los mismos controles que el Player (window.__radioPlayer) y que Media Session. Fijo: se ve siempre, con o sin Chart. Para sacarlo: borrar este bloque. */
   (function(){
