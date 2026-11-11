@@ -7369,10 +7369,115 @@ loadExtraBtn.addEventListener("click", async function () {
   if (nOmitidos) console.warn("[loadExtra] " + nOmitidos + " archivo(s) de la lista ya no existen y se omitieron:", Object.keys(sfMissingByUrl).map(sfDetailName).join(" · "));
   loadExtraBtn.textContent = (r.total > 0 && r.ok === r.total) ? "loadExtra ✓ (" + r.ok + ")" + (nOmitidos ? " · " + nOmitidos + " omitidos" : "") : "loadExtra ⚠ " + r.ok + "/" + r.total + " — reintentar";
   sfNotifyCatalogChange(false);
+  try { if (window.__loadJingle) window.__loadJingle.stage("extras"); } catch (e) { /* idem */ }
 });
 (function () {
   const c = document.getElementById("extraLoadClose");
   if (c) c.addEventListener("click", () => { const o = document.getElementById("extraLoadOverlay"); if (o) o.classList.add("sf2-load-hidden"); });
+})();
+// ============================================================
+// 🎮 Loading jingle (2026-11-11): el tema de Terminator (1984) en 8 bits mientras cargan los sonidos.
+//   · Es un MP3 ya renderizado (Midi/Loading theme/…mp3: 60 s, presets 8 bits, desde la melodía). No usa soundfonts ni
+//     sintetiza nada: no suma CPU ni retrasa la carga (la versión anterior sintetizaba el .mid con 5 .sf2 de 8 bits).
+//   · Se baja con fetch (pasa por el caché offline) y suena desde un blob: el service worker no atiende pedidos Range de <audio>.
+//   · Autoplay: los navegadores (y el iPhone) no dejan sonar hasta el primer toque. Si lo bloquean, suena en el primer
+//     toque/tecla, siempre que todavía esté cargando. El log de depuración dice "bloqueado" o "suena".
+//   · Termina con fade cuando terminaron los base Y los extras, o al dar Play / generar una canción. Si la carga dura más
+//     de 60 s el MP3 vuelve a empezar.
+//   · No corre con ?nojingle, en MIDI INSTRUMENT (__midiOnly) ni abierto como file://.
+// ============================================================
+window.__loadJingle = (function () {
+  var MP3_PATH = "Midi/Loading theme/Terminator_1984_8bit.mp3";
+  var VOLUME = 0.8, FADE_MS = 1500, MAX_MS = 10 * 60 * 1000;   // MAX_MS: seguro, si algo nunca avisa que terminó
+  var disabled = window.__midiOnly || SF2_IS_LOCAL_FILE || /[?&]nojingle\b/.test(location.search);
+  var NOEXTRAS = /[?&]noextras\b/.test(location.search);
+  var audio = null, blobUrl = "", ready = false, playing = false, pending = false, stopped = disabled, loggedBlock = false, hintEl = null;
+  var baseDone = false, extrasDone = false, baseDoneAt = 0, t0 = 0, poll = 0;
+  var GESTURES = ["click", "touchend", "keydown", "mousedown"];
+
+  function log(m) { try { sfLog("[jingle] " + m); } catch (e) {} }
+
+  function tryPlay() {
+    if (stopped || playing || pending || !ready) return;
+    var p;
+    try { p = audio.play(); } catch (e) { p = null; }
+    if (p && p.then) { pending = true; p.then(onPlaying, onBlocked); } else onPlaying();
+  }
+  function onPlaying() {
+    pending = false;
+    if (stopped) { release(); return; }
+    playing = true; removeGestures(); showHint(false); log("suena");
+  }
+  function onBlocked(err) {
+    pending = false;
+    if (stopped) return;
+    if (!loggedBlock) { loggedBlock = true; log("el navegador bloqueó el audio (" + (err && err.name || "?") + "): suena en el primer toque o tecla"); }
+    GESTURES.forEach(function (ev) { document.addEventListener(ev, onGesture, true); });
+    showHint(true);
+  }
+  // Cartelito mientras el navegador no deja sonar: sin esto no hay forma de saber que hace falta tocar.
+  function showHint(on) {
+    if (!on) { if (hintEl) { try { hintEl.remove(); } catch (e) {} hintEl = null; } return; }
+    if (hintEl || stopped) return;
+    hintEl = document.createElement("div");
+    hintEl.textContent = "🔊 Tocá la pantalla para escuchar el tema mientras carga";
+    hintEl.style.cssText = "position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:2147483647;background:rgba(0,0,0,.78);color:#fff;font:13px system-ui,sans-serif;padding:8px 14px;border-radius:999px;pointer-events:none;max-width:90vw;text-align:center;";
+    document.body.appendChild(hintEl);
+  }
+  function onGesture() { tryPlay(); }   // play() síncrono dentro del gesto: lo exige el iPhone
+  function removeGestures() { GESTURES.forEach(function (ev) { document.removeEventListener(ev, onGesture, true); }); }
+
+  function release() {
+    try { if (audio) { audio.pause(); audio.removeAttribute("src"); audio.load(); } } catch (e) {}
+    if (blobUrl) { try { URL.revokeObjectURL(blobUrl); } catch (e) {} blobUrl = ""; }
+    playing = false;
+  }
+
+  function stop(fast) {
+    if (stopped) return;
+    stopped = true;
+    clearInterval(poll); removeGestures(); showHint(false);
+    log(fast ? "cortado (empezó una canción)" : "terminó la carga");
+    if (!playing || !audio) { release(); return; }
+    var steps = fast ? 3 : 30, i = 0, v0 = audio.volume;
+    var iv = setInterval(function () {
+      i++;
+      try { audio.volume = Math.max(0, v0 * (1 - i / steps)); } catch (e) {}
+      // en iPhone el volumen del <audio> no se puede cambiar: sin fade, se corta directo
+      if (i >= steps || (i === 1 && Math.abs(audio.volume - v0) < 1e-6)) { clearInterval(iv); release(); }
+    }, (fast ? 150 : FADE_MS) / steps);
+  }
+  function finish() { stop(false); }
+
+  // El resto del código avisa: stage("base") cuando terminan los .sf2 base, stage("extras") cuando termina loadExtra.
+  function stage(which) {
+    if (stopped) return;
+    if (which === "base") { baseDone = true; baseDoneAt = Date.now(); }
+    if (which === "extras") extrasDone = true;
+    if (baseDone && (extrasDone || NOEXTRAS)) finish();   // ?noextras: los extras no se cargan solos, alcanza con los base
+  }
+
+  function checkDone() {
+    if (stopped) return;
+    if (baseDone && !extrasDone && !loadExtraBtn.disabled && Date.now() - baseDoneAt > 10000) finish();   // loadExtra nunca arrancó: no esperar para siempre
+    if (performance.now() - t0 > MAX_MS) finish();
+  }
+
+  if (!disabled) {
+    t0 = performance.now();
+    poll = setInterval(checkDone, 1000);
+    fetch(sfUrlForPath(MP3_PATH)).then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.blob(); }).then(function (b) {
+      if (stopped) return;
+      blobUrl = URL.createObjectURL(b);
+      audio = new Audio();
+      audio.loop = true; audio.preload = "auto"; audio.volume = VOLUME; audio.src = blobUrl;
+      ready = true;
+      log("listo (" + Math.round(b.size / 1024) + " KB)");
+      tryPlay();
+    }).catch(function (err) { log("no se pudo preparar: " + (err && err.message || err)); stopped = true; clearInterval(poll); showHint(false); });
+  }
+
+  return { stage: stage, stop: stop, debug: { state: function () { return { ready: ready, playing: playing, stopped: stopped, paused: audio ? audio.paused : null, volume: audio ? audio.volume : null, t: audio ? audio.currentTime : null }; } } };
 })();
 async function sf2Activate(btn) {
   if (window.__midiOnly) { sf2State = "idle"; try{ btn.textContent = "\ud83c\udfb9 MIDI INSTRUMENT (sin soundfonts)"; btn.disabled = true; sf2HideLoadOverlay(); }catch(e){} return; }
@@ -7415,6 +7520,7 @@ async function sf2Activate(btn) {
     sf2ShowLoadOverlayError();
   } finally {
     btn.disabled = false;
+    try { if (window.__loadJingle) window.__loadJingle.stage("base"); } catch (e) { /* el jingle nunca debe romper la carga */ }
   }
 }
 function sf2ToggleBtnClick(e) {
@@ -25483,6 +25589,7 @@ function runAnalysis() {
   function startPlaybackRendered(){
     var ctx = getAudioCtx(); // síncrono, dentro del gesto del usuario (iOS)
     if(!ctx) return;
+    try{ if(window.__loadJingle) window.__loadJingle.stop(true); }catch(eLJ){}   // jingle de carga: se corta al empezar una canción
     var token = prToken = (prToken | 0) + 1;
     EXPR.reroll();
     var rsnap = liveSnap();   // UNA foto para todas las pistas: mismo mapa de tempo/dinámica en cada stem
@@ -25620,6 +25727,7 @@ function runAnalysis() {
   function startPlaybackChecked(){
     var ctx = getAudioCtx();   // síncrono, dentro del gesto del usuario (iOS)
     if(!ctx) return;
+    try{ if(window.__loadJingle) window.__loadJingle.stop(true); }catch(eLJ){}   // jingle de carga: se corta al empezar una canción
     window.__radioEnsureLevels();
     var tracks = prActiveTracks();
     var nQuiet = pfReport(tracks);
@@ -25655,6 +25763,7 @@ function runAnalysis() {
 
   function startPlaybackLive(startBeat){
     if(state.chordEvents.length === 0) return;
+    try{ if(window.__loadJingle) window.__loadJingle.stop(true); }catch(eLJ){}   // jingle de carga: se corta al empezar una canción
     var off = (typeof startBeat === "number" && startBeat > 0 && startBeat < TOTAL_BEATS) ? startBeat : 0;   // clic en un compás del piano roll en primer plano
     var ctx = getAudioCtx();
     if(!ctx) return;
