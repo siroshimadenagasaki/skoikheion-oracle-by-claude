@@ -26375,6 +26375,27 @@ function runAnalysis() {
       return o;
     };
 
+    // Greatest Hits: repone una canción en el motor SIN cortar la radio ni darle Play (el Player la reproduce y engancha la siguiente).
+    F.applyOnly = function(o){
+      o = check(o);
+      window.__favApplying = true;
+      try{
+        writeControls(o.controls || {});
+        window.__radioHist.applyEntry(entryOf(o));
+        try{ if(window.__songLog) window.__songLog.showPresets(o.presetView, o.title || ""); }catch(_ep){}
+        var exprSel = document.getElementById("consolaExprSelect");
+        if(exprSel && exprSel.value === "auto" && o.expr && o.expr.auto) EXPR.setAuto(o.expr.auto); else EXPR.reroll();
+      } finally { window.__favApplying = false; }
+      if(window.__muteMon) window.__muteMon.reset();
+      return o;
+    };
+    F.ensureFonts = function(o){
+      var keys = [];
+      Object.keys(CH_TRACK).forEach(function(ch){ var k = o.presets && o.presets[ch]; if(k != null && ((o.tracks || {})[CH_TRACK[ch]] || []).length) keys.push(k); });
+      if(typeof sfEnsurePresetsLoaded !== "function") return Promise.resolve();
+      return sfEnsurePresetsLoaded(keys, 90000).catch(function(){});
+    };
+
     // ---------- guardar en este navegador (localStorage) ----------
     function lsIndex(){ try{ var a = JSON.parse(localStorage.getItem(IDX_KEY) || "[]"); return Array.isArray(a) ? a : []; }catch(_e){ return []; } }
     function lsPut(id, name, savedAt, text, cover){
@@ -29256,6 +29277,7 @@ function runAnalysis() {
     // RadioMode: vuelta nueva SIN Compose/Detener/espera/Play — solo genera; el scheduler
     // en vivo la engancha. (Mix time signatures queda tildado como en la creatura.)
     window.__radioNext = function(kind){
+      if(window.__hits && window.__hits.active && window.__hits.songs.length){ window.__hits.next(); return; }   // Greatest Hits
       window.__oneSet = false;   // la radio no usa One.Set
       window.__radioBusy = true;
       try{
@@ -29847,6 +29869,13 @@ function runAnalysis() {
     }
     window.__radioMixOff = function(){ mixSet(false); };
     async function runMix(){
+      if(window.__hits && window.__hits.active){   // Greatest Hits: la canción sale de la carpeta, no se sortea
+        await window.__hits.first();
+        var pbHits = document.getElementById("consolaPlayBtn");
+        if(pbHits && !pbHits.disabled && typeof window.consolaStartPlayback === "function") window.consolaStartPlayback();
+        if(rmChk){ rmChk.checked = true; mixPaint(); window.__radioKind = "mix"; }
+        return;
+      }
       jazzPrefetch(); jazziPrefetch();
       var MIXK = ["random", "bella", "intervalic", "common", "partimenti", "jazz", "jazzi", "oneset", "creapart"];
       var pick = window.__radioOnly || MIXK[Math.floor(Math.random() * MIXK.length)];   // __radioOnly: player limitado a un modo
@@ -29906,6 +29935,7 @@ function runAnalysis() {
     });
     RP.start = async function(only){
       if(rvBusy) return;
+      if(window.__hits && !window.__hits.starting) window.__hits.active = false;   // salir de Greatest Hits
       rpUnpause();
       if(only !== undefined) RP.only = only || null;
       window.__radioOnly = RP.only;
@@ -29921,6 +29951,7 @@ function runAnalysis() {
       } finally { rvBusy = false; rvSync(); }
     };
     RP.stop = function(){
+      if(window.__hits) window.__hits.active = false;   // salir de Greatest Hits
       rpUnpause();
       RP.resumable = true;
       if(window.__radioHist) window.__radioHist.on = false;
@@ -30194,6 +30225,7 @@ function runAnalysis() {
         us.buffer = ub; us.connect(uc.destination); us.start(0);
       }catch(_e){}
     }
+    RP.unlock = rvUnlockAudio; RP.flags = rpFlags;   // los usa Greatest Hits
     var rvOpenBtn = document.getElementById("radioVintageOpenBtn");
     if(rvOpenBtn) rvOpenBtn.addEventListener("click", function(){
       // Checkbox "all" destildado: el botón solo muestra el player a pantalla completa (de la radio que esté seleccionada); no arranca, no pausa, no cambia de modo ni corta audio.
@@ -30221,6 +30253,7 @@ function runAnalysis() {
       var t = e.target, b = t && t.closest ? t.closest("[data-radio-only]") : null;
       if(!b) return;
       var k = b.getAttribute("data-radio-only");
+      if(window.__hits) window.__hits.active = false;   // salir de Greatest Hits
       if(RP.isOn() && RP.only === k){ RP.stop(); RP.resumable = false; return; }   // ya suena ese modo: la detiene
       rvUnlockAudio();
       rvOpen();
@@ -31270,6 +31303,157 @@ window.addEventListener("load", sfAskPersist);
   </div>
 </section>
 <div id="controlLabSpacer" style="height:0;"></div>
+<style>
+#greatHits .gh-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+#greatHits .gh-title{font-size:15px;font-weight:800;}
+#greatHits .gh-btns{display:flex;gap:6px;}
+#greatHits .gh-help{font-size:12px;color:var(--ink-muted,#888);line-height:1.4;margin:8px 0;}
+#greatHits .gh-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(128,128,128,.25);font-size:13px;}
+#greatHits .gh-n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#greatHits .gh-empty{font-size:12px;opacity:.7;padding:6px 0;}
+#greatHits .gh-st{font-size:12px;min-height:18px;margin-top:6px;color:var(--ink-muted,#888);}
+</style>
+<section class="clock-card" id="greatHits" aria-label="Greatest Hits">
+  <div class="gh-head">
+    <strong class="gh-title">&#127942; Greatest Hits</strong>
+    <div class="gh-btns">
+      <button type="button" class="chip primary gh-all" title="Abre el Player con SOLO las canciones de la carpeta Greatest Hits/, en el orden de la lista, y vuelve a empezar al terminar la última.">&#9654; Play all</button>
+      <button type="button" class="chip gh-refresh" title="Volver a leer la carpeta Greatest Hits/ del sitio">&#8635;</button>
+    </div>
+  </div>
+  <p class="gh-help">Canciones de la carpeta <b>Greatest Hits/</b> del proyecto (archivos .json de &#9829; Favoritos). El Player toca solo estas, en orden y en bucle. Las nuevas aparecen despu&eacute;s de publicarlas (en modo offline: &#8635; o &ldquo;Reload sounds and code&rdquo;).</p>
+  <div class="gh-list"></div>
+  <div class="gh-st" role="status" aria-live="polite"></div>
+</section>
+<script>
+(function(){
+  var DIR = "Greatest Hits/", KEY = "stoikheionHits.v1", TTL = 5 * 60 * 1000;
+  var root = document.getElementById("greatHits");
+  if(!root) return;
+  var H = window.__hits = { active: false, starting: false, busy: false, songs: [], paths: [], idx: 0 };
+  var listEl = root.querySelector(".gh-list"), stEl = root.querySelector(".gh-st");
+  function say(t){ stEl.textContent = t || ""; }
+  function esc(t){ return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+  function nice(p){
+    var n = p.slice(DIR.length).replace(/\.json$/i, "");
+    return n.replace(/^Fav_\d{8}-\d{6}_?/, "").replace(/[-_]+/g, " ").trim() || n;
+  }
+  function listFiles(force){
+    if(!force){
+      try{ var c = JSON.parse(localStorage.getItem(KEY) || "null"); if(c && Array.isArray(c.files) && Date.now() - c.t < TTL) return Promise.resolve(c.files); }catch(_e){}
+    }
+    var api = "https://api.github.com/repos/" + SF_GH_OWNER + "/" + SF_GH_REPO + "/git/trees/main?recursive=1";
+    return fetch(api, { headers: { Accept: "application/vnd.github+json" } }).then(function(r){
+      if(!r.ok) throw new Error("GitHub API " + r.status);
+      return r.json();
+    }).then(function(d){
+      var files = (d.tree || []).filter(function(it){ return it.type === "blob" && it.path.indexOf(DIR) === 0 && /^[^\/]+\.json$/i.test(it.path.slice(DIR.length)); })
+        .map(function(it){ return it.path; }).sort();
+      try{ localStorage.setItem(KEY, JSON.stringify({ t: Date.now(), files: files })); }catch(_e){}
+      return files;
+    }).catch(function(err){
+      try{ var c2 = JSON.parse(localStorage.getItem(KEY) || "null"); if(c2 && Array.isArray(c2.files)) return c2.files; }catch(_e){}   // sin red: la última lista conocida
+      throw err;
+    });
+  }
+  function fetchSong(path){
+    return fetch(path.split("/").map(encodeURIComponent).join("/"), { cache: "no-cache" }).then(function(r){
+      if(!r.ok) throw new Error(r.status);
+      return r.json();
+    });
+  }
+  var shown = [];
+  function render(force){
+    listEl.innerHTML = '<div class="gh-empty">Buscando&hellip;</div>';
+    return listFiles(force).then(function(files){
+      shown = files;
+      if(!files.length){ listEl.innerHTML = '<div class="gh-empty">Todav&iacute;a no hay archivos .json en Greatest Hits/ (o no se publicaron).</div>'; return; }
+      listEl.innerHTML = files.map(function(p, i){
+        return '<div class="gh-row"><span class="gh-n">' + (i + 1) + '. ' + esc(nice(p)) + '</span><button type="button" class="chip" data-gh="' + i + '" title="Empezar desde esta canci&oacute;n">&#9654;</button></div>';
+      }).join("");
+    }).catch(function(err){
+      shown = [];
+      listEl.innerHTML = '<div class="gh-empty">No se pudo leer la carpeta (' + esc(err.message) + ').</div>';
+    });
+  }
+  // Carga todos los .json (hace falta tenerlos en memoria: el cambio de canci&oacute;n al final de la vuelta es inmediato).
+  function loadAll(files){
+    var done = 0, errs = [];
+    say("Cargando canciones 0/" + files.length + "…");
+    return Promise.all(files.map(function(p){
+      return fetchSong(p).then(function(o){ return window.__favorites.check(o); }).then(function(o){ return { p: p, o: o }; })
+        .catch(function(e){ errs.push(nice(p) + " (" + (e && e.message || e) + ")"); return null; })
+        .then(function(r){ done++; say("Cargando canciones " + done + "/" + files.length + "…"); return r; });
+    })).then(function(rs){
+      rs = rs.filter(Boolean);
+      H.songs = rs.map(function(r){ return r.o; });
+      H.paths = rs.map(function(r){ return r.p; });
+      if(errs.length) say("No se pudieron leer: " + errs.join(", "));
+    });
+  }
+  // Repone la canción i en el motor. Devuelve una promesa que espera sus soundfonts; ya deja precargados los de la siguiente.
+  H.apply = function(i){
+    var F = window.__favorites, o = H.songs[i];
+    H.idx = i;
+    F.applyOnly(o);
+    say("Sonando " + (i + 1) + "/" + H.songs.length + ": " + (o.name || o.title || nice(H.paths[i])));
+    var nx = H.songs[(i + 1) % H.songs.length];
+    var p = F.ensureFonts(o);
+    if(nx && nx !== o) F.ensureFonts(nx);
+    return p;
+  };
+  H.first = function(){ return H.apply(H.idx); };
+  // Fin de la vuelta (o Next del Player): la siguiente de la lista. Si se usó Previous, sigue desde la canción que realmente suena.
+  H.next = function(){
+    try{
+      var cur = (typeof SONGTITLE !== "undefined" && SONGTITLE.current) ? SONGTITLE.current() : "";
+      if(cur){ for(var j = 0; j < H.songs.length; j++){ if(H.songs[j].title === cur){ H.idx = j; break; } } }
+    }catch(_e){}
+    H.apply((H.idx + 1) % H.songs.length);
+  };
+  H.start = async function(startPath){
+    var RP = window.__radioPlayer, F = window.__favorites;
+    if(!RP || !F) return;
+    if(RP.unlock) RP.unlock();   // dentro del gesto del toque (iOS / Safari)
+    if(H.busy) return;
+    H.busy = true;
+    try{
+      say("Leyendo la carpeta…");
+      var files = await listFiles(false);
+      if(!files.length){ say("No hay archivos .json en Greatest Hits/."); return; }
+      await loadAll(files);
+      if(!H.songs.length){ say("Ninguna canción se pudo abrir."); return; }
+      var i0 = startPath ? H.paths.indexOf(startPath) : 0;
+      H.idx = i0 < 0 ? 0 : i0;
+      RP.open();
+      if(window.__rpPaused && RP.resume) RP.resume();
+      if(RP.isOn()){
+        // la radio ya suena: se corta la canción en curso y se pone la elegida (igual que el Next del Player)
+        if(typeof window.consolaStopPlayback === "function") window.consolaStopPlayback();
+        H.active = true;
+        await H.apply(H.idx);
+        var pb = document.getElementById("consolaPlayBtn");
+        if(pb && !pb.disabled) pb.click();
+        RP.flags();
+      } else {
+        H.active = true; H.starting = true;
+        try{ await RP.start(null); } finally { H.starting = false; }
+      }
+    }catch(err){
+      H.active = false;
+      say("Error: " + (err && err.message || err));
+    }finally{ H.busy = false; }
+  };
+  root.addEventListener("click", function(e){
+    var t = e.target, b = t && t.closest ? t.closest("button") : null;
+    if(!b) return;
+    if(b.classList.contains("gh-all")) H.start(null);
+    else if(b.classList.contains("gh-refresh")) render(true);
+    else if(b.hasAttribute("data-gh")){ var p = shown[parseInt(b.getAttribute("data-gh"), 10)]; if(p) H.start(p); }
+  });
+  render(false);
+})();
+</script>
 <script>
 /* ================================================================
    SEED / RANDOM ON-OFF (switch entre Play-Stop y los random choose; Random ON = seed OFF) + CONTROL LAB (al final de la página).
