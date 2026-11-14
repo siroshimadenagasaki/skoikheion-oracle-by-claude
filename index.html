@@ -21245,6 +21245,22 @@ function runAnalysis() {
       box.appendChild(b);
     });
     document.body.appendChild(box);
+    // Slider chiquito de volumen master (el mismo control que "Volume" de How to play: #consolaVolume), debajo del micro player.
+    var mv = document.createElement("div"); mv.id = "chartMicVol";
+    mv.style.cssText = "position:fixed;top:74px;right:56px;z-index:126;display:flex;align-items:center;padding:1px 5px;background:var(--bg);border:1px solid var(--line);border-radius:10px;";
+    var sl = document.createElement("input"); sl.type = "range"; sl.min = "0"; sl.max = "100"; sl.step = "1"; sl.id = "chartMicVolSlider";
+    sl.title = "Volumen master out"; sl.setAttribute("aria-label", "Volumen master out");
+    sl.style.cssText = "width:94px;height:12px;margin:0;cursor:pointer;accent-color:var(--gold);";
+    var main = document.getElementById("consolaVolume");
+    if(main) sl.value = main.value; else sl.value = "80";
+    sl.addEventListener("input", function(e){
+      e.stopPropagation();
+      var m = document.getElementById("consolaVolume");
+      if(m){ m.value = sl.value; m.dispatchEvent(new Event("input", {bubbles:true})); }
+    });
+    if(main) main.addEventListener("input", function(){ sl.value = main.value; });
+    mv.appendChild(sl);
+    document.body.appendChild(mv);
   })();
   /* <<< CHART-MIC */
 
